@@ -1,13 +1,13 @@
 import logging
 
-def setup_logger(name: str, level=logging.INFO, file=None) -> logging.Logger:
+def setup_logger(name: str, level=logging.INFO) -> logging.Logger:
     """
     Sets up a logger with the specified name and logging level.
 
     Args:
         name (str): The name of the logger.
         level: The logging level (default is logging.INFO).
-        save_to_file (str, optional): If provided, the logger will also save logs to the specified file.
+        
 
     Returns:
         logging.Logger: Configured logger instance.
@@ -20,11 +20,6 @@ def setup_logger(name: str, level=logging.INFO, file=None) -> logging.Logger:
     logger.addHandler(channel_handler)
     channel_handler.setLevel(level)
 
-    # If file is provided: create file handler and set level 
-    if file is not None:
-        file_handler = logging.FileHandler(file)
-        file_handler.setLevel(level)
-        logger.addHandler(file_handler)
 
     # Create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -33,7 +28,19 @@ def setup_logger(name: str, level=logging.INFO, file=None) -> logging.Logger:
     # Add the handlers to the logger
     if not logger.hasHandlers():
         logger.addHandler(channel_handler)
-    
-    if 
-
     return logger
+
+def add_file_handler(logger: logging.Logger, file: str, level=logging.INFO) -> None:
+    """
+    Adds a file handler to the existing logger.
+
+    Args:
+        logger (logging.Logger): The logger to which the file handler will be added.
+        file (str): The path to the log file.
+        level: The logging level for the file handler (default is logging.INFO).
+    """
+    file_handler = logging.FileHandler(file)
+    file_handler.setLevel(level)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
