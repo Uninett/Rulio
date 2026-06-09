@@ -1,3 +1,4 @@
 *.env
 /src/backend/settings.py
 /.venv/
+sporsmal.txt
