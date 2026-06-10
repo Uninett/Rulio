@@ -7,4 +7,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .vscode/
+/src/backend/settings.py
+/.venv/
+sporsmal.txt
+__pycache__/
 TODO.txt
