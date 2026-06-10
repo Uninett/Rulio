@@ -5,18 +5,19 @@ services:
       - "8000:8000"
     volumes:
       - .:/backend
-    environment:
-      - DEBUG=1
-      - SECRET_KEY=your-local-dev-secret-key
+    env_file:
+      - .env
     depends_on:
       - db
 
   db:
     image: postgres:16-alpine
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: "mydatabase"
-      POSTGRES_USER: "myuser"
-      POSTGRES_PASSWORD: "mypassword"
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASS}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
