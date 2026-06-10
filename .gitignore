@@ -1,4 +1,9 @@
+.env
 *.env
-/src/backend/settings.py
-/.venv/
+.venv/
+.venv/
 sporsmal.txt
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
