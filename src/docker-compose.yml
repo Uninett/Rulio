@@ -5,6 +5,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/backend
+      - ./logs:/var/logs # Sync logs to host
     env_file:
       - .env
     depends_on:

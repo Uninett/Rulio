@@ -5,9 +5,9 @@ from pydantic import model_validator, ConfigDict
 
 class CreateServiceSchema(Schema):
     model_config = ConfigDict(extra="forbid")
-    name: str
-    description: str
-    protocol: str
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str 
+    protocol: str = Field(..., min_length=1, max_length=255)
     port_start:  int = Field(..., ge=1, le=65535)
     port_end: Optional[int] = Field(None, ge=1, le=65535)
 
