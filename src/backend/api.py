@@ -97,7 +97,6 @@ def delete_user(request, user_id: int):
     
 @api.post("/add_address")
 def add_address(request, name: str, description: str, tenant_id: int, type: str, ipv4_value: str = None, ipv6_value: str = None):
-    from .objects.attributes.address import Address
     address = Address.objects.create(
         name=name,
         description=description,
@@ -110,7 +109,6 @@ def add_address(request, name: str, description: str, tenant_id: int, type: str,
 
 @api.get("/list_addresses")
 def list_addresses(request):
-    from .objects.attributes.address import Address
     addresses = Address.objects.all()
     return list(addresses.values())
 
