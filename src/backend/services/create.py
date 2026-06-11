@@ -1,15 +1,16 @@
 
 import ipaddress
+import logging
 
 
 from backend.objects.all_objects import Address, Service
+from backend.utils.logger import set_up_logger, add_file_handler
+from constants import LOGPATH, ERROR_LOGPATH
 
 
-""""
-====================================================================
-TESTS
-====================================================================
-"""
+#Setup logger
+logger = set_up_logger(__name__)
+
 
 #Temp solution for ID generation
 current_id = 1
@@ -26,12 +27,14 @@ def get_next_id() -> int:
 def get_current_tenant_id(request: object) -> int:
     tenant_id = request.session.get("current_tenant_id")
     if tenant_id is None:
+        logger.warning("Tenant ID not set in request session.")
         raise Exception(
             "Tenant ID not set in request. Please call /set_tenant first."
         )
     try:
         return int(tenant_id)
     except ValueError:
+        logger.warning(f"Invalid tenant ID in session: {tenant_id}")
         raise Exception(f"Invalid tenant ID in session: {tenant_id}")
 
 
@@ -47,14 +50,18 @@ def create_address(request: object, name: str, description: str, ipv4Address: st
     
     id = get_next_id()
     tenant_id = get_current_tenant_id(request)
+    # These try-except blocks are redundant since the Pydantic schema should already validate the IP addresses, 
+    # not sure if we should keep them or not 
     try:
         ipv4_addr = ipaddress.IPv4Address(ipv4Address)
     except ipaddress.AddressValueError as e:
+        logger.warning(f"Tried to create address with invalid IPv4 address: {ipv4Address}")
         raise ValueError(f"Invalid IPv4 address: {ipv4Address}") from e
         
     try:
         ipv6_addr = ipaddress.IPv6Address(ipv6Address)
     except ipaddress.AddressValueError as e:
+        logger.warning(f"Tried to create address with invalid IPv6 address: {ipv6Address}")
         raise ValueError(f"Invalid IPv6 address: {ipv6Address}") from e
     
     address = Address(
@@ -67,6 +74,7 @@ def create_address(request: object, name: str, description: str, ipv4Address: st
         ipv6_value=ipv6_addr
     )
     # Save the address to the database here
+    logger.info(f"Created {address} for tenant={address.tenant_id}")
     return address
 
 def create_service(request: object, name: str, description: str, protocol: str, port_start: int, port_end: int) -> Service:
@@ -84,4 +92,5 @@ def create_service(request: object, name: str, description: str, protocol: str, 
         port_end=port_end
     )
     # Save the service to the database here
+    logger.info(f"Created {service} for tenant={service.tenant_id}")
     return service

@@ -2,11 +2,11 @@
 from ninja import Schema
 from ipaddress import IPv4Address, IPv6Address
 from typing import Optional
-from pydantic import model_validator, ConfigDict
+from pydantic import Field, model_validator, ConfigDict
 
 class CreateAddressSchema(Schema):
     model_config = ConfigDict(extra="forbid")
-    name: str
+    name: str = Field(..., min_length=1, max_length=255)
     description: str
     ipv4Address: Optional[IPv4Address] = None
     ipv6Address: Optional[IPv6Address] = None
