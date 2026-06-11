@@ -1,15 +1,13 @@
 import ipaddress
+from django.db import models
 
-class Address:
-    def __init__(self, id: int, name: str, description: str, tenant_id: int, type: str, ipv4_value: ipaddress.IPv4Address, ipv6_value: ipaddress.IPv6Address):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.tenant_id = tenant_id
-        self.type = type
-        self.ipv4_value = ipv4_value
-        self.ipv6_value = ipv6_value
-
+class Address(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    tenant_id = models.IntegerField()
+    type = models.CharField(max_length=50)
+    ipv4_value = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True)
+    ipv6_value = models.GenericIPAddressField(protocol='IPv6', null=True, blank=True)
 
 
     def __str__(self):
