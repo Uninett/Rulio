@@ -2,7 +2,7 @@
 import ipaddress
 
 
-from backend.objects import *
+from backend.objects.all_objects import Address, Service
 
 
 """"

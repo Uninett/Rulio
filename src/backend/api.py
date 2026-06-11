@@ -5,7 +5,7 @@ from ninja import NinjaAPI
 from backend.services.create import create_address, create_service
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.service import CreateServiceSchema
-from backend.objects import *
+from .objects.all_objects import Address, AddressGroup, ServiceGroup, Tag, TagObject
 
 api = NinjaAPI()
 

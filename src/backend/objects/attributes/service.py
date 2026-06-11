@@ -3,7 +3,7 @@ from django.db import models
 
 class Service(models.Model):
     name = models.CharField(max_length=255)
-    description = models.TextField()
+    description = models.TextField(blank=True)
     tenant_id = models.IntegerField()
     protocol = models.CharField(max_length=50)
     port_start = models.IntegerField()

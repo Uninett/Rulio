@@ -34,7 +34,6 @@ SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies" # We should p
 # Application definition
 
 INSTALLED_APPS = [
-    "backend.objects.apps.ObjectsConfig",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'ninja',
+    "backend.objects.apps.ObjectsConfig",
 ]
 
 MIDDLEWARE = [

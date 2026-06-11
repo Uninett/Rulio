@@ -3,7 +3,7 @@ from django.db import models
 
 class Address(models.Model):
     name = models.CharField(max_length=255)
-    description = models.TextField()
+    description = models.TextField(blank=True)
     tenant_id = models.IntegerField()
     type = models.CharField(max_length=50)
     ipv4_value = models.GenericIPAddressField(protocol='IPv4', null=True, blank=True)
