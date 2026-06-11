@@ -34,6 +34,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies" # We should p
 # Application definition
 
 INSTALLED_APPS = [
+    "backend.objects.apps.ObjectsConfig",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

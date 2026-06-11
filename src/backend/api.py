@@ -94,6 +94,25 @@ def delete_user(request, user_id: int):
         return {"status": "success", "message": f"User with id {user_id} deleted."}
     except User.DoesNotExist:
         return {"status": "error", "message": f"User with id {user_id} does not exist."}
+    
+@api.post("/add_address")
+def add_address(request, name: str, description: str, tenant_id: int, type: str, ipv4_value: str = None, ipv6_value: str = None):
+    from .objects.attributes.address import Address
+    address = Address.objects.create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+        type=type,
+        ipv4_value=ipv4_value,
+        ipv6_value=ipv6_value
+    )
+    return {"status": "success", "message": f"Address '{name}' created successfully.", "address_id": address.id}
+
+@api.get("/list_addresses")
+def list_addresses(request):
+    from .objects.attributes.address import Address
+    addresses = Address.objects.all()
+    return list(addresses.values())
 
 # @api.get("/create_address")
 # def create_address(request):
