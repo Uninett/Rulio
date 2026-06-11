@@ -30,7 +30,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies" # We should probably use .db for this when the database is set up, but for now this is fine since we aren't actually running multiple processes or anything that would cause issues with cookie-based sessions.
 # Application definition
 
 INSTALLED_APPS = [

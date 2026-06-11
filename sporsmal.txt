@@ -1,0 +1,5 @@
+Hvorfor har vi både tag og tag_object ikke bare tag?
+Hva er sequence attributen i filter_interface?
+Hva er VRF?
+Skal interface ha mac addresse som et attribute.
+Hva brukes type til?

@@ -1,0 +1,3 @@
+
+Legg inn Logger i alle apis
+Add schema for tag and object_tag
