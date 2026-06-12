@@ -1,5 +1,5 @@
 
-import pytest
+
 
 from backend.objects.attributes import (
             Address, AddressGroup, AddressGroupMember,

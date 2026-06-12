@@ -1,11 +1,11 @@
 
 import ipaddress
-import logging
+
 
 
 from backend.objects.all_objects import Address, Service
-from backend.utils.logger import set_up_logger, add_file_handler
-from constants import LOGPATH, ERROR_LOGPATH
+from backend.utils.logger import set_up_logger
+
 
 
 #Setup logger
@@ -53,13 +53,13 @@ def create_address(request: object, name: str, description: str, ipv4Address: st
     # These try-except blocks are redundant since the Pydantic schema should already validate the IP addresses, 
     # not sure if we should keep them or not 
     try:
-        ipv4_addr = ipaddress.IPv4Address(ipv4Address)
+        ipv4_addr = ipaddress.IPv4Network(ipv4Address)
     except ipaddress.AddressValueError as e:
         logger.warning(f"Tried to create address with invalid IPv4 address: {ipv4Address}")
         raise ValueError(f"Invalid IPv4 address: {ipv4Address}") from e
         
     try:
-        ipv6_addr = ipaddress.IPv6Address(ipv6Address)
+        ipv6_addr = ipaddress.IPv6Network(ipv6Address)
     except ipaddress.AddressValueError as e:
         logger.warning(f"Tried to create address with invalid IPv6 address: {ipv6Address}")
         raise ValueError(f"Invalid IPv6 address: {ipv6Address}") from e

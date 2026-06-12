@@ -1,8 +1,8 @@
 import pytest
 
-from backend.objects import *
+from backend.objects import Address, AddressGroup, AddressGroupMember, Service, ServiceGroup, ServiceGroupMember, Tag, TagObject, Device, DeviceGroup, DeviceGroupMember, Interface, Tenant, FilterInterface, Filter, Rule, RuleFilter, RuleMatch, VersionControl
 
-class TestObjects:
+class TestObjects: 
     
     def test_import_objects(self):
         # Test that importing all objects works
