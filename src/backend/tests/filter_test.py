@@ -1,8 +1,12 @@
 
-import pytest
 
-from backend.objects.filters import (
-            Filter, Rule, RuleFilter, RuleMatch, VersionControl)
+
+from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
+from backend.objects.filters.rule_filter import RuleFilter
+from backend.objects.filters.rule_match import RuleMatch
+from backend.objects.filters.versionControl import VersionControl
+
 
 class TestFilters:
     

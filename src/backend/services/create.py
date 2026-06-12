@@ -3,7 +3,8 @@ import ipaddress
 
 
 
-from backend.objects.all_objects import Address, Service
+from backend.objects.attributes.address import Address
+from backend.objects.attributes.service import Service
 from backend.utils.logger import set_up_logger
 
 

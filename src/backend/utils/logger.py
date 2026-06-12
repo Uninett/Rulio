@@ -29,7 +29,7 @@ def add_file_handler(logger: logging.Logger, file: str, level=logging.INFO, mode
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True) -> logging.Logger:
+def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True, mode: str = 'a') -> logging.Logger:
     """
     Sets up a logger with the specified name and logging level.
 
@@ -37,6 +37,7 @@ def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True) -> lo
         name (str): The name of the logger.
         level: The logging level (default is logging.INFO).
         all_logs_to_file (bool): Whether to save all logs to a file (default is True).
+        mode (str): The mode in which to open the log file (default is 'a').
     Returns:
         logging.Logger: Configured logger instance.
     """
@@ -59,14 +60,14 @@ def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True) -> lo
         if not os.path.exists(ERROR_LOGPATH):
             os.makedirs(ERROR_LOGPATH)
         #For testing purposes we wipe the all_logs.log file on each run
-        with open(LOGPATH + "all_logs.log", 'w'):
+        with open(LOGPATH / "all_logs.log", 'w'):
             pass
-        add_file_handler(logger, LOGPATH + "all_logs.log", level=level, mode='a')
-        add_file_handler(logger, ERROR_LOGPATH + "all_errors.log", level=logging.ERROR, mode='a')
+        add_file_handler(logger, LOGPATH / "all_logs.log", level=level, mode=mode)
+        add_file_handler(logger, ERROR_LOGPATH / "all_errors.log", level=logging.ERROR, mode=mode)
 
     return logger
 
-def set_up_logger(name: str, level=logging.INFO, save_to_file: bool = True) -> logging.Logger:
+def set_up_logger(name: str, level=logging.INFO, save_to_file: bool = True, mode: str = 'a') -> logging.Logger:
     """
     Sets up a logger with the specified name and logging level.
 
@@ -74,7 +75,8 @@ def set_up_logger(name: str, level=logging.INFO, save_to_file: bool = True) -> l
         name (str): __name__ for the file that is using the logger.
         level: The logging level (default is logging.INFO).
         save_to_file (bool): Whether to save logs to a file (default is True).
- 
+        mode (str): The mode in which to open the log file (default is 'a').
+
     Returns:
         logging.Logger: Configured logger instance.
     """
@@ -83,6 +85,6 @@ def set_up_logger(name: str, level=logging.INFO, save_to_file: bool = True) -> l
     logfile = f"{name}.log"
 
     if save_to_file:
-        add_file_handler(logger, LOGPATH + logfile)
-        add_file_handler(logger, ERROR_LOGPATH + logfile, level=logging.ERROR)
+        add_file_handler(logger, LOGPATH / logfile, mode=mode)
+        add_file_handler(logger, ERROR_LOGPATH / logfile, level=logging.ERROR, mode=mode)
     return logger
