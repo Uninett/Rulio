@@ -1,5 +1,7 @@
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
 from ninja import NinjaAPI
+from ninja.security import django_auth
 
 from backend.services.create import create_address, create_service
 from backend.schemas.address import CreateAddressSchema
@@ -7,6 +9,8 @@ from backend.schemas.group import CreateGroupSchema
 from backend.schemas.tag import CreateTagSchema
 from backend.schemas.tag_object import CreateTagObjectSchema
 from backend.schemas.service import CreateServiceSchema
+from backend.schemas.login import LoginSchema
+from backend.schemas.createuser import CreateUserSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
@@ -14,11 +18,12 @@ from backend.objects.attributes.tag import Tag
 from backend.objects.attributes.tag_object import TagObject
 from backend.utils.logger import set_up_logger
 
-api = NinjaAPI()
 
 # Logger setup
 logger = set_up_logger(__name__)
 
+
+api = NinjaAPI(auth=django_auth)
 
 """
 ====================================================================
@@ -133,49 +138,6 @@ def add_service_to_group(request, service_id: int, group_id: int):
     return f"Service {service_id} added to group {group_id}"
 
 
-"""
-====================================================================
-User Management
-====================================================================
-"""
-
-
-@api.get("/members", tags=["User Management"])
-def members(request):
-    return list(User.objects.values())
-
-
-@api.post("/create_user", tags=["User Management"])
-def create_user(request, username: str, email: str, password: str):
-    if User.objects.filter(username=username).exists():
-        return {
-            "status": "error",
-            "message": f"User with username '{username}' already exists.",
-        }
-
-    user = User.objects.create_user(username=username, email=email, password=password)
-    logger.info(f"User created: {user}")
-    return {
-        "status": "success",
-        "message": f"User '{username}' created successfully.",
-        "user_id": user.id,
-    }
-
-
-@api.delete("/delete_user", tags=["User Management"])
-def delete_user(request, user_id: int):
-    try:
-        user = User.objects.get(id=user_id)
-        user.delete()
-        logger.info(f"User deleted: {user}")
-        return {"status": "success", "message": f"User with id {user_id} deleted."}
-    except User.DoesNotExist:
-        logger.warning(
-            f"Tried to delete user with id {user_id}, but it does not exist."
-        )
-        return {"status": "error", "message": f"User with id {user_id} does not exist."}
-
-
 @api.post("/add_address")
 def add_address(
     request,
@@ -205,3 +167,101 @@ def add_address(
 def list_addresses(request):
     addresses = Address.objects.all()
     return list(addresses.values())
+
+
+"""
+====================================================================
+User Management
+====================================================================
+"""
+
+
+@api.post("/login", tags=["Authentication"], auth=None)
+def login_view(request, payload: LoginSchema):
+    user = authenticate(request, username=payload.username, password=payload.password)
+
+    if user is None:
+        logger.warning(f"Failed login attempt for username={payload.username}")
+        return api.create_response(
+            request,
+            {"status": "error", "message": "Invalid username or password"},
+            status=401,
+        )
+
+    login(request, user)
+    logger.info(f"User logged in: {user.username}")
+
+    return {
+        "status": "success",
+        "message": "Logged in successfully",
+        "username": user.username,
+        "is_superuser": user.is_superuser,
+        "session_key": request.session.session_key,
+    }
+
+
+@api.post("/logout", tags=["Authentication"])
+def logout_view(request):
+    username = request.user.username if request.user.is_authenticated else "anonymous"
+    logout(request)
+    logger.info(f"User logged out: {username}")
+    return {"status": "success", "message": "Logged out successfully"}
+
+
+@api.get("/me", tags=["Authentication"], auth=None)
+def me(request):
+    if request.user.is_authenticated:
+        return {
+            "authenticated": True,
+            "username": request.user.username,
+            "email": request.user.email,
+            "id": request.user.id,
+        }
+
+    return {
+        "authenticated": False,
+        "username": None,
+        "email": None,
+        "id": None,
+    }
+
+
+@api.get("/members", tags=["User Management"])
+def members(request):
+    return list(User.objects.values())
+
+
+@api.post("/create_user", tags=["User Management"], auth=None)
+def create_user(request, payload: CreateUserSchema):
+    if User.objects.filter(username=payload.username).exists():
+        return {
+            "status": "error",
+            "message": f"User with username '{payload.username}' already exists.",
+        }
+
+    user = User.objects.create_user(
+        username=payload.username,
+        email=payload.email,
+        password=payload.password,
+    )
+
+    logger.info(f"User created: {user.username}")
+    return {
+        "status": "success",
+        "message": f"User '{payload.username}' created successfully.",
+        "user_id": user.id,
+    }
+
+
+@api.delete("/delete_user", tags=["User Management"])
+def delete_user(request, user_id: int):
+    try:
+        user = User.objects.get(id=user_id)
+        user.delete()
+        logger.info(f"User deleted: {user}")
+        return {"status": "success", "message": f"User with id {user_id} deleted."}
+    except User.DoesNotExist:
+        logger.warning(
+            f"Tried to delete user with id {user_id}, but it does not exist."
+        )
+        return {"status": "error", "message": f"User with id {user_id} does not exist."}
