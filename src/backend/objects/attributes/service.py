@@ -12,6 +12,14 @@ class Service(models.Model):
     def __str__(self):
         return f"Service(id={self.id}, name='{self.name}', description='{self.description}', tenant_id={self.tenant_id}, protocol='{self.protocol}', port_start={self.port_start}, port_end={self.port_end})"
     
+    def get_ports(self):
+        if self.port_start == self.port_end:
+            return str(self.port_start)
+        else:
+            return f"{self.port_start}-{self.port_end}"
+        
+    def get_protocol(self):
+        return self.protocol
 
 # class Service:
 #     def __init__(self, id: int, name: str, description: str, tenant_id: int, protocol: str, port_start: int, port_end: int):
