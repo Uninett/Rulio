@@ -40,7 +40,7 @@ class CreateAddressSchema(Schema):
                 raise ValueError("ipv4Network is required for type 'standard'")
             if self.ipv4Address_start is not None or self.ipv4Address_end is not None:
                 raise ValueError("ipv4Address_start and ipv4Address_end must be null for type 'standard'")
-        
+            
         
         elif self.ipv4_type == "custom_range":
             if self.ipv4Address_start is None:
