@@ -1,8 +1,15 @@
+<<<<<<< HEAD
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
+=======
+import ipaddress
+
+>>>>>>> a784630 (Add user logic, together with functionality to connect a tenant to a user)
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.service import Service
+from backend.objects.management.tenant import Tenant
+from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.utils.logger import set_up_logger
 
 
@@ -10,6 +17,21 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
+<<<<<<< HEAD
+=======
+# Temp solution for ID generation
+current_id = 1
+
+
+def get_next_id() -> int:
+    # Placeholder function to get the next available ID
+    # In a real implementation, this would query the database or use a sequence
+    global current_id
+    next_id = current_id + 1
+    current_id = next_id
+    return next_id
+
+>>>>>>> a784630 (Add user logic, together with functionality to connect a tenant to a user)
 
 # This is a temporary solution for tenant ID management. In a real implementation, this would be handled by an authentication system and middleware that sets the tenant ID in the request context.
 def get_current_tenant_id(request: object) -> int:
@@ -99,3 +121,17 @@ def create_service(
     service.save()
     logger.info(f"Created {service} for tenant={service.tenant_id}")
     return service
+
+
+def create_tenant(request: object, name: str):
+    tenant = Tenant.objects.create(tenant_name=name)
+    logger.info(f"Tenant created: {tenant}")
+    return tenant
+
+
+def create_tenant_user_member(request: object, tenant_id: int, user_id: int):
+    tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
+    logger.info(f"TenantUserMember created: {tenant_user}")
+    return tenant_user
+
+def create_address_group

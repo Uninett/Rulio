@@ -1,5 +1,5 @@
 from ninja import Schema
-from pydantic import Field, model_validator, ConfigDict
+from pydantic import Field, ConfigDict
 
 
 class LoginSchema(Schema):

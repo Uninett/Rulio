@@ -1,29 +1,42 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from ninja import NinjaAPI
+from ninja import NinjaAPI, Schema
 from ninja.security import django_auth
 
-from backend.services.create import create_address, create_service
+from django.conf import settings
+from backend.objects.management.tenant_user_member import TenantUserMember
+from backend.schemas.tenant_user import CreateTenantUserSchema
+from backend.services.create import (
+    create_address,
+    create_service,
+    create_tenant_user_member,
+    create_tenant,
+)
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.group import CreateGroupSchema
 from backend.schemas.tag import CreateTagSchema
 from backend.schemas.tag_object import CreateTagObjectSchema
 from backend.schemas.service import CreateServiceSchema
 from backend.schemas.login import LoginSchema
-from backend.schemas.createuser import CreateUserSchema
+from backend.schemas.create_user import CreateUserSchema
+from backend.schemas.tenant import CreateTenantSchema
+from backend.schemas.message import MessageSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
+from backend.objects.management.tenant import Tenant
 from backend.objects.attributes.tag_object import TagObject
 from backend.utils.logger import set_up_logger
+from backend.services.user_verification import verify_user_access_to_tenant
 
 
 # Logger setup
 logger = set_up_logger(__name__)
 
 
-api = NinjaAPI(auth=django_auth)
+api = NinjaAPI(auth=None if settings.DEBUG else django_auth)
+
 
 """
 ====================================================================
@@ -96,43 +109,66 @@ def create_service_api(request, payload: CreateServiceSchema):
 
 
 
+@api.post("/create_tenant", tags=["Attributes"])
+def create_tenant_endpoint(request, payload: CreateTenantSchema):
+    tenant = create_tenant(request, payload.name)
+    logger.info(f"create_tenant endpoint succeeded for tenant id={tenant.id}")
+    return f"Tenant created: {tenant}"
+
+
+@api.post(
+    "/create_tenant_user",
+    tags=["Attributes"],
+    response={200: MessageSchema},
+)
+def create_tenant_user_endpoint(request, payload: CreateTenantUserSchema):
+    tenant_user = create_tenant_user_member(request, payload.tenant_id, payload.user_id)
+    logger.info(
+        f"create_tenant_user endpoint succeeded for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Tenant User created: {tenant_user}",
+    }
+
+
 @api.post("/create_service_group", tags=["Attributes"])
-def create_service_group(request, payload: CreateGroupSchema):
+def create_service_group_endpoint(request, payload: CreateGroupSchema):
     service_group = ServiceGroup()  # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
     logger.info(f"Service Group created: {service_group}")
     return f"Service Group created {service_group}"
 
 
 @api.post("/create_address_group", tags=["Attributes"])
-def create_address_group(request, payload: CreateGroupSchema):
+def create_address_group_endpoint(request, payload: CreateGroupSchema):
     address_group = AddressGroup()  # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
     logger.info(f"Address Group created: {address_group}")
     return f"Address Group created {address_group}"
 
 
 @api.post("/create_tag", tags=["Attributes"])
-def create_tag(request, payload: CreateTagSchema):
+def create_tag_endpoint(request, payload: CreateTagSchema):
     tag = Tag()  # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
     logger.info(f"Tag created: {tag}")
     return f"Tag created {tag}"
 
 
 @api.post("/create_tag_object", tags=["Attributes"])
-def create_tag_object(request, payload: CreateTagObjectSchema):
+def create_tag_object_endpoint(request, payload: CreateTagObjectSchema):
     tag_object = TagObject()  # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
     logger.info(f"Tag Object created: {tag_object}")
     return f"Tag Object created {tag_object}"
 
 
 @api.post("/add_address_to_group", tags=["Attributes"])
-def add_address_to_group(request, address_id: int, group_id: int):
+def add_address_to_group_endpoint(request, address_id: int, group_id: int):
     # This is a placeholder function to demonstrate the endpoint. The actual implementation would involve database operations to add the address to the group.
     logger.info(f"Address {address_id} added to group {group_id}")
     return f"Address {address_id} added to group {group_id}"
 
 
 @api.post("/add_service_to_group", tags=["Attributes"])
-def add_service_to_group(request, service_id: int, group_id: int):
+def add_service_to_group_endpoint(request, service_id: int, group_id: int):
     # This is a placeholder function to demonstrate the endpoint. The actual implementation would involve database operations to add the service to the group.
     logger.info(f"Service {service_id} added to group {group_id}")
     return f"Service {service_id} added to group {group_id}"
@@ -176,7 +212,7 @@ User Management
 """
 
 
-@api.post("/login", tags=["Authentication"], auth=None)
+@api.post("/login", tags=["Authentication"], auth=None, response={200: MessageSchema})
 def login_view(request, payload: LoginSchema):
     user = authenticate(request, username=payload.username, password=payload.password)
 
@@ -191,7 +227,13 @@ def login_view(request, payload: LoginSchema):
     login(request, user)
     logger.info(f"User logged in: {user.username}")
 
-    return {
+    if not user.is_superuser:
+        if TenantUserMember.objects.filter(user_id=user.id).exists():
+            request.session["current_tenant_id"] = TenantUserMember.objects.get(
+                user_id=user.id
+            ).tenant_id
+
+    return 200, {
         "status": "success",
         "message": "Logged in successfully",
         "username": user.username,
@@ -216,6 +258,7 @@ def me(request):
             "username": request.user.username,
             "email": request.user.email,
             "id": request.user.id,
+            "current_tenant_id": request.session.get("current_tenant_id"),
         }
 
     return {
