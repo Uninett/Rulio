@@ -1,4 +1,3 @@
 Hvorfor har vi både tag og tag_object ikke bare tag?
-Hva er sequence attributen i filter_interface?
-Hva er VRF?
+Skal en Address kunne være både en IPv4 og en IPv6 verdi eller skal de være to separate addresses?
 Hva brukes type til?
