@@ -1,12 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>htmx Frontend</title>
-<script src="../static/js/htmx.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>htmx Frontend</title>
+
+    <!-- Loads the local htmx library from the frontend static/js folder -->
+    <script src="../static/js/htmx.min.js"></script>
+    <link rel="stylesheet" href="../static/css/styles.css" />
 </head>
+
 <body>
-<h1>htmx is installed</h1>
+    <header class="site-header" aria-label="Site header">
+        <img class="site-logo" aria-label="Site logo" src="../static/images/rulio.svg" alt="Rulio logo" />
+
+        <nav class="main-nav" aria-label="Main navigation">
+          <ul class="nav-list">
+            <li><a href="/devices">Devices</a></li>
+            <li><a href="/filters">Filters</a></li>
+            <li><a href="/objects">Objects</a></li>
+            <li><a href="/tags">Tags</a></li>
+        </ul>
+        </nav>
+
+        <hr>
+    </header>
+
+    <h1>In progress</h1>
 </body>
 </html>
