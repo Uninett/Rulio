@@ -9,7 +9,11 @@ from backend.schemas.group import CreateGroupSchema
 from backend.schemas.tag import CreateTagSchema
 from backend.schemas.tag_object import CreateTagObjectSchema
 from backend.schemas.service import CreateServiceSchema
-from backend.objects import Address, AddressGroup, ServiceGroup, Tag, TagObject
+from backend.objects.attributes.address import Address
+from backend.objects.attributes.address_group import AddressGroup
+from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.attributes.tag import Tag
+from backend.objects.attributes.tag_object import TagObject
 from backend.utils.logger import set_up_logger
 api = NinjaAPI()
 
