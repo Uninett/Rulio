@@ -71,6 +71,7 @@ def create_address_api(request, payload: CreateAddressSchema):
     }
 
 
+
 @api.post("/create_service", tags=["Attributes"])
 def create_service_api(request, payload: CreateServiceSchema):
     service = create_service(
@@ -87,6 +88,7 @@ def create_service_api(request, payload: CreateServiceSchema):
         "service_id": service.id,
         "name": service.name,
     }
+
 
 
 @api.post("/create_service_group", tags=["Attributes"])
