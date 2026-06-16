@@ -37,6 +37,9 @@ from backend.services.helper_user_tenant import (
 from backend.services.membership import add_address_to_group
 from backend.utils.logger import set_up_logger
 
+#Frontend
+from django.shortcuts import render
+
 api = NinjaAPI()
 
 # Logger setup
@@ -373,3 +376,12 @@ def add_address(
 def list_addresses(request):
     addresses = Address.objects.all()
     return list(addresses.values())
+
+
+"""
+Frontend
+"""
+def index(request):
+    return render(request, "index.html")
+
+
