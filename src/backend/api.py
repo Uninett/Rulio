@@ -5,12 +5,14 @@ from ninja.security import django_auth
 
 from django.conf import settings
 from backend.objects.management.tenant_user_member import TenantUserMember
+from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.create import (
     create_address,
     create_service,
     create_tenant_user_member,
     create_tenant,
+    create_address_group,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.group import CreateGroupSchema
@@ -27,9 +29,13 @@ from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
 from backend.objects.management.tenant import Tenant
 from backend.objects.attributes.tag_object import TagObject
+from backend.services.helper_user_tenant import (
+    is_superadmin,
+    can_write_tenant,
+    get_tenant_membership,
+)
+from backend.services.membership import add_address_to_group
 from backend.utils.logger import set_up_logger
-from backend.services.user_verification import verify_user_access_to_tenant
-
 
 # Logger setup
 logger = set_up_logger(__name__)
@@ -89,7 +95,6 @@ def create_address_api(request, payload: CreateAddressSchema):
     }
 
 
-
 @api.post("/create_service", tags=["Attributes"])
 def create_service_api(request, payload: CreateServiceSchema):
     service = create_service(
@@ -108,7 +113,6 @@ def create_service_api(request, payload: CreateServiceSchema):
     }
 
 
-
 @api.post("/create_tenant", tags=["Attributes"])
 def create_tenant_endpoint(request, payload: CreateTenantSchema):
     tenant = create_tenant(request, payload.name)
@@ -119,10 +123,20 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
 @api.post(
     "/create_tenant_user",
     tags=["Attributes"],
-    response={200: MessageSchema},
+    response={200: MessageSchema, 403: MessageSchema},
 )
 def create_tenant_user_endpoint(request, payload: CreateTenantUserSchema):
-    tenant_user = create_tenant_user_member(request, payload.tenant_id, payload.user_id)
+    if not is_superadmin(request.user):
+        logger.warning(
+            f"Unauthorized attempt to create TenantUserMember for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to add users to this tenant.",
+        }
+    tenant_user = create_tenant_user_member(
+        request, payload.tenant_id, payload.user_id, payload.role
+    )
     logger.info(
         f"create_tenant_user endpoint succeeded for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
     )
@@ -139,11 +153,30 @@ def create_service_group_endpoint(request, payload: CreateGroupSchema):
     return f"Service Group created {service_group}"
 
 
-@api.post("/create_address_group", tags=["Attributes"])
-def create_address_group_endpoint(request, payload: CreateGroupSchema):
-    address_group = AddressGroup()  # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
-    logger.info(f"Address Group created: {address_group}")
-    return f"Address Group created {address_group}"
+@api.post(
+    "/create_address_group",
+    tags=["Attributes"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
+    if not can_write_tenant(request.user, Tenant.objects.get(id=payload.tenant_id)):
+        logger.warning(
+            f"Unauthorized attempt to create address group with name={payload.name} for tenant_id={payload.tenant_id} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to create an address group for this tenant.",
+        }
+    address_group = create_address_group(
+        request, payload.name, payload.description, payload.tenant_id
+    )
+    logger.info(
+        f"create_address_group endpoint succeeded for group id={address_group.id}"
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Address Group created: {address_group}",
+    }
 
 
 @api.post("/create_tag", tags=["Attributes"])
@@ -160,11 +193,31 @@ def create_tag_object_endpoint(request, payload: CreateTagObjectSchema):
     return f"Tag Object created {tag_object}"
 
 
-@api.post("/add_address_to_group", tags=["Attributes"])
+@api.post(
+    "/add_address_to_group",
+    tags=["Attributes"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
 def add_address_to_group_endpoint(request, address_id: int, group_id: int):
-    # This is a placeholder function to demonstrate the endpoint. The actual implementation would involve database operations to add the address to the group.
-    logger.info(f"Address {address_id} added to group {group_id}")
-    return f"Address {address_id} added to group {group_id}"
+    if not can_write_tenant(
+        request.user,
+        Tenant.objects.get(id=AddressGroup.objects.get(id=group_id).tenant_id),
+    ):
+        logger.warning(
+            f"Unauthorized attempt to add address id={address_id} to group id={group_id} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to modify this address group.",
+        }
+    address_group = add_address_to_group(request, group_id, address_id)
+    logger.info(
+        f"add_address_to_group endpoint succeeded for address id={address_id} and group id={group_id}"
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Address id={address_id} added to group id={group_id}",
+    }
 
 
 @api.post("/add_service_to_group", tags=["Attributes"])
