@@ -4,6 +4,23 @@ from ipaddress import summarize_address_range, IPv4Address, IPv6Address, IPv4Net
 
 
 class Address(models.Model):
+    """
+    Model representing an IP address or range, which can be either IPv4 or IPv6. 
+    The model supports two types of addresses: 'standard', which is a single IP address or a network in CIDR notation, 
+    and 'custom_range', which is defined by a start and end IP address. 
+    Args:
+    name (str): The name of the address.
+    description (str): A description of the address.
+    tenant_id (int): The ID of the tenant to which this address belongs.
+    ipv4_type (str): The type of the IPv4 address, either 'standard' or 'custom_range'.
+    ipv6_type (str): The type of the IPv6 address, either 'standard' or 'custom_range'.
+    ipv4Network (str): The IPv4 network in CIDR notation
+    ipv6Network (str): The IPv6 network in CIDR notation.
+    ipv4Address_start (str): The starting IPv4 address for a custom range.
+    ipv4Address_end (str): The ending IPv4 address for a custom range.
+    ipv6Address_start (str): The starting IPv6 address for a custom range.
+    ipv6Address_end (str): The ending IPv6 address for a custom range.
+    """
     TYPE_CHOICES = [
         ("standard", "Ip address that can be written with a subnet mask (e.g. 192.168.0.1/24)"),
         ("custom_range", "IP Range"),
