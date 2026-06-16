@@ -18,7 +18,7 @@ logger = set_up_logger(__name__)
 
 
 class TestGenerateConfig:
-    test, det her skal vi fjerne Johanna skal vise oss
+
 
 
     @pytest.fixture
@@ -141,8 +141,9 @@ class TestGenerateConfig:
     def test_generate_address_config(self, address_policy_rule):
 
         vendor = "cisco"
+        policy_type = "extended"
         policy = Policy(
-            name="Address_Test_Policy", rules=address_policy_rule, vendor=vendor, policy_type="extended"
+            name="Address_Test_Policy", rules=address_policy_rule, vendor=vendor, policy_type=policy_type
         )
 
         logger.info(
@@ -157,7 +158,7 @@ class TestGenerateConfig:
         assert policy.name == "Address_Test_Policy"
         assert policy.YAMLConfig["filename"] == "Address_Test_Policy"
         assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {
-            "cisco": "Address_Test_Policy extended"
+            vendor: f"Address_Test_Policy {policy_type}"
         }
         assert len(policy.YAMLConfig["filters"][0]["terms"]) == 2
         assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Rule_1"
