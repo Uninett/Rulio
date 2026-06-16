@@ -37,6 +37,8 @@ from backend.services.helper_user_tenant import (
 from backend.services.membership import add_address_to_group
 from backend.utils.logger import set_up_logger
 
+api = NinjaAPI()
+
 # Logger setup
 logger = set_up_logger(__name__)
 
@@ -340,3 +342,34 @@ def delete_user(request, user_id: int):
             f"Tried to delete user with id {user_id}, but it does not exist."
         )
         return {"status": "error", "message": f"User with id {user_id} does not exist."}
+
+
+@api.post("/add_address")
+def add_address(
+    request,
+    name: str,
+    description: str,
+    tenant_id: int,
+    type: str,
+    ipv4_value: str = None,
+    ipv6_value: str = None,
+):
+    address = Address.objects.create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+        type=type,
+        ipv4_value=ipv4_value,
+        ipv6_value=ipv6_value,
+    )
+    return {
+        "status": "success",
+        "message": f"Address '{name}' created successfully.",
+        "address_id": address.id,
+    }
+
+
+@api.get("/list_addresses")
+def list_addresses(request):
+    addresses = Address.objects.all()
+    return list(addresses.values())
