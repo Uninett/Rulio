@@ -2,13 +2,15 @@ from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 from backend.objects.attributes.address import Address
+from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
+from backend.objects.management.tenant import Tenant
+from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.utils.logger import set_up_logger
 
 
 # Setup logger
 logger = set_up_logger(__name__)
-
 
 
 # This is a temporary solution for tenant ID management. In a real implementation, this would be handled by an authentication system and middleware that sets the tenant ID in the request context.
@@ -52,7 +54,7 @@ def create_address(
         tenant_id=tenant_id,
         ipv4_type=ipv4_type,
         ipv6_type=ipv6_type,
-        ipv4Network = str(ipv4Network) if ipv4Network else None,
+        ipv4Network=str(ipv4Network) if ipv4Network else None,
         ipv6Network=str(ipv6Network) if ipv6Network else None,
         ipv4Address_start=str(ipv4Address_start) if ipv4Address_start else None,
         ipv4Address_end=str(ipv4Address_end) if ipv4Address_end else None,
@@ -99,3 +101,30 @@ def create_service(
     service.save()
     logger.info(f"Created {service} for tenant={service.tenant_id}")
     return service
+
+
+def create_tenant(request: object, name: str):
+    tenant = Tenant.objects.create(tenant_name=name)
+    logger.info(f"Tenant created: {tenant}")
+    return tenant
+
+
+def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str):
+    tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
+    logger.info(f"TenantUserMember created: {tenant_user}")
+    return tenant_user
+
+
+def create_address_group(request: object, name: str, description: str, tenant_id: int):
+    address_group = AddressGroup.objects.create(
+        name=name, description=description, tenant_id=tenant_id
+    )
+    logger.info(f"Address Group created with name={name} and description={description}")
+    return address_group
+
+def add_address_to_group(request: object, address_group_id: int, address_id: int):
+    address_group = AddressGroup.objects.get(id=address_group_id)
+    address = Address.objects.get(id=address_id)
+    address_group.addresses.add(address)
+    logger.info(f"Added {address} to {address_group}")
+    return address_group

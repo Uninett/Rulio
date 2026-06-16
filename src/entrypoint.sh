@@ -1,0 +1,63 @@
+#!/bin/sh
+set -e
+
+echo "Waiting for database..."
+
+python << EOF
+import os
+import time
+import psycopg2
+
+db_name = os.environ.get("DATABASE_NAME")
+db_user = os.environ.get("DATABASE_USER")
+db_password = os.environ.get("DATABASE_PASS")
+db_host = os.environ.get("DATABASE_HOST", "db")
+db_port = os.environ.get("DATABASE_PORT", "5432")
+
+while True:
+    try:
+        conn = psycopg2.connect(
+            dbname=db_name,
+            user=db_user,
+            password=db_password,
+            host=db_host,
+            port=db_port,
+        )
+        conn.close()
+        print("Database is up.")
+        break
+    except psycopg2.OperationalError:
+        print("Database unavailable, waiting 1 second...")
+        time.sleep(1)
+EOF
+
+echo "Running migrations..."
+python manage.py migrate --noinput
+
+echo "Creating superuser if needed..."
+python manage.py shell << EOF
+import os
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
+email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
+password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
+
+if not username or not email or not password:
+    print("Missing superuser environment variables, skipping.")
+else:
+    if not User.objects.filter(username=username).exists():
+        User.objects.create_superuser(
+            username=username,
+            email=email,
+            password=password
+        )
+        print("Superuser created.")
+    else:
+        print("Superuser already exists.")
+EOF
+
+echo "Starting Django..."
+exec python manage.py runserver 0.0.0.0:8000
