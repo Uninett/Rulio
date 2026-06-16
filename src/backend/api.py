@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from ninja import NinjaAPI, Schema
 from ninja.security import django_auth
-
 from django.conf import settings
+
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
