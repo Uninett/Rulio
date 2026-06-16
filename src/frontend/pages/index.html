@@ -6,13 +6,13 @@
     <title>htmx Frontend</title>
 
     <!-- Loads the local htmx library from the frontend static/js folder -->
-    <script src="../static/js/htmx.min.js"></script>
-    <link rel="stylesheet" href="../static/css/styles.css" />
+    <script src="/static/js/htmx.min.js"></script>
+    <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
 
 <body>
     <header class="site-header" aria-label="Site header">
-        <img class="site-logo" aria-label="Site logo" src="../static/images/rulio.svg" alt="Rulio logo" />
+        <img class="site-logo" aria-label="Site logo" src="/static/images/rulio.svg" alt="Rulio logo" />
         
         <div class="header-content">
             <nav class="main-nav" aria-label="Main navigation">
@@ -33,14 +33,15 @@
                 hx-indicator=".htmx-indicator">
             
                 <div class="form-group">
-                    <label >Tenant</label>
-                    <select name="tenant" hx-get="/tenants" hx-target="#tenants" hx-indicator=".htmx-indicator">
+                    <label>Tenant</label>
+                    <select id="tenant-select" name="tenant" hx-get="/api/tenants" hx-target="#tenant-select" hx-indicator=".htmx-indicator">
                     <option value="ntnu">NTNU</option>
                     <option value="uio">UiO</option>
                     <option value="uib">UiB</option>
                     </select>
                 </div>
             </div>
+            <div id="search-results" class="search-results"></div>
         </div>
 
     </header>
