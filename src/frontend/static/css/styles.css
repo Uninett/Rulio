@@ -3,31 +3,78 @@ body {
     font-family: "Haffer", sans-serif;
 }
 
+/* Header styles */
 .site-logo {
-    width: 15rem;
+    width: 10rem;
     height: auto;
 }
 
+.header-content {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+/* Navigation styles */
 .main-nav .nav-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 .main-nav a {
-  color: inherit;
-  text-decoration: none;
-  font-size: 1.5rem;
+    color: inherit;
+    text-decoration: none;
+    font-size: 1.2rem;
 }
 
 .main-nav a:hover,
 .main-nav a:focus {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 .main-nav a:active {
-  font-weight: bold;
+    font-weight: bold;
+}
+
+/* Header actions styles */
+.header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.form-control {
+    min-height: 2.5rem;
+    min-width: 14rem;
+    padding: 0 0.75rem;
+    border: 1px solid #767676; /* color-layut-border-strong */
+    border-radius: 10px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    white-space: nowrap;
+    font-weight:bold
+}
+
+.form-group select {
+    min-height: 2.5rem;
+    min-width: 14rem;
+    padding: 0 0.75rem;
+    border: 1px solid #767676; /* color-layut-border-strong */
+    border-radius: 10px;
 }
 
 hr {
