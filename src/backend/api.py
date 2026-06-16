@@ -73,7 +73,7 @@ Attributes
 
 
 @api.post("/create_address", tags=["Attributes"])
-def create_address_api(request, payload: CreateAddressSchema):
+def create_address_endpoint(request, payload: CreateAddressSchema):
     address = create_address(
         request=request,
         name=payload.name,
@@ -92,11 +92,13 @@ def create_address_api(request, payload: CreateAddressSchema):
         "message": "Address created",
         "address_id": address.id,
         "name": address.name,
+        "status": "success",
     }
 
 
+
 @api.post("/create_service", tags=["Attributes"])
-def create_service_api(request, payload: CreateServiceSchema):
+def create_service_endpoint(request, payload: CreateServiceSchema):
     service = create_service(
         request,
         payload.name,
@@ -227,29 +229,6 @@ def add_service_to_group_endpoint(request, service_id: int, group_id: int):
     return f"Service {service_id} added to group {group_id}"
 
 
-@api.post("/add_address")
-def add_address(
-    request,
-    name: str,
-    description: str,
-    tenant_id: int,
-    type: str,
-    ipv4_value: str = None,
-    ipv6_value: str = None,
-):
-    address = Address.objects.create(
-        name=name,
-        description=description,
-        tenant_id=tenant_id,
-        type=type,
-        ipv4_value=ipv4_value,
-        ipv6_value=ipv6_value,
-    )
-    return {
-        "status": "success",
-        "message": f"Address '{name}' created successfully.",
-        "address_id": address.id,
-    }
 
 
 @api.get("/list_addresses")
