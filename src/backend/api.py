@@ -245,7 +245,7 @@ User Management
 
 
 @api.post("/login", tags=["Authentication"], auth=None, response={200: MessageSchema})
-def login_view(request, payload: LoginSchema):
+def login_endpoint(request, payload: LoginSchema):
     user = authenticate(request, username=payload.username, password=payload.password)
 
     if user is None:
@@ -275,15 +275,15 @@ def login_view(request, payload: LoginSchema):
 
 
 @api.post("/logout", tags=["Authentication"])
-def logout_view(request):
+def logout_endpoint(request):
     username = request.user.username if request.user.is_authenticated else "anonymous"
     logout(request)
     logger.info(f"User logged out: {username}")
     return {"status": "success", "message": "Logged out successfully"}
 
 
-@api.get("/me", tags=["Authentication"], auth=None)
-def me(request):
+@api.get("/who_am_i", tags=["Authentication"], auth=None)
+def who_am_i(request):
     if request.user.is_authenticated:
         return {
             "authenticated": True,
@@ -300,10 +300,10 @@ def me(request):
         "id": None,
     }
 
-
 @api.get("/members", tags=["User Management"])
 def members(request):
     return list(User.objects.values())
+
 
 
 @api.post("/create_user", tags=["User Management"], auth=None)
