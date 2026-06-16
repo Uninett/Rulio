@@ -121,11 +121,11 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
 
 
 @api.post(
-    "/create_tenant_user",
+    "/add_tenant_privileges_to_user",
     tags=["Attributes"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-def create_tenant_user_endpoint(request, payload: CreateTenantUserSchema):
+def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSchema):
     if not is_superadmin(request.user):
         logger.warning(
             f"Unauthorized attempt to create TenantUserMember for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
