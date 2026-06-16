@@ -12,6 +12,8 @@ __pycache__/
 sporsmal.txt
 __pycache__/
 TODO.txt
+/logs/
+src/logs/
 
 
 .*
