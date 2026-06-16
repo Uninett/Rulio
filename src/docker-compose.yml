@@ -1,6 +1,7 @@
 services:
   web:
     build: .
+    command: sh entrypoint.sh
     ports:
       - "8000:8000"
     volumes:

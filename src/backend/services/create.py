@@ -7,6 +7,7 @@ import ipaddress
 >>>>>>> a784630 (Add user logic, together with functionality to connect a tenant to a user)
 
 from backend.objects.attributes.address import Address
+from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
@@ -134,4 +135,10 @@ def create_tenant_user_member(request: object, tenant_id: int, user_id: int):
     logger.info(f"TenantUserMember created: {tenant_user}")
     return tenant_user
 
-def create_address_group
+
+def create_address_group(request: object, name: str, description: str, tenant_id: int):
+    address_group = AddressGroup.objects.create(
+        name=name, description=description, tenant_id=tenant_id
+    )
+    logger.info(f"Address Group created with name={name} and description={description}")
+    return address_group
