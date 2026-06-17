@@ -13,15 +13,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Start containers
-        run: docker compose up -d --build
+      - name: Show files
+        run: ls -la
 
-      - name: Wait for services
+      - name: Build and start containers
+        run: docker compose -f docker-compose.yml up -d --build
+
+      - name: Wait for startup
         run: sleep 10
 
-      - name: Run pytest in web container
-        run: docker compose exec -T web pytest
+      - name: Run tests
+        run: docker compose -f docker-compose.yml exec -T web pytest
 
-      - name: Shut down containers
+      - name: Stop containers
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml down -v
