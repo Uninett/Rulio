@@ -381,7 +381,22 @@ def list_addresses(request):
 """
 Frontend
 """
-def index(request):
-    return render(request, "index.html")
+def devices(request):
+    return render(request, "devices.html", {
+        "active_page": "devices",
+    })
 
+def filters(request):
+    return render(request, "filters.html", {
+        "active_page": "filters",
+    })
 
+def objects(request):
+    return render(request, "objects.html", {
+        "active_page": "objects",
+    })
+
+def tags(request):
+    return render(request, "tags.html", {
+        "active_page": "tags",
+    })

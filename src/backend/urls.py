@@ -18,10 +18,13 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
-from .api import api, index
+from .api import api, devices, filters, objects, tags
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("api/", api.urls),
-    path("index/", index, name="index"),
+    path('api/', api.urls),
+    path('devices/', devices, name="devices"),
+    path('filters/', filters, name="filters"),
+    path('objects/', objects, name="objects"),
+    path('tags/', tags, name="tags"),
     ]
