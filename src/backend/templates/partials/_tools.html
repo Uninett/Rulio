@@ -1,6 +1,7 @@
 {% load static %}
 
 <div class="tools-container">
+    {% if show_toggle %}
     <div class="tools-toggle">
         <button class="btn-toggle active" type="button" hx-get="{% url 'objects-addresses' %}"
             hx-target="#objects-content" hx-swap="innerHTML" onclick="setActiveTool(this)">
@@ -12,9 +13,10 @@
             Services
         </button>
     </div>
+    {% endif %}
 
     <button class="btn-add" type="button">
-        <span>Add Object</span>
+        {{ btn_title }}
         <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
     </button>
 </div>

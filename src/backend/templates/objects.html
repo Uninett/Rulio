@@ -2,11 +2,11 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/objects.css' %}" />
+<link rel="stylesheet" href="{% static 'css/tools.css' %}" />
 {% endblock %}
 
 {% block content %}
-{% include "partials/_tools.html" %}
+{% include "partials/_tools.html" with show_toggle=True active_tool="addresses" btn_title="Add Object" %}
 <div id="objects-content">
     {% include "partials/_objects_addresses.html" %}
 </div>

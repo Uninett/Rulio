@@ -12,9 +12,10 @@ h1 {
 
 button {
     font-size: 1rem;
-    background-color: transparent;
-    border: 2px solid #B4B0FB;
+    background-color: #7351FB;
+    border: 2px solid #7351FB;
     border-radius: 2rem;
+    color: #FFFFFF;
     padding: 0.5rem 1rem;
     cursor: pointer;
     margin-top: 0.5rem;
