@@ -10,6 +10,16 @@ h1 {
     /* color-text-secondary */
 }
 
+button {
+    font-size: 1rem;
+    background-color: transparent;
+    border: 2px solid #B4B0FB;
+    border-radius: 2rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
 /* Header styles */
 .site-logo {
     width: 10rem;

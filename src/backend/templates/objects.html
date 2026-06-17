@@ -1,8 +1,26 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/objects.css' %}" />
+{% endblock %}
 
 {% block content %}
 {% include "partials/_tools.html" %}
 <div id="objects-content">
     {% include "partials/_objects_addresses.html" %}
 </div>
+
+
+<script>
+    function setActiveTool(clickedButton) {
+        const buttons = document.querySelectorAll(".btn-toggle");
+
+        buttons.forEach(function (button) {
+            button.classList.remove("active");
+        });
+
+        clickedButton.classList.add("active");
+    }
+</script>
 {% endblock %}

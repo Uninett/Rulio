@@ -1,0 +1,7 @@
+.btn-toggle.active {
+    background-color: #7351FB;
+    /* color-interaction-primary-strong */
+    border: 2px solid #7351FB;
+    border-radius: 2rem;
+    color: #FFFFFF;
+}
