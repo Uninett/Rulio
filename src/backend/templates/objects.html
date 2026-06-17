@@ -1,5 +1,26 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tools.css' %}" />
+{% endblock %}
 
 {% block content %}
-    <h1>Objects in progress</h1>
+{% include "partials/_tools.html" with show_toggle=True active_tool="addresses" btn_title="Add Object" %}
+<div id="objects-content">
+    {% include "partials/objects/_objects_addresses.html" %}
+</div>
+
+
+<script>
+    function setActiveTool(clickedButton) {
+        const buttons = document.querySelectorAll(".btn-toggle");
+
+        buttons.forEach(function (button) {
+            button.classList.remove("active");
+        });
+
+        clickedButton.classList.add("active");
+    }
+</script>
 {% endblock %}
