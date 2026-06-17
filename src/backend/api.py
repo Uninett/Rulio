@@ -3,16 +3,22 @@ from django.contrib.auth import authenticate, login, logout
 from ninja import NinjaAPI
 from ninja.security import django_auth
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 
+from backend.objects.attributes.service import Service
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.create import (
+    add_services_to_group,
     create_address,
     create_service,
     create_tenant_user_member,
     create_tenant,
     create_address_group,
+    get_current_tenant_id,
+    create_service_group,
+    add_service_to_group,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.group import CreateGroupSchema
@@ -100,8 +106,28 @@ def create_address_endpoint(request, payload: CreateAddressSchema):
     }
 
 
-@api.post("/create_service", tags=["Attributes"])
-def create_service_endpoint(request, payload: CreateServiceSchema):
+@api.post(
+    "/create_service",
+    tags=["Attributes"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+def create_service_endpoint(
+    request,
+    payload: CreateServiceSchema,
+):
+    if (
+        can_write_tenant(
+            request.user, Tenant.objects.get(id=get_current_tenant_id(request))
+        )
+        is False
+    ):
+        logger.warning(
+            f"Unauthorized attempt to create service with name={payload.name} for tenant_id={get_current_tenant_id(request)} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to create a service for this tenant.",
+        }
     service = create_service(
         request=request,
         name=payload.name,
@@ -111,10 +137,9 @@ def create_service_endpoint(request, payload: CreateServiceSchema):
         port_end=payload.port_end,
     )
     logger.info(f"create_service endpoint succeeded for service id={service.id}")
-    return {
+    return 200, {
         "message": "Service created",
-        "service_id": service.id,
-        "name": service.name,
+        "status": f"Service created with id {service.id}",
     }
 
 
@@ -125,6 +150,93 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
     return f"Tenant created: {tenant}"
 
 
+@api.post("/create_service_group", tags=["Attributes"])
+def create_service_group_endpoint(request, payload: CreateAddressGroupSchema):
+    if not can_write_tenant(request.user, Tenant.objects.get(id=payload.tenant_id)):
+        logger.warning(
+            f"Unauthorized attempt to create service group with name={payload.name} for tenant_id={payload.tenant_id} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to create a service group for this tenant.",
+        }
+    service_group = create_service_group(request, payload.name, payload.description)
+    logger.info(f"Service Group created: {service_group}")
+    return 200, {
+        "status": "success",
+        "message": f"Service Group created: {service_group}",
+    }
+
+
+@api.post("/add_service_to_group", tags=["Attributes"])
+def add_service_to_group_endpoint(request, service_id: int, group_id: int):
+    service_group = ServiceGroup.objects.get(id=group_id)
+    if not can_write_tenant(
+        request.user, Tenant.objects.get(id=service_group.tenant_id)
+    ) or not can_write_tenant(
+        request.user,
+        Tenant.objects.get(id=Service.objects.get(id=service_id).tenant_id),
+    ):
+        logger.warning(
+            f"Unauthorized attempt to add service id={service_id} to group id={group_id} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to modify this service group.",
+        }
+    add_service_to_group(request, group_id, service_id)
+    logger.info(
+        f"add_service_to_group endpoint succeeded for service id={service_id} and group id={group_id}"
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Service id={service_id} added to group id={group_id}",
+    }
+
+
+@api.post(
+    "/add_services_to_group",
+    tags=["Attributes"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+def add_services_to_group_endpoint(request, service_ids: list[int], group_id: int):
+    try:
+        service_group = ServiceGroup.objects.get(id=group_id)
+    except ServiceGroup.DoesNotExist:
+        return 404, {
+            "status": "error",
+            "message": f"Service group id={group_id} not found.",
+        }
+
+    if not can_write_tenant(request.user, service_group.tenant_id):
+        logger.warning(
+            f"Unauthorized attempt to add services id={service_ids} "
+            f"to group id={group_id} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to modify this service group.",
+        }
+
+    response = add_services_to_group(group_id, service_ids)
+
+    logger.info(
+        f"add_services_to_group endpoint succeeded for "
+        f"service ids={response['added_service_ids']} and group id={group_id}"
+    )
+
+    return 200, {
+        "status": "success",
+        "message": (
+            f"Processed service ids for group id={group_id}. "
+            f"Added={response['added_service_ids']}, "
+            f"already_present={response['already_present_service_ids']}, "
+            f"not_found={response['not_found_service_ids']}"
+        ),
+    }
+
+
+# This endpoint allows a superadmin to add a user to a tenant with a specific role. Only superadmins can perform this action.
 @api.post(
     "/add_tenant_privileges_to_user",
     tags=["Attributes"],
@@ -147,14 +259,6 @@ def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSch
         "status": "success",
         "message": f"Tenant User created: {tenant_user}",
     }
-
-
-@api.post("/create_service_group", tags=["Attributes"])
-def create_service_group_endpoint(request, payload: CreateGroupSchema):
-    service_group = ServiceGroup()
-    # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
-    logger.info(f"Service Group created: {service_group}")
-    return f"Service Group created {service_group}"
 
 
 @api.post(
@@ -410,3 +514,5 @@ def tags(request):
             "active_page": "tags",
         },
     )
+def index(request):
+    return render(request, "index.html")

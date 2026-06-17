@@ -1,12 +1,15 @@
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
 
+from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
+from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.utils.logger import set_up_logger
+from django.db import transaction
 
 
 # Setup logger
@@ -169,8 +172,119 @@ def create_tenant(request: object, name: str):
     logger.info(f"Tenant created: {tenant}")
     return tenant
 
+def create_service_group(
+    request: object,
+    name: str,
+    description: str,
+) -> ServiceGroup:
 
-def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str):
+    tenant_id = get_current_tenant_id(request)
+
+    service_group = ServiceGroup(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    try:
+        service_group.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Service Group validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    service_group.save()
+    logger.info(f"Created {service_group} for tenant={service_group.tenant_id}")
+    return service_group
+
+
+def add_service_to_group(
+    request: object, service_group_id: int, service_id: int
+) -> ServiceGroup:
+    service_group = ServiceGroup.objects.get(id=service_group_id)
+    service = Service.objects.get(id=service_id)
+    service_group.services.add(service)
+    logger.info(f"Added {service} to {service_group}")
+    return service_group
+
+
+def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict:
+    service_group = ServiceGroup.objects.get(id=service_group_id)
+
+    requested_ids = set(service_ids)
+
+    existing_services = Service.objects.filter(id__in=requested_ids)
+    found_ids = {service.id for service in existing_services}
+    not_found_ids = requested_ids - found_ids
+
+    already_present_ids = set(
+        ServiceGroupMember.objects.filter(
+            group=service_group,
+            service_id__in=found_ids,
+        ).values_list("service_id", flat=True)
+    )
+
+    new_services = [
+        service
+        for service in existing_services
+        if service.id not in already_present_ids
+    ]
+
+    with transaction.atomic():
+        ServiceGroupMember.objects.bulk_create(
+            [
+                ServiceGroupMember(group=service_group, service=service)
+                for service in new_services
+            ]
+        )
+
+    added_ids = [service.id for service in new_services]
+
+    logger.info(
+        f"Group {service_group.id}: added={added_ids}, "
+        f"already_present={list(already_present_ids)}, "
+        f"not_found={list(not_found_ids)}"
+    )
+
+    return {
+        "service_group_id": service_group.id,
+        "added_service_ids": sorted(added_ids),
+        "already_present_service_ids": sorted(already_present_ids),
+        "not_found_service_ids": sorted(not_found_ids),
+    }
+
+
+def create_address_group(
+    request: object,
+    name: str,
+    description: str,
+) -> AddressGroup:
+
+    tenant_id = get_current_tenant_id(request)
+
+    address_group = AddressGroup(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    try:
+        address_group.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Address Group validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    address_group.save()
+    logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
+    return address_group
+
+
+def create_tenant(request: object, name: str) -> Tenant:
+    tenant = Tenant.objects.create(tenant_name=name)
+    logger.info(f"Tenant created: {tenant}")
+    return tenant
+
+
+def create_tenant_user_member(
+    request: object, tenant_id: int, user_id: int, role: str
+) -> TenantUserMember:
     tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
     logger.info(f"TenantUserMember created: {tenant_user}")
     return tenant_user
@@ -182,7 +296,9 @@ def create_address_group(request: object, name: str, description: str, tenant_id
     return address_group
 
 
-def add_address_to_group(request: object, address_group_id: int, address_id: int):
+def add_address_to_group(
+    request: object, address_group_id: int, address_id: int
+) -> AddressGroup:
     address_group = AddressGroup.objects.get(id=address_group_id)
     address = Address.objects.get(id=address_id)
     address_group.addresses.add(address)

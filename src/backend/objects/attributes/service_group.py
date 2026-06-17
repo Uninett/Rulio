@@ -2,7 +2,7 @@ from django.db import models
 
 
 class ServiceGroup(models.Model):
-    tennant_id = models.IntegerField()
+    tenant_id = models.IntegerField()
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
