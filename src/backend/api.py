@@ -37,7 +37,7 @@ from backend.services.helper_user_tenant import (
 from backend.services.membership import add_address_to_group
 from backend.utils.logger import set_up_logger
 
-#Frontend
+# Frontend
 from django.shortcuts import render
 
 api = NinjaAPI()
@@ -99,7 +99,6 @@ def create_address_endpoint(request, payload: CreateAddressSchema):
         "name": address.name,
         "status": "success",
     }
-
 
 
 @api.post("/create_service", tags=["Attributes"])
@@ -234,8 +233,6 @@ def add_service_to_group_endpoint(request, service_id: int, group_id: int):
     return f"Service {service_id} added to group {group_id}"
 
 
-
-
 @api.get("/list_addresses")
 def list_addresses(request):
     addresses = Address.objects.all()
@@ -305,10 +302,10 @@ def who_am_i(request):
         "id": None,
     }
 
+
 @api.get("/members", tags=["User Management"])
 def members(request):
     return list(User.objects.values())
-
 
 
 @api.post("/create_user", tags=["User Management"], auth=None)
@@ -381,22 +378,51 @@ def list_addresses(request):
 """
 Frontend
 """
+
+
 def devices(request):
-    return render(request, "devices.html", {
-        "active_page": "devices",
-    })
+    return render(
+        request,
+        "devices.html",
+        {
+            "active_page": "devices",
+        },
+    )
+
 
 def filters(request):
-    return render(request, "filters.html", {
-        "active_page": "filters",
-    })
+    return render(
+        request,
+        "filters.html",
+        {
+            "active_page": "filters",
+        },
+    )
+
 
 def objects(request):
-    return render(request, "objects.html", {
-        "active_page": "objects",
-    })
+    return render(
+        request,
+        "objects.html",
+        {
+            "active_page": "objects",
+        },
+    )
+
+
+def objects_addresses(request):
+    return render(request, "partials/_objects_addresses.html")
+
+
+def objects_services(request):
+    return render(request, "partials/_objects_services.html")
+
 
 def tags(request):
-    return render(request, "tags.html", {
-        "active_page": "tags",
-    })
+    return render(
+        request,
+        "tags.html",
+        {
+            "active_page": "tags",
+        },
+    )
