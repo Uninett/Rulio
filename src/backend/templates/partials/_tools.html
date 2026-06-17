@@ -1,11 +1,20 @@
-<div class="tools-toggle">
-    <button class="btn-toggle active" type="button" hx-get="{% url 'objects-addresses' %}" hx-target="#objects-content"
-        hx-swap="innerHTML" onclick="setActiveTool(this)">
-        Addresses
-    </button>
+{% load static %}
 
-    <button class="btn-toggle" type="button" hx-get="{% url 'objects-services' %}" hx-target="#objects-content"
-        hx-swap="innerHTML" onclick="setActiveTool(this)">
-        Services
+<div class="tools-container">
+    <div class="tools-toggle">
+        <button class="btn-toggle active" type="button" hx-get="{% url 'objects-addresses' %}"
+            hx-target="#objects-content" hx-swap="innerHTML" onclick="setActiveTool(this)">
+            Addresses
+        </button>
+
+        <button class="btn-toggle" type="button" hx-get="{% url 'objects-services' %}" hx-target="#objects-content"
+            hx-swap="innerHTML" onclick="setActiveTool(this)">
+            Services
+        </button>
+    </div>
+
+    <button class="btn-add" type="button">
+        <span>Add Object</span>
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
     </button>
 </div>
