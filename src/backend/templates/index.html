@@ -33,15 +33,14 @@
                 hx-indicator=".htmx-indicator">
             
                 <div class="form-group">
-                    <label>Tenant</label>
-                    <select id="tenant-select" name="tenant" hx-get="/api/tenants" hx-target="#tenant-select" hx-indicator=".htmx-indicator">
+                    <label >Tenant</label>
+                    <select name="tenant" hx-get="/tenants" hx-target="#tenants" hx-indicator=".htmx-indicator">
                     <option value="ntnu">NTNU</option>
                     <option value="uio">UiO</option>
                     <option value="uib">UiB</option>
                     </select>
                 </div>
             </div>
-            <div id="search-results" class="search-results"></div>
         </div>
 
     </header>
