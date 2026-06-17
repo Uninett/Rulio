@@ -411,11 +411,11 @@ def objects(request):
 
 
 def objects_addresses(request):
-    return render(request, "partials/_objects_addresses.html")
+    return render(request, "partials/objects/_objects_addresses.html")
 
 
 def objects_services(request):
-    return render(request, "partials/_objects_services.html")
+    return render(request, "partials/objects/_objects_services.html")
 
 
 def tags(request):
