@@ -216,7 +216,7 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
             "status": "error",
             "message": "You do not have permission to modify this address group.",
         }
-    address_group = add_address_to_group(request, group_id, address_id)
+    add_address_to_group(request, group_id, address_id)
     logger.info(
         f"add_address_to_group endpoint succeeded for address id={address_id} and group id={group_id}"
     )
