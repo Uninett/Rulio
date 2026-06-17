@@ -1,30 +1,36 @@
 <header class="site-header" aria-label="Site header">
-    <img class="site-logo" aria-label="Site logo" src="/static/images/rulio.svg" alt="Rulio logo" />
-    
+
+
     <div class="header-content">
-        <nav class="main-nav" aria-label="Main navigation">
-        <ul class="nav-list">
-            <li><a href="{% url 'devices' %}" class="{% if active_page == 'devices' %}active{% endif %}">Devices</a></li>
-            <li><a href="{% url 'filters' %}" class="{% if active_page == 'filters' %}active{% endif %}">Filters</a></li>
-            <li><a href="{% url 'objects' %}" class="{% if active_page == 'objects' %}active{% endif %}">Objects</a></li>
-            <li><a href="{% url 'tags' %}" class="{% if active_page == 'tags' %}active{% endif %}">Tags</a></li>
-        </ul>
-        </nav>
+        <div class="header-navigation">
+            <img class="site-logo" aria-label="Site logo" src="/static/images/rulio.svg" alt="Rulio logo" />
+            <nav class="main-nav" aria-label="Main navigation">
+                <ul class="nav-list">
+                    <li><a href="{% url 'devices' %}"
+                            class="{% if active_page == 'devices' %}active{% endif %}">Devices</a>
+                    </li>
+                    <li><a href="{% url 'filters' %}"
+                            class="{% if active_page == 'filters' %}active{% endif %}">Filters</a>
+                    </li>
+                    <li><a href="{% url 'objects' %}"
+                            class="{% if active_page == 'objects' %}active{% endif %}">Objects</a>
+                    </li>
+                    <li><a href="{% url 'tags' %}" class="{% if active_page == 'tags' %}active{% endif %}">Tags</a></li>
+                </ul>
+            </nav>
+        </div>
 
         <div class="header-actions">
-            <input class="form-control" type="search"
-            name="search" placeholder="Search..."
-            hx-post="/search"
-            hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load"
-            hx-target="#search-results"
-            hx-indicator=".htmx-indicator">
-        
+            <input class="form-control" type="search" name="search" placeholder="Search..." hx-post="/search"
+                hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load" hx-target="#search-results"
+                hx-indicator=".htmx-indicator">
+
             <div class="form-group">
-                <label >Tenant</label>
+                <label>Tenant</label>
                 <select name="tenant" hx-get="/tenants" hx-target="#tenants" hx-indicator=".htmx-indicator">
-                <option value="ntnu">NTNU</option>
-                <option value="uio">UiO</option>
-                <option value="uib">UiB</option>
+                    <option value="ntnu">NTNU</option>
+                    <option value="uio">UiO</option>
+                    <option value="uib">UiB</option>
                 </select>
             </div>
         </div>
