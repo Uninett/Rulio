@@ -5,6 +5,7 @@ from backend.services.seed.seed_services import seed_services
 
 
 @transaction.atomic
-def populate_db():
-    seed_addresses()
-    seed_services()
+def populate_db() -> tuple[int, int]:
+    default_address_count = seed_addresses()
+    default_service_count = seed_services()
+    return default_address_count, default_service_count

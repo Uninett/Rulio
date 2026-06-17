@@ -272,3 +272,4 @@ def seed_addresses():
         logger.warning("Some default addresses already existed. Missing addresses were created.")
     else:
         logger.warning("No default addresses were created because they already all existed.")
+    return len(default_addresses)

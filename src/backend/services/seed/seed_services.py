@@ -577,3 +577,4 @@ def seed_services():
         logger.warning("Some default services already existed. Missing services were created.")
     else:
         logger.warning("No default services were created because they already all existed.")
+    return len(default_services)
