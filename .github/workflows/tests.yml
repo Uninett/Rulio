@@ -13,21 +13,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Change dir to src
-        run: cd src
 
       - name: Show files
         run: ls -la
 
       - name: Build and start containers
-        run: docker compose -f docker-compose.yml up -d --build
+        run: docker compose -f src/docker-compose.yml up -d --build
 
       - name: Wait for startup
         run: sleep 10
 
       - name: Run tests
-        run: docker compose -f docker-compose.yml exec -T web pytest
+        run: docker compose -f src/docker-compose.yml exec -T web pytest
 
       - name: Stop containers
         if: always()
-        run: docker compose -f docker-compose.yml down -v
+        run: docker compose -f src/docker-compose.yml down -v
