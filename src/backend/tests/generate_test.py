@@ -4,24 +4,15 @@ import os
 import yaml
 import pytest
 
-from backend.services.generate_config import generate_config, PolicyRule, Policy
-from backend.objects.attributes.address import Address
-from backend.objects.attributes.address_group import AddressGroup
-from backend.objects.attributes.service import Service
-from backend.objects.attributes.service_group import ServiceGroup
-#from backend.services.membership import add_address_to_group, add_service_to_group
+from backend.services.generate_config import generate_config, Policy
 from backend.utils.logger import set_up_logger
 from constants import TEST_LOGPATH
 
 
 logger = set_up_logger(__name__)
 
-
+@pytest.mark.django_db
 class TestGenerateConfig:
-
-
-
-
 
 
     def test_generate_address_config(self, address_policy_rules):
@@ -46,7 +37,7 @@ class TestGenerateConfig:
         assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {
             vendor: f"Address_Test_Policy {policy_type}"
         }
-        assert len(policy.YAMLConfig["filters"][0]["terms"]) == 2
+        assert len(policy.YAMLConfig["filters"][0]["terms"]) == len(address_policy_rules)
         assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Rule_1"
         assert (
             policy.YAMLConfig["filters"][0]["terms"][0]["destination-address"]
