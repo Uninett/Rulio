@@ -1,7 +1,10 @@
-from backend.services.create import create_service
+
+from backend.services.create import get_or_create_service
+from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENNANT_ID
 
 
+logger = set_up_logger(__name__)
 class MockRequest:
     session = {"current_tenant_id": GLOBAL_TENNANT_ID}
 
@@ -13,37 +16,37 @@ def seed_services():
         # ---------------------------------------------------------------------
         # IP Protocol Objects
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="ICMP_RFC792",
             description="Internet Control Message Protocol for IPv4 diagnostic and error reporting messages, as defined by RFC792.",
             protocol="icmp",
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="ICMPv6_RFC4443",
             description="Internet Control Message Protocol for IPv6 diagnostic and error reporting messages, as defined by RFC4443.",
             protocol="icmpv6",
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="GRE_RFC2784",
             description="Generic Routing Encapsulation used for tunneling packets across IP networks, as defined by RFC2784.",
             protocol="gre",
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="ESP_RFC4303",
             description="Encapsulating Security Payload used by IPsec to provide confidentiality, integrity, and authentication, as defined by RFC4303.",
             protocol="esp",
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="AH_RFC4302",
             description="Authentication Header used by IPsec to provide packet integrity and authentication, as defined by RFC4302.",
             protocol="ah",
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="IP_RFC791",
             description="Internet Protocol service object that matches any IP protocol, based on IPv4 as defined by RFC791.",
@@ -53,7 +56,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Web Services
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="HTTP_TCP_RFC2616_RFC9110",
             description="Hypertext Transfer Protocol over TCP, as defined by RFC2616 and updated by RFC9110.",
@@ -61,7 +64,7 @@ def seed_services():
             port_start=80,
             port_end=80,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="HTTPS_TCP_RFC2818_RFC9110",
             description="Hypertext Transfer Protocol Secure over TCP using TLS for encrypted web traffic, as defined by RFC2818 and updated by RFC9110.",
@@ -69,7 +72,7 @@ def seed_services():
             port_start=443,
             port_end=443,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="HTTP_Alternate_TCP",
             description="Alternate HTTP service commonly used for web proxies and alternate web applications.",
@@ -77,7 +80,7 @@ def seed_services():
             port_start=8080,
             port_end=8080,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="HTTPS_Alternate_TCP",
             description="Alternate HTTPS service commonly used for secure web applications and management interfaces.",
@@ -89,7 +92,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Name Resolution
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="DNS_UDP_RFC1034_RFC1035",
             description="Domain Name System over UDP, as defined by RFC1034 and RFC1035.",
@@ -97,7 +100,7 @@ def seed_services():
             port_start=53,
             port_end=53,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="DNS_TCP_RFC1034_RFC1035",
             description="Domain Name System over TCP, as defined by RFC1034 and RFC1035.",
@@ -105,7 +108,7 @@ def seed_services():
             port_start=53,
             port_end=53,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="MDNS_UDP_RFC6762",
             description="Multicast DNS used for local network name resolution, as defined by RFC6762.",
@@ -117,7 +120,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Remote Access and Management
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SSH_TCP_RFC4251",
             description="Secure Shell for encrypted remote login and command execution, as defined by RFC4251.",
@@ -125,7 +128,7 @@ def seed_services():
             port_start=22,
             port_end=22,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Telnet_TCP_RFC854",
             description="Telnet for unencrypted remote terminal access, as defined by RFC854.",
@@ -133,7 +136,7 @@ def seed_services():
             port_start=23,
             port_end=23,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="RDP_TCP",
             description="Remote Desktop Protocol for graphical remote access to systems.",
@@ -141,7 +144,7 @@ def seed_services():
             port_start=3389,
             port_end=3389,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="WinRM_HTTP_TCP",
             description="Windows Remote Management over HTTP for remote administration.",
@@ -149,7 +152,7 @@ def seed_services():
             port_start=5985,
             port_end=5985,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="WinRM_HTTPS_TCP",
             description="Windows Remote Management over HTTPS for encrypted remote administration.",
@@ -161,7 +164,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # File Transfer
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="FTP_Control_TCP_RFC959",
             description="File Transfer Protocol control channel, as defined by RFC959.",
@@ -169,7 +172,7 @@ def seed_services():
             port_start=21,
             port_end=21,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="FTP_Data_TCP_RFC959",
             description="File Transfer Protocol data channel, as defined by RFC959.",
@@ -177,7 +180,7 @@ def seed_services():
             port_start=20,
             port_end=20,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SFTP_TCP",
             description="SSH File Transfer Protocol transported over SSH, commonly used for secure file transfer.",
@@ -185,7 +188,7 @@ def seed_services():
             port_start=22,
             port_end=22,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="TFTP_UDP_RFC1350",
             description="Trivial File Transfer Protocol, as defined by RFC1350.",
@@ -197,7 +200,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Email Services
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SMTP_TCP_RFC5321",
             description="Simple Mail Transfer Protocol for email transport, as defined by RFC5321.",
@@ -205,7 +208,7 @@ def seed_services():
             port_start=25,
             port_end=25,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SMTP_Submission_TCP_RFC6409",
             description="Mail submission service for client message submission, as defined by RFC6409.",
@@ -213,7 +216,7 @@ def seed_services():
             port_start=587,
             port_end=587,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SMTPS_TCP",
             description="Implicit TLS mail submission service for secure email transport.",
@@ -221,7 +224,7 @@ def seed_services():
             port_start=465,
             port_end=465,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="POP3_TCP_RFC1939",
             description="Post Office Protocol version 3 for email retrieval, as defined by RFC1939.",
@@ -229,7 +232,7 @@ def seed_services():
             port_start=110,
             port_end=110,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="POP3S_TCP",
             description="Secure Post Office Protocol version 3 for encrypted email retrieval.",
@@ -237,7 +240,7 @@ def seed_services():
             port_start=995,
             port_end=995,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="IMAP_TCP_RFC3501",
             description="Internet Message Access Protocol for email retrieval and mailbox access, as defined by RFC3501.",
@@ -245,7 +248,7 @@ def seed_services():
             port_start=143,
             port_end=143,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="IMAPS_TCP",
             description="Secure Internet Message Access Protocol for encrypted mailbox access.",
@@ -257,7 +260,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Directory and Authentication
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="LDAP_TCP_RFC4511",
             description="Lightweight Directory Access Protocol, as defined by RFC4511.",
@@ -265,7 +268,7 @@ def seed_services():
             port_start=389,
             port_end=389,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="LDAPS_TCP",
             description="Lightweight Directory Access Protocol over TLS for secure directory access.",
@@ -273,7 +276,7 @@ def seed_services():
             port_start=636,
             port_end=636,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Kerberos_TCP_RFC4120",
             description="Kerberos authentication service over TCP, as defined by RFC4120.",
@@ -281,7 +284,7 @@ def seed_services():
             port_start=88,
             port_end=88,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Kerberos_UDP_RFC4120",
             description="Kerberos authentication service over UDP, as defined by RFC4120.",
@@ -289,7 +292,7 @@ def seed_services():
             port_start=88,
             port_end=88,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="RADIUS_Auth_UDP_RFC2865",
             description="Remote Authentication Dial-In User Service for authentication, as defined by RFC2865.",
@@ -297,7 +300,7 @@ def seed_services():
             port_start=1812,
             port_end=1812,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="RADIUS_Acct_UDP_RFC2866",
             description="Remote Authentication Dial-In User Service for accounting, as defined by RFC2866.",
@@ -309,7 +312,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Network Infrastructure
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="DHCP_Server_UDP_RFC2131",
             description="Dynamic Host Configuration Protocol server service, as defined by RFC2131.",
@@ -317,7 +320,7 @@ def seed_services():
             port_start=67,
             port_end=67,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="DHCP_Client_UDP_RFC2131",
             description="Dynamic Host Configuration Protocol client service, as defined by RFC2131.",
@@ -325,7 +328,7 @@ def seed_services():
             port_start=68,
             port_end=68,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="NTP_UDP_RFC5905",
             description="Network Time Protocol for time synchronization, as defined by RFC5905.",
@@ -333,7 +336,7 @@ def seed_services():
             port_start=123,
             port_end=123,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SNMP_UDP_RFC3411",
             description="Simple Network Management Protocol for device monitoring and management, as defined by RFC3411.",
@@ -341,7 +344,7 @@ def seed_services():
             port_start=161,
             port_end=161,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SNMP_Trap_UDP_RFC3411",
             description="Simple Network Management Protocol trap service for asynchronous event notifications, as defined by RFC3411.",
@@ -349,7 +352,7 @@ def seed_services():
             port_start=162,
             port_end=162,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Syslog_UDP_RFC5424",
             description="Syslog service for log message transport, as defined by RFC5424.",
@@ -357,7 +360,7 @@ def seed_services():
             port_start=514,
             port_end=514,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Syslog_TCP_RFC6587",
             description="Syslog over TCP for reliable log message transport, as defined by RFC6587.",
@@ -369,7 +372,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # File Sharing and Directory Services
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SMB_TCP",
             description="Server Message Block for file and printer sharing in Microsoft networks.",
@@ -377,7 +380,7 @@ def seed_services():
             port_start=445,
             port_end=445,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="NetBIOS_NS_UDP",
             description="NetBIOS Name Service used for name registration and resolution in legacy Microsoft networks.",
@@ -385,7 +388,7 @@ def seed_services():
             port_start=137,
             port_end=137,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="NetBIOS_DGM_UDP",
             description="NetBIOS Datagram Service used for connectionless communication in legacy Microsoft networks.",
@@ -393,7 +396,7 @@ def seed_services():
             port_start=138,
             port_end=138,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="NetBIOS_SSN_TCP",
             description="NetBIOS Session Service used for session-based communication in legacy Microsoft networks.",
@@ -401,7 +404,7 @@ def seed_services():
             port_start=139,
             port_end=139,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="NFS_TCP_RFC7530",
             description="Network File System for remote file access, as defined by RFC7530.",
@@ -409,7 +412,7 @@ def seed_services():
             port_start=2049,
             port_end=2049,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="NFS_UDP",
             description="Network File System over UDP for remote file access, historically used in some deployments.",
@@ -421,7 +424,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Databases
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="MySQL_TCP",
             description="MySQL database service for client-server database communication.",
@@ -429,7 +432,7 @@ def seed_services():
             port_start=3306,
             port_end=3306,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="PostgreSQL_TCP",
             description="PostgreSQL database service for client-server database communication.",
@@ -437,7 +440,7 @@ def seed_services():
             port_start=5432,
             port_end=5432,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="MSSQL_TCP",
             description="Microsoft SQL Server database service for client-server database communication.",
@@ -449,7 +452,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # VPN and Secure Tunneling
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="IKE_UDP_RFC7296",
             description="Internet Key Exchange used for negotiating IPsec security associations, as defined by RFC7296.",
@@ -457,7 +460,7 @@ def seed_services():
             port_start=500,
             port_end=500,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="IPsec_NAT_T_UDP_RFC3948",
             description="IPsec NAT Traversal service used to carry IPsec traffic through NAT devices, as defined by RFC3948.",
@@ -465,7 +468,7 @@ def seed_services():
             port_start=4500,
             port_end=4500,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="L2TP_UDP_RFC2661",
             description="Layer Two Tunneling Protocol used for VPN tunneling, as defined by RFC2661.",
@@ -473,7 +476,7 @@ def seed_services():
             port_start=1701,
             port_end=1701,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="OpenVPN_TCP",
             description="OpenVPN service over TCP for secure remote connectivity.",
@@ -481,7 +484,7 @@ def seed_services():
             port_start=1194,
             port_end=1194,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="OpenVPN_UDP",
             description="OpenVPN service over UDP for secure remote connectivity.",
@@ -489,7 +492,7 @@ def seed_services():
             port_start=1194,
             port_end=1194,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="WireGuard_UDP",
             description="WireGuard VPN service for secure modern tunneling.",
@@ -501,7 +504,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Voice and Real-Time Communication
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SIP_TCP_RFC3261",
             description="Session Initiation Protocol over TCP for signaling in voice and multimedia sessions, as defined by RFC3261.",
@@ -509,7 +512,7 @@ def seed_services():
             port_start=5060,
             port_end=5060,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SIP_UDP_RFC3261",
             description="Session Initiation Protocol over UDP for signaling in voice and multimedia sessions, as defined by RFC3261.",
@@ -517,7 +520,7 @@ def seed_services():
             port_start=5060,
             port_end=5060,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="SIPS_TCP_RFC3261",
             description="Secure Session Initiation Protocol over TLS for encrypted signaling, as defined by RFC3261.",
@@ -529,7 +532,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Monitoring and Observability
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Prometheus_TCP",
             description="Prometheus metrics service commonly used for monitoring and observability.",
@@ -537,7 +540,7 @@ def seed_services():
             port_start=9090,
             port_end=9090,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Grafana_TCP",
             description="Grafana web service commonly used for dashboards and observability.",
@@ -549,7 +552,7 @@ def seed_services():
         # ---------------------------------------------------------------------
         # Catch-All Service Objects
         # ---------------------------------------------------------------------
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Any_TCP",
             description="Matches any TCP port.",
@@ -557,7 +560,7 @@ def seed_services():
             port_start=1,
             port_end=65535,
         ),
-        create_service(
+        get_or_create_service(
             request=mock_request,
             name="Any_UDP",
             description="Matches any UDP port.",
@@ -566,5 +569,11 @@ def seed_services():
             port_end=65535,
         ),
     ]
+    created_flags = [service[2] for service in default_services]
 
-    return default_services
+    if all(created_flags):
+        logger.info("All default services were created. No duplicates existed.")
+    elif any(created_flags):
+        logger.warning("Some default services already existed. Missing services were created.")
+    else:
+        logger.warning("No default services were created because they already all existed.")
