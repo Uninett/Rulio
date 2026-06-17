@@ -7,11 +7,11 @@ logger = set_up_logger(__name__)
 
 
 def add_address_to_group(request: object, address_group_id: int, address_id: int):
-    address_group = AddressGroup.objects.get(id=address_group_id)
-    address = Address.objects.get(id=address_id)
-    AddressGroupMember.objects.create(
-        group_id=address_group,
-        address_id=address,
+    _address_group = AddressGroup.objects.get(id=address_group_id)
+    _address = Address.objects.get(id=address_id)
+    _address_group_member = AddressGroupMember.objects.create(
+        group_id=_address_group,
+        address_id=_address,
     )
 
 
