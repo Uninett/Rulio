@@ -78,8 +78,8 @@ def create_service(
     name: str,
     description: str,
     protocol: str,
-    port_start: int,
-    port_end: int,
+    port_start: int | None = None,
+    port_end: int | None = None,
 ) -> Service:
 
     tenant_id = get_current_tenant_id(request)

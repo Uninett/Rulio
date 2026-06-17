@@ -7,18 +7,18 @@ class CreateServiceSchema(Schema):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(..., min_length=1, max_length=255)
     description: str 
-    protocol: str = Field(..., min_length=1, max_length=255)
-    port_start:  int = Field(..., ge=1, le=65535)
-    port_end: Optional[int] = Field(None, ge=1, le=65535)
-
+    protocol: str = Field(..., min_length=1, max_length=255, example="TCP")
+    port_start:  Optional[int] = Field(None, example=80, ge=1, le=65535)
+    port_end: Optional[int] = Field(None, example=80, ge=1, le=65535)
 
 
     @model_validator(mode="after")
     def validate_ports(self):
-        # If port_end is not provided, set it to the same value as port_start         
-        if self.port_end is None:
+        # If port_end is not provided, set it to the same value as port_start  
+   
+        if self.port_end is None and self.port_start is not None:
             self.port_end = self.port_start
-        if self.port_end < self.port_start:
+        if self.port_end < self.port_start and self.port_end is not None and self.port_start is not None:
             raise ValueError("port_end must be greater than or equal to port_start")
         return self
     

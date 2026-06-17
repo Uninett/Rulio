@@ -60,7 +60,7 @@ def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True, mode:
         if not os.path.exists(ERROR_LOGPATH):
             os.makedirs(ERROR_LOGPATH)
         #For testing purposes we wipe the all_logs.log file on each run
-        with open(LOGPATH / "all_logs.log", 'w'):
+        with open(LOGPATH / "all_logs.log", mode):
             pass
         add_file_handler(logger, LOGPATH / "all_logs.log", level=level, mode=mode)
         add_file_handler(logger, ERROR_LOGPATH / "all_errors.log", level=logging.ERROR, mode=mode)

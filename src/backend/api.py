@@ -104,12 +104,12 @@ def create_address_endpoint(request, payload: CreateAddressSchema):
 @api.post("/create_service", tags=["Attributes"])
 def create_service_endpoint(request, payload: CreateServiceSchema):
     service = create_service(
-        request,
-        payload.name,
-        payload.description,
-        payload.protocol,
-        payload.port_start,
-        payload.port_end,
+        request=request,
+        name=payload.name,
+        description=payload.description,
+        protocol=payload.protocol,
+        port_start=payload.port_start,
+        port_end=payload.port_end,
     )
     logger.info(f"create_service endpoint succeeded for service id={service.id}")
     return {

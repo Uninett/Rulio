@@ -143,6 +143,18 @@ def sample_services():
             port_start=3000,
             port_end=4000,
         ),
+        Service(
+            name="Test_Service5",
+            description="This tests a non-port-based protocol (ICMP)",
+            tenant_id=TESTING_TENNANT_ID,
+            protocol="icmp",
+        ),
+        Service(
+            name="Test_Service6",
+            description="This tests a non-port-based protocol (GRE)",
+            tenant_id=TESTING_TENNANT_ID,
+            protocol="gre",
+        ),
     ]
     for service in services:
         service.save()
