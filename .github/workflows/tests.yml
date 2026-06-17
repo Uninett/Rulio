@@ -9,13 +9,19 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
       - name: Show files
-        run: ls -la
+        run: ls -la src
+
+      - name: Create .env file
+        run: |
+          echo "DATABASE_NAME=test_db" > src/.env
+          echo "DATABASE_USER=test_user" >> src/.env
+          echo "DATABASE_PASS=test_password" >> src/.env
 
       - name: Build and start containers
         run: docker compose -f src/docker-compose.yml up -d --build
