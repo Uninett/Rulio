@@ -4,10 +4,10 @@
     <div class="header-content">
         <nav class="main-nav" aria-label="Main navigation">
         <ul class="nav-list">
-            <li><a href="/devices">Devices</a></li>
-            <li><a href="/filters">Filters</a></li>
-            <li><a href="/objects">Objects</a></li>
-            <li><a href="/tags">Tags</a></li>
+            <li><a href="{% url 'devices' %}" class="{% if active_page == 'devices' %}active{% endif %}">Devices</a></li>
+            <li><a href="{% url 'filters' %}" class="{% if active_page == 'filters' %}active{% endif %}">Filters</a></li>
+            <li><a href="{% url 'objects' %}" class="{% if active_page == 'objects' %}active{% endif %}">Objects</a></li>
+            <li><a href="{% url 'tags' %}" class="{% if active_page == 'tags' %}active{% endif %}">Tags</a></li>
         </ul>
         </nav>
 
