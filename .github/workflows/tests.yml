@@ -29,6 +29,12 @@ jobs:
       - name: Wait for startup
         run: sleep 10
 
+      - name: Show container status
+        run: docker compose -f src/docker-compose.yml ps
+
+      - name: Show logs
+        run: docker compose -f src/docker-compose.yml logs
+
       - name: Run tests
         run: docker compose -f src/docker-compose.yml exec -T web pytest
 
