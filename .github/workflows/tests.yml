@@ -13,6 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Change dir to src
+        run: cd src
+
       - name: Show files
         run: ls -la
 
