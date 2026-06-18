@@ -1,0 +1,24 @@
+<tr>
+    <td colspan="8">
+        <form hx-post="/addresses/save/" hx-target="closest tr" hx-swap="outerHTML">
+
+            {% csrf_token %}
+
+            <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.5rem;">
+                <input type="text" name="name" placeholder="Address Name">
+                <input type="text" name="description" placeholder="Description">
+                <input type="text" name="type" placeholder="Type">
+                <input type="text" name="group" placeholder="Address Group">
+                <input type="text" name="referenced_to" placeholder="Referenced To">
+                <input type="text" name="addresses" placeholder="Addresses">
+                <input type="text" name="tags" placeholder="Tags">
+                <button type="submit">Save</button>
+            </div>
+
+        </form>
+
+
+
+    </td>
+
+</tr>

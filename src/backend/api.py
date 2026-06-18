@@ -586,13 +586,59 @@ def filters(request):
 
 
 def objects(request):
+    addresses = [
+        {
+            "device_id": "ntnu-dns-1",
+            "description": "Primary DNS server",
+            "type": "host",
+            "name": "ntnu-dns-1",
+            "group": "Allow DNS",
+            "referenced_to": "ntnu-trd-core-r1",
+            "addresses": "ntnu-dns-1",
+            "tags": "admin",
+        },
+        {
+            "device_id": "ntnu-dns-2",
+            "description": "Secondary DNS server",
+            "type": "host",
+            "name": "ntnu-dns-2",
+            "group": "Allow DNS",
+            "referenced_to": "ntnu-trd-core-r2",
+            "addresses": "ntnu-dns-2",
+            "tags": "admin",
+        },
+    ]
     return render(
         request,
         "objects.html",
         {
             "active_page": "objects",
+            "addresses": addresses,
         },
     )
+
+
+"""This is new and for adding new naddresses to table"""
+
+
+def new_address_row(request):
+    return render(request, "partials/objects/_addressesRowEdit.html")
+
+
+def save_address_row(request):
+    address = {
+        "name": request.POST.get("name", ""),
+        "description": request.POST.get("description", ""),
+        "type": request.POST.get("type", ""),
+        "group": request.POST.get("group", ""),
+        "referenced_to": request.POST.get("referenced_to", ""),
+        "addresses": request.POST.get("addresses", ""),
+        "tags": request.POST.get("tags", ""),
+    }
+    return render(request, "partials/objects/_addressesRow.html", {"address": address})
+
+
+"""""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """"""
 
 
 def objects_addresses(request):
