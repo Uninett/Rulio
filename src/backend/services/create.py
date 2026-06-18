@@ -252,18 +252,24 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
         "not_found_service_ids": sorted(not_found_ids),
     }
 
+
 def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dict:
     address_group = AddressGroup.objects.get(id=address_group_id)
 
     request_ids = set(address_ids)
 
-    existing_addresses = Address.objects.filter(id_in=request_ids)
+    existing_addresses = Address.objects.filter(id__in=request_ids)
     found_ids = {address.id for address in existing_addresses}
     not_found_ids = request_ids - found_ids
-    already_present_ids = set(AddressGroupMember.objects.filter(group=address_group,address_id__in=found_ids,).values_list("address_id",flat=True))
+    already_present_ids = set(
+        AddressGroupMember.objects.filter(
+            group_id=address_group,
+            address_id__in=found_ids,
+        ).values_list("address_id", flat=True)
+    )
 
-    new_addresses=[
-        address 
+    new_addresses = [
+        address
         for address in existing_addresses
         if address.id not in already_present_ids
     ]
@@ -271,7 +277,7 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
     with transaction.atomic():
         AddressGroupMember.objects.bulk_create(
             [
-                AddressGroupMember(group=address_group, address=address)
+                AddressGroupMember(group_id=address_group, address_id=address)
                 for address in new_addresses
             ]
         )
@@ -285,7 +291,7 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
 
     return {
         "address_group_id": address_group.id,
-        "added_address_ids": sorted(added_ids),
+        "added_addresses_ids": sorted(added_ids),
         "already_present_address_ids": sorted(already_present_ids),
         "not_found_address_ids": sorted(not_found_ids),
     }
