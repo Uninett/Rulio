@@ -282,7 +282,7 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
 
     return {
         "address_group_id": address_group.id,
-        "added_addresses_ids": sorted(added_ids),
+        "added_address_ids": sorted(added_ids),
         "already_present_address_ids": sorted(already_present_ids),
         "not_found_address_ids": sorted(not_found_ids),
     }
