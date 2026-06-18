@@ -74,30 +74,49 @@ class TestCreateServiceGroup:
 
 @pytest.mark.django_db
 class TestAddServicesGroup:
-    def test_add_services_group(self):
+    def test_add_services_group(self, sample_services):
         request = MockRequest
         service_group = create_service_group(
             request=request,
             name="Test Service Group",
             description="This is a test service group",
         )
-        service = create_service(
-            request=request,
-            name="Test Service",
-            description="This is a test service",
-            protocol="TCP",
-            port_start=80,
-            port_end=80,
-        )
+        sample_service_ids = [service.id for service in sample_services]
+        count_sample_services = len(sample_service_ids)
+        mid = count_sample_services // 2
+        sample_service_ids_batch_1 = sample_service_ids[:mid]
 
-        response = add_services_to_group(service_group.id, [service.id, 999])
 
-        assert response["service_group_id"] == service_group.id
-        assert response["added_service_ids"] == [service.id]
-        assert response["not_found_service_ids"] == [999]
-        assert response["already_present_service_ids"] == []
+        response1 = add_services_to_group(service_group.id, sample_service_ids_batch_1)
 
-        assert ServiceGroupMember.objects.filter(
-            group=service_group,
-            service=service,
-        ).exists()
+        assert response1["service_group_id"] == service_group.id
+        assert response1["added_service_ids"] == sample_service_ids_batch_1
+        assert response1["not_found_service_ids"] == []
+        assert response1["already_present_service_ids"] == []
+
+        for service_id in sample_service_ids_batch_1:
+            assert ServiceGroupMember.objects.filter(
+                group=service_group,
+                service_id=service_id,
+            ).exists()
+
+        response2 = add_services_to_group(service_group.id, sample_service_ids)
+
+        assert response2["service_group_id"] == service_group.id
+        assert response2["added_service_ids"] == sample_service_ids[mid:]
+        assert set(response2["already_present_service_ids"]) == set(sample_service_ids_batch_1)
+        assert response2["not_found_service_ids"] == []
+
+        for service_id in sample_service_ids:
+            assert ServiceGroupMember.objects.filter(
+                group=service_group,
+                service_id=service_id,
+            ).exists()
+
+        response3 = add_services_to_group(service_group.id, [9999])
+
+        assert response3["service_group_id"] == service_group.id
+        assert response3["added_service_ids"] == []
+        assert response3["already_present_service_ids"] == []
+        assert response3["not_found_service_ids"] == [9999]
+        

@@ -207,6 +207,12 @@ def add_service_to_group(request: object, service_group_id: int, service_id: int
 
 
 def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict:
+    """
+    Adds a list of services to a service group
+    Args:
+    - service_group_id: ID of the service group to add services to
+    - service_ids: List of service IDs to add to the group
+    """
     service_group = ServiceGroup.objects.get(id=service_group_id)
 
     requested_ids = set(service_ids)
