@@ -97,12 +97,7 @@ def create_address_endpoint(
     request,
     payload: CreateAddressSchema,
 ):
-    if (
-        can_write_tenant(
-            request.user, Tenant.objects.get(id=get_current_tenant_id(request))
-        )
-        is False
-    ):
+    if can_write_tenant(request.user, Tenant.objects.get(id=get_current_tenant_id(request))) is False:
         logger.warning(
             f"Unauthorized attempt to create service with name={payload.name} for tenant_id={get_current_tenant_id(request)} by user {request.user.username}"
         )
@@ -139,12 +134,7 @@ def create_service_endpoint(
     request,
     payload: CreateServiceSchema,
 ):
-    if (
-        can_write_tenant(
-            request.user, Tenant.objects.get(id=get_current_tenant_id(request))
-        )
-        is False
-    ):
+    if can_write_tenant(request.user, Tenant.objects.get(id=get_current_tenant_id(request))) is False:
         logger.warning(
             f"Unauthorized attempt to create service with name={payload.name} for tenant_id={get_current_tenant_id(request)} by user {request.user.username}"
         )
@@ -195,9 +185,7 @@ def create_service_group_endpoint(request, payload: CreateAddressGroupSchema):
 @api.post("/add_service_to_group", tags=["Attributes"])
 def add_service_to_group_endpoint(request, service_id: int, group_id: int):
     service_group = ServiceGroup.objects.get(id=group_id)
-    if not can_write_tenant(
-        request.user, Tenant.objects.get(id=service_group.tenant_id)
-    ) or not can_write_tenant(
+    if not can_write_tenant(request.user, Tenant.objects.get(id=service_group.tenant_id)) or not can_write_tenant(
         request.user,
         Tenant.objects.get(id=Service.objects.get(id=service_id).tenant_id),
     ):
@@ -209,9 +197,7 @@ def add_service_to_group_endpoint(request, service_id: int, group_id: int):
             "message": "You do not have permission to modify this service group.",
         }
     add_service_to_group(request, group_id, service_id)
-    logger.info(
-        f"add_service_to_group endpoint succeeded for service id={service_id} and group id={group_id}"
-    )
+    logger.info(f"add_service_to_group endpoint succeeded for service id={service_id} and group id={group_id}")
     return 200, {
         "status": "success",
         "message": f"Service id={service_id} added to group id={group_id}",
@@ -291,18 +277,17 @@ def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSch
     response={200: MessageSchema, 403: MessageSchema},
 )
 def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
-    if not can_write_tenant(request.user, Tenant.objects.get(id=payload.tenant_id)):
+    tenant_id = request.session.get("current_tenant_id")
+    if not can_write_tenant(request.user, Tenant.objects.get(id=tenant_id)):
         logger.warning(
-            f"Unauthorized attempt to create address group with name={payload.name} for tenant_id={payload.tenant_id} by user {request.user.username}"
+            f"Unauthorized attempt to create address group with name={payload.name} for tenant_id={tenant_id} by user {request.user.username}"
         )
         return 403, {
             "status": "error",
             "message": "You do not have permission to create an address group for this tenant.",
         }
-    address_group = create_address_group(request, payload.name, payload.description)
-    logger.info(
-        f"create_address_group endpoint succeeded for group id={address_group.id}"
-    )
+    address_group = create_address_group(request, payload.name, payload.description, tenant_id)
+    logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
     return 200, {
         "status": "success",
         "message": f"Address Group created: {address_group}",
@@ -419,7 +404,7 @@ def get_service_group_and_services_endpoint(request, get="all"):
     tags=["Attributes"],
     response={200: list[dict], 403: MessageSchema},
 )
-def get_address_group_and_addresses_endpoint(request):
+def get_address_group_and_addresses_endpoint(request, get="all"):
     if not can_read_tenant(request.user, request.session["current_tenant_id"]):
         logger.warning(
             f"Unauthorized attempt to read addresses from tenant={request.session['current_tenant_id']} "
@@ -430,15 +415,40 @@ def get_address_group_and_addresses_endpoint(request):
             "message": "You do not have permission to read addresses from this tenant.",
         }
     response = get_address_groups_with_addresses_from_tenant(
-        request.session["current_tenant_id"]
+        request.session["current_tenant_id"],
+        get=get,
     )
     return 200, response
 
 
-@api.get("/list_addresses")
+@api.get("/list_services", tags=["Attributes"], response={200: list[dict], 403: MessageSchema})
+def list_services(request):
+    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
+        logger.warning(
+            f"Unauthorized attempt to read services from tenant={request.session['current_tenant_id']} "
+            f"by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to read services from this tenant.",
+        }
+    services = Service.objects.filter(tenant_id=request.session["current_tenant_id"])
+    return 200, list(services.values())
+
+
+@api.get("/list_addresses", tags=["Attributes"], response={200: list[dict], 403: MessageSchema})
 def list_addresses(request):
-    addresses = Address.objects.all()
-    return list(addresses.values())
+    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
+        logger.warning(
+            f"Unauthorized attempt to read addresses from tenant={request.session['current_tenant_id']} "
+            f"by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to read addresses from this tenant.",
+        }
+    addresses = Address.objects.filter(tenant_id=request.session["current_tenant_id"])
+    return 200, list(addresses.values())
 
 
 """

@@ -7,4 +7,4 @@ class ServiceGroup(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self):
-        return f"ServiceGroup(id={self.id}, tennant_id={self.tennant_id}, name='{self.name}', description='{self.description}')"
+        return f"ServiceGroup(id={self.id}, tenant_id={self.tenant_id}, name='{self.name}', description='{self.description}')"
