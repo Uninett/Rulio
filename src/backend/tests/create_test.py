@@ -1,16 +1,17 @@
 import pytest
 
+from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.services.create import (
+    add_addresses_to_group,
     create_address,
+    create_address_group,
     create_service,
     create_service_group,
     add_services_to_group,
 )
-
-
-class MockRequest:
-    session = {"current_tenant_id": 42}
+from backend.tests.conftest import MockRequest
+from constants import TESTING_TENNANT_ID
 
 
 @pytest.mark.django_db
@@ -30,7 +31,7 @@ class TestCreateAddress:
         assert address is not None
         assert address.name == "Test Address"
         assert address.description == "This is a test address"
-        assert address.tenant_id == 42
+        assert address.tenant_id == TESTING_TENNANT_ID
         assert address.get_address()[0][0].__str__() == "192.168.1.1/32"
         assert address.get_address()[1][0].__str__() == "2001:db8::1/128"
         assert address.ipv4_type == "standard"
@@ -52,10 +53,25 @@ class TestCreateService:
         assert service is not None
         assert service.name == "Test Service"
         assert service.description == "This is a test service"
-        assert service.tenant_id == 42
+        assert service.tenant_id == TESTING_TENNANT_ID
         assert service.protocol == "TCP"
         assert service.port_start == 80
         assert service.port_end == 80
+
+
+@pytest.mark.django_db
+class TestCreateAddressGroup:
+    def test_create_address_group(self):
+        request = MockRequest()
+        address_group = create_address_group(
+            request=request,
+            name="Test Address Group",
+            description="This is a test address group",
+        )
+        assert address_group is not None
+        assert address_group.name == "Test Address Group"
+        assert address_group.description == "This is a test address group"
+        assert address_group.tenant_id == TESTING_TENNANT_ID
 
 
 @pytest.mark.django_db
@@ -70,11 +86,40 @@ class TestCreateServiceGroup:
         assert service_group is not None
         assert service_group.name == "Test Service Group"
         assert service_group.description == "This is a test service group"
+        assert service_group.tenant_id == TESTING_TENNANT_ID
 
 
 @pytest.mark.django_db
-class TestAddServicesGroup:
-    def test_add_services_group(self, sample_services):
+class TestAddAddressToGroup:
+    def test_add_address_to_group(self, sample_addresses):
+        request = MockRequest()
+        sample_address_ids = [address.id for address in sample_addresses]
+        address_group = create_address_group(
+            request=request,
+            name="Test Address Group",
+            description="This is a test address group",
+        )
+        response = add_addresses_to_group(
+            address_group_id=address_group.id,
+            address_ids=sample_address_ids,
+        )
+        address_ids = [address.id for address in sample_addresses]
+
+        assert response["address_group_id"] == address_group.id
+        assert set(response["added_address_ids"]) == set(address_ids)
+        assert response["not_found_address_ids"] == []
+        assert response["already_present_address_ids"] == []
+
+        for address_id in address_ids:
+            assert AddressGroupMember.objects.filter(
+                group_id=address_group.id,
+                address_id=address_id,
+            ).exists()
+
+
+@pytest.mark.django_db
+class TestAddServicesToGroup:
+    def test_add_services_to_group(self, sample_services):
         request = MockRequest
         service_group = create_service_group(
             request=request,
@@ -86,7 +131,6 @@ class TestAddServicesGroup:
         mid = count_sample_services // 2
         sample_service_ids_batch_1 = sample_service_ids[:mid]
 
-
         response1 = add_services_to_group(service_group.id, sample_service_ids_batch_1)
 
         assert response1["service_group_id"] == service_group.id
@@ -96,7 +140,7 @@ class TestAddServicesGroup:
 
         for service_id in sample_service_ids_batch_1:
             assert ServiceGroupMember.objects.filter(
-                group=service_group,
+                group_id=service_group.id,
                 service_id=service_id,
             ).exists()
 
@@ -119,4 +163,3 @@ class TestAddServicesGroup:
         assert response3["added_service_ids"] == []
         assert response3["already_present_service_ids"] == []
         assert response3["not_found_service_ids"] == [9999]
-        
