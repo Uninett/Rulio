@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from ninja import NinjaAPI, Schema
+from ninja import NinjaAPI
 from ninja.security import django_auth
 from django.conf import settings
 
@@ -32,7 +32,6 @@ from backend.objects.attributes.tag_object import TagObject
 from backend.services.helper_user_tenant import (
     is_superadmin,
     can_write_tenant,
-    get_tenant_membership,
 )
 from backend.services.membership import add_address_to_group
 from backend.utils.logger import set_up_logger
@@ -140,9 +139,7 @@ def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSch
             "status": "error",
             "message": "You do not have permission to add users to this tenant.",
         }
-    tenant_user = create_tenant_user_member(
-        request, payload.tenant_id, payload.user_id, payload.role
-    )
+    tenant_user = create_tenant_user_member(request, payload.tenant_id, payload.user_id, payload.role)
     logger.info(
         f"create_tenant_user endpoint succeeded for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
     )
@@ -154,7 +151,8 @@ def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSch
 
 @api.post("/create_service_group", tags=["Attributes"])
 def create_service_group_endpoint(request, payload: CreateGroupSchema):
-    service_group = ServiceGroup()  # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
+    service_group = ServiceGroup()
+    # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
     logger.info(f"Service Group created: {service_group}")
     return f"Service Group created {service_group}"
 
@@ -173,12 +171,8 @@ def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
             "status": "error",
             "message": "You do not have permission to create an address group for this tenant.",
         }
-    address_group = create_address_group(
-        request, payload.name, payload.description, payload.tenant_id
-    )
-    logger.info(
-        f"create_address_group endpoint succeeded for group id={address_group.id}"
-    )
+    address_group = create_address_group(request, payload.name, payload.description, payload.tenant_id)
+    logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
     return 200, {
         "status": "success",
         "message": f"Address Group created: {address_group}",
@@ -187,14 +181,16 @@ def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
 
 @api.post("/create_tag", tags=["Attributes"])
 def create_tag_endpoint(request, payload: CreateTagSchema):
-    tag = Tag()  # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
+    tag = Tag()
+    # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
     logger.info(f"Tag created: {tag}")
     return f"Tag created {tag}"
 
 
 @api.post("/create_tag_object", tags=["Attributes"])
 def create_tag_object_endpoint(request, payload: CreateTagObjectSchema):
-    tag_object = TagObject()  # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
+    tag_object = TagObject()
+    # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
     logger.info(f"Tag Object created: {tag_object}")
     return f"Tag Object created {tag_object}"
 
@@ -217,9 +213,7 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
             "message": "You do not have permission to modify this address group.",
         }
     add_address_to_group(request, group_id, address_id)
-    logger.info(
-        f"add_address_to_group endpoint succeeded for address id={address_id} and group id={group_id}"
-    )
+    logger.info(f"add_address_to_group endpoint succeeded for address id={address_id} and group id={group_id}")
     return 200, {
         "status": "success",
         "message": f"Address id={address_id} added to group id={group_id}",
@@ -263,9 +257,7 @@ def login_endpoint(request, payload: LoginSchema):
 
     if not user.is_superuser:
         if TenantUserMember.objects.filter(user_id=user.id).exists():
-            request.session["current_tenant_id"] = TenantUserMember.objects.get(
-                user_id=user.id
-            ).tenant_id
+            request.session["current_tenant_id"] = TenantUserMember.objects.get(user_id=user.id).tenant_id
 
     return 200, {
         "status": "success",
@@ -338,9 +330,7 @@ def delete_user(request, user_id: int):
         logger.info(f"User deleted: {user}")
         return {"status": "success", "message": f"User with id {user_id} deleted."}
     except User.DoesNotExist:
-        logger.warning(
-            f"Tried to delete user with id {user_id}, but it does not exist."
-        )
+        logger.warning(f"Tried to delete user with id {user_id}, but it does not exist.")
         return {"status": "error", "message": f"User with id {user_id} does not exist."}
 
 
@@ -367,12 +357,6 @@ def add_address(
         "message": f"Address '{name}' created successfully.",
         "address_id": address.id,
     }
-
-
-@api.get("/list_addresses")
-def list_addresses(request):
-    addresses = Address.objects.all()
-    return list(addresses.values())
 
 
 """

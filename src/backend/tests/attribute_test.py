@@ -62,9 +62,7 @@ class TestAttributes:
             ipv4Address_end="127.2.4.17",
         )
         assert address.get_address()[0] == list(
-            ipaddress.summarize_address_range(
-                ipaddress.IPv4Address("127.2.4.2"), ipaddress.IPv4Address("127.2.4.17")
-            )
+            ipaddress.summarize_address_range(ipaddress.IPv4Address("127.2.4.2"), ipaddress.IPv4Address("127.2.4.17"))
         )
 
     def test_service(self):

@@ -1,0 +1,18 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: mixed-line-ending
+    -   id: end-of-file-fixer
+    -   id: debug-statements
+
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.17
+    hooks:
+        # Run the linter
+    -   id: ruff
+        name: "Ruff linting"
+        # Run the formatter
+    -   id: ruff-format
+        name: "Ruff formatting"

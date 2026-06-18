@@ -3,9 +3,7 @@ import pytest
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
-from backend.objects.attributes.service_group import ServiceGroup
-from backend.services.create import add_address_to_group
-from backend.services.generate_config import PolicyRule, Policy
+from backend.services.generate_config import PolicyRule
 from constants import TESTING_TENNANT_ID
 
 
@@ -84,7 +82,7 @@ def sample_address_group(sample_addresses):
         tenant_id=TESTING_TENNANT_ID,
     )
     address_group.save()
-    request = MockRequest()
+    # request = MockRequest()
 
     # for address in sample_addresses:
     #     add_address_to_group(request, address_group.id, address.id)

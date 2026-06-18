@@ -5,7 +5,7 @@ import sys
 from constants import LOGPATH, ERROR_LOGPATH
 
 
-def add_file_handler(logger: logging.Logger, file: str, level=logging.INFO, mode='a') -> None:
+def add_file_handler(logger: logging.Logger, file: str, level=logging.INFO, mode="a") -> None:
     """
     Adds a file handler to the existing logger.
 
@@ -22,14 +22,14 @@ def add_file_handler(logger: logging.Logger, file: str, level=logging.INFO, mode
         if isinstance(handler, logging.FileHandler) and handler.baseFilename == abs_file:
             return
 
-
-    file_handler = logging.FileHandler(file, mode = mode) 
+    file_handler = logging.FileHandler(file, mode=mode)
     file_handler.setLevel(level)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True, mode: str = 'a') -> logging.Logger:
+
+def set_up_root_logger(level=logging.INFO, all_logs_to_file: bool = True, mode: str = "a") -> logging.Logger:
     """
     Sets up a logger with the specified name and logging level.
 
@@ -43,7 +43,6 @@ def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True, mode:
     """
     logger = logging.getLogger()
     logger.setLevel(level)
-    
 
     # Create console handler and set level
     if not logger.handlers:
@@ -51,7 +50,7 @@ def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True, mode:
         logger.addHandler(channel_handler)
         channel_handler.setLevel(level)
         # Create formatter and add it to the handlers
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         channel_handler.setFormatter(formatter)
 
     if all_logs_to_file:
@@ -59,7 +58,7 @@ def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True, mode:
             os.makedirs(LOGPATH)
         if not os.path.exists(ERROR_LOGPATH):
             os.makedirs(ERROR_LOGPATH)
-        #For testing purposes we wipe the all_logs.log file on each run
+        # For testing purposes we wipe the all_logs.log file on each run
         with open(LOGPATH / "all_logs.log", mode):
             pass
         add_file_handler(logger, LOGPATH / "all_logs.log", level=level, mode=mode)
@@ -67,7 +66,8 @@ def set_up_root_logger( level=logging.INFO, all_logs_to_file: bool = True, mode:
 
     return logger
 
-def set_up_logger(name: str, level=logging.INFO, save_to_file: bool = True, mode: str = 'a') -> logging.Logger:
+
+def set_up_logger(name: str, level=logging.INFO, save_to_file: bool = True, mode: str = "a") -> logging.Logger:
     """
     Sets up a logger with the specified name and logging level.
 

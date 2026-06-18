@@ -1,9 +1,9 @@
 from backend.utils.logger import set_up_logger
 from backend.objects.management.tenant_user_member import TenantUserMember
-from django.contrib.auth.models import User
 
 
 logger = set_up_logger(__name__)
+
 
 def is_superadmin(user):
     return user.is_authenticated and user.is_superuser
@@ -33,4 +33,3 @@ def can_read_tenant(user, tenant):
 
 def can_write_tenant(user, tenant):
     return is_tenant_admin(user, tenant)
-
