@@ -1,8 +1,10 @@
 from django.db import models
 
+
 class ServiceGroupMember(models.Model):
-    group_id = models.ForeignKey('ServiceGroup', on_delete=models.CASCADE)
-    service_id = models.ForeignKey('Service', on_delete=models.CASCADE)
+    group_id = models.ForeignKey("ServiceGroup", on_delete=models.CASCADE)
+    service_id = models.ForeignKey("Service", on_delete=models.CASCADE)
+
 
 # class ServiceGroupMember:
 #     def __init__(self, group_id: int, service_id: int):

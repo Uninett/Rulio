@@ -72,6 +72,7 @@ def create_address(
     logger.info(f"Created {address} for tenant={address.tenant_id}")
     return address
 
+
 def get_or_create_address(
     request: object,
     name: str,
@@ -176,11 +177,10 @@ def create_tenant_user_member(request: object, tenant_id: int, user_id: int, rol
 
 
 def create_address_group(request: object, name: str, description: str, tenant_id: int):
-    address_group = AddressGroup.objects.create(
-        name=name, description=description, tenant_id=tenant_id
-    )
+    address_group = AddressGroup.objects.create(name=name, description=description, tenant_id=tenant_id)
     logger.info(f"Address Group created with name={name} and description={description}")
     return address_group
+
 
 def add_address_to_group(request: object, address_group_id: int, address_id: int):
     address_group = AddressGroup.objects.get(id=address_group_id)

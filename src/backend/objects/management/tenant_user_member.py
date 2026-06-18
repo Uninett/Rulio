@@ -1,8 +1,10 @@
 from django.db import models
 
+
 class TenantUserMember(models.Model):
     tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE)
     user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
+
     class TenantRole(models.TextChoices):
         MEMBER = "member", "Member"
         ADMIN = "admin", "Admin"

@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Tag(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -7,7 +8,7 @@ class Tag(models.Model):
 
     def __str__(self):
         return f"tag(id={self.id}, name={self.name}, description={self.description}, tenant_id={self.tenant_id})"
-    
+
 
 # class Tag:
 #     def __init__(self, id: int, name:str, description:str, tenant_id: int):

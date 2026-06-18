@@ -1,6 +1,6 @@
-
 from ninja import Schema, Field
 from pydantic import ConfigDict
+
 
 class CreateGroupSchema(Schema):
     model_config = ConfigDict(extra="forbid")

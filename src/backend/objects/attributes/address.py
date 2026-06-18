@@ -5,9 +5,9 @@ from ipaddress import summarize_address_range, IPv4Address, IPv6Address, IPv4Net
 
 class Address(models.Model):
     """
-    Model representing an IP address or range, which can be either IPv4 or IPv6. 
-    The model supports two types of addresses: 'standard', which is a single IP address or a network in CIDR notation, 
-    and 'custom_range', which is defined by a start and end IP address. 
+    Model representing an IP address or range, which can be either IPv4 or IPv6.
+    The model supports two types of addresses: 'standard', which is a single IP address or a network in CIDR notation,
+    and 'custom_range', which is defined by a start and end IP address.
     \nFields:
     \nname (str): The name of the address.
     \ndescription (str): A description of the address.
@@ -21,6 +21,7 @@ class Address(models.Model):
     \nipv6Address_start (str): The starting IPv6 address for a custom range.
     \nipv6Address_end (str): The ending IPv6 address for a custom range.
     """
+
     TYPE_CHOICES = [
         ("standard", "Ip address that can be written with a subnet mask (e.g. 192.168.0.1/24)"),
         ("custom_range", "IP Range"),
@@ -46,18 +47,24 @@ class Address(models.Model):
             errors["ipv6_type"] = "At least one of ipv4_type or ipv6_type must be set."
         if self.ipv4_type is None:
             if self.ipv4Network or self.ipv4Address_start or self.ipv4Address_end:
-                errors["ipv4_type"] = "ipv4Network, ipv4Address_start, and ipv4Address_end must be null if ipv4_type is not set."
+                errors["ipv4_type"] = (
+                    "ipv4Network, ipv4Address_start, and ipv4Address_end must be null if ipv4_type is not set."
+                )
         if self.ipv6_type is None:
             if self.ipv6Network or self.ipv6Address_start or self.ipv6Address_end:
-                errors["ipv6_type"] = "ipv6Network, ipv6Address_start, and ipv6Address_end must be null if ipv6_type is not set."
+                errors["ipv6_type"] = (
+                    "ipv6Network, ipv6Address_start, and ipv6Address_end must be null if ipv6_type is not set."
+                )
 
         # Validate IPv4 standard
         if self.ipv4_type == "standard":
             if not self.ipv4Network:
                 errors["ipv4Network"] = "IPv4 network is required for type 'standard'."
             if self.ipv4Address_start or self.ipv4Address_end:
-                errors["ipv4Address_start"] = "ipv4Address_start/end are not allowed for type 'standard', use 'custom_range' instead."
-            
+                errors["ipv4Address_start"] = (
+                    "ipv4Address_start/end are not allowed for type 'standard', use 'custom_range' instead."
+                )
+
             if self.ipv4Network:
                 try:
                     IPv4Network(self.ipv4Network)
@@ -74,18 +81,20 @@ class Address(models.Model):
                 errors["ipv4Network"] = "ipv4Network must be null for type 'custom_range'."
 
             if (
-                self.ipv4Address_start and self.ipv4Address_end
+                self.ipv4Address_start
+                and self.ipv4Address_end
                 and IPv4Address(self.ipv4Address_start) > IPv4Address(self.ipv4Address_end)
             ):
                 errors["ipv4Address_end"] = "Start IPv4 address must be less than or equal to end IPv4 address."
-
 
         # Validate IPv6 standard
         if self.ipv6_type == "standard":
             if not self.ipv6Network:
                 errors["ipv6Network"] = "IPv6 network is required for type 'standard'."
             if self.ipv6Address_start or self.ipv6Address_end:
-                errors["ipv6Address_start"] = "ipv6Address_start/end are not allowed for type 'standard', use 'custom_range' instead."
+                errors["ipv6Address_start"] = (
+                    "ipv6Address_start/end are not allowed for type 'standard', use 'custom_range' instead."
+                )
             if self.ipv6Network:
                 try:
                     IPv6Network(self.ipv6Network)
@@ -100,7 +109,11 @@ class Address(models.Model):
                 errors["ipv6Address_end"] = "End IPv6 address is required for an IPv6 custom range."
             if self.ipv6Network:
                 errors["ipv6Network"] = "ipv6Network must be null for type 'custom_range'."
-            if self.ipv6Address_start and self.ipv6Address_end and IPv6Address(self.ipv6Address_start) > IPv6Address(self.ipv6Address_end):
+            if (
+                self.ipv6Address_start
+                and self.ipv6Address_end
+                and IPv6Address(self.ipv6Address_start) > IPv6Address(self.ipv6Address_end)
+            ):
                 errors["ipv6Address_end"] = "Start IPv6 address must be less than or equal to end IPv6 address."
         if errors:
             raise ValidationError(errors)
@@ -125,12 +138,15 @@ class Address(models.Model):
         if self.ipv4_type == "standard":
             ipv4_addresses = [IPv4Network(self.ipv4Network)]
         elif self.ipv4_type == "custom_range":
-            ipv4_addresses = list(summarize_address_range(IPv4Address(self.ipv4Address_start), IPv4Address(self.ipv4Address_end)))
-        
+            ipv4_addresses = list(
+                summarize_address_range(IPv4Address(self.ipv4Address_start), IPv4Address(self.ipv4Address_end))
+            )
+
         if self.ipv6_type == "standard":
             ipv6_addresses = [IPv6Network(self.ipv6Network)]
         elif self.ipv6_type == "custom_range":
-            ipv6_addresses = list(summarize_address_range(IPv6Address(self.ipv6Address_start), IPv6Address(self.ipv6Address_end)))
+            ipv6_addresses = list(
+                summarize_address_range(IPv6Address(self.ipv6Address_start), IPv6Address(self.ipv6Address_end))
+            )
 
         return ipv4_addresses, ipv6_addresses
-
