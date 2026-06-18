@@ -1,10 +1,11 @@
 from datetime import datetime
 from django.db import models
 
+
 class Rule(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    tenant_id = models.ForeignKey('Tenant', on_delete=models.CASCADE)
+    tenant_id = models.ForeignKey("Tenant", on_delete=models.CASCADE)
     action = models.CharField(max_length=255)
     log_type = models.CharField(max_length=255)
     hit_count = models.IntegerField(default=0)

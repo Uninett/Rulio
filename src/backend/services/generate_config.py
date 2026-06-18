@@ -83,9 +83,7 @@ class Policy:
                 case "service_group":
                     self.add_service_group(rule)
                 case _:
-                    raise ValueError(
-                        f"Unsupported rule type: {rule.__class__.__name__}"
-                    )
+                    raise ValueError(f"Unsupported rule type: {rule.__class__.__name__}")
 
     def add_address(self, rule: PolicyRule):
         if rule.direction == "destination":
@@ -103,12 +101,10 @@ class Policy:
             }
         )
         values = []
-        for ipv in rule.members: 
+        for ipv in rule.members:
             for addr in ipv:
                 values.append(str(addr))
         self.networks["networks"][rule.object_name] = {"values": values}
-
-
 
     def add_service(self, rule: PolicyRule):
         self.YAMLConfig["filters"][0]["terms"].append(
