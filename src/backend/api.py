@@ -9,6 +9,10 @@ from backend.objects.attributes.service import Service
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
+from backend.services.get import (
+    get_service_groups_with_services_from_tenant,
+    get_address_groups_with_addresses_from_tenant,
+)
 from backend.services.create import (
     add_services_to_group,
     create_address,
@@ -19,6 +23,7 @@ from backend.services.create import (
     get_current_tenant_id,
     create_service_group,
     add_service_to_group,
+    add_addresses_to_group,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.group import CreateGroupSchema
@@ -38,6 +43,7 @@ from backend.objects.attributes.tag_object import TagObject
 from backend.services.helper_user_tenant import (
     is_superadmin,
     can_write_tenant,
+    can_read_tenant,
 )
 from backend.services.membership import add_address_to_group
 from backend.utils.logger import set_up_logger
@@ -293,8 +299,10 @@ def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
             "status": "error",
             "message": "You do not have permission to create an address group for this tenant.",
         }
-    address_group = create_address_group(request, payload.name, payload.description, payload.tenant_id)
-    logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
+    address_group = create_address_group(request, payload.name, payload.description)
+    logger.info(
+        f"create_address_group endpoint succeeded for group id={address_group.id}"
+    )
     return 200, {
         "status": "success",
         "message": f"Address Group created: {address_group}",
@@ -341,7 +349,12 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
         "message": f"Address id={address_id} added to group id={group_id}",
     }
 
-@api.post("/add_adresses_to_group", tags=["Attributes"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},)
+
+@api.post(
+    "/add_addresses_to_group",
+    tags=["Attributes"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
 def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: int):
     try:
         address_group = AddressGroup.objects.get(id=group_id)
@@ -361,29 +374,65 @@ def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: i
             "message": "You do not have permission to modify this service group.",
         }
 
-    response = add_services_to_group(group_id, address_ids)
+    response = add_addresses_to_group(group_id, address_ids)
 
     logger.info(
         f"add_addresses_to_group endpoint succeeded for "
-        f"service ids={response['added_adresses_ids']} and group id={group_id}"
+        f"service ids={response['added_addresses_ids']} and group id={group_id}"
     )
 
     return 200, {
         "status": "success",
         "message": (
             f"Processed address ids for group id={group_id}. "
-            f"Added={response['added_address_ids']}, "
+            f"Added={response['added_addresses_ids']}, "
             f"already_present={response['already_present_address_ids']}, "
             f"not_found={response['not_found_address_ids']}"
         ),
     }
 
 
-@api.post("/add_service_to_group", tags=["Attributes"])
-def add_service_to_group_endpoint(request, service_id: int, group_id: int):
-    # This is a placeholder function to demonstrate the endpoint. The actual implementation would involve database operations to add the service to the group.
-    logger.info(f"Service {service_id} added to group {group_id}")
-    return f"Service {service_id} added to group {group_id}"
+@api.get(
+    "get_service_group_and_services",
+    tags=["Attributes"],
+    response={200: list[dict], 403: MessageSchema},
+)
+def get_service_group_and_services_endpoint(request, get="all"):
+    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
+        logger.warning(
+            f"Unauthorized attempt to read services from tenant={request.session['current_tenant_id']} "
+            f"by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to read services from this tenant.",
+        }
+    response = get_service_groups_with_services_from_tenant(
+        request.session["current_tenant_id"],
+        get=get,
+    )
+    return 200, response
+
+
+@api.get(
+    "get_address_group_and_addresses",
+    tags=["Attributes"],
+    response={200: list[dict], 403: MessageSchema},
+)
+def get_address_group_and_addresses_endpoint(request):
+    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
+        logger.warning(
+            f"Unauthorized attempt to read addresses from tenant={request.session['current_tenant_id']} "
+            f"by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to read addresses from this tenant.",
+        }
+    response = get_address_groups_with_addresses_from_tenant(
+        request.session["current_tenant_id"]
+    )
+    return 200, response
 
 
 @api.get("/list_addresses")
@@ -569,5 +618,7 @@ def tags(request):
             "active_page": "tags",
         },
     )
+
+
 def index(request):
     return render(request, "index.html")
