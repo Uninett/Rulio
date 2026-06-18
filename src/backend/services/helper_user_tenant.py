@@ -1,6 +1,5 @@
 from backend.utils.logger import set_up_logger
 from backend.objects.management.tenant_user_member import TenantUserMember
-from django.contrib.auth.models import User
 
 
 logger = set_up_logger(__name__)
