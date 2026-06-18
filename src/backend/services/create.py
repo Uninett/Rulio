@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
+from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.management.tenant import Tenant
@@ -249,6 +250,44 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
         "added_service_ids": sorted(added_ids),
         "already_present_service_ids": sorted(already_present_ids),
         "not_found_service_ids": sorted(not_found_ids),
+    }
+
+def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dict:
+    address_group = AddressGroup.objects.get(id=address_group_id)
+
+    request_ids = set(address_ids)
+
+    existing_addresses = Address.objects.filter(id_in=request_ids)
+    found_ids = {address.id for address in existing_addresses}
+    not_found_ids = request_ids - found_ids
+    already_present_ids = set(AddressGroupMember.objects.filter(group=address_group,address_id__in=found_ids,).values_list("address_id",flat=True))
+
+    new_addresses=[
+        address 
+        for address in existing_addresses
+        if address.id not in already_present_ids
+    ]
+
+    with transaction.atomic():
+        AddressGroupMember.objects.bulk_create(
+            [
+                AddressGroupMember(group=address_group, address=address)
+                for address in new_addresses
+            ]
+        )
+    added_ids = [address.id for address in new_addresses]
+
+    logger.info(
+        f"Group {address_group.id}: added={added_ids}, "
+        f"already_present={list(already_present_ids)}, "
+        f"not_found={list(not_found_ids)}"
+    )
+
+    return {
+        "address_group_id": address_group.id,
+        "added_address_ids": sorted(added_ids),
+        "already_present_address_ids": sorted(already_present_ids),
+        "not_found_address_ids": sorted(not_found_ids),
     }
 
 
