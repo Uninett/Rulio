@@ -3,7 +3,6 @@ from django.contrib.auth import authenticate, login, logout
 from ninja import NinjaAPI
 from ninja.security import django_auth
 from django.conf import settings
-from django.shortcuts import get_object_or_404
 
 from backend.objects.attributes.service import Service
 from backend.objects.management.tenant_user_member import TenantUserMember
@@ -26,7 +25,6 @@ from backend.services.create import (
     add_addresses_to_group,
 )
 from backend.schemas.address import CreateAddressSchema
-from backend.schemas.group import CreateGroupSchema
 from backend.schemas.tag import CreateTagSchema
 from backend.schemas.tag_object import CreateTagObjectSchema
 from backend.schemas.service import CreateServiceSchema
