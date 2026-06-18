@@ -413,42 +413,9 @@ def addresses(request):
             "title_two": "Address Groups",
             "active_toggle": "all",
             "content_target": "entity-content",
-            "show_all_url": reverse("addresses-show-all"),
-            "global_url": reverse("addresses-global"),
-            "local_url": reverse("addresses-local"),
-        },
-    )
-
-
-def addresses_show_all(request):
-    return render(
-        request,
-        "partials/_objects_content.html",
-        {
-            "title_one": "Addresses",
-            "title_two": "Address Groups",
-        },
-    )
-
-
-def addresses_global(request):
-    return render(
-        request,
-        "partials/_objects_content.html",
-        {
-            "title_one": "Global Addresses",
-            "title_two": "Global Address Groups",
-        },
-    )
-
-
-def addresses_local(request):
-    return render(
-        request,
-        "partials/_objects_content.html",
-        {
-            "title_one": "Local Addresses",
-            "title_two": "Local Address Groups",
+            "show_all_url": reverse("addresses-content") + "?scope=all",
+            "global_url": reverse("addresses-content") + "?scope=global",
+            "local_url": reverse("addresses-content") + "?scope=local",
         },
     )
 
@@ -465,42 +432,41 @@ def services(request):
             "title_two": "Service Groups",
             "active_toggle": "all",
             "content_target": "entity-content",
-            "show_all_url": reverse("services-show-all"),
-            "global_url": reverse("services-global"),
-            "local_url": reverse("services-local"),
+            "show_all_url": reverse("services-content") + "?scope=all",
+            "global_url": reverse("services-content") + "?scope=global",
+            "local_url": reverse("services-content") + "?scope=local",
         },
     )
 
 
-def services_show_all(request):
+def addresses_content(request):
+    scope = request.GET.get("scope", "all")
+
+    # later: filter address rows based on scope
+    return render(
+        request,
+        "partials/_objects_content.html",
+        {
+            "title_one": "Addresses",
+            "title_two": "Address Groups",
+            "scope": scope,
+            "entity_type": "addresses",
+        },
+    )
+
+
+def services_content(request):
+    scope = request.GET.get("scope", "all")
+
+    # later: filter service rows based on scope
     return render(
         request,
         "partials/_objects_content.html",
         {
             "title_one": "Services",
             "title_two": "Service Groups",
-        },
-    )
-
-
-def services_global(request):
-    return render(
-        request,
-        "partials/_objects_content.html",
-        {
-            "title_one": "Global Services",
-            "title_two": "Global Service Groups",
-        },
-    )
-
-
-def services_local(request):
-    return render(
-        request,
-        "partials/_objects_content.html",
-        {
-            "title_one": "Local Services",
-            "title_two": "Local Service Groups",
+            "scope": scope,
+            "entity_type": "services",
         },
     )
 

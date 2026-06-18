@@ -25,13 +25,9 @@ from .api import (
     filters,
     tags,
     addresses,
-    addresses_show_all,
-    addresses_global,
-    addresses_local,
+    addresses_content,
     services,
-    services_show_all,
-    services_global,
-    services_local,
+    services_content,
 )
 
 urlpatterns = [
@@ -41,11 +37,7 @@ urlpatterns = [
     path("filters/", filters, name="filters"),
     path("tags/", tags, name="tags"),
     path("addresses/", addresses, name="addresses"),
-    path("addresses/show-all/", addresses_show_all, name="addresses-show-all"),
-    path("addresses/global/", addresses_global, name="addresses-global"),
-    path("addresses/local/", addresses_local, name="addresses-local"),
+    path("addresses/content/", addresses_content, name="addresses-content"),
     path("services/", services, name="services"),
-    path("services/show-all/", services_show_all, name="services-show-all"),
-    path("services/global/", services_global, name="services-global"),
-    path("services/local/", services_local, name="services-local"),
+    path("services/content/", services_content, name="services-content"),
 ]
