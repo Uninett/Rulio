@@ -37,8 +37,8 @@ def create_address(
     request: object,
     name: str,
     description: str,
-    ipv4_type: str | None,
-    ipv6_type: str | None,
+    ipv4_type: str | None = None,
+    ipv6_type: str | None = None,
     ipv4Network: IPv4Network | None = None,
     ipv6Network: IPv6Network | None = None,
     ipv4Address_start: IPv4Address | None = None,
@@ -72,14 +72,48 @@ def create_address(
     logger.info(f"Created {address} for tenant={address.tenant_id}")
     return address
 
+def get_or_create_address(
+    request: object,
+    name: str,
+    description: str,
+    ipv4_type: str | None = None,
+    ipv6_type: str | None = None,
+    ipv4Network: IPv4Network | None = None,
+    ipv6Network: IPv6Network | None = None,
+    ipv4Address_start: IPv4Address | None = None,
+    ipv4Address_end: IPv4Address | None = None,
+    ipv6Address_start: IPv6Address | None = None,
+    ipv6Address_end: IPv6Address | None = None,
+) -> tuple[Address, int, bool]:
+    tenant_id = get_current_tenant_id(request)
+
+    address, created = Address.objects.get_or_create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+        ipv4_type=ipv4_type,
+        ipv6_type=ipv6_type,
+        ipv4Network=str(ipv4Network) if ipv4Network else None,
+        ipv6Network=str(ipv6Network) if ipv6Network else None,
+        ipv4Address_start=str(ipv4Address_start) if ipv4Address_start else None,
+        ipv4Address_end=str(ipv4Address_end) if ipv4Address_end else None,
+        ipv6Address_start=str(ipv6Address_start) if ipv6Address_start else None,
+        ipv6Address_end=str(ipv6Address_end) if ipv6Address_end else None,
+    )
+    if created:
+        logger.info(f"Created {address} for tenant={address.tenant_id}")
+    else:
+        logger.warning(f"Address already exists: {address} for tenant={address.tenant_id}")
+    return address, address.id, created
+
 
 def create_service(
     request: object,
     name: str,
     description: str,
     protocol: str,
-    port_start: int,
-    port_end: int,
+    port_start: int | None = None,
+    port_end: int | None = None,
 ) -> Service:
 
     tenant_id = get_current_tenant_id(request)
@@ -101,6 +135,32 @@ def create_service(
     service.save()
     logger.info(f"Created {service} for tenant={service.tenant_id}")
     return service
+
+
+def get_or_create_service(
+    request: object,
+    name: str,
+    description: str,
+    protocol: str,
+    port_start: int | None = None,
+    port_end: int | None = None,
+) -> tuple[Service, int, bool]:
+
+    tenant_id = get_current_tenant_id(request)
+
+    service, created = Service.objects.get_or_create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+        protocol=protocol,
+        port_start=port_start,
+        port_end=port_end,
+    )
+    if created:
+        logger.info(f"Created {service} for tenant={service.tenant_id}")
+    else:
+        logger.warning(f"Service already exists: {service} for tenant={service.tenant_id}")
+    return service, service.id, created
 
 
 def create_tenant(request: object, name: str):

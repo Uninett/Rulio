@@ -104,12 +104,12 @@ def create_address_endpoint(request, payload: CreateAddressSchema):
 @api.post("/create_service", tags=["Attributes"])
 def create_service_endpoint(request, payload: CreateServiceSchema):
     service = create_service(
-        request,
-        payload.name,
-        payload.description,
-        payload.protocol,
-        payload.port_start,
-        payload.port_end,
+        request=request,
+        name=payload.name,
+        description=payload.description,
+        protocol=payload.protocol,
+        port_start=payload.port_start,
+        port_end=payload.port_end,
     )
     logger.info(f"create_service endpoint succeeded for service id={service.id}")
     return {
@@ -216,7 +216,7 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
             "status": "error",
             "message": "You do not have permission to modify this address group.",
         }
-    address_group = add_address_to_group(request, group_id, address_id)
+    add_address_to_group(request, group_id, address_id)
     logger.info(
         f"add_address_to_group endpoint succeeded for address id={address_id} and group id={group_id}"
     )

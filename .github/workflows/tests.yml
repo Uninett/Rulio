@@ -1,0 +1,43 @@
+# .github/workflows/tests.yml
+name: Run pytest with Docker Compose
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show files
+        run: ls -la src
+
+      - name: Create .env file
+        run: |
+          echo "DATABASE_NAME=test_db" > src/.env
+          echo "DATABASE_USER=test_user" >> src/.env
+          echo "DATABASE_PASS=test_password" >> src/.env
+
+      - name: Build and start containers
+        run: docker compose -f src/docker-compose.yml up -d --build
+
+      - name: Wait for startup
+        run: sleep 10
+
+      - name: Show container status
+        run: docker compose -f src/docker-compose.yml ps
+
+      - name: Show logs
+        run: docker compose -f src/docker-compose.yml logs
+
+      - name: Run tests
+        run: docker compose -f src/docker-compose.yml exec -T web pytest
+
+      - name: Stop containers
+        if: always()
+        run: docker compose -f src/docker-compose.yml down -v

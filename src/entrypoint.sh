@@ -34,6 +34,9 @@ EOF
 echo "Running migrations..."
 python manage.py migrate --noinput
 
+echo "Seeding database..."
+python manage.py shell -c "from backend.services.seed.populate import populate_db; populate_db()"
+
 echo "Creating superuser if needed..."
 python manage.py shell << EOF
 import os
