@@ -8,6 +8,7 @@ class CreateAddressSchema(Schema):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(..., min_length=1, max_length=255)
     description: str = ""
+    tenand_id: int = ""
     ipv4Network: Optional[IPv4Network] = Field(None, example="192.168.0.0/24")
     ipv4Address_start: Optional[IPv4Address] = Field(None, example=None)
     ipv4Address_end: Optional[IPv4Address] = Field(None, example=None)

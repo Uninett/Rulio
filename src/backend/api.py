@@ -82,8 +82,28 @@ Attributes
 """
 
 
-@api.post("/create_address", tags=["Attributes"])
-def create_address_endpoint(request, payload: CreateAddressSchema):
+@api.post(
+    "/create_address",
+    tags=["Attributes"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+def create_address_endpoint(
+    request,
+    payload: CreateAddressSchema,
+):
+    if (
+        can_write_tenant(
+            request.user, Tenant.objects.get(id=get_current_tenant_id(request))
+        )
+        is False
+    ):
+        logger.warning(
+            f"Unauthorized attempt to create service with name={payload.name} for tenant_id={get_current_tenant_id(request)} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to create a service for this tenant.",
+        }
     address = create_address(
         request=request,
         name=payload.name,
@@ -97,12 +117,10 @@ def create_address_endpoint(request, payload: CreateAddressSchema):
         ipv6Address_start=payload.ipv6Address_start,
         ipv6Address_end=payload.ipv6Address_end,
     )
-    logger.info(f"create_address endpoint succeeded for address id={address.id}")
-    return {
-        "message": "Address created",
-        "address_id": address.id,
-        "name": address.name,
-        "status": "success",
+    logger.info(f"create_service endpoint succeeded for service id={address.id}")
+    return 200, {
+        "message": "Service created",
+        "status": f"Service created with id {address.id}",
     }
 
 
@@ -321,6 +339,43 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
     return 200, {
         "status": "success",
         "message": f"Address id={address_id} added to group id={group_id}",
+    }
+
+@api.post("/add_adresses_to_group", tags=["Attributes"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},)
+def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: int):
+    try:
+        address_group = AddressGroup.objects.get(id=group_id)
+    except AddressGroup.DoesNotExist:
+        return 404, {
+            "status": "error",
+            "message": f"Address group id={group_id} not found.",
+        }
+
+    if not can_write_tenant(request.user, address_group.tenant_id):
+        logger.warning(
+            f"Unauthorized attempt to add services id={address_ids} "
+            f"to group id={group_id} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to modify this service group.",
+        }
+
+    response = add_services_to_group(group_id, address_ids)
+
+    logger.info(
+        f"add_addresses_to_group endpoint succeeded for "
+        f"service ids={response['added_adresses_ids']} and group id={group_id}"
+    )
+
+    return 200, {
+        "status": "success",
+        "message": (
+            f"Processed address ids for group id={group_id}. "
+            f"Added={response['added_address_ids']}, "
+            f"already_present={response['already_present_address_ids']}, "
+            f"not_found={response['not_found_address_ids']}"
+        ),
     }
 
 
