@@ -173,6 +173,7 @@ def create_tenant(request: object, name: str):
     logger.info(f"Tenant created: {tenant}")
     return tenant
 
+
 def create_service_group(
     request: object,
     name: str,
@@ -197,9 +198,7 @@ def create_service_group(
     return service_group
 
 
-def add_service_to_group(
-    request: object, service_group_id: int, service_id: int
-) -> ServiceGroup:
+def add_service_to_group(request: object, service_group_id: int, service_id: int) -> ServiceGroup:
     service_group = ServiceGroup.objects.get(id=service_group_id)
     service = Service.objects.get(id=service_id)
     service_group.services.add(service)
@@ -223,18 +222,11 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
         ).values_list("service_id", flat=True)
     )
 
-    new_services = [
-        service
-        for service in existing_services
-        if service.id not in already_present_ids
-    ]
+    new_services = [service for service in existing_services if service.id not in already_present_ids]
 
     with transaction.atomic():
         ServiceGroupMember.objects.bulk_create(
-            [
-                ServiceGroupMember(group=service_group, service=service)
-                for service in new_services
-            ]
+            [ServiceGroupMember(group=service_group, service=service) for service in new_services]
         )
 
     added_ids = [service.id for service in new_services]
@@ -268,18 +260,11 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
         ).values_list("address_id", flat=True)
     )
 
-    new_addresses = [
-        address
-        for address in existing_addresses
-        if address.id not in already_present_ids
-    ]
+    new_addresses = [address for address in existing_addresses if address.id not in already_present_ids]
 
     with transaction.atomic():
         AddressGroupMember.objects.bulk_create(
-            [
-                AddressGroupMember(group_id=address_group, address_id=address)
-                for address in new_addresses
-            ]
+            [AddressGroupMember(group_id=address_group, address_id=address) for address in new_addresses]
         )
     added_ids = [address.id for address in new_addresses]
 
@@ -321,29 +306,13 @@ def create_address_group(
     return address_group
 
 
-def create_tenant(request: object, name: str) -> Tenant:
-    tenant = Tenant.objects.create(tenant_name=name)
-    logger.info(f"Tenant created: {tenant}")
-    return tenant
-
-
-def create_tenant_user_member(
-    request: object, tenant_id: int, user_id: int, role: str
-) -> TenantUserMember:
+def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str) -> TenantUserMember:
     tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
     logger.info(f"TenantUserMember created: {tenant_user}")
     return tenant_user
 
 
-def create_address_group(request: object, name: str, description: str, tenant_id: int):
-    address_group = AddressGroup.objects.create(name=name, description=description, tenant_id=tenant_id)
-    logger.info(f"Address Group created with name={name} and description={description}")
-    return address_group
-
-
-def add_address_to_group(
-    request: object, address_group_id: int, address_id: int
-) -> AddressGroup:
+def add_address_to_group(request: object, address_group_id: int, address_id: int) -> AddressGroup:
     address_group = AddressGroup.objects.get(id=address_group_id)
     address = Address.objects.get(id=address_id)
     address_group.addresses.add(address)
