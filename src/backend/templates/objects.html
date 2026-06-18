@@ -6,9 +6,10 @@
 {% endblock %}
 
 {% block content %}
-{% include "partials/_tools.html" with show_toggle=True active_tool="addresses" btn_title="Add Object" %}
-<div id="objects-content">
-    {% include "partials/objects/_objects_addresses.html" %}
+{% include "partials/_tools.html" %}
+
+<div id="{{ content_target }}">
+    {% include "partials/_objects_content.html" %}
 </div>
 
 

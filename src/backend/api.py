@@ -39,6 +39,7 @@ from backend.utils.logger import set_up_logger
 
 # Frontend
 from django.shortcuts import render
+from django.urls import reverse
 
 api = NinjaAPI()
 
@@ -400,22 +401,108 @@ def filters(request):
     )
 
 
-def objects(request):
+def addresses(request):
     return render(
         request,
         "objects.html",
         {
-            "active_page": "objects",
+            "active_page": "addresses",
+            "show_toggle": True,
+            "btn_title": "Add Address",
+            "title_one": "Addresses",
+            "title_two": "Address Groups",
+            "active_toggle": "all",
+            "content_target": "entity-content",
+            "show_all_url": reverse("addresses-show-all"),
+            "global_url": reverse("addresses-global"),
+            "local_url": reverse("addresses-local"),
         },
     )
 
 
-def objects_addresses(request):
-    return render(request, "partials/objects/_objects_addresses.html")
+def addresses_show_all(request):
+    return render(
+        request,
+        "partials/_objects_content.html",
+        {
+            "title_one": "Addresses",
+            "title_two": "Address Groups",
+        },
+    )
 
 
-def objects_services(request):
-    return render(request, "partials/objects/_objects_services.html")
+def addresses_global(request):
+    return render(
+        request,
+        "partials/_objects_content.html",
+        {
+            "title_one": "Global Addresses",
+            "title_two": "Global Address Groups",
+        },
+    )
+
+
+def addresses_local(request):
+    return render(
+        request,
+        "partials/_objects_content.html",
+        {
+            "title_one": "Local Addresses",
+            "title_two": "Local Address Groups",
+        },
+    )
+
+
+def services(request):
+    return render(
+        request,
+        "objects.html",
+        {
+            "active_page": "services",
+            "show_toggle": True,
+            "btn_title": "Add Service",
+            "title_one": "Services",
+            "title_two": "Service Groups",
+            "active_toggle": "all",
+            "content_target": "entity-content",
+            "show_all_url": reverse("services-show-all"),
+            "global_url": reverse("services-global"),
+            "local_url": reverse("services-local"),
+        },
+    )
+
+
+def services_show_all(request):
+    return render(
+        request,
+        "partials/_objects_content.html",
+        {
+            "title_one": "Services",
+            "title_two": "Service Groups",
+        },
+    )
+
+
+def services_global(request):
+    return render(
+        request,
+        "partials/_objects_content.html",
+        {
+            "title_one": "Global Services",
+            "title_two": "Global Service Groups",
+        },
+    )
+
+
+def services_local(request):
+    return render(
+        request,
+        "partials/_objects_content.html",
+        {
+            "title_one": "Local Services",
+            "title_two": "Local Service Groups",
+        },
+    )
 
 
 def tags(request):
