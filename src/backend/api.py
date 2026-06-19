@@ -88,7 +88,7 @@ Attributes
 
 @api.post(
     "/create_address",
-    tags=["Attributes"],
+    tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
 def create_address_endpoint(
@@ -125,7 +125,7 @@ def create_address_endpoint(
 
 @api.post(
     "/create_service",
-    tags=["Attributes"],
+    tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema},
 )
 def create_service_endpoint(
@@ -155,14 +155,7 @@ def create_service_endpoint(
     }
 
 
-@api.post("/create_tenant", tags=["Attributes"])
-def create_tenant_endpoint(request, payload: CreateTenantSchema):
-    tenant = create_tenant(request, payload.name)
-    logger.info(f"create_tenant endpoint succeeded for tenant id={tenant.id}")
-    return f"Tenant created: {tenant}"
-
-
-@api.post("/create_service_group", tags=["Attributes"])
+@api.post("/create_service_group", tags=["Attributes - Service"])
 def create_service_group_endpoint(request, payload: CreateAddressGroupSchema):
     if not can_write_tenant(request.user, Tenant.objects.get(id=payload.tenant_id)):
         logger.warning(
@@ -180,7 +173,7 @@ def create_service_group_endpoint(request, payload: CreateAddressGroupSchema):
     }
 
 
-@api.post("/add_service_to_group", tags=["Attributes"])
+@api.post("/add_service_to_group", tags=["Attributes - Service"], response={200: MessageSchema, 403: MessageSchema})
 def add_service_to_group_endpoint(request, service_id: int, group_id: int):
     service_group = ServiceGroup.objects.get(id=group_id)
     if not can_write_tenant(request.user, Tenant.objects.get(id=service_group.tenant_id)) or not can_write_tenant(
@@ -204,7 +197,7 @@ def add_service_to_group_endpoint(request, service_id: int, group_id: int):
 
 @api.post(
     "/add_services_to_group",
-    tags=["Attributes"],
+    tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
 def add_services_to_group_endpoint(request, service_ids: list[int], group_id: int):
@@ -244,34 +237,9 @@ def add_services_to_group_endpoint(request, service_ids: list[int], group_id: in
     }
 
 
-# This endpoint allows a superadmin to add a user to a tenant with a specific role. Only superadmins can perform this action.
-@api.post(
-    "/add_tenant_privileges_to_user",
-    tags=["Attributes"],
-    response={200: MessageSchema, 403: MessageSchema},
-)
-def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSchema):
-    if not is_superadmin(request.user):
-        logger.warning(
-            f"Unauthorized attempt to create TenantUserMember for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to add users to this tenant.",
-        }
-    tenant_user = create_tenant_user_member(request, payload.tenant_id, payload.user_id, payload.role)
-    logger.info(
-        f"create_tenant_user endpoint succeeded for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
-    )
-    return 200, {
-        "status": "success",
-        "message": f"Tenant User created: {tenant_user}",
-    }
-
-
 @api.post(
     "/create_address_group",
-    tags=["Attributes"],
+    tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
 def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
@@ -292,7 +260,7 @@ def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
     }
 
 
-@api.post("/create_tag", tags=["Attributes"])
+@api.post("/create_tag", tags=["Attributes - Tag"])
 def create_tag_endpoint(request, payload: CreateTagSchema):
     tag = Tag()
     # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
@@ -300,7 +268,7 @@ def create_tag_endpoint(request, payload: CreateTagSchema):
     return f"Tag created {tag}"
 
 
-@api.post("/create_tag_object", tags=["Attributes"])
+@api.post("/create_tag_object", tags=["Attributes - Tag"])
 def create_tag_object_endpoint(request, payload: CreateTagObjectSchema):
     tag_object = TagObject()
     # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
@@ -310,7 +278,7 @@ def create_tag_object_endpoint(request, payload: CreateTagObjectSchema):
 
 @api.post(
     "/add_address_to_group",
-    tags=["Attributes"],
+    tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
 def add_address_to_group_endpoint(request, address_id: int, group_id: int):
@@ -335,7 +303,7 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
 
 @api.post(
     "/add_addresses_to_group",
-    tags=["Attributes"],
+    tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
 def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: int):
@@ -376,8 +344,8 @@ def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: i
 
 
 @api.get(
-    "get_service_group_and_services",
-    tags=["Attributes"],
+    "/get_service_group_and_services",
+    tags=["Attributes - Service"],
     response={200: list[dict], 403: MessageSchema},
 )
 def get_service_group_and_services_endpoint(request, get="all"):
@@ -398,8 +366,8 @@ def get_service_group_and_services_endpoint(request, get="all"):
 
 
 @api.get(
-    "get_address_group_and_addresses",
-    tags=["Attributes"],
+    "/get_address_group_and_addresses",
+    tags=["Attributes - Address"],
     response={200: list[dict], 403: MessageSchema},
 )
 def get_address_group_and_addresses_endpoint(request, get="all"):
@@ -419,7 +387,7 @@ def get_address_group_and_addresses_endpoint(request, get="all"):
     return 200, response
 
 
-@api.get("/list_services", tags=["Attributes"], response={200: list[dict], 403: MessageSchema})
+@api.get("/list_services", tags=["Attributes - Service"], response={200: list[dict], 403: MessageSchema})
 def list_services(request):
     if not can_read_tenant(request.user, request.session["current_tenant_id"]):
         logger.warning(
@@ -434,7 +402,7 @@ def list_services(request):
     return 200, list(services.values())
 
 
-@api.get("/list_addresses", tags=["Attributes"], response={200: list[dict], 403: MessageSchema})
+@api.get("/list_addresses", tags=["Attributes - Address"], response={200: list[dict], 403: MessageSchema})
 def list_addresses(request):
     if not can_read_tenant(request.user, request.session["current_tenant_id"]):
         logger.warning(
@@ -451,12 +419,29 @@ def list_addresses(request):
 
 """
 ====================================================================
+Management Objects
+====================================================================
+"""
+
+
+@api.post("/create_tenant", tags=["Management - Tenant"], response={200: MessageSchema, 403: MessageSchema})
+def create_tenant_endpoint(request, payload: CreateTenantSchema):
+    tenant = create_tenant(request, payload.name)
+    logger.info(f"create_tenant endpoint succeeded for tenant id={tenant.id}")
+    return 200, {
+        "message": "Tenant created",
+        "status": f"Tenant created with id {tenant.id}",
+    }
+
+
+"""
+====================================================================
 User Management
 ====================================================================
 """
 
 
-@api.post("/login", tags=["Authentication"], auth=None, response={200: MessageSchema})
+@api.post("/login", tags=["Authentication - User"], auth=None, response={200: MessageSchema})
 def login_endpoint(request, payload: LoginSchema):
     user = authenticate(request, username=payload.username, password=payload.password)
 
@@ -484,7 +469,7 @@ def login_endpoint(request, payload: LoginSchema):
     }
 
 
-@api.post("/logout", tags=["Authentication"])
+@api.post("/logout", tags=["Authentication - User"])
 def logout_endpoint(request):
     username = request.user.username if request.user.is_authenticated else "anonymous"
     logout(request)
@@ -492,7 +477,7 @@ def logout_endpoint(request):
     return {"status": "success", "message": "Logged out successfully"}
 
 
-@api.get("/who_am_i", tags=["Authentication"], auth=None)
+@api.get("/who_am_i", tags=["Authentication - User"], auth=None)
 def who_am_i(request):
     if request.user.is_authenticated:
         return {
@@ -550,28 +535,28 @@ def delete_user(request, user_id: int):
         return {"status": "error", "message": f"User with id {user_id} does not exist."}
 
 
-@api.post("/add_address")
-def add_address(
-    request,
-    name: str,
-    description: str,
-    tenant_id: int,
-    type: str,
-    ipv4_value: str = None,
-    ipv6_value: str = None,
-):
-    address = Address.objects.create(
-        name=name,
-        description=description,
-        tenant_id=tenant_id,
-        type=type,
-        ipv4_value=ipv4_value,
-        ipv6_value=ipv6_value,
+# This endpoint allows a superadmin to add a user to a tenant with a specific role. Only superadmins can perform this action.
+@api.post(
+    "/add_tenant_privileges_to_user",
+    tags=["User Management - Tenant"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSchema):
+    if not is_superadmin(request.user):
+        logger.warning(
+            f"Unauthorized attempt to create TenantUserMember for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to add users to this tenant.",
+        }
+    tenant_user = create_tenant_user_member(request, payload.tenant_id, payload.user_id, payload.role)
+    logger.info(
+        f"create_tenant_user endpoint succeeded for tenant_id={payload.tenant_id} and user_id={payload.user_id}"
     )
-    return {
+    return 200, {
         "status": "success",
-        "message": f"Address '{name}' created successfully.",
-        "address_id": address.id,
+        "message": f"Tenant User created: {tenant_user}",
     }
 
 
