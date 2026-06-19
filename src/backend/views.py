@@ -1,5 +1,6 @@
 # Frontend
 from django.shortcuts import render
+from django.http import HttpResponse
 
 """
 Frontend
@@ -93,3 +94,7 @@ def get_tags_page(request):
             "active_page": "tags",
         },
     )
+
+
+def delete_address_row(request):
+    return HttpResponse("")

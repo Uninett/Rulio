@@ -32,6 +32,7 @@ from .views import (
     post_address_row_partial,
     get_addresses_content,
     get_services_content,
+    delete_address_row,
 )
 
 urlpatterns = [
@@ -45,4 +46,5 @@ urlpatterns = [
     path("objects/addresses/", get_addresses_content, name="objects-addresses"),
     path("objects/services/", get_services_content, name="objects-services"),
     path("tags/", get_tags_page, name="tags"),
+    path("addresses/delete/", delete_address_row, name="delete-address-row"),
 ]
