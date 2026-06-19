@@ -46,8 +46,6 @@ from backend.services.helper_user_tenant import (
 from backend.services.membership import add_address_to_group
 from backend.utils.logger import set_up_logger
 
-# Frontend
-from django.shortcuts import render
 
 api = NinjaAPI()
 
@@ -558,60 +556,3 @@ def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSch
         "status": "success",
         "message": f"Tenant User created: {tenant_user}",
     }
-
-
-"""
-Frontend
-"""
-
-
-def devices(request):
-    return render(
-        request,
-        "devices.html",
-        {
-            "active_page": "devices",
-        },
-    )
-
-
-def filters(request):
-    return render(
-        request,
-        "filters.html",
-        {
-            "active_page": "filters",
-        },
-    )
-
-
-def objects(request):
-    return render(
-        request,
-        "objects.html",
-        {
-            "active_page": "objects",
-        },
-    )
-
-
-def objects_addresses(request):
-    return render(request, "partials/objects/_objects_addresses.html")
-
-
-def objects_services(request):
-    return render(request, "partials/objects/_objects_services.html")
-
-
-def tags(request):
-    return render(
-        request,
-        "tags.html",
-        {
-            "active_page": "tags",
-        },
-    )
-
-
-def index(request):
-    return render(request, "index.html")

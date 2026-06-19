@@ -1,0 +1,30 @@
+<section class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Address Name</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Address Group</th>
+                <th>Referenced To</th>
+                <th>Addresses</th>
+                <th>Tags</th>
+
+
+            </tr>
+        </thead>
+        <tbody id="addresses-table">
+            {% for address in addresses %}
+            {% include "partials/objects/_addressesRow.html" with address=address %}
+            {% endfor %}
+            <tr id="new-address-row-slot"></tr>
+
+        </tbody>
+    </table>
+    <section class="add-btn-container">
+        <button hx-get="/addresses/new/" hx-target="#addresses-table" hx-swap="beforeend" class="add-btn">
+            Add Address +
+        </button>
+    </section>
+
+</section>

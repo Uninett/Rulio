@@ -3,13 +3,18 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/tools.css' %}" />
+
+<link rel="stylesheet" href="{% static 'css/objects.css' %}" />
 {% endblock %}
 
 {% block content %}
 {% include "partials/_tools.html" with show_toggle=True active_tool="addresses" btn_title="Add Object" %}
 <div id="objects-content">
     {% include "partials/objects/_objects_addresses.html" %}
+
 </div>
+
+
 
 
 <script>
@@ -23,4 +28,9 @@
         clickedButton.classList.add("active");
     }
 </script>
+
+
+
+
+
 {% endblock %}

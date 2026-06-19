@@ -18,23 +18,31 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+
 from .api import (
     api,
-    devices,
-    filters,
-    objects,
-    objects_addresses,
-    objects_services,
-    tags,
+)
+
+from .views import (
+    get_devices_page,
+    get_filters_page,
+    get_objects_page,
+    get_tags_page,
+    get_empty_address_row_partial,
+    post_address_row_partial,
+    get_addresses_content,
+    get_services_content,
 )
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api.urls),
-    path("devices/", devices, name="devices"),
-    path("filters/", filters, name="filters"),
-    path("objects/", objects, name="objects"),
-    path("objects/addresses/", objects_addresses, name="objects-addresses"),
-    path("objects/services/", objects_services, name="objects-services"),
-    path("tags/", tags, name="tags"),
+    path("devices/", get_devices_page, name="devices"),
+    path("filters/", get_filters_page, name="filters"),
+    path("objects/", get_objects_page, name="objects"),
+    path("addresses/new/", get_empty_address_row_partial, name="new-address-row"),
+    path("addresses/save/", post_address_row_partial, name="save_address_row"),
+    path("objects/addresses/", get_addresses_content, name="objects-addresses"),
+    path("objects/services/", get_services_content, name="objects-services"),
+    path("tags/", get_tags_page, name="tags"),
 ]
