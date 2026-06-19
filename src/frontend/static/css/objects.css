@@ -1,5 +1,5 @@
 td {
-    padding: 1rem;
+
     font-family: "Haffer", sans-serif;
     /* color-layut-background-strong */
     text-align: center;
@@ -14,21 +14,25 @@ td:first-child {
 }
 
 th {
-    padding: 1rem;
+
     font-family: "Haffer", sans-serif;
 
 }
 
+.table-container {
+    margin-top: 1rem;
+    height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
 
 
 table {
-    width: 100%;
+    width: 90%;
     border-collapse: seperate;
-    border-spacing: 0 10px;
-}
-
-.table-container {
-    padding: 0 6rem
+    margin-left: 5%;
 }
 
 .add-btn-container {
@@ -43,7 +47,6 @@ table {
     top: 50%;
     left: 0;
     right: 0;
-    height: 1px;
     background-color: #E0E0E0;
 }
 
