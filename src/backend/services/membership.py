@@ -14,6 +14,3 @@ def add_address_to_group(request: object, address_group_id: int, address_id: int
         address_id=_address,
     )
 
-
-def get_address_group_members(request: object, address_group_id: int) -> list[Address]:
-    return AddressGroupMember.objects.filter(address_group_id=address_group_id)

@@ -3,7 +3,9 @@ import pytest
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
+from backend.services.create import add_addresses_to_group
 from backend.services.generate_config import PolicyRule
+from backend.services.get import get_address_group_members, get_service_group_members
 from constants import TESTING_TENNANT_ID
 
 
@@ -68,43 +70,11 @@ def address_policy_rules(sample_addresses):
             action="accept" if i % 2 == 0 else "deny",
             object=address,
             direction="destination" if i % 2 == 0 else "source",
+            sequence=i,
         )
         policy_rules.append(rule)
 
     return policy_rules
-
-
-@pytest.fixture
-def sample_address_group(sample_addresses):
-    address_group = AddressGroup(
-        name="Test_Address_Group",
-        description="This is a test address group",
-        tenant_id=TESTING_TENNANT_ID,
-    )
-    address_group.save()
-    # request = MockRequest()
-
-    # for address in sample_addresses:
-    #     add_address_to_group(request, address_group.id, address.id)
-
-    return address_group
-
-
-@pytest.fixture
-def address_group_policy_rules(sample_address_group):
-    policy_rules = []
-    # for i, address in enumerate(sample_address_group.addresses):
-    #     rule = PolicyRule(
-    #         name=f"Test_Rule_{i + 1}",
-    #         obj_type="address_group",
-    #         action="accept" if i % 2 == 0 else "deny",
-    #         object=sample_address_group,
-    #         direction="destination" if i % 2 == 0 else "source",
-    #     )
-    #     policy_rules.append(rule)
-
-    return policy_rules
-
 
 @pytest.fixture
 def sample_services():
@@ -173,3 +143,41 @@ def service_policy_rules(sample_services):
         policy_rules.append(rule)
 
     return policy_rules
+
+
+@pytest.fixture
+def sample_address_group(sample_addresses):
+    sample_address_group = AddressGroup(
+        name="Test_Address_Group",
+        description="This is a test address group",
+        tenant_id=TESTING_TENNANT_ID,
+    )
+    sample_address_group.save()
+
+    add_addresses_to_group(
+        address_group_id=sample_address_group.id,
+        address_ids=[address.id for address in sample_addresses],
+    )
+
+    return sample_address_group
+
+
+@pytest.fixture
+def address_group_policy_rules(sample_address_group):
+    policy_rules = []
+
+    rule = PolicyRule(
+        name="Test_Rule_for_Address_Group",
+        obj_type="address_group",
+        action="accept",
+        object=sample_address_group,
+        direction="destination",
+        sequence=0,
+    )
+    policy_rules.append(rule)
+
+    return policy_rules
+
+
+
+

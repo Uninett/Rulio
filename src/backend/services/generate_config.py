@@ -5,6 +5,7 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.services.get import get_service_group_members, get_address_group_members
 
 
 class PolicyRule:
@@ -24,6 +25,7 @@ class PolicyRule:
         obj_type: str,
         action: str,
         object: Address | Service | AddressGroup | ServiceGroup,
+        sequence: int ,
         direction: str = "destination",
     ):
         self.name = name
@@ -31,6 +33,7 @@ class PolicyRule:
         self.action = action
         self.object = object
         self.direction = direction
+        self.sequence = sequence
         self.members = []
         self.object_name = object.name
         if obj_type.lower() == "address" and isinstance(object, Address):
@@ -38,9 +41,9 @@ class PolicyRule:
         elif obj_type.lower() == "service" and isinstance(object, Service):
             self.members = object.get_service()
         elif obj_type.lower() == "address_group" and isinstance(object, AddressGroup):
-            self.members = object.get_addresses()
+            self.members = get_address_group_members(request=None, address_group_id=object.id)
         elif obj_type.lower() == "service_group" and isinstance(object, ServiceGroup):
-            self.members = object.get_services()
+            self.members = get_service_group_members(request=None, service_group_id=object.id)
 
 
 class Policy:
@@ -70,6 +73,8 @@ class Policy:
                 },
             ],
         }
+        rules.sort(key=lambda r: r.sequence)
+
 
         self.networks = {"networks": {}}
         for rule in rules:
@@ -122,8 +127,14 @@ class Policy:
             field_name = "source-address"
         else:
             raise ValueError(f"Unsupported rule direction: {rule.direction}")
-        ip_addresses = rule.members
-        self.networks["networks"][rule.object_name]["values"] = ip_addresses
+        values = []
+        for member in rule.members:
+            for ipv in member.get_address():
+                for addr in ipv:
+                    values.append(str(addr))
+        if rule.object_name not in self.networks["networks"]:
+            self.networks["networks"][rule.object_name] = {"values": []}
+        self.networks["networks"][rule.object_name]["values"] = values
         self.YAMLConfig["filters"][0]["terms"].append(
             {
                 "name": rule.name,
