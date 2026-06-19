@@ -37,7 +37,7 @@ from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
 from backend.objects.management.tenant import Tenant
-from backend.objects.attributes.tag_object import TagObject
+from backend.objects.attributes.tag_connection import TagObject
 from backend.services.helper_user_tenant import (
     is_superadmin,
     can_write_tenant,

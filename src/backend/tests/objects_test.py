@@ -5,7 +5,7 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.tag import Tag
-from backend.objects.attributes.tag_object import TagObject
+from backend.objects.attributes.tag_connection import TagObject
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_filter import RuleFilter
