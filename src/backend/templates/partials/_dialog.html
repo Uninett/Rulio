@@ -1,0 +1,32 @@
+<div class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+
+        <form>
+            <div class="modal-header">
+                <h2>Add Address Object</h2>
+            </div>
+            <hr>
+
+            Content
+
+            <hr>
+
+            <div class="modal-actions">
+                <button class="btn btn-cancel" type="button"
+                    onclick="document.getElementById('modal-container').innerHTML = ''">
+                    Cancel/Close
+                </button>
+
+                <button class="btn btn-save" type="submit">
+                    Save/Edit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function closeModal(event) {
+        document.getElementById('modal-container').innerHTML = '';
+    }
+</script>
