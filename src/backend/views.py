@@ -1,6 +1,7 @@
 # Frontend
 from django.shortcuts import render
 from django.urls import reverse
+from .api import list_addresses
 
 """
 Frontend
@@ -101,6 +102,37 @@ def get_mock_addresses():
             "tags": "admin",
         },
     ]
+
+
+def get_filters_page(request):
+    return render(
+        request,
+        "filters.html",
+        {
+            "active_page": "filters",
+        },
+    )
+
+
+# This is a temporary implementation with hardcoded data for demonstration purposes.
+def get_objects_page(request):
+    status, api_addresses = list_addresses(request)
+
+    if status != 200:
+        addresses = []
+
+    else:
+        addresses = [
+            {
+                "type": "address" if item.get("id") else "group",
+                "name": item.get("name", ""),
+                "ipv4": item.get("ipv4Network") or "",
+                "ipv6": item.get("ipv6Network") or "",
+                "description": item.get("description", ""),
+                "tags": "",
+            }
+            for item in api_addresses
+        ]
 
 
 def get_devices_page(request):
