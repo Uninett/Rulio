@@ -1,0 +1,16 @@
+<tr class="delete-mode-row">
+    <td>{{ address.name }}</td>
+    <td>{{ address.description }}</td>
+    <td>{{ address.type }}</td>
+    <td>{{ address.group }}</td>
+    <td>{{ address.referenced_to }}</td>
+    <td>{{ address.addresses }}</td>
+    <td>{{ address.tags }}</td>
+    <td>
+        <button class="delete-btn" hx-delete="/addresses/delete/" hx-target="closest tr" hx-swap="outerHTML" hx-vals='{
+                "name": "{{ address.name }}"
+            }'>
+            ✕
+        </button>
+    </td>
+</tr>
