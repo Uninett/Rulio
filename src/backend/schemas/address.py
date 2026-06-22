@@ -16,6 +16,7 @@ class CreateAddressSchema(Schema):
     ipv6Address_start: Optional[IPv6Address] = Field(None, example=None)
     ipv6Address_end: Optional[IPv6Address] = Field(None, example=None)
 
+    addr_type: Literal["host", "network", "range"] = Field(..., example="network")
     ipv4_type: Optional[Literal["standard", "custom_range"]] = None
     ipv6_type: Optional[Literal["standard", "custom_range"]] = None
 

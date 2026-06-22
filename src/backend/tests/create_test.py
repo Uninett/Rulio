@@ -23,6 +23,7 @@ class TestCreateAddress:
             request=request,
             name="Test Address",
             description="This is a test address",
+            addr_type="host",
             ipv4_type="standard",
             ipv6_type="standard",
             ipv4Network="192.168.1.1",
