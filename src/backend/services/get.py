@@ -153,6 +153,9 @@ def get_all_tags_from_object(object_id: int, object_type: str) -> list[Tag]:
     obj = get_object_by_type_and_id(object_type, object_id)
     return list(obj.get_tags())
 
+def get_all_tags_from_tenant(tenant_id: int) -> list[Tag]:
+    return Tag.objects.filter(tenant_id=tenant_id)
+
 
 def get_object_by_type_and_id(object_type: str, object_id: int):
     model_mapping = {

@@ -8,16 +8,20 @@ from backend.objects.attributes.service import Service
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
+from backend.services.authentication import require_read_tenant, require_superadmin, require_write_tenant
+from backend.services.delete import clear_all_tags_from_object, delete_tag_from_tenant, remove_tag_from_object
 from backend.services.get import (
     get_all_tags_from_object,
     get_service_groups_with_services_from_tenant,
     get_address_groups_with_addresses_from_tenant,
+    get_all_tags_from_tenant,
 )
 from backend.services.create import (
     add_services_to_group,
     create_address,
     create_and_add_tag_to_object,
     create_service,
+    create_tag,
     create_tenant_user_member,
     create_tenant,
     create_address_group,
@@ -90,18 +94,11 @@ Attributes
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_write_tenant
 def create_address_endpoint(
     request,
     payload: CreateAddressSchema,
 ):
-    if can_write_tenant(request.user, Tenant.objects.get(id=get_current_tenant_id(request))) is False:
-        logger.warning(
-            f"Unauthorized attempt to create service with name={payload.name} for tenant_id={get_current_tenant_id(request)} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create a service for this tenant.",
-        }
     address = create_address(
         request=request,
         name=payload.name,
@@ -128,18 +125,11 @@ def create_address_endpoint(
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_write_tenant
 def create_service_endpoint(
     request,
     payload: CreateServiceSchema,
 ):
-    if can_write_tenant(request.user, Tenant.objects.get(id=get_current_tenant_id(request))) is False:
-        logger.warning(
-            f"Unauthorized attempt to create service with name={payload.name} for tenant_id={get_current_tenant_id(request)} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create a service for this tenant.",
-        }
     service = create_service(
         request=request,
         name=payload.name,
@@ -156,15 +146,9 @@ def create_service_endpoint(
 
 
 @api.post("/create_service_group", tags=["Attributes - Service"])
+@require_write_tenant
 def create_service_group_endpoint(request, payload: CreateAddressGroupSchema):
-    if not can_write_tenant(request.user, Tenant.objects.get(id=payload.tenant_id)):
-        logger.warning(
-            f"Unauthorized attempt to create service group with name={payload.name} for tenant_id={payload.tenant_id} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create a service group for this tenant.",
-        }
+
     service_group = create_service_group(request, payload.name, payload.description)
     logger.info(f"Service Group created: {service_group}")
     return 200, {
@@ -242,38 +226,15 @@ def add_services_to_group_endpoint(request, service_ids: list[int], group_id: in
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_write_tenant
 def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
     tenant_id = request.session.get("current_tenant_id")
-    if not can_write_tenant(request.user, Tenant.objects.get(id=tenant_id)):
-        logger.warning(
-            f"Unauthorized attempt to create address group with name={payload.name} for tenant_id={tenant_id} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create an address group for this tenant.",
-        }
     address_group = create_address_group(request, payload.name, payload.description, tenant_id)
     logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
     return 200, {
         "status": "success",
         "message": f"Address Group created: {address_group}",
     }
-
-
-@api.post("/create_tag", tags=["Attributes - Tag"])
-def create_tag_endpoint(request, payload: CreateTagSchema):
-    tag = Tag()
-    # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
-    logger.info(f"Tag created: {tag}")
-    return f"Tag created {tag}"
-
-
-@api.post("/create_tag_object", tags=["Attributes - Tag"])
-def create_tag_object_endpoint(request, payload: CreateTagObjectSchema):
-    tag_object = TagObject()
-    # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
-    logger.info(f"Tag Object created: {tag_object}")
-    return f"Tag Object created {tag_object}"
 
 
 @api.post(
@@ -418,15 +379,8 @@ def list_addresses(request):
 
 
 @api.post("/create_and_add_tag_to_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
 def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchema):
-    if not can_write_tenant(request.user, Tenant.objects.get(id=request.session["current_tenant_id"])):
-        logger.warning(
-            f"Unauthorized attempt to create tag with name={payload.name} for tenant_id={request.session['current_tenant_id']} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create a tag for this tenant.",
-        }
     tag = create_and_add_tag_to_object(
         request, payload.name, payload.description, payload.object_type, payload.object_id
     )
@@ -440,16 +394,8 @@ def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchem
 
 
 @api.get("/get_all_tags_from_object", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
 def get_all_tags_from_object_endpoint(request, object_id: int, object_type: str):
-    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
-        logger.warning(
-            f"Unauthorized attempt to read tags from tenant={request.session['current_tenant_id']} "
-            f"by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to read tags from this tenant.",
-        }
     tags = get_all_tags_from_object(object_id, object_type)
     return 200, [
         {
@@ -460,6 +406,71 @@ def get_all_tags_from_object_endpoint(request, object_id: int, object_type: str)
         }
         for tag in tags
     ]
+
+
+@api.post("/create_tag", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_tag_endpoint(request, payload: CreateTagSchema):
+    tag = create_tag(request, payload.name, payload.description)
+    logger.info(f"create_tag endpoint succeeded for tag id={tag.id}")
+    return 200, {
+        "status": "success",
+        "message": f"Tag created with id {tag.id}",
+    }
+
+
+@api.get("/get_all_tags_from_tenant", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def get_all_tags_from_tenant_endpoint(request):
+    tags = get_all_tags_from_tenant(request.session["current_tenant_id"])
+    return 200, [
+        {
+            "id": tag.id,
+            "name": tag.name,
+            "description": tag.description,
+            "tenant_id": tag.tenant_id,
+        }
+        for tag in tags
+    ]
+
+
+@api.delete("/clear_all_tags_from_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def clear_all_tags_from_object_endpoint(request, object_id: int, object_type: str):
+    deleted_count = clear_all_tags_from_object(object_id, object_type)
+    logger.info(
+        f"clear_all_tags_from_object endpoint succeeded for object id={object_id} and object type={object_type}. Deleted {deleted_count} tag connections."
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Cleared all tags from object id={object_id} of type {object_type}. Deleted {deleted_count} tag connections.",
+    }
+
+
+@api.delete("/remove_tag_from_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def remove_tag_from_object_endpoint(request, object_id: int, object_type: str, tag_id: int):
+    deleted_count = remove_tag_from_object(object_id, object_type, tag_id)
+    logger.info(
+        f"remove_tag_from_object endpoint succeeded for tag id={tag_id} and object id={object_id} of type {object_type}. Deleted {deleted_count} tag connections."
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Removed tag id={tag_id} from object id={object_id} of type {object_type}. Deleted {deleted_count} tag connections.",
+    }
+
+
+@api.delete("/delete_tag_from_tenant", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def delete_tag_from_tenant_endpoint(request, tag_id: int):
+    deleted_count = delete_tag_from_tenant(tag_id, request.session["current_tenant_id"])
+    logger.info(
+        f"delete_tag_from_tenant endpoint succeeded for tag id={tag_id} in tenant={request.session['current_tenant_id']}. Deleted {deleted_count} tag connections."
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Deleted tag id={tag_id} from tenant. Deleted {deleted_count} tag connections.",
+    }
 
 
 """
@@ -477,6 +488,13 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
         "message": "Tenant created",
         "status": f"Tenant created with id {tenant.id}",
     }
+
+
+@api.get("/list_tenants", tags=["Management - Tenant"], response={200: list[dict], 403: MessageSchema})
+@require_superadmin
+def list_tenants(request):
+    tenants = Tenant.objects.all()
+    return 200, list(tenants.values())
 
 
 """
