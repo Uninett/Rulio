@@ -157,22 +157,51 @@ def get_add_modal_config(object_type):
     configs = {
         "devices": {
             "title": "Add Device",
-            "form_partial": "partials/modals/_devices_form.html",
+            "supports_variants": True,
+            "default_variant": "item",
+            "variant_labels": {
+                "item": "Device",
+                "group": "Device Group",
+            },
+            "variants": {
+                "item": "partials/modals/_devices_form.html",
+                "group": "partials/modals/_device_groups_form.html",
+            },
         },
         "filters": {
             "title": "Add Filter",
+            "supports_variants": False,
             "form_partial": "partials/modals/_filters_form.html",
         },
         "addresses": {
             "title": "Add Address",
-            "form_partial": "partials/modals/_addresses_form.html",
+            "supports_variants": True,
+            "default_variant": "item",
+            "variant_labels": {
+                "item": "Address",
+                "group": "Address Group",
+            },
+            "variants": {
+                "item": "partials/modals/_addresses_form.html",
+                "group": "partials/modals/_address_groups_form.html",
+            },
         },
         "services": {
             "title": "Add Service",
-            "form_partial": "partials/modals/_services_form.html",
+            "supports_variants": True,
+            "default_variant": "item",
+            "variant_labels": {
+                "item": "Service",
+                "group": "Service Group",
+            },
+            "variants": {
+                "item": "partials/modals/_services_form.html",
+                "group": "partials/modals/_service_groups_form.html",
+            },
         },
         "tags": {
             "title": "Add Tag",
+            "supports_variants": False,
             "form_partial": "partials/modals/_tags_form.html",
         },
     }
@@ -182,13 +211,36 @@ def get_add_modal_config(object_type):
 def get_add_modal(request, object_type):
     config = get_add_modal_config(object_type)
 
+    if config.get("supports_variants"):
+        selected_variant = config["default_variant"]
+        modal_content_partial = config["variants"][selected_variant]
+    else:
+        selected_variant = None
+        modal_content_partial = config["form_partial"]
+
     return render(
         request,
         "partials/_modal.html",
         {
             "modal_title": config["title"],
-            "modal_content_partial": config["form_partial"],
             "modal_mode": "add",
-            "object_type": object_type,
+            "modal_object_type": object_type,
+            "modal_variant": selected_variant,
+            "modal_supports_variants": config.get("supports_variants", False),
+            "modal_variant_labels": config.get("variant_labels", {}),
+            "modal_content_partial": modal_content_partial,
+        },
+    )
+
+
+def get_add_modal_form_content(request, object_type, variant):
+    config = get_add_modal_config(object_type)
+
+    return render(
+        request,
+        config["variants"][variant],
+        {
+            "modal_object_type": object_type,
+            "modal_variant": variant,
         },
     )
