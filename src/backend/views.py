@@ -2,6 +2,7 @@
 from django.shortcuts import render
 from django.urls import reverse
 from .api import list_addresses
+from django.urls import reverse
 
 """
 Frontend
@@ -114,8 +115,7 @@ def get_filters_page(request):
     )
 
 
-# This is a temporary implementation with hardcoded data for demonstration purposes.
-def get_objects_page(request):
+def get_addresses_view(request):
     status, api_addresses = list_addresses(request)
 
     if status != 200:
@@ -133,6 +133,12 @@ def get_objects_page(request):
             }
             for item in api_addresses
         ]
+    return addresses
+
+
+# This is a temporary implementation with hardcoded data for demonstration purposes.
+def get_objects_page(request):
+    addresses = get_addresses_view(request)
 
 
 def get_devices_page(request):
@@ -192,6 +198,43 @@ def get_objects_services(request):
         {
             "title": "Services",
             **get_objects_toolbar_context("services"),
+            "active_tool": "addresses",
+            "toggle_items": [
+                {
+                    "key": "addresses",
+                    "label": "Addresses",
+                    "url": reverse("objects-addresses"),
+                },
+                {
+                    "key": "services",
+                    "label": "Services",
+                    "url": reverse("objects-services"),
+                },
+            ],
+            "add_button_label": "Add Address",
+            "addresses": addresses,
+        },
+    )
+
+
+def get_objects_addresses(request):
+    addresses = get_addresses_view(request)
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Addresses",
+            "addresses": addresses,
+        },
+    )
+
+
+def get_objects_services(request):
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Services",
         },
     )
 
