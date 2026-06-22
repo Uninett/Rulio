@@ -51,13 +51,10 @@ def seed_addressgroups():
     )
     address_ids_by_name = {address.name: address.id for address in addresses}
 
-    missing_address_names = [
-        name for name in required_address_names if name not in address_ids_by_name
-    ]
+    missing_address_names = [name for name in required_address_names if name not in address_ids_by_name]
     if missing_address_names:
         raise ValueError(
-            "Cannot seed address groups because these addresses are missing: "
-            + ", ".join(missing_address_names)
+            "Cannot seed address groups because these addresses are missing: " + ", ".join(missing_address_names)
         )
 
     default_address_groups = [

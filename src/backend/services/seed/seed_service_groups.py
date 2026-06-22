@@ -79,13 +79,10 @@ def seed_servicegroups():
     )
     service_ids_by_name = {service.name: service.id for service in services}
 
-    missing_service_names = [
-        name for name in required_service_names if name not in service_ids_by_name
-    ]
+    missing_service_names = [name for name in required_service_names if name not in service_ids_by_name]
     if missing_service_names:
         raise ValueError(
-            "Cannot seed service groups because these services are missing: "
-            + ", ".join(missing_service_names)
+            "Cannot seed service groups because these services are missing: " + ", ".join(missing_service_names)
         )
 
     default_service_groups = [

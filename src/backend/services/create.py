@@ -196,7 +196,6 @@ def create_service_group(
     return service_group
 
 
-
 def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict:
     """
     Adds a list of services to a service group
@@ -241,6 +240,7 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
         "not_found_service_ids": sorted(not_found_ids),
     }
 
+
 def get_or_create_service_group(
     request: object,
     name: str,
@@ -249,7 +249,7 @@ def get_or_create_service_group(
 ) -> tuple[ServiceGroup, int, bool]:
 
     tenant_id = get_current_tenant_id(request)
-    
+
     service_group, created = ServiceGroup.objects.get_or_create(
         name=name,
         description=description,
@@ -275,6 +275,7 @@ def add_service_to_group(request: object, service_group_id: int, service_id: int
     logger.info(f"Added {service} to {service_group}")
     return service_group
 
+
 def create_address_group(
     request: object,
     name: str,
@@ -298,7 +299,6 @@ def create_address_group(
     address_group.save()
     logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
     return address_group
-
 
 
 def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dict:
@@ -337,6 +337,7 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
         "not_found_address_ids": sorted(not_found_ids),
     }
 
+
 def get_or_create_address_group(
     request: object,
     name: str,
@@ -355,14 +356,14 @@ def get_or_create_address_group(
     if created:
         logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
         if members:
-            add_addresses_to_group(address_group_id=address_group.id, address_ids= members)
+            add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
             logger.info(f"Added members to {address_group}: {members}")
     else:
         logger.warning(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
         if members:
             add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
             logger.info(f"Added members to existing {address_group}: {members}")
-    
+
     return address_group, address_group.id, created
 
 
@@ -370,6 +371,7 @@ def create_tenant(request: object, name: str):
     tenant = Tenant.objects.create(tenant_name=name)
     logger.info(f"Tenant created: {tenant}")
     return tenant
+
 
 def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str) -> TenantUserMember:
     tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
