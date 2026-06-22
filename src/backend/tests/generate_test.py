@@ -4,11 +4,12 @@ import yaml
 import pytest
 
 from backend.services.generate_config import generate_config, Policy
-from backend.utils.logger import set_up_logger
+from backend.utils.logger import clear_logs, set_up_logger
 from constants import TEST_LOGPATH
 
 
 logger = set_up_logger(__name__)
+clear_logs(__name__)
 
 
 @pytest.mark.django_db
@@ -21,19 +22,20 @@ class TestGenerateConfig:
         ("brocade", ""),
         ("paloalto", ["from-zone", "internal", "to-zone", "external", "mixed"]),
     ]
+    log_for_vendors = ["juniper"]
     def test_generate_address_config(self, address_policy_rules):
 
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(name="Address_Test_Policy", rules=address_policy_rules, vendor=vendor, policy_type=policy_type)
-
-            logger.info(
-                "Generated policy YAML:\n%s",
-                yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
-            )
-            logger.info(
-                "Generated networks:\n%s",
-                yaml.dump(policy.networks, sort_keys=False, default_flow_style=False),
-            )
+            if vendor in self.log_for_vendors:
+                logger.info(
+                    "Generated policy YAML:\n%s",
+                    yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+                )
+                logger.info(
+                    "Generated networks:\n%s",
+                    yaml.dump(policy.networks, sort_keys=False, default_flow_style=False),
+                )
 
             assert policy.name == "Address_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Address_Test_Policy"
@@ -51,11 +53,12 @@ class TestGenerateConfig:
             os.makedirs(TEST_LOGPATH / "addr", exist_ok=True)
 
             for filename, content in config.items():
-                logger.info(
-                    "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                    filename,
-                    content,
-                )
+                if vendor in self.log_for_vendors:
+                    logger.info(
+                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
+                        filename,
+                        content,
+                    )
                 with open(filepath, "w") as f:
                     f.write(
                         f"# Generated on {datetime.datetime.now()}\n# Test for generating using only Address objects\n\n"
@@ -66,15 +69,15 @@ class TestGenerateConfig:
         
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(name="Address_Group_Test_Policy", rules=address_group_policy_rules, vendor=vendor, policy_type=policy_type)
-
-            logger.info(
-                "Generated policy YAML:\n%s",
-                yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
-            )
-            logger.info(
-                "Generated networks:\n%s",
-                yaml.dump(policy.networks, sort_keys=False, default_flow_style=False),
-            )
+            if vendor in self.log_for_vendors:
+                logger.info(
+                    "Generated policy YAML:\n%s",
+                    yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+                )
+                logger.info(
+                    "Generated networks:\n%s",
+                    yaml.dump(policy.networks, sort_keys=False, default_flow_style=False),
+                )
 
             assert policy.name == "Address_Group_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Address_Group_Test_Policy"
@@ -87,11 +90,12 @@ class TestGenerateConfig:
             filepath = TEST_LOGPATH / "addr_group" / f"{vendor.upper()}_generated_config.yaml"
             os.makedirs(TEST_LOGPATH / "addr_group", exist_ok=True)
             for filename, content in config.items():
-                logger.info(
-                    "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                    filename,
-                    content,
-                )
+                if vendor in self.log_for_vendors:
+                    logger.info(
+                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
+                        filename,
+                        content,
+                    )
                 with open(filepath, "w") as f:
                     f.write(
                         f"# Generated on {datetime.datetime.now()}\n# Test for generating using Address Group objects\n\n"
@@ -102,15 +106,15 @@ class TestGenerateConfig:
         
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(name="Service_Test_Policy", rules=service_policy_rules, vendor=vendor, policy_type=policy_type)
-
-            logger.info(
-                "Generated policy YAML:\n%s",
-                yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
-            )
-            logger.info(
-                "Generated services:\n%s",
-                yaml.dump(policy.services, sort_keys=False, default_flow_style=False),
-            )
+            if vendor in self.log_for_vendors:
+                logger.info(
+                    "Generated policy YAML:\n%s",
+                    yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+                )
+                logger.info(
+                    "Generated services:\n%s",
+                    yaml.dump(policy.services, sort_keys=False, default_flow_style=False),
+                )
 
             assert policy.name == "Service_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Service_Test_Policy"
@@ -123,11 +127,12 @@ class TestGenerateConfig:
             filepath = TEST_LOGPATH / "service" / f"{vendor.upper()}_generated_config.yaml"
             os.makedirs(TEST_LOGPATH / "service", exist_ok=True)
             for filename, content in config.items():
-                logger.info(
-                    "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                    filename,
-                    content,
-                )
+                if vendor in self.log_for_vendors:
+                    logger.info(
+                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
+                        filename,
+                        content,
+                    )
                 with open(filepath, "w") as f:
                     f.write(
                         f"# Generated on {datetime.datetime.now()}\n# Test for generating using Service objects\n\n"
@@ -139,14 +144,15 @@ class TestGenerateConfig:
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(name="Service_Group_Test_Policy", rules=service_group_policy_rules, vendor=vendor, policy_type=policy_type)
 
-            logger.info(
-                "Generated policy YAML:\n%s",
+            if vendor in self.log_for_vendors:
+                logger.info(
+                    "Generated policy YAML:\n%s",
                 yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
-            )
-            logger.info(
-                "Generated services:\n%s",
-                yaml.dump(policy.services, sort_keys=False, default_flow_style=False),
-            )
+                )
+                logger.info(
+                    "Generated services:\n%s",
+                    yaml.dump(policy.services, sort_keys=False, default_flow_style=False),
+                )
 
             assert policy.name == "Service_Group_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Service_Group_Test_Policy"
@@ -159,11 +165,12 @@ class TestGenerateConfig:
             filepath = TEST_LOGPATH / "service_group" / f"{vendor.upper()}_generated_config.yaml"
             os.makedirs(TEST_LOGPATH / "service_group", exist_ok=True)
             for filename, content in config.items():
-                logger.info(
-                    "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                    filename,
-                    content,
-                )
+                if vendor in self.log_for_vendors:
+                    logger.info(
+                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
+                        filename,
+                        content,
+                    )
                 with open(filepath, "w") as f:
                     f.write(
                         f"# Generated on {datetime.datetime.now()}\n# Test for generating using Service Group objects\n\n"
