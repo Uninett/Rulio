@@ -13,6 +13,8 @@ def get_devices_page(request):
         "devices.html",
         {
             "active_page": "devices",
+            "page_title": "Devices",
+            "add_button_label": "Add Device",
         },
     )
 
@@ -23,6 +25,8 @@ def get_filters_page(request):
         "filters.html",
         {
             "active_page": "filters",
+            "page_title": "Filters",
+            "add_button_label": "Add Filter",
         },
     )
 
@@ -183,5 +187,7 @@ def get_tags_page(request):
         "tags.html",
         {
             "active_page": "tags",
+            "page_title": "Tags",
+            "add_button_label": "Add Tag",
         },
     )
