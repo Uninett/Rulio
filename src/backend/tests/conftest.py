@@ -6,11 +6,11 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.services.create import add_addresses_to_group, add_services_to_group, get_or_create_address
 from backend.services.generate_config import PolicyRule
-from constants import TESTING_TENNANT_ID
+from constants import TESTING_TENANT_ID
 
 
 class MockRequest:
-    session = {"current_tenant_id": TESTING_TENNANT_ID}
+    session = {"current_tenant_id": TESTING_TENANT_ID}
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def sample_addresses():
         Address(
             name="Test_Address_1",
             description="This is a test address for a standard IPv4 network",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             addr_type="network",
             ipv4_type="standard",
             ipv4Network="192.168.1.0/24",
@@ -27,7 +27,7 @@ def sample_addresses():
         Address(
             name="Test_Address_2",
             description="This is a test address for any",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             addr_type="network",
             ipv4_type="standard",
             ipv4Network="0.0.0.0/0",
@@ -35,7 +35,7 @@ def sample_addresses():
         Address(
             name="Test_Address_3",
             description="This tests a standard IPv6 address",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             addr_type="network",
             ipv6_type="standard",
             ipv6Network="ff00::/120",
@@ -43,7 +43,7 @@ def sample_addresses():
         Address(
             name="Test_Address_4",
             description="This tests a custom range of IPv4 addresses",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             addr_type="range",
             ipv4_type="custom_range",
             ipv4Address_start="192.168.1.10",
@@ -52,7 +52,7 @@ def sample_addresses():
         Address(
             name="Test_Address_5",
             description="This tests a custom range of IPv6 addresses",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             addr_type="range",
             ipv6_type="custom_range",
             ipv6Address_start="ff00::10",
@@ -88,7 +88,7 @@ def sample_services():
         Service(
             name="Test_Service1",
             description="This tests a standard TCP service on port 80",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             protocol="tcp",
             port_start=80,
             port_end=80,
@@ -96,7 +96,7 @@ def sample_services():
         Service(
             name="Test_Service2",
             description="This tests a standard UDP service on port 53",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             protocol="udp",
             port_start=53,
             port_end=53,
@@ -104,7 +104,7 @@ def sample_services():
         Service(
             name="Test_Service3",
             description="This tests a custom range of TCP ports",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             protocol="tcp",
             port_start=1000,
             port_end=2000,
@@ -112,7 +112,7 @@ def sample_services():
         Service(
             name="Test_Service4",
             description="This tests a custom range of UDP ports",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             protocol="udp",
             port_start=3000,
             port_end=4000,
@@ -120,13 +120,13 @@ def sample_services():
         Service(
             name="Test_Service5",
             description="This tests a non-port-based protocol (ICMP)",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             protocol="icmp",
         ),
         Service(
             name="Test_Service6",
             description="This tests a non-port-based protocol (GRE)",
-            tenant_id=TESTING_TENNANT_ID,
+            tenant_id=TESTING_TENANT_ID,
             protocol="gre",
         ),
     ]
@@ -156,7 +156,7 @@ def sample_address_group(sample_addresses):
     sample_address_group_1 = AddressGroup(
         name="Test_Address_Group_1",
         description="This is a test address group",
-        tenant_id=TESTING_TENNANT_ID,
+        tenant_id=TESTING_TENANT_ID,
     )
     sample_address_group_1.save()
 
@@ -169,7 +169,7 @@ def sample_address_group(sample_addresses):
     sample_address_group_2 = AddressGroup(
         name="Test_Address_Group_2",
         description="This is another test address group",
-        tenant_id=TESTING_TENNANT_ID,
+        tenant_id=TESTING_TENANT_ID,
     )
     sample_address_group_2.save()
 
@@ -212,7 +212,7 @@ def sample_service_group(sample_services):
     sample_service_group_1 = ServiceGroup(
         name="Test_Service_Group_1",
         description="This is a test service group",
-        tenant_id=TESTING_TENNANT_ID,
+        tenant_id=TESTING_TENANT_ID,
     )
     sample_service_group_1.save()
     add_services_to_group(

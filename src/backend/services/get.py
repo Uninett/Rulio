@@ -120,7 +120,7 @@ def get_all_services_from_tenant(tenant_id: int, get="all") -> list[Service]:
         return [{"service_name": service.name} for service in requested_services]
 
 
-def get_all_addresses_from_tenant(tenant_id: int, get="all") -> list[Address]:
+def get_all_addresses_from_tenant(tenant_id: int, get="all") -> list:
     requested_addresses = Address.objects.filter(tenant_id=tenant_id)
     if get == "all":
         return requested_addresses
@@ -128,6 +128,10 @@ def get_all_addresses_from_tenant(tenant_id: int, get="all") -> list[Address]:
         return [{"address_id": address.id} for address in requested_addresses]
     elif get == "names":
         return [{"address_name": address.name} for address in requested_addresses]
+    
+def get_all_addresses_from_tenant_by_names(tenant_id: int, names: list[str]) -> list[Address]:
+    requested_addresses = Address.objects.filter(tenant_id=tenant_id, name__in=names)
+    return requested_addresses
 
 
 def get_address_group_members(request: object, address_group_id: int) -> list[Address]:
