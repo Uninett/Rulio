@@ -1,5 +1,6 @@
 # Frontend
 from django.shortcuts import render
+from django.urls import reverse
 
 """
 Frontend
@@ -26,9 +27,8 @@ def get_filters_page(request):
     )
 
 
-# This is a temporary implementation with hardcoded data for demonstration purposes.
-def get_objects_page(request):
-    addresses = [
+def get_mock_addresses():
+    return [
         {
             "type": "address",
             "name": "ntnu-dns-1",
@@ -103,12 +103,51 @@ def get_objects_page(request):
         },
     ]
 
+
+# This is a temporary implementation with hardcoded data for demonstration purposes.
+def get_objects_page(request):
     return render(
         request,
         "objects.html",
         {
             "active_page": "objects",
-            "addresses": addresses,
+            "page_title": "Addresses",
+            "active_tool": "addresses",
+            "toggle_items": [
+                {
+                    "key": "addresses",
+                    "label": "Addresses",
+                    "url": reverse("objects-addresses"),
+                },
+                {
+                    "key": "services",
+                    "label": "Services",
+                    "url": reverse("objects-services"),
+                },
+            ],
+            "add_button_label": "Add Address",
+            "addresses": get_mock_addresses(),
+        },
+    )
+
+
+def get_objects_addresses(request):
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Addresses",
+            "addresses": get_mock_addresses(),
+        },
+    )
+
+
+def get_objects_services(request):
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Services",
         },
     )
 
