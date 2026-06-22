@@ -11,10 +11,12 @@ from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.authentication import require_read_tenant, require_superadmin, require_write_tenant
 from backend.services.delete import clear_all_tags_from_object, delete_tag_from_tenant, remove_tag_from_object
 from backend.services.get import (
+    get_all_addresses_and_groups_with_tags,
     get_all_tags_from_object,
     get_service_groups_with_services_from_tenant,
     get_address_groups_with_addresses_from_tenant,
     get_all_tags_from_tenant,
+    get_all_services_and_groups_with_tags,
 )
 from backend.services.create import (
     add_services_to_group,
@@ -25,7 +27,6 @@ from backend.services.create import (
     create_tenant_user_member,
     create_tenant,
     create_address_group,
-    get_current_tenant_id,
     create_service_group,
     add_service_to_group,
     add_addresses_to_group,
@@ -41,7 +42,6 @@ from backend.schemas.message import MessageSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
-from backend.objects.attributes.tag import Tag
 from backend.objects.management.tenant import Tenant
 from backend.services.helper_user_tenant import (
     is_superadmin,
@@ -228,8 +228,7 @@ def add_services_to_group_endpoint(request, service_ids: list[int], group_id: in
 )
 @require_write_tenant
 def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
-    tenant_id = request.session.get("current_tenant_id")
-    address_group = create_address_group(request, payload.name, payload.description, tenant_id)
+    address_group = create_address_group(request, payload.name, payload.description)
     logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
     return 200, {
         "status": "success",
@@ -278,7 +277,7 @@ def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: i
 
     if not can_write_tenant(request.user, address_group.tenant_id):
         logger.warning(
-            f"Unauthorized attempt to add services id={address_ids} "
+            f"Unauthorized attempt to add addresses id={address_ids} "
             f"to group id={group_id} by user {request.user.username}"
         )
         return 403, {
@@ -290,14 +289,14 @@ def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: i
 
     logger.info(
         f"add_addresses_to_group endpoint succeeded for "
-        f"service ids={response['added_addresses_ids']} and group id={group_id}"
+        f"service ids={response['added_address_ids']} and group id={group_id}"
     )
 
     return 200, {
         "status": "success",
         "message": (
             f"Processed address ids for group id={group_id}. "
-            f"Added={response['added_addresses_ids']}, "
+            f"Added={response['added_address_ids']}, "
             f"already_present={response['already_present_address_ids']}, "
             f"not_found={response['not_found_address_ids']}"
         ),
@@ -327,20 +326,23 @@ def get_service_group_and_services_endpoint(request, get="all"):
 
 
 @api.get(
+    "/get_services_and_groups_with_tags",
+    tags=["Attributes - Service"],
+    response={200: list[dict], 403: MessageSchema},
+)
+@require_read_tenant
+def get_services_and_groups_with_tags_endpoint(request):
+    response = get_all_services_and_groups_with_tags(request.session["current_tenant_id"])
+    return 200, response
+
+
+@api.get(
     "/get_address_group_and_addresses",
     tags=["Attributes - Address"],
     response={200: list[dict], 403: MessageSchema},
 )
+@require_read_tenant
 def get_address_group_and_addresses_endpoint(request, get="all"):
-    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
-        logger.warning(
-            f"Unauthorized attempt to read addresses from tenant={request.session['current_tenant_id']} "
-            f"by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to read addresses from this tenant.",
-        }
     response = get_address_groups_with_addresses_from_tenant(
         request.session["current_tenant_id"],
         get=get,
@@ -348,32 +350,27 @@ def get_address_group_and_addresses_endpoint(request, get="all"):
     return 200, response
 
 
+@api.get(
+    "/get_addresses_and_groups_with_tags",
+    tags=["Attributes - Address"],
+    response={200: list[dict], 403: MessageSchema},
+)
+@require_read_tenant
+def get_addresses_and_groups_with_tags_endpoint(request):
+    response = get_all_addresses_and_groups_with_tags(request.session["current_tenant_id"])
+    return 200, response
+
+
 @api.get("/list_services", tags=["Attributes - Service"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
 def list_services(request):
-    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
-        logger.warning(
-            f"Unauthorized attempt to read services from tenant={request.session['current_tenant_id']} "
-            f"by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to read services from this tenant.",
-        }
     services = Service.objects.filter(tenant_id=request.session["current_tenant_id"])
     return 200, list(services.values())
 
 
 @api.get("/list_addresses", tags=["Attributes - Address"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
 def list_addresses(request):
-    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
-        logger.warning(
-            f"Unauthorized attempt to read addresses from tenant={request.session['current_tenant_id']} "
-            f"by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to read addresses from this tenant.",
-        }
     addresses = Address.objects.filter(tenant_id=request.session["current_tenant_id"])
     return 200, list(addresses.values())
 

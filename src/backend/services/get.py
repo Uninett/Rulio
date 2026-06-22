@@ -106,6 +106,163 @@ def get_address_groups_with_addresses_from_tenant(tenant_id: int, get="all") -> 
         return [{"address_group_name": group["address_group_name"]} for group in result]
 
 
+def get_all_addresses_and_groups_with_tags(tenant_id: int) -> list[dict]:
+    address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+    addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+
+    memberships = AddressGroupMember.objects.filter(
+        group_id__tenant_id=tenant_id,
+        address_id__tenant_id=tenant_id,
+    ).select_related("group_id", "address_id")
+
+    addresses_by_group = {}
+    groups_by_address = {}
+
+    for membership in memberships:
+        group = membership.group_id
+        address = membership.address_id
+
+        addresses_by_group.setdefault(group.id, []).append(
+            {
+                "id": address.id,
+                "name": address.name,
+            }
+        )
+
+        groups_by_address.setdefault(address.id, []).append(
+            {
+                "id": group.id,
+                "name": group.name,
+            }
+        )
+
+    result = []
+
+    for group in address_groups:
+        result.append(
+            {
+                "type": "AddressGroup",
+                "id": group.id,
+                "name": group.name,
+                "description": group.description,
+                "tags": [
+                    {
+                        "id": tc.tag.id,
+                        "name": tc.tag.name,
+                        "description": tc.tag.description,
+                    }
+                    for tc in group.tag_objects.all()
+                ],
+                "addresses": addresses_by_group.get(group.id, []),
+            }
+        )
+
+    for address in addresses:
+        result.append(
+            {
+                "type": "Address",
+                "id": address.id,
+                "name": address.name,
+                "description": address.description,
+                "ipv4_type": address.ipv4_type,
+                "ipv6_type": address.ipv6_type,
+                "ipv4Network": address.ipv4Network,
+                "ipv6Network": address.ipv6Network,
+                "ipv4Address_start": address.ipv4Address_start,
+                "ipv4Address_end": address.ipv4Address_end,
+                "ipv6Address_start": address.ipv6Address_start,
+                "ipv6Address_end": address.ipv6Address_end,
+                "tags": [
+                    {
+                        "id": tc.tag.id,
+                        "name": tc.tag.name,
+                        "description": tc.tag.description,
+                    }
+                    for tc in address.tag_objects.all()
+                ],
+                "address_groups": groups_by_address.get(address.id, []),
+            }
+        )
+
+    return result
+
+
+def get_all_services_and_groups_with_tags(tenant_id: int) -> list[dict]:
+    service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+    services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+
+    memberships = ServiceGroupMember.objects.filter(
+        group_id__tenant_id=tenant_id,
+        service_id__tenant_id=tenant_id,
+    ).select_related("group", "service")
+
+    services_by_group = {}
+    groups_by_service = {}
+
+    for membership in memberships:
+        group = membership.group_id
+        service = membership.service_id
+
+        services_by_group.setdefault(group.id, []).append(
+            {
+                "id": service.id,
+                "name": service.name,
+            }
+        )
+
+        groups_by_service.setdefault(service.id, []).append(
+            {
+                "id": group.id,
+                "name": group.name,
+            }
+        )
+
+    result = []
+
+    for group in service_groups:
+        result.append(
+            {
+                "type": "ServiceGroup",
+                "id": group.id,
+                "name": group.name,
+                "description": group.description,
+                "tags": [
+                    {
+                        "id": tc.tag.id,
+                        "name": tc.tag.name,
+                        "description": tc.tag.description,
+                    }
+                    for tc in group.tag_objects.all()
+                ],
+                "services": services_by_group.get(group.id, []),
+            }
+        )
+
+    for service in services:
+        result.append(
+            {
+                "type": "Service",
+                "id": service.id,
+                "name": service.name,
+                "description": service.description,
+                "protocol": service.protocol,
+                "port_start": service.port_start,
+                "port_end": service.port_end,
+                "tags": [
+                    {
+                        "id": tc.tag.id,
+                        "name": tc.tag.name,
+                        "description": tc.tag.description,
+                    }
+                    for tc in service.tag_objects.all()
+                ],
+                "service_groups": groups_by_service.get(service.id, []),
+            }
+        )
+
+    return result
+
+
 def get_all_address_groups_from_tenant(tenant_id: int) -> list[AddressGroup]:
     requested_address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
     return requested_address_groups
@@ -152,6 +309,7 @@ def get_service_group_members(request: object, service_group_id: int) -> list[Ad
 def get_all_tags_from_object(object_id: int, object_type: str) -> list[Tag]:
     obj = get_object_by_type_and_id(object_type, object_id)
     return list(obj.get_tags())
+
 
 def get_all_tags_from_tenant(tenant_id: int) -> list[Tag]:
     return Tag.objects.filter(tenant_id=tenant_id)
