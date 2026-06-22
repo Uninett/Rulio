@@ -8,19 +8,25 @@
 
 .tools-toggle {
     display: flex;
-    gap: 0.75rem;
+    border-bottom: 1px solid #E0E0E0;
 }
 
 .btn-toggle {
     background-color: transparent;
-    border: 2px solid #B4B0FB;
+    border: none;
+    border-bottom: 4px solid transparent;
     color: inherit;
+    border-radius: 0;
 }
 
 .btn-toggle.active {
-    background-color: #7351FB;
-    border: 2px solid #7351FB;
-    color: #FFFFFF;
+    background-color: transparent;
+    border: none;
+    border-bottom: 4px solid #7351FB;
+}
+
+.btn-toggle:hover {
+    background-color: #d6d6d6;
 }
 
 .btn-add {
