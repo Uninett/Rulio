@@ -88,3 +88,17 @@ def set_up_logger(name: str, level=logging.INFO, save_to_file: bool = True, mode
         add_file_handler(logger, LOGPATH / logfile, mode=mode)
         add_file_handler(logger, ERROR_LOGPATH / logfile, level=logging.ERROR, mode=mode)
     return logger
+
+
+def clear_logs(name: str) -> None:
+    """
+    Clears the log files for the specified logger name.
+
+    Args:
+        name (str): The name of the logger whose log files should be cleared.
+    """
+    logfile = f"{name}.log"
+    for path in [LOGPATH / logfile, ERROR_LOGPATH / logfile]:
+        if os.path.exists(path):
+            with open(path, "w"):
+                pass

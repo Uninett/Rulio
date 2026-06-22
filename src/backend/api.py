@@ -105,6 +105,7 @@ def create_address_endpoint(
         request=request,
         name=payload.name,
         description=payload.description,
+        addr_type=payload.addr_type,
         ipv4_type=payload.ipv4_type,
         ipv6_type=payload.ipv6_type,
         ipv4Network=payload.ipv4Network,

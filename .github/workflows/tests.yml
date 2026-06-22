@@ -3,6 +3,7 @@ name: Run pytest with Docker Compose
 
 on:
   push:
+    branches: main
   pull_request:
 
 jobs:

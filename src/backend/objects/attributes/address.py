@@ -26,9 +26,15 @@ class Address(models.Model):
         ("standard", "Ip address that can be written with a subnet mask (e.g. 192.168.0.1/24)"),
         ("custom_range", "IP Range"),
     ]
+    ADDR_TYPE_CHOICES = [
+        ("host", "Host"),
+        ("network", "Network"),
+        ("range", "Range"),
+    ]
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     tenant_id = models.IntegerField()
+    addr_type = models.CharField(max_length=20, choices=ADDR_TYPE_CHOICES, default="host")
     ipv4_type = models.CharField(max_length=20, choices=TYPE_CHOICES, null=True, blank=True)
     ipv6_type = models.CharField(max_length=20, choices=TYPE_CHOICES, null=True, blank=True)
     ipv4Network = models.CharField(max_length=50, null=True, blank=True)
@@ -40,7 +46,6 @@ class Address(models.Model):
 
     def clean(self):
         errors = {}
-
         # Validate that at least one of ipv4_type or ipv6_type is set
         if self.ipv4_type is None and self.ipv6_type is None:
             errors["ipv4_type"] = "At least one of ipv4_type or ipv6_type must be set."

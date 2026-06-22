@@ -41,6 +41,7 @@ def create_address(
     request: object,
     name: str,
     description: str,
+    addr_type: str | None = "host",
     ipv4_type: str | None = None,
     ipv6_type: str | None = None,
     ipv4Network: IPv4Network | None = None,
@@ -56,6 +57,7 @@ def create_address(
         name=name,
         description=description,
         tenant_id=tenant_id,
+        addr_type=addr_type,
         ipv4_type=ipv4_type,
         ipv6_type=ipv6_type,
         ipv4Network=str(ipv4Network) if ipv4Network else None,
@@ -81,6 +83,7 @@ def get_or_create_address(
     request: object,
     name: str,
     description: str,
+    addr_type: str | None = "host",
     ipv4_type: str | None = None,
     ipv6_type: str | None = None,
     ipv4Network: IPv4Network | None = None,
@@ -96,6 +99,7 @@ def get_or_create_address(
         name=name,
         description=description,
         tenant_id=tenant_id,
+        addr_type=addr_type,
         ipv4_type=ipv4_type,
         ipv6_type=ipv6_type,
         ipv4Network=str(ipv4Network) if ipv4Network else None,
@@ -300,6 +304,7 @@ def create_address_group(
         name=name,
         description=description,
         tenant_id=tenant_id,
+        addr_type="Group",
     )
     try:
         address_group.full_clean()

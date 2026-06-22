@@ -27,6 +27,7 @@ class TestAttributes:
             name="Test Address",
             description="This is a test address",
             tenant_id=42,
+            addr_type="host",
             ipv4_type="standard",
             ipv4Network="127.0.0.1",
         )
@@ -37,6 +38,7 @@ class TestAttributes:
             name="Test Address",
             description="This is a test address",
             tenant_id=42,
+            addr_type="host",
             ipv6_type="standard",
             ipv6Network="2001:db8::/64",
         )
@@ -47,6 +49,7 @@ class TestAttributes:
             name="Test Address",
             description="This is a test address",
             tenant_id=42,
+            addr_type="host",
             ipv4_type="standard",
             ipv4Network="127.2.4.2/31",
         )
@@ -57,6 +60,7 @@ class TestAttributes:
             name="Test Address",
             description="This is a test address",
             tenant_id=42,
+            addr_type="range",
             ipv4_type="custom_range",
             ipv4Address_start="127.2.4.2",
             ipv4Address_end="127.2.4.17",
@@ -76,3 +80,4 @@ class TestAttributes:
         )
         assert service.get_ports() == "80"
         assert service.get_protocol() == "tcp"
+        assert service.is_port_based() is True
