@@ -37,5 +37,3 @@ class Service(models.Model):
         if self.protocol.upper() in ["TCP", "UDP"]:
             return True
         return False
-    
- 

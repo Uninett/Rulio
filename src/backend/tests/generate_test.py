@@ -23,10 +23,13 @@ class TestGenerateConfig:
         ("paloalto", ["from-zone", "internal", "to-zone", "external", "mixed"]),
     ]
     log_for_vendors = ["juniper"]
+
     def test_generate_address_config(self, address_policy_rules):
 
         for vendor, policy_type in self.vendor_policy_type_pairs:
-            policy = Policy(name="Address_Test_Policy", rules=address_policy_rules, vendor=vendor, policy_type=policy_type)
+            policy = Policy(
+                name="Address_Test_Policy", rules=address_policy_rules, vendor=vendor, policy_type=policy_type
+            )
             if vendor in self.log_for_vendors:
                 logger.info(
                     "Generated policy YAML:\n%s",
@@ -66,9 +69,14 @@ class TestGenerateConfig:
                     f.write(content)
 
     def test_generate_address_group_config(self, address_group_policy_rules, sample_addresses):
-        
+
         for vendor, policy_type in self.vendor_policy_type_pairs:
-            policy = Policy(name="Address_Group_Test_Policy", rules=address_group_policy_rules, vendor=vendor, policy_type=policy_type)
+            policy = Policy(
+                name="Address_Group_Test_Policy",
+                rules=address_group_policy_rules,
+                vendor=vendor,
+                policy_type=policy_type,
+            )
             if vendor in self.log_for_vendors:
                 logger.info(
                     "Generated policy YAML:\n%s",
@@ -81,7 +89,7 @@ class TestGenerateConfig:
 
             assert policy.name == "Address_Group_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Address_Group_Test_Policy"
-            #assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Address_Group_Test_Policy {policy_type}"}
+            # assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Address_Group_Test_Policy {policy_type}"}
             assert len(policy.YAMLConfig["filters"][0]["terms"]) == len(address_group_policy_rules)
             assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Rule_for_Address_Group_1"
             assert policy.YAMLConfig["filters"][0]["terms"][1]["name"] == "Test_Rule_for_Address_Group_2"
@@ -103,9 +111,11 @@ class TestGenerateConfig:
                     f.write(content)
 
     def test_generate_service_config(self, service_policy_rules):
-        
+
         for vendor, policy_type in self.vendor_policy_type_pairs:
-            policy = Policy(name="Service_Test_Policy", rules=service_policy_rules, vendor=vendor, policy_type=policy_type)
+            policy = Policy(
+                name="Service_Test_Policy", rules=service_policy_rules, vendor=vendor, policy_type=policy_type
+            )
             if vendor in self.log_for_vendors:
                 logger.info(
                     "Generated policy YAML:\n%s",
@@ -118,7 +128,7 @@ class TestGenerateConfig:
 
             assert policy.name == "Service_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Service_Test_Policy"
-            #assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Service_Test_Policy {policy_type}"}
+            # assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Service_Test_Policy {policy_type}"}
             assert len(policy.YAMLConfig["filters"][0]["terms"]) == len(service_policy_rules)
             assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Service_Rule_1"
             assert policy.YAMLConfig["filters"][0]["terms"][1]["name"] == "Test_Service_Rule_2"
@@ -140,14 +150,19 @@ class TestGenerateConfig:
                     f.write(content)
 
     def test_generate_service_group_config(self, service_group_policy_rules, sample_services):
-        
+
         for vendor, policy_type in self.vendor_policy_type_pairs:
-            policy = Policy(name="Service_Group_Test_Policy", rules=service_group_policy_rules, vendor=vendor, policy_type=policy_type)
+            policy = Policy(
+                name="Service_Group_Test_Policy",
+                rules=service_group_policy_rules,
+                vendor=vendor,
+                policy_type=policy_type,
+            )
 
             if vendor in self.log_for_vendors:
                 logger.info(
                     "Generated policy YAML:\n%s",
-                yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+                    yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
                 )
                 logger.info(
                     "Generated services:\n%s",
@@ -156,7 +171,7 @@ class TestGenerateConfig:
 
             assert policy.name == "Service_Group_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Service_Group_Test_Policy"
-            #assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Service_Group_Test_Policy {policy_type}"}
+            # assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Service_Group_Test_Policy {policy_type}"}
             assert len(policy.YAMLConfig["filters"][0]["terms"]) == len(sample_services)
             assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Rule_for_Service_Group_1_Rule_0"
             assert policy.YAMLConfig["filters"][0]["terms"][1]["name"] == "Test_Rule_for_Service_Group_1_Rule_1"

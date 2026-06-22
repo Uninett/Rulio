@@ -89,6 +89,7 @@ def set_up_logger(name: str, level=logging.INFO, save_to_file: bool = True, mode
         add_file_handler(logger, ERROR_LOGPATH / logfile, level=logging.ERROR, mode=mode)
     return logger
 
+
 def clear_logs(name: str) -> None:
     """
     Clears the log files for the specified logger name.

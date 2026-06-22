@@ -64,16 +64,16 @@ class Policy:
         self.name = name
         if vendor.lower() == "paloalto":
             self.YAMLConfig = {
-            "filename": name,
-            "filters": [
-                {
-                    "header": {
-                        "targets": {vendor: policy_type},
+                "filename": name,
+                "filters": [
+                    {
+                        "header": {
+                            "targets": {vendor: policy_type},
+                        },
+                        "terms": [],
                     },
-                    "terms": [],
-                },
-            ],
-        }
+                ],
+            }
         else:
             self.YAMLConfig = {
                 "filename": name,
@@ -88,7 +88,6 @@ class Policy:
                 ],
             }
         rules.sort(key=lambda r: r.sequence)
-
 
         self.networks = {"networks": {}}
         self.services = {"services": {}}
@@ -133,7 +132,7 @@ class Policy:
             field_name = "source-port"
         else:
             raise ValueError(f"Unsupported rule direction: {rule.direction}")
-        
+
         service = rule.members
         service_name = service.name
         has_ports = service.is_port_based()
@@ -155,7 +154,6 @@ class Policy:
             term[field_name] = service_name
 
         self.YAMLConfig["filters"][0]["terms"].append(term)
-        
 
     def add_address_group(self, rule: PolicyRule):
         if rule.direction == "destination":
@@ -185,7 +183,6 @@ class Policy:
                 "action": rule.action,
             }
         )
-
 
     def add_service_group(self, rule: PolicyRule):
         if rule.direction == "destination":
@@ -229,8 +226,7 @@ def generate_config(policy: Policy) -> str:
         str: The generated configuration as a string.
     """
     definitions = naming.Naming()
-  
-  
+
     definitions_obj = {
         "networks": policy.networks.get("networks", {}),
         "services": policy.services.get("services", {}),

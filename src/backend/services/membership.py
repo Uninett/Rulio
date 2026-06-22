@@ -13,4 +13,3 @@ def add_address_to_group(request: object, address_group_id: int, address_id: int
         group_id=_address_group,
         address_id=_address,
     )
-

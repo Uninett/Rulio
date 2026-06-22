@@ -6,7 +6,6 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.services.create import add_addresses_to_group, add_services_to_group, get_or_create_address
 from backend.services.generate_config import PolicyRule
-from backend.services.get import get_address_group_members, get_service_group_members
 from constants import TESTING_TENNANT_ID
 
 
@@ -81,6 +80,7 @@ def address_policy_rules(sample_addresses):
         policy_rules.append(rule)
 
     return policy_rules
+
 
 @pytest.fixture
 def sample_services():
@@ -175,27 +175,27 @@ def sample_address_group(sample_addresses):
 
     mock_request = MockRequest()
     sample_address_group_2_addresses = [
-    get_or_create_address(
-        request=mock_request,
-        name="Private_Class_A_IPv4_RFC1918",
-        description="RFC1918 private IPv4 Class A address space for internal networks.",
-        ipv4_type="standard",
-        ipv4Network="10.0.0.0/8",
-    )[0],
-    get_or_create_address(
-        request=mock_request,
-        name="Private_Class_B_IPv4_RFC1918",
-        description="RFC1918 private IPv4 Class B address space for internal networks.",
-        ipv4_type="standard",
-        ipv4Network="172.16.0.0/12",
-    )[0],
-    get_or_create_address(
-        request=mock_request,
-        name="Private_Class_C_IPv4_RFC1918",
-        description="RFC1918 private IPv4 Class C address space for internal networks.",
-        ipv4_type="standard",
-        ipv4Network="192.168.0.0/16",
-    )[0],
+        get_or_create_address(
+            request=mock_request,
+            name="Private_Class_A_IPv4_RFC1918",
+            description="RFC1918 private IPv4 Class A address space for internal networks.",
+            ipv4_type="standard",
+            ipv4Network="10.0.0.0/8",
+        )[0],
+        get_or_create_address(
+            request=mock_request,
+            name="Private_Class_B_IPv4_RFC1918",
+            description="RFC1918 private IPv4 Class B address space for internal networks.",
+            ipv4_type="standard",
+            ipv4Network="172.16.0.0/12",
+        )[0],
+        get_or_create_address(
+            request=mock_request,
+            name="Private_Class_C_IPv4_RFC1918",
+            description="RFC1918 private IPv4 Class C address space for internal networks.",
+            ipv4_type="standard",
+            ipv4Network="192.168.0.0/16",
+        )[0],
     ]
 
     add_addresses_to_group(
@@ -205,6 +205,7 @@ def sample_address_group(sample_addresses):
     sample_address_group_2.save()
 
     return sample_address_group_1, sample_address_group_2
+
 
 @pytest.fixture
 def sample_service_group(sample_services):
@@ -229,27 +230,28 @@ def address_group_policy_rules(sample_address_group):
 
     policy_rules.append(
         PolicyRule(
-        name="Test_Rule_for_Address_Group_1",
-        obj_type="address_group",
-        action="accept",
-        object=sample_address_group[0],
-        direction="destination",
-        sequence=0,
+            name="Test_Rule_for_Address_Group_1",
+            obj_type="address_group",
+            action="accept",
+            object=sample_address_group[0],
+            direction="destination",
+            sequence=0,
+        )
     )
-    )
-   
+
     policy_rules.append(
         PolicyRule(
-        name="Test_Rule_for_Address_Group_2",
-        obj_type="address_group",
-        action="deny",
-        object=sample_address_group[1],
-        direction="source",
-        sequence=1,
-    )
+            name="Test_Rule_for_Address_Group_2",
+            obj_type="address_group",
+            action="deny",
+            object=sample_address_group[1],
+            direction="source",
+            sequence=1,
+        )
     )
 
     return policy_rules
+
 
 @pytest.fixture
 def service_group_policy_rules(sample_service_group):
@@ -267,5 +269,3 @@ def service_group_policy_rules(sample_service_group):
     )
 
     return policy_rules
-
-
