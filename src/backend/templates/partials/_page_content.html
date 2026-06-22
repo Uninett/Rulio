@@ -1,0 +1,12 @@
+<div class="page-content">
+    <h1>{{ title }}</h1>
+
+    <!--Insert table here, with type of table depending on the title (i.e. title == "Addresses" -> address table, title == "Services" -> service table)-->
+    {% if title == "Addresses" %}
+    {% include "partials/objects/_addressesTable.html" %}
+    {% elif title == "Services" %}
+
+    {% else %}
+    <p>No content available.</p>
+    {% endif %}
+</div>
