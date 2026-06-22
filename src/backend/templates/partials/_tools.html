@@ -15,7 +15,8 @@
 
 
     {% if add_button_label %}
-    <button class="btn-add" type="button" hx-get="{% url 'dialog' %}" hx-target="#modal-container" hx-swap="innerHTML">
+    <button class="btn-add" type="button" hx-get="{% url 'modal-add' object_type %}" hx-target="#modal-container"
+        hx-swap="innerHTML">
         {{ add_button_label }}
         <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
     </button>

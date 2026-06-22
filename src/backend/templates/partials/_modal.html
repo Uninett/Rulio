@@ -1,24 +1,26 @@
 <div class="modal-backdrop" onclick="closeModal(event)">
     <div class="modal" onclick="event.stopPropagation()">
-
         <form>
             <div class="modal-header">
-                <h2>Add Address Object</h2>
+                <h2>{{ modal_title }}</h2>
             </div>
+
             <hr>
 
-            Content
+            <div class="modal-content">
+                {% include modal_content_partial %}
+            </div>
 
             <hr>
 
             <div class="modal-actions">
                 <button class="btn btn-cancel" type="button"
                     onclick="document.getElementById('modal-container').innerHTML = ''">
-                    Cancel/Close
+                    Cancel
                 </button>
 
                 <button class="btn btn-save" type="submit">
-                    Save/Edit
+                    Save
                 </button>
             </div>
         </form>

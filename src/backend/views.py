@@ -56,6 +56,7 @@ def get_devices_page(request):
         {
             "active_page": "devices",
             "page_title": "Devices",
+            "object_type": "devices",
             "add_button_label": "Add Device",
         },
     )
@@ -68,6 +69,7 @@ def get_filters_page(request):
         {
             "active_page": "filters",
             "page_title": "Filters",
+            "object_type": "filters",
             "add_button_label": "Add Filter",
         },
     )
@@ -81,21 +83,8 @@ def get_objects_page(request):
         {
             "active_page": "objects",
             "page_title": "Addresses",
-            "active_tool": "addresses",
-            "toggle_items": [
-                {
-                    "key": "addresses",
-                    "label": "Addresses",
-                    "url": reverse("objects-addresses"),
-                },
-                {
-                    "key": "services",
-                    "label": "Services",
-                    "url": reverse("objects-services"),
-                },
-            ],
-            "add_button_label": "Add Address",
             "addresses": get_addresses_view(request),
+            "object_type": "addresses",
             **get_objects_toolbar_context("addresses"),
         },
     )
@@ -120,6 +109,7 @@ def get_objects_services(request):
         "partials/_page_content.html",
         {
             "title": "Services",
+            "object_type": "services",
             **get_objects_toolbar_context("services"),
         },
     )
@@ -157,6 +147,48 @@ def get_tags_page(request):
         {
             "active_page": "tags",
             "page_title": "Tags",
+            "object_type": "tags",
             "add_button_label": "Add Tag",
+        },
+    )
+
+
+def get_add_modal_config(object_type):
+    configs = {
+        "devices": {
+            "title": "Add Device",
+            "form_partial": "partials/modals/_devices_form.html",
+        },
+        "filters": {
+            "title": "Add Filter",
+            "form_partial": "partials/modals/_filters_form.html",
+        },
+        "addresses": {
+            "title": "Add Address",
+            "form_partial": "partials/modals/_addresses_form.html",
+        },
+        "services": {
+            "title": "Add Service",
+            "form_partial": "partials/modals/_services_form.html",
+        },
+        "tags": {
+            "title": "Add Tag",
+            "form_partial": "partials/modals/_tags_form.html",
+        },
+    }
+    return configs[object_type]
+
+
+def get_add_modal(request, object_type):
+    config = get_add_modal_config(object_type)
+
+    return render(
+        request,
+        "partials/_modal.html",
+        {
+            "modal_title": config["title"],
+            "modal_content_partial": config["form_partial"],
+            "modal_mode": "add",
+            "object_type": object_type,
         },
     )
