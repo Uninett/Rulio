@@ -4,6 +4,7 @@ from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service import Service
+from backend.objects.attributes.tag import Tag
 from backend.utils.logger import set_up_logger
 
 
@@ -148,3 +149,19 @@ def get_all_services_from_tenant_by_names(tenant_id: int, names: list[str]) -> l
 def get_service_group_members(request: object, service_group_id: int) -> list[Address]:
     return Service.objects.filter(servicegroupmember__group_id=service_group_id)
     # return ServiceGroupMember.objects.filter(group_id=service_group_id)
+def get_all_tags_from_object(object_id: int, object_type: str) -> list[Tag]:
+    obj = get_object_by_type_and_id(object_type, object_id)
+    return list(obj.get_tags())
+
+
+def get_object_by_type_and_id(object_type: str, object_id: int):
+    model_mapping = {
+        "Address": Address,
+        "AddressGroup": AddressGroup,
+        "Service": Service,
+        "ServiceGroup": ServiceGroup,
+    }
+    model = model_mapping.get(object_type)
+    if not model:
+        raise ValueError(f"Unsupported object type: {object_type}")
+    return model.objects.get(id=object_id)

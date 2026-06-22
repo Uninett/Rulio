@@ -1,6 +1,7 @@
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
 
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
@@ -9,8 +10,10 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
+from backend.objects.attributes.tag import Tag
 from backend.utils.logger import set_up_logger
 from django.db import transaction
+from backend.services.get import get_object_by_type_and_id
 
 
 # Setup logger
@@ -385,3 +388,35 @@ def add_address_to_group(request: object, address_group_id: int, address_id: int
     address_group.addresses.add(address)
     logger.info(f"Added {address} to {address_group}")
     return address_group
+
+
+def create_tag(request: object, name: str, description: str) -> Tag:
+    tenant_id = get_current_tenant_id(request)
+
+    tag = Tag(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    try:
+        tag.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Tag validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    tag.save()
+    logger.info(f"Created {tag} for tenant={tag.tenant_id}")
+    return tag
+
+
+def create_and_add_tag_to_object(
+    request: object, tag_name: str, tag_description: str, object_type: str, object_id: int
+) -> Tag:
+    tag = create_tag(request, tag_name, tag_description)
+    obj = get_object_by_type_and_id(object_type, object_id)
+    if isinstance(obj, TaggableMixin):
+        obj.add_tag(tag)
+        logger.info(f"Added {tag} to {obj}")
+    else:
+        logger.warning(f"Object {obj} is not taggable. Created tag {tag} but did not add it to the object.")
+    return tag

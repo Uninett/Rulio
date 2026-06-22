@@ -9,12 +9,14 @@ from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.get import (
+    get_all_tags_from_object,
     get_service_groups_with_services_from_tenant,
     get_address_groups_with_addresses_from_tenant,
 )
 from backend.services.create import (
     add_services_to_group,
     create_address,
+    create_and_add_tag_to_object,
     create_service,
     create_tenant_user_member,
     create_tenant,
@@ -37,7 +39,6 @@ from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
 from backend.objects.management.tenant import Tenant
-from backend.objects.attributes.tag_connection import TagObject
 from backend.services.helper_user_tenant import (
     is_superadmin,
     can_write_tenant,
@@ -414,6 +415,51 @@ def list_addresses(request):
         }
     addresses = Address.objects.filter(tenant_id=request.session["current_tenant_id"])
     return 200, list(addresses.values())
+
+
+@api.post("/create_and_add_tag_to_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchema):
+    if not can_write_tenant(request.user, Tenant.objects.get(id=request.session["current_tenant_id"])):
+        logger.warning(
+            f"Unauthorized attempt to create tag with name={payload.name} for tenant_id={request.session['current_tenant_id']} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to create a tag for this tenant.",
+        }
+    tag = create_and_add_tag_to_object(
+        request, payload.name, payload.description, payload.object_type, payload.object_id
+    )
+    logger.info(
+        f"create_and_add_tag_to_object endpoint succeeded for tag id={tag.id} and object id={payload.object_id}"
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Tag created with id {tag.id} and added to object id={payload.object_id}",
+    }
+
+
+@api.get("/get_all_tags_from_object", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
+def get_all_tags_from_object_endpoint(request, object_id: int, object_type: str):
+    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
+        logger.warning(
+            f"Unauthorized attempt to read tags from tenant={request.session['current_tenant_id']} "
+            f"by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to read tags from this tenant.",
+        }
+    tags = get_all_tags_from_object(object_id, object_type)
+    return 200, [
+        {
+            "id": tag.id,
+            "name": tag.name,
+            "description": tag.description,
+            "tenant_id": tag.tenant_id,
+        }
+        for tag in tags
+    ]
 
 
 """
