@@ -172,12 +172,6 @@ def get_or_create_service(
     return service, service.id, created
 
 
-def create_tenant(request: object, name: str):
-    tenant = Tenant.objects.create(tenant_name=name)
-    logger.info(f"Tenant created: {tenant}")
-    return tenant
-
-
 def create_service_group(
     request: object,
     name: str,
@@ -200,6 +194,25 @@ def create_service_group(
     service_group.save()
     logger.info(f"Created {service_group} for tenant={service_group.tenant_id}")
     return service_group
+
+def get_or_create_service_group(
+    request: object,
+    name: str,
+    description: str,
+) -> tuple[ServiceGroup, int, bool]:
+
+    tenant_id = get_current_tenant_id(request)
+
+    service_group, created = ServiceGroup.objects.get_or_create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    if created:
+        logger.info(f"Created {service_group} for tenant={service_group.tenant_id}")
+    else:
+        logger.warning(f"Service Group already exists: {service_group} for tenant={service_group.tenant_id}")
+    return service_group, service_group.id, created
 
 
 def add_service_to_group(request: object, service_group_id: int, service_id: int) -> ServiceGroup:
@@ -255,6 +268,51 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
     }
 
 
+def create_address_group(
+    request: object,
+    name: str,
+    description: str,
+) -> AddressGroup:
+
+    tenant_id = get_current_tenant_id(request)
+
+    address_group = AddressGroup(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+        addr_type="Group",
+    )
+    try:
+        address_group.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Address Group validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    address_group.save()
+    logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
+    return address_group
+
+def get_or_create_address_group(
+    request: object,
+    name: str,
+    description: str,
+) -> tuple[AddressGroup, int, bool]:
+
+    tenant_id = get_current_tenant_id(request)
+
+    address_group, created = AddressGroup.objects.get_or_create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+        addr_type="Group",
+    )
+    if created:
+        logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
+    else:
+        logger.warning(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
+    return address_group, address_group.id, created
+
+
 def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dict:
     address_group = AddressGroup.objects.get(id=address_group_id)
 
@@ -291,31 +349,10 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
         "not_found_address_ids": sorted(not_found_ids),
     }
 
-
-def create_address_group(
-    request: object,
-    name: str,
-    description: str,
-) -> AddressGroup:
-
-    tenant_id = get_current_tenant_id(request)
-
-    address_group = AddressGroup(
-        name=name,
-        description=description,
-        tenant_id=tenant_id,
-        addr_type="Group",
-    )
-    try:
-        address_group.full_clean()
-    except DjangoValidationError as e:
-        logger.warning(f"Address Group validation failed: {e.message_dict}")
-        raise ValueError(e.message_dict) from e
-
-    address_group.save()
-    logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
-    return address_group
-
+def create_tenant(request: object, name: str):
+    tenant = Tenant.objects.create(tenant_name=name)
+    logger.info(f"Tenant created: {tenant}")
+    return tenant
 
 def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str) -> TenantUserMember:
     tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
