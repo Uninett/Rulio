@@ -1,6 +1,5 @@
 # Frontend
 from django.shortcuts import render
-from django.urls import reverse
 from .api import list_addresses
 from django.urls import reverse
 
@@ -28,93 +27,7 @@ def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
     }
 
 
-def get_mock_addresses():
-    return [
-        {
-            "type": "address",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.1",
-            "ipv6": "2001:db8::1",
-            "description": "Primary DNS server",
-            "tags": "admin",
-        },
-        {
-            "type": "address",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.2",
-            "ipv6": "2001:db8::2",
-            "description": "Secondary DNS server",
-            "tags": "admin",
-        },
-        {
-            "type": "group",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.1",
-            "ipv6": "2001:db8::1",
-            "description": "Primary DNS server",
-            "tags": "admin",
-        },
-        {
-            "type": "group",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.1",
-            "ipv6": "2001:db8::1",
-            "description": "Primary DNS server",
-            "tags": "admin",
-        },
-        {
-            "type": "group",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.1",
-            "ipv6": "2001:db8::1",
-            "description": "Primary DNS server",
-            "tags": "admin",
-        },
-        {
-            "type": "group",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.1",
-            "ipv6": "2001:db8::1",
-            "description": "Primary DNS server",
-            "tags": "admin",
-        },
-        {
-            "type": "group",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.1",
-            "ipv6": "2001:db8::1",
-            "description": "Primary DNS server",
-            "tags": "admin",
-        },
-        {
-            "type": "group",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.1",
-            "ipv6": "2001:db8::1",
-            "description": "Primary DNS server",
-            "tags": "admin",
-        },
-        {
-            "type": "group",
-            "name": "ntnu-dns-1",
-            "ipv4": "10.0.0.1",
-            "ipv6": "2001:db8::1",
-            "description": "Primary DNS server",
-            "tags": "admin",
-        },
-    ]
-
-
-def get_filters_page(request):
-    return render(
-        request,
-        "filters.html",
-        {
-            "active_page": "filters",
-        },
-    )
-
-
+# This is a temporary implementation with hardcoded data for demonstration purposes.
 def get_addresses_view(request):
     status, api_addresses = list_addresses(request)
 
@@ -134,11 +47,6 @@ def get_addresses_view(request):
             for item in api_addresses
         ]
     return addresses
-
-
-# This is a temporary implementation with hardcoded data for demonstration purposes.
-def get_objects_page(request):
-    addresses = get_addresses_view(request)
 
 
 def get_devices_page(request):
@@ -173,31 +81,6 @@ def get_objects_page(request):
         {
             "active_page": "objects",
             "page_title": "Addresses",
-            "addresses": get_mock_addresses(),
-            **get_objects_toolbar_context("addresses"),
-        },
-    )
-
-
-def get_objects_addresses(request):
-    return render(
-        request,
-        "partials/_page_content.html",
-        {
-            "title": "Addresses",
-            "addresses": get_mock_addresses(),
-            **get_objects_toolbar_context("addresses"),
-        },
-    )
-
-
-def get_objects_services(request):
-    return render(
-        request,
-        "partials/_page_content.html",
-        {
-            "title": "Services",
-            **get_objects_toolbar_context("services"),
             "active_tool": "addresses",
             "toggle_items": [
                 {
@@ -212,7 +95,8 @@ def get_objects_services(request):
                 },
             ],
             "add_button_label": "Add Address",
-            "addresses": addresses,
+            "addresses": get_addresses_view(request),
+            **get_objects_toolbar_context("addresses"),
         },
     )
 
@@ -225,6 +109,7 @@ def get_objects_addresses(request):
         {
             "title": "Addresses",
             "addresses": addresses,
+            **get_objects_toolbar_context("addresses"),
         },
     )
 
@@ -235,6 +120,7 @@ def get_objects_services(request):
         "partials/_page_content.html",
         {
             "title": "Services",
+            **get_objects_toolbar_context("services"),
         },
     )
 
