@@ -1,9 +1,20 @@
-.tools-container {
+.page-content-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
     width: 100%;
+}
+
+.page-content-header h1 {
+    margin: 0;
+}
+
+.tools-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: auto;
 }
 
 .tools-toggle {

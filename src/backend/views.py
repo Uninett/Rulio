@@ -7,28 +7,23 @@ Frontend
 """
 
 
-def get_devices_page(request):
-    return render(
-        request,
-        "devices.html",
-        {
-            "active_page": "devices",
-            "page_title": "Devices",
-            "add_button_label": "Add Device",
-        },
-    )
-
-
-def get_filters_page(request):
-    return render(
-        request,
-        "filters.html",
-        {
-            "active_page": "filters",
-            "page_title": "Filters",
-            "add_button_label": "Add Filter",
-        },
-    )
+def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
+    return {
+        "active_tool": active_tool,
+        "toggle_items": [
+            {
+                "key": "addresses",
+                "label": "Addresses",
+                "url": reverse("objects-addresses"),
+            },
+            {
+                "key": "services",
+                "label": "Services",
+                "url": reverse("objects-services"),
+            },
+        ],
+        "add_button_label": add_button_label,
+    }
 
 
 def get_mock_addresses():
@@ -108,6 +103,30 @@ def get_mock_addresses():
     ]
 
 
+def get_devices_page(request):
+    return render(
+        request,
+        "devices.html",
+        {
+            "active_page": "devices",
+            "page_title": "Devices",
+            "add_button_label": "Add Device",
+        },
+    )
+
+
+def get_filters_page(request):
+    return render(
+        request,
+        "filters.html",
+        {
+            "active_page": "filters",
+            "page_title": "Filters",
+            "add_button_label": "Add Filter",
+        },
+    )
+
+
 # This is a temporary implementation with hardcoded data for demonstration purposes.
 def get_objects_page(request):
     return render(
@@ -116,21 +135,8 @@ def get_objects_page(request):
         {
             "active_page": "objects",
             "page_title": "Addresses",
-            "active_tool": "addresses",
-            "toggle_items": [
-                {
-                    "key": "addresses",
-                    "label": "Addresses",
-                    "url": reverse("objects-addresses"),
-                },
-                {
-                    "key": "services",
-                    "label": "Services",
-                    "url": reverse("objects-services"),
-                },
-            ],
-            "add_button_label": "Add Address",
             "addresses": get_mock_addresses(),
+            **get_objects_toolbar_context("addresses"),
         },
     )
 
@@ -142,6 +148,7 @@ def get_objects_addresses(request):
         {
             "title": "Addresses",
             "addresses": get_mock_addresses(),
+            **get_objects_toolbar_context("addresses"),
         },
     )
 
@@ -152,6 +159,7 @@ def get_objects_services(request):
         "partials/_page_content.html",
         {
             "title": "Services",
+            **get_objects_toolbar_context("services"),
         },
     )
 
