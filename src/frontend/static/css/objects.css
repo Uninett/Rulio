@@ -7,16 +7,29 @@ td {
     border-top: 1px solid #E0E0E0;
     border-bottom: 1px solid #E0E0E0;
     position: relative;
+    line-height: 1.0;
 }
 
 td:first-child {
     border-left: 4px solid #D1CDFF;
 }
 
+tr:hover {
+    background-color: #F5F5F5;
+    cursor: pointer;
+}
+
 th {
 
     font-family: "Haffer", sans-serif;
 
+}
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 1.2px;
+    table-layout: fixed;
 }
 
 .table-container {
@@ -26,6 +39,13 @@ th {
     overflow-x: hidden;
     border: 1px solid #ccc;
     border-radius: 8px;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 2;
 }
 
 
