@@ -1,3 +1,4 @@
+/*Cells in table*/
 td {
 
     font-family: "Haffer", sans-serif;
@@ -54,6 +55,27 @@ table {
     border-collapse: seperate;
     margin-left: 5%;
 }
+
+.cell-text {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.description-cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+th:nth-child(5),
+td:nth-child(5) {
+    width: 30%;
+}
+
 
 .add-btn-container {
     position: relative;
