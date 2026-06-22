@@ -5,7 +5,7 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.tag import Tag
-from backend.objects.attributes.tag_connection import TagObject
+from backend.objects.attributes.tag_connection import TagConnection
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_filter import RuleFilter
@@ -29,7 +29,7 @@ class TestObjects:
         assert ServiceGroup is not None
         assert ServiceGroupMember is not None
         assert Tag is not None
-        assert TagObject is not None
+        assert TagConnection is not None
         assert Filter is not None
         assert Rule is not None
         assert RuleFilter is not None
