@@ -5,11 +5,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rulio</title>
+    <title>{% block title %}Rulio{% endblock %}</title>
 
     <!-- Loads the local htmx library from the frontend static/js folder -->
     <script src="{% static 'js/htmx.min.js' %}"></script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/tools.css' %}" />
     {% block extra_css %}{% endblock %}
 
 </head>
@@ -20,6 +21,9 @@
     <main>
         {% block content %}{% endblock %}
     </main>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 
 </html>

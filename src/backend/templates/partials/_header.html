@@ -1,9 +1,10 @@
-<header class="site-header" aria-label="Site header">
+{% load static %}
 
+<header class="site-header" aria-label="Site header">
 
     <div class="header-content">
         <div class="header-navigation">
-            <img class="site-logo" aria-label="Site logo" src="/static/images/rulio.svg" alt="Rulio logo" />
+            <img class="site-logo" aria-label="Site logo" src="{% static 'images/rulio.svg' %}" alt="Rulio logo" />
             <nav class="main-nav" aria-label="Main navigation">
                 <ul class="nav-list">
                     <li><a href="{% url 'devices' %}"
@@ -22,10 +23,9 @@
 
         <div class="header-actions">
             <input class="form-control" type="search" name="search" placeholder="Search...">
-
             <div class="form-group">
-                <label>Tenant</label>
-                <select name="tenant">
+                <label for="tenant">Tenant</label>
+                <select name="tenant" id="tenant">
                     <option value="ntnu">NTNU</option>
                     <option value="uio">UiO</option>
                     <option value="uib">UiB</option>
