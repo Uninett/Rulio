@@ -97,8 +97,9 @@ def get_objects_addresses(request):
         "partials/_page_content.html",
         {
             "title": "Addresses",
+            "object_type": "addresses",
             "addresses": addresses,
-            **get_objects_toolbar_context("addresses"),
+            **get_objects_toolbar_context("addresses", add_button_label="Add Address"),
         },
     )
 
@@ -110,7 +111,7 @@ def get_objects_services(request):
         {
             "title": "Services",
             "object_type": "services",
-            **get_objects_toolbar_context("services"),
+            **get_objects_toolbar_context("services", add_button_label="Add Service"),
         },
     )
 
