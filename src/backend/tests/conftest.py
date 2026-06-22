@@ -3,7 +3,8 @@ import pytest
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
-from backend.services.create import add_addresses_to_group, get_or_create_address
+from backend.objects.attributes.service_group import ServiceGroup
+from backend.services.create import add_addresses_to_group, add_services_to_group, get_or_create_address
 from backend.services.generate_config import PolicyRule
 from backend.services.get import get_address_group_members, get_service_group_members
 from constants import TESTING_TENNANT_ID
@@ -205,13 +206,29 @@ def sample_address_group(sample_addresses):
 
     return sample_address_group_1, sample_address_group_2
 
+@pytest.fixture
+def sample_service_group(sample_services):
+    sample_service_group_1 = ServiceGroup(
+        name="Test_Service_Group_1",
+        description="This is a test service group",
+        tenant_id=TESTING_TENNANT_ID,
+    )
+    sample_service_group_1.save()
+    add_services_to_group(
+        service_group_id=sample_service_group_1.id,
+        service_ids=[service.id for service in sample_services],
+    )
+    sample_service_group_1.save()
+
+    return sample_service_group_1
 
 
 @pytest.fixture
 def address_group_policy_rules(sample_address_group):
     policy_rules = []
 
-    rule = PolicyRule(
+    policy_rules.append(
+        PolicyRule(
         name="Test_Rule_for_Address_Group_1",
         obj_type="address_group",
         action="accept",
@@ -219,8 +236,10 @@ def address_group_policy_rules(sample_address_group):
         direction="destination",
         sequence=0,
     )
-    policy_rules.append(rule)
-    rule = PolicyRule(
+    )
+   
+    policy_rules.append(
+        PolicyRule(
         name="Test_Rule_for_Address_Group_2",
         obj_type="address_group",
         action="deny",
@@ -228,10 +247,25 @@ def address_group_policy_rules(sample_address_group):
         direction="source",
         sequence=1,
     )
-    policy_rules.append(rule)
+    )
 
     return policy_rules
 
+@pytest.fixture
+def service_group_policy_rules(sample_service_group):
+    policy_rules = []
 
+    policy_rules.append(
+        PolicyRule(
+            name="Test_Rule_for_Service_Group_1",
+            obj_type="service_group",
+            action="accept",
+            object=sample_service_group,
+            direction="destination",
+            sequence=0,
+        )
+    )
+
+    return policy_rules
 
 

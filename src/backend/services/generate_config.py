@@ -26,7 +26,7 @@ class PolicyRule:
         obj_type: str,
         action: str,
         object: Address | Service | AddressGroup | ServiceGroup,
-        sequence: int ,
+        sequence: int = 0,
         direction: str = "destination",
     ):
         self.name = name
@@ -40,7 +40,7 @@ class PolicyRule:
         if obj_type.lower() == "address" and isinstance(object, Address):
             self.members = object.get_address()
         elif obj_type.lower() == "service" and isinstance(object, Service):
-            self.members = object.get_service()
+            self.members = object
         elif obj_type.lower() == "address_group" and isinstance(object, AddressGroup):
             self.members = get_address_group_members(request=None, address_group_id=object.id)
         elif obj_type.lower() == "service_group" and isinstance(object, ServiceGroup):
@@ -91,6 +91,7 @@ class Policy:
 
 
         self.networks = {"networks": {}}
+        self.services = {"services": {}}
         for rule in rules:
             match rule.type:
                 case "address":
@@ -126,13 +127,35 @@ class Policy:
         self.networks["networks"][rule.object_name] = {"values": values}
 
     def add_service(self, rule: PolicyRule):
-        self.YAMLConfig["filters"][0]["terms"].append(
-            {
-                "name": rule.name,
-                "service": rule.object_name,
-                "action": rule.action,
-            }
-        )
+        if rule.direction == "destination":
+            field_name = "destination-port"
+        elif rule.direction == "source":
+            field_name = "source-port"
+        else:
+            raise ValueError(f"Unsupported rule direction: {rule.direction}")
+        
+        service = rule.members
+        service_name = service.name
+        has_ports = service.is_port_based()
+        port_value = service.get_ports()
+
+        entry = {"protocol": service.get_protocol()}
+        if port_value is not None:
+            entry["port"] = port_value
+
+        self.services["services"][service_name] = [entry]
+
+        term = {
+            "name": rule.name,
+            "action": rule.action,
+            "protocol": service.get_protocol(),
+        }
+
+        if has_ports:
+            term[field_name] = service_name
+
+        self.YAMLConfig["filters"][0]["terms"].append(term)
+        
 
     def add_address_group(self, rule: PolicyRule):
         if rule.direction == "destination":
@@ -141,14 +164,20 @@ class Policy:
             field_name = "source-address"
         else:
             raise ValueError(f"Unsupported rule direction: {rule.direction}")
+
         values = []
-        for member in rule.members:
-            for ipv in member.get_address():
-                for addr in ipv:
-                    values.append(str(addr))
-        if rule.object_name not in self.networks["networks"]:
-            self.networks["networks"][rule.object_name] = {"values": []}
-        self.networks["networks"][rule.object_name]["values"] = values
+
+        for address in rule.members:
+            ipv4_addrs, ipv6_addrs = address.get_address()
+
+            for addr in ipv4_addrs:
+                values.append(str(addr))
+
+            for addr in ipv6_addrs:
+                values.append(str(addr))
+
+        self.networks["networks"][rule.object_name] = {"values": values}
+
         self.YAMLConfig["filters"][0]["terms"].append(
             {
                 "name": rule.name,
@@ -157,8 +186,36 @@ class Policy:
             }
         )
 
+
     def add_service_group(self, rule: PolicyRule):
-        pass
+        if rule.direction == "destination":
+            field_name = "destination-port"
+        elif rule.direction == "source":
+            field_name = "source-port"
+        else:
+            raise ValueError(f"Unsupported rule direction: {rule.direction}")
+
+        for i, service in enumerate(rule.members):
+            service_name = service.name
+            has_ports = service.is_port_based()
+            port_value = service.get_ports()
+
+            entry = {"protocol": service.get_protocol()}
+            if port_value is not None:
+                entry["port"] = port_value
+
+            self.services["services"][service_name] = [entry]
+
+            term = {
+                "name": f"{rule.name}_Rule_{i}",
+                "action": rule.action,
+                "protocol": service.get_protocol(),
+            }
+
+            if has_ports:
+                term[field_name] = service_name
+
+            self.YAMLConfig["filters"][0]["terms"].append(term)
 
 
 def generate_config(policy: Policy) -> str:
@@ -172,6 +229,14 @@ def generate_config(policy: Policy) -> str:
         str: The generated configuration as a string.
     """
     definitions = naming.Naming()
-    definitions.ParseDefinitionsObject(policy.networks, policy.name)
+  
+  
+    definitions_obj = {
+        "networks": policy.networks.get("networks", {}),
+        "services": policy.services.get("services", {}),
+    }
+
+    definitions.ParseDefinitionsObject(definitions_obj, policy.name)
+
     configs = aerleon_api.Generate([policy.YAMLConfig], definitions)
     return configs

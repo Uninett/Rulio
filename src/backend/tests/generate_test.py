@@ -62,7 +62,7 @@ class TestGenerateConfig:
                     )
                     f.write(content)
 
-    def test_generate_address_group_config(self, address_group_policy_rules):
+    def test_generate_address_group_config(self, address_group_policy_rules, sample_addresses):
         
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(name="Address_Group_Test_Policy", rules=address_group_policy_rules, vendor=vendor, policy_type=policy_type)
@@ -95,5 +95,77 @@ class TestGenerateConfig:
                 with open(filepath, "w") as f:
                     f.write(
                         f"# Generated on {datetime.datetime.now()}\n# Test for generating using Address Group objects\n\n"
+                    )
+                    f.write(content)
+
+    def test_generate_service_config(self, service_policy_rules):
+        
+        for vendor, policy_type in self.vendor_policy_type_pairs:
+            policy = Policy(name="Service_Test_Policy", rules=service_policy_rules, vendor=vendor, policy_type=policy_type)
+
+            logger.info(
+                "Generated policy YAML:\n%s",
+                yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+            )
+            logger.info(
+                "Generated services:\n%s",
+                yaml.dump(policy.services, sort_keys=False, default_flow_style=False),
+            )
+
+            assert policy.name == "Service_Test_Policy"
+            assert policy.YAMLConfig["filename"] == "Service_Test_Policy"
+            #assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Service_Test_Policy {policy_type}"}
+            assert len(policy.YAMLConfig["filters"][0]["terms"]) == len(service_policy_rules)
+            assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Service_Rule_1"
+            assert policy.YAMLConfig["filters"][0]["terms"][1]["name"] == "Test_Service_Rule_2"
+
+            config = generate_config(policy)
+            filepath = TEST_LOGPATH / "service" / f"{vendor.upper()}_generated_config.yaml"
+            os.makedirs(TEST_LOGPATH / "service", exist_ok=True)
+            for filename, content in config.items():
+                logger.info(
+                    "\n=== Generated config: %s ===\n%s\n=== End config ===",
+                    filename,
+                    content,
+                )
+                with open(filepath, "w") as f:
+                    f.write(
+                        f"# Generated on {datetime.datetime.now()}\n# Test for generating using Service objects\n\n"
+                    )
+                    f.write(content)
+
+    def test_generate_service_group_config(self, service_group_policy_rules, sample_services):
+        
+        for vendor, policy_type in self.vendor_policy_type_pairs:
+            policy = Policy(name="Service_Group_Test_Policy", rules=service_group_policy_rules, vendor=vendor, policy_type=policy_type)
+
+            logger.info(
+                "Generated policy YAML:\n%s",
+                yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+            )
+            logger.info(
+                "Generated services:\n%s",
+                yaml.dump(policy.services, sort_keys=False, default_flow_style=False),
+            )
+
+            assert policy.name == "Service_Group_Test_Policy"
+            assert policy.YAMLConfig["filename"] == "Service_Group_Test_Policy"
+            #assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Service_Group_Test_Policy {policy_type}"}
+            assert len(policy.YAMLConfig["filters"][0]["terms"]) == len(sample_services)
+            assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Rule_for_Service_Group_1_Rule_0"
+            assert policy.YAMLConfig["filters"][0]["terms"][1]["name"] == "Test_Rule_for_Service_Group_1_Rule_1"
+
+            config = generate_config(policy)
+            filepath = TEST_LOGPATH / "service_group" / f"{vendor.upper()}_generated_config.yaml"
+            os.makedirs(TEST_LOGPATH / "service_group", exist_ok=True)
+            for filename, content in config.items():
+                logger.info(
+                    "\n=== Generated config: %s ===\n%s\n=== End config ===",
+                    filename,
+                    content,
+                )
+                with open(filepath, "w") as f:
+                    f.write(
+                        f"# Generated on {datetime.datetime.now()}\n# Test for generating using Service Group objects\n\n"
                     )
                     f.write(content)

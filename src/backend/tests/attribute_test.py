@@ -80,3 +80,5 @@ class TestAttributes:
         )
         assert service.get_ports() == "80"
         assert service.get_protocol() == "tcp"
+        assert service.is_port_based() is True
+

@@ -20,10 +20,10 @@ class Service(models.Model):
     port_end = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return f"Service(id={self.id}, name='{self.name}', description='{self.description}', tenant_id={self.tenant_id}, protocol='{self.protocol}', port_start={self.port_start}, port_end={self.port_end})"
+        return f"Service(id={self.id}, name='{self.name}', description='{self.description}', tenant_id={self.tenant_id}, protocol='{self.protocol.upper()}', port_start={self.port_start}, port_end={self.port_end})"
 
     def get_ports(self):
-        if self.port_start is None or self.port_end is None:
+        if self.port_start is None and self.port_end is None:
             return None
         elif self.port_start == self.port_end:
             return str(self.port_start)
@@ -31,9 +31,11 @@ class Service(models.Model):
             return f"{self.port_start}-{self.port_end}"
 
     def get_protocol(self):
-        return self.protocol
+        return self.protocol.lower()
 
     def is_port_based(self):
-        if self.protocol in ["TCP", "UDP"]:
+        if self.protocol.upper() in ["TCP", "UDP"]:
             return True
         return False
+    
+ 
