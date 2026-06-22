@@ -1,34 +1,33 @@
 # Frontend
 from django.shortcuts import render
+from django.urls import reverse
 
 """
 Frontend
 """
 
 
-def get_devices_page(request):
-    return render(
-        request,
-        "devices.html",
-        {
-            "active_page": "devices",
-        },
-    )
+def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
+    return {
+        "active_tool": active_tool,
+        "toggle_items": [
+            {
+                "key": "addresses",
+                "label": "Addresses",
+                "url": reverse("objects-addresses"),
+            },
+            {
+                "key": "services",
+                "label": "Services",
+                "url": reverse("objects-services"),
+            },
+        ],
+        "add_button_label": add_button_label,
+    }
 
 
-def get_filters_page(request):
-    return render(
-        request,
-        "filters.html",
-        {
-            "active_page": "filters",
-        },
-    )
-
-
-# This is a temporary implementation with hardcoded data for demonstration purposes.
-def get_objects_page(request):
-    addresses = [
+def get_mock_addresses():
+    return [
         {
             "type": "address",
             "name": "ntnu-dns-1",
@@ -103,12 +102,64 @@ def get_objects_page(request):
         },
     ]
 
+
+def get_devices_page(request):
+    return render(
+        request,
+        "devices.html",
+        {
+            "active_page": "devices",
+            "page_title": "Devices",
+            "add_button_label": "Add Device",
+        },
+    )
+
+
+def get_filters_page(request):
+    return render(
+        request,
+        "filters.html",
+        {
+            "active_page": "filters",
+            "page_title": "Filters",
+            "add_button_label": "Add Filter",
+        },
+    )
+
+
+# This is a temporary implementation with hardcoded data for demonstration purposes.
+def get_objects_page(request):
     return render(
         request,
         "objects.html",
         {
             "active_page": "objects",
-            "addresses": addresses,
+            "page_title": "Addresses",
+            "addresses": get_mock_addresses(),
+            **get_objects_toolbar_context("addresses"),
+        },
+    )
+
+
+def get_objects_addresses(request):
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Addresses",
+            "addresses": get_mock_addresses(),
+            **get_objects_toolbar_context("addresses"),
+        },
+    )
+
+
+def get_objects_services(request):
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Services",
+            **get_objects_toolbar_context("services"),
         },
     )
 
@@ -144,5 +195,7 @@ def get_tags_page(request):
         "tags.html",
         {
             "active_page": "tags",
+            "page_title": "Tags",
+            "add_button_label": "Add Tag",
         },
     )

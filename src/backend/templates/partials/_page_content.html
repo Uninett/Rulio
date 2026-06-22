@@ -1,0 +1,19 @@
+<div class="page-content">
+    <div class="page-content-header">
+        <h1>{{ title }}</h1>
+        {% include "partials/_tools.html" %}
+    </div>
+
+    {% if title == "Devices" %}
+    {% elif title == "Filters" %}
+
+    <!--Insert table here, with type of table depending on the title (i.e. title == "Addresses" -> address table, title == "Services" -> service table)-->
+    {% elif title == "Addresses" %}
+    {% include "partials/objects/_addressesTable.html" %}
+    {% elif title == "Services" %}
+
+    {% elif title == "Tags" %}
+    {% else %}
+    <p>No content available.</p>
+    {% endif %}
+</div>

@@ -1,5 +1,11 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Devices | Rulio{% endblock %}
 
 {% block content %}
-    <h1>Devices in progress</h1>
+
+<div id="filters-content">
+    {% include "partials/_page_content.html" with title=page_title %}
+</div>
 {% endblock %}

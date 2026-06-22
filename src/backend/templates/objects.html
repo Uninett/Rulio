@@ -1,36 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/tools.css' %}" />
+{% block title %}Objects | Rulio{% endblock %}
 
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/objects.css' %}" />
 {% endblock %}
 
 {% block content %}
-{% include "partials/_tools.html" with show_toggle=True active_tool="addresses" btn_title="Add Object" %}
+
 <div id="objects-content">
-    {% include "partials/objects/_objects_addresses.html" %}
-
+    {% include "partials/_page_content.html" with title=page_title addresses=addresses %}
 </div>
-
-
-
-
-<script>
-    function setActiveTool(clickedButton) {
-        const buttons = document.querySelectorAll(".btn-toggle");
-
-        buttons.forEach(function (button) {
-            button.classList.remove("active");
-        });
-
-        clickedButton.classList.add("active");
-    }
-</script>
-
-
-
-
-
 {% endblock %}

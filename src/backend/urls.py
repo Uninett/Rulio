@@ -30,8 +30,8 @@ from .views import (
     get_tags_page,
     get_empty_address_row_partial,
     post_address_row_partial,
-    get_addresses_content,
-    get_services_content,
+    get_objects_addresses,
+    get_objects_services,
 )
 
 urlpatterns = [
@@ -42,7 +42,7 @@ urlpatterns = [
     path("objects/", get_objects_page, name="objects"),
     path("addresses/new/", get_empty_address_row_partial, name="new-address-row"),
     path("addresses/save/", post_address_row_partial, name="save_address_row"),
-    path("objects/addresses/", get_addresses_content, name="objects-addresses"),
-    path("objects/services/", get_services_content, name="objects-services"),
+    path("objects/addresses/", get_objects_addresses, name="objects-addresses"),
+    path("objects/services/", get_objects_services, name="objects-services"),
     path("tags/", get_tags_page, name="tags"),
 ]
