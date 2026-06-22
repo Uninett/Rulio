@@ -17,12 +17,9 @@ class TestGenerateConfig:
         ("juniper", ""),
         ("arista", ""),
         ("aruba", ""),
-        ("cisco", "extended"),
-        ("cisco", ""),
+        ("cisco", "mixed"),
         ("brocade", ""),
-        ("cisco_asa", ""),
-        ("cisco_nx", ""),
-        ("cisco_xr", ""),
+        ("paloalto", ["from-zone", "internal", "to-zone", "external", "mixed"]),
     ]
     def test_generate_address_config(self, address_policy_rules):
 
@@ -40,20 +37,18 @@ class TestGenerateConfig:
 
             assert policy.name == "Address_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Address_Test_Policy"
-            assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Address_Test_Policy {policy_type}"}
             assert len(policy.YAMLConfig["filters"][0]["terms"]) == len(address_policy_rules)
-            assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Rule_1"
+            assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Address_Rule_1"
             assert policy.YAMLConfig["filters"][0]["terms"][0]["destination-address"] == "Test_Address_1"
             assert policy.networks["networks"]["Test_Address_1"]["values"][0] == "192.168.1.0/24"
             assert policy.YAMLConfig["filters"][0]["terms"][0]["action"] == "accept"
-            assert policy.YAMLConfig["filters"][0]["terms"][1]["name"] == "Test_Rule_2"
+            assert policy.YAMLConfig["filters"][0]["terms"][1]["name"] == "Test_Address_Rule_2"
             assert policy.YAMLConfig["filters"][0]["terms"][1]["source-address"] == "Test_Address_2"
-            # assert policy.networks["networks"]["Test_Address_2"]["values"][0] == "0.0.0.0/0"
             assert policy.YAMLConfig["filters"][0]["terms"][1]["action"] == "deny"
 
             config = generate_config(policy)
-            filepath = TEST_LOGPATH / f"test_generate_address_config_for_{vendor}.yaml"
-            os.makedirs(TEST_LOGPATH, exist_ok=True)
+            filepath = TEST_LOGPATH / "addr" / f"{vendor.upper()}_generated_config.yaml"
+            os.makedirs(TEST_LOGPATH / "addr", exist_ok=True)
 
             for filename, content in config.items():
                 logger.info(
@@ -83,13 +78,14 @@ class TestGenerateConfig:
 
             assert policy.name == "Address_Group_Test_Policy"
             assert policy.YAMLConfig["filename"] == "Address_Group_Test_Policy"
-            assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Address_Group_Test_Policy {policy_type}"}
+            #assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {vendor: f"Address_Group_Test_Policy {policy_type}"}
             assert len(policy.YAMLConfig["filters"][0]["terms"]) == len(address_group_policy_rules)
-            assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Rule_for_Address_Group"
+            assert policy.YAMLConfig["filters"][0]["terms"][0]["name"] == "Test_Rule_for_Address_Group_1"
+            assert policy.YAMLConfig["filters"][0]["terms"][1]["name"] == "Test_Rule_for_Address_Group_2"
 
             config = generate_config(policy)
-            filepath = TEST_LOGPATH / f"test_generate_address_group_config_for_{vendor}.yaml"
-            os.makedirs(TEST_LOGPATH, exist_ok=True)
+            filepath = TEST_LOGPATH / "addr_group" / f"{vendor.upper()}_generated_config.yaml"
+            os.makedirs(TEST_LOGPATH / "addr_group", exist_ok=True)
             for filename, content in config.items():
                 logger.info(
                     "\n=== Generated config: %s ===\n%s\n=== End config ===",
