@@ -11,3 +11,7 @@ document.addEventListener("click", function (event) {
 
     button.classList.add("active");
 });
+
+function closeModal(event) {
+    document.getElementById('modal-container').innerHTML = '';
+}

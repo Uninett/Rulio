@@ -1,0 +1,24 @@
+<div class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <form>
+            <div class="modal-header">
+                <h2>{{ modal_title }}</h2>
+            </div>
+
+            <div class="modal-type-content" id="modal-type-content">
+                {% include "partials/modals/_type_content.html" %}
+            </div>
+            <hr>
+
+            <div class="modal-actions">
+                <button class="btn btn-cancel" type="button" onclick="closeModal(event)">
+                    Cancel
+                </button>
+
+                <button class="btn btn-save" type="submit">
+                    Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
