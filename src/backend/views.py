@@ -239,9 +239,12 @@ def get_add_modal_form_content(request, object_type, variant):
 
     return render(
         request,
-        config["variants"][variant],
+        "partials/modals/_variant_content.html",
         {
             "modal_object_type": object_type,
             "modal_variant": variant,
+            "modal_supports_variants": config.get("supports_variants", False),
+            "modal_variant_labels": config.get("variant_labels", {}),
+            "modal_content_partial": config["variants"][variant],
         },
     )

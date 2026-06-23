@@ -1,12 +1,12 @@
-<div class="modal-toggle">
-    <button type="button" class="{% if modal_variant == 'item' %}active{% endif %}"
-        hx-get="{% url 'modal-add-form-content' modal_object_type 'item' %}" hx-target="#modal-form-content"
+<div class="modal-toggle tools-toggle">
+    <button type="button" class="btn-toggle {% if modal_variant == 'item' %}active{% endif %}"
+        hx-get="{% url 'modal-add-form-content' modal_object_type 'item' %}" hx-target="#modal-variant-content"
         hx-swap="innerHTML">
         {{ modal_variant_labels.item|default:"Item" }}
     </button>
 
-    <button type="button" class="{% if modal_variant == 'group' %}active{% endif %}"
-        hx-get="{% url 'modal-add-form-content' modal_object_type 'group' %}" hx-target="#modal-form-content"
+    <button type="button" class="btn-toggle {% if modal_variant == 'group' %}active{% endif %}"
+        hx-get="{% url 'modal-add-form-content' modal_object_type 'group' %}" hx-target="#modal-variant-content"
         hx-swap="innerHTML">
         {{ modal_variant_labels.group|default:"Group" }}
     </button>
