@@ -11,8 +11,7 @@
             <hr>
 
             <div class="modal-actions">
-                <button class="btn btn-cancel" type="button"
-                    onclick="document.getElementById('modal-container').innerHTML = ''">
+                <button class="btn btn-cancel" type="button" onclick="closeModal(event)">
                     Cancel
                 </button>
 
@@ -23,9 +22,3 @@
         </form>
     </div>
 </div>
-
-<script>
-    function closeModal(event) {
-        document.getElementById('modal-container').innerHTML = '';
-    }
-</script>
