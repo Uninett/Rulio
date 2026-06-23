@@ -17,7 +17,7 @@ logger = set_up_logger(__name__)
 class PolicyRule:
     """
     A class representing a policy rule. From ER Diagram this is basically
-    the rule object joined with an Address, Service or group. 
+    the rule object joined with an Address, Service or group.
     PolicyRules with the same sequence number are merged into the same logical term in the generated config.
 
     Args:
@@ -148,7 +148,7 @@ class Policy:
         if len(actions) != 1:
             logger.error(f"All rules in sequence {sequence} must have the same action. Found actions: {actions}")
             raise ValueError(f"All rules in sequence {sequence} must have the same action")
-        
+
         action = rules[0].action
         base_name = self._base_term_name(rules, sequence)
 

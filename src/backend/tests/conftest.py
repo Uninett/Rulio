@@ -309,6 +309,7 @@ def combined_policy_rules(sample_addresses, sample_services):
         ),
     ]
 
+
 @pytest.fixture
 def realistic_acl_addresses():
     addresses = [
@@ -547,7 +548,6 @@ def realistic_acl_policy_rules(
             direction="destination",
             sequence=10,
         ),
-
         # Sequence 20 -> 2 terms (tcp + udp)
         PolicyRule(
             name="Allow_Trusted_To_DNS_Src_Group",
@@ -573,7 +573,6 @@ def realistic_acl_policy_rules(
             direction="destination",
             sequence=20,
         ),
-
         # Sequence 30 -> 1 tcp term
         PolicyRule(
             name="Deny_Admins_To_Blocked_Src",
@@ -599,7 +598,6 @@ def realistic_acl_policy_rules(
             direction="destination",
             sequence=30,
         ),
-
         # Sequence 40 -> 1 icmp term
         PolicyRule(
             name="Allow_Admins_ICMP_Src",
