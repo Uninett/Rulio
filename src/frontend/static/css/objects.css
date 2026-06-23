@@ -1,13 +1,15 @@
+/*Cells in table*/
 td {
 
     font-family: "Haffer", sans-serif;
     /* color-layut-background-strong */
-    text-align: center;
+    text-align: left;
     border: none;
     border-top: 1px solid #E0E0E0;
     border-bottom: 1px solid #E0E0E0;
     position: relative;
     line-height: 1.0;
+
 }
 
 td:first-child {
@@ -15,7 +17,7 @@ td:first-child {
 }
 
 tr:hover {
-    background-color: #F5F5F5;
+    background-color: #E8E8E8;
     cursor: pointer;
 }
 
@@ -53,6 +55,47 @@ table {
     width: 90%;
     border-collapse: seperate;
     margin-left: 5%;
+}
+
+.cell-text {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.description-cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+th:nth-child(5),
+td:nth-child(5) {
+    width: 40%;
+}
+
+th:nth-child(1),
+td:nth-child(1) {
+    width: 8%;
+}
+
+th:nth-child(2),
+td:nth-child(2) {
+    width: 20%;
+}
+
+th:nth-child(3),
+td:nth-child(3),
+th:nth-child(4),
+td:nth-child(4) {
+    width: 10%;
+}
+
+td:nth-child(1) {
+    text-align: center;
 }
 
 .add-btn-container {
