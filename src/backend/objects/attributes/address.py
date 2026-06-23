@@ -128,13 +128,18 @@ class Address(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return (
-            f"Address(id={self.id}, name='{self.name}', description='{self.description}', "
-            f"\ntenant_id={self.tenant_id}, ipv4_type='{self.ipv4_type}', ipv6_type='{self.ipv6_type}', "
-            f"\nipv4Network='{self.ipv4Network}', ipv6Network='{self.ipv6Network}', "
-            f"\nipv4Address_start='{self.ipv4Address_start}', ipv4Address_end='{self.ipv4Address_end}', "
-            f"\nipv6Address_start='{self.ipv6Address_start}', ipv6Address_end='{self.ipv6Address_end}')"
-        )
+        str = f"Address(name={self.name}, id={self.id}, description={self.description}, type={self.addr_type}, tenant ID={self.tenant_id}"
+        if self.ipv4_type == "standard":
+            str += f", IPv4={self.ipv4Network}"
+        elif self.ipv4_type == "custom_range":
+            str += f", IPv4 Range={self.ipv4Address_start}-{self.ipv4Address_end}"
+        if self.ipv6_type == "standard":
+            str += f", IPv6={self.ipv6Network}"
+        elif self.ipv6_type == "custom_range":
+            str += f", IPv6 Range={self.ipv6Address_start}-{self.ipv6Address_end}"
+        str += ")"
+        return str
+    
 
     def get_address(self) -> tuple[list[IPv4Network], list[IPv6Network]]:
         ipv4_addresses = []

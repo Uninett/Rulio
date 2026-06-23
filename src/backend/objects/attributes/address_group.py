@@ -9,7 +9,7 @@ class AddressGroup(models.Model):
 
     def __str__(self):
         return (
-            f"AddressGroup(id={self.id}, tenant_id={self.tenant_id}, "
+            f"AddressGroup(id={self.id}, tenant_id={self.tenant_id}, type='{self.addr_type}', "
             f"name='{self.name}', description='{self.description}')"
         )
 
