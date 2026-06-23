@@ -1,38 +1,61 @@
 {% load static %}
 
 <header class="site-header" aria-label="Site header">
-
     <div class="header-content">
         <div class="header-navigation">
             <img class="site-logo" aria-label="Site logo" src="{% static 'images/rulio.svg' %}" alt="Rulio logo" />
+
             <nav class="main-nav" aria-label="Main navigation">
                 <ul class="nav-list">
-                    <li><a href="{% url 'devices' %}"
-                            class="{% if active_page == 'devices' %}active{% endif %}">Devices</a>
+                    <li>
+                        <a href="{% url 'devices' %}" class="{% if active_page == 'devices' %}active{% endif %}">
+                            Devices
+                        </a>
                     </li>
-                    <li><a href="{% url 'filters' %}"
-                            class="{% if active_page == 'filters' %}active{% endif %}">Filters</a>
+                    <li>
+                        <a href="{% url 'filters' %}" class="{% if active_page == 'filters' %}active{% endif %}">
+                            Filters
+                        </a>
                     </li>
-                    <li><a href="{% url 'objects' %}"
-                            class="{% if active_page == 'objects' %}active{% endif %}">Objects</a>
+                    <li>
+                        <a href="{% url 'objects' %}" class="{% if active_page == 'objects' %}active{% endif %}">
+                            Objects
+                        </a>
                     </li>
-                    <li><a href="{% url 'tags' %}" class="{% if active_page == 'tags' %}active{% endif %}">Tags</a></li>
+                    <li>
+                        <a href="{% url 'tags' %}" class="{% if active_page == 'tags' %}active{% endif %}">
+                            Tags
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </div>
 
         <div class="header-actions">
+            <p>Active tenant id: {{ selected_tenant }}</p> <!-- For testing purposes -->
             <input class="form-control" type="search" name="search" placeholder="Search...">
+
             <div class="form-group">
                 <label for="tenant">Tenant</label>
-                <select name="tenant" id="tenant">
-                    <option value="ntnu">NTNU</option>
-                    <option value="uio">UiO</option>
-                    <option value="uib">UiB</option>
-                </select>
+
+                <form hx-post="{% url 'set-tenant' %}" hx-trigger="change from:#tenant" hx-swap="none"
+                    hx-on::after-request="window.location.reload()">
+                    {% csrf_token %}
+                    <select name="tenant" id="tenant">
+                        <option value="">Select tenant</option>
+                        {% for tenant in tenants %}
+                        {% if selected_tenant|stringformat:'s' == tenant.id|stringformat:'s' %}
+                        <option value="{{ tenant.id }}" selected>{{ tenant.name }}</option>
+                        {% else %}
+                        <option value="{{ tenant.id }}">{{ tenant.name }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </form>
             </div>
+            <input type="hidden" id="current-tenant-id" name="tenant" value="{{ selected_tenant }}">
         </div>
     </div>
-
 </header>
+
 <hr>
