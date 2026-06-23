@@ -1,6 +1,7 @@
 from django.db import models
 
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
+from constants import DIRECTION_CHOICES
 
 
 class Rule(TaggableMixin, models.Model):
@@ -14,6 +15,7 @@ class Rule(TaggableMixin, models.Model):
     date_changed = models.DateTimeField(auto_now=True)
     created_by = models.IntegerField()
     changed_by = models.IntegerField()
+    direction = models.CharField(max_length=255, choices=DIRECTION_CHOICES)
     enable = models.BooleanField(default=True)
 
     def __str__(self):

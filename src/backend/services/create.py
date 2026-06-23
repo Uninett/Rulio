@@ -7,11 +7,14 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.rule import Rule
+from backend.schemas import rule
+from backend.services.generate_config import Policy, PolicyRule, generate_config
 from backend.utils.logger import set_up_logger
 from backend.services.get import get_object_by_type_and_id
 from backend.services.membership import (
@@ -367,7 +370,7 @@ def create_rule(
 
 
 def match_rule_to_objects(
-    request: object,
+    request: object, #why not a request?
     rule_id: int,
     match_type: str,
     object_type: str,
@@ -436,3 +439,62 @@ def match_rule_to_objects(
         "already_exists_count": len(already_exists),
         "error_count": len(errors),
     }
+
+def create_config_from_filter(request, filter_id, vendor, policy_type):
+    filter_obj = get_object_by_type_and_id("filter", filter_id)
+    if not filter_obj:
+        raise ValueError(f"Filter with ID {filter_id} does not exist.")
+
+    rule_filter_matches = RuleFilter.objects.filter(rule=filter_obj)
+    if not rule_filter_matches.exists():
+        raise ValueError(f"No rule matches found for filter with ID {filter_id}.")
+    policy_rules = []
+    for rule_filter in rule_filter_matches:
+        if not rule_filter.rule_id:
+            raise ValueError(f"Rule with ID {rule_filter.rule_id} does not exist.")
+        sequence = rule_filter.sequence
+        if not sequence:
+            raise ValueError(f"Sequence is not set for rule match with ID {rule_filter.id}.")
+        rule = Rule.objects.get(id=rule_filter.rule_id.id)
+        if not rule:
+            raise ValueError(f"Rule with ID {rule_filter.rule_id.id} does not exist.")
+        object_type = rule.object_type.lower() if rule.object_type else None
+        object_id = rule.object_id
+        if not object_type or not object_id:
+            raise ValueError(f"Object type or object ID is not set for rule with ID {rule.id}.")
+        if object_type not in ["address", "service", "address_group", "service_group"]:
+            raise ValueError(f"Invalid object type {object_type} for rule with ID {rule.id}.")
+        match object_type:
+            case "address":
+                obj = Address.objects.get(id=object_id)
+            case "service":
+                obj = Service.objects.get(id=object_id)
+            case "address_group":
+                obj = AddressGroup.objects.get(id=object_id)
+            case "service_group":
+                obj = ServiceGroup.objects.get(id=object_id)
+        if not obj:
+            raise ValueError(f"Object with ID {object_id} does not exist for rule with ID {rule.id}.")
+        policy_rule = PolicyRule(
+            name=rule.name,
+            obj_type=object_type,
+            action=rule.action,
+            object=obj,
+            sequence=sequence,
+            direction=rule.direction,
+        )
+        policy_rules.append(policy_rule)
+    policy = Policy(
+        name=filter_obj.name,
+        rules=policy_rules,
+        vendor=vendor,
+        policy_type=policy_type,
+        request=request,
+    )
+
+    config = generate_config(policy)
+    return config
+
+
+
+        
