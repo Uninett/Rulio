@@ -36,12 +36,18 @@
 
 .form-row {
     display: flex;
-    gap: 1rem;
+    gap: 3rem;
     align-items: flex-start;
 }
 
 .form-row .form-group {
     flex: 1;
+    padding-bottom: 1rem;
+}
+
+-form-row,
+.form-description {
+    padding-bottom: 1rem;
 }
 
 input,
