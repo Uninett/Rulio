@@ -141,7 +141,6 @@ class Address(TaggableMixin, models.Model):
             str += f", IPv6 Range={self.ipv6Address_start}-{self.ipv6Address_end}"
         str += ")"
         return str
-    
 
     def get_address(self) -> tuple[list[IPv4Network], list[IPv6Network]]:
         ipv4_addresses = []
