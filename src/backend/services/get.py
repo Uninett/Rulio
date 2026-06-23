@@ -5,6 +5,7 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.tag import Tag
+from backend.objects.filters.rule import Rule
 from backend.utils.logger import set_up_logger
 
 
@@ -326,3 +327,7 @@ def get_object_by_type_and_id(object_type: str, object_id: int):
     if not model:
         raise ValueError(f"Unsupported object type: {object_type}")
     return model.objects.get(id=object_id)
+
+def get_all_rules_from_tenant(tenant_id: int) -> list[Rule]:
+    requested_rules = Rule.objects.filter(tenant_id=tenant_id)
+    return requested_rules

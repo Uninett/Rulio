@@ -12,10 +12,12 @@ from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
+from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.rule import Rule
 from backend.utils.logger import set_up_logger
 from django.db import transaction
 from backend.services.get import get_object_by_type_and_id
+from django.contrib.contenttypes.models import ContentType
 
 
 # Setup logger
@@ -458,3 +460,75 @@ def create_rule(
     rule.save()
     logger.info(f"Created {rule} for tenant={rule.tenant_id}")
     return rule
+
+
+def match_rule_to_objects(
+    request: object,
+    rule_id: int,
+    match_type: str,
+    object_type: str,
+    object_ids: list[int],
+):
+    rule = Rule.objects.get(id=rule_id)
+
+    added = []
+    already_exists = []
+    errors = []
+
+    for object_id in object_ids:
+        try:
+            obj = get_object_by_type_and_id(object_type, object_id)
+
+            if obj.tenant_id not in (0, rule.tenant_id_id):
+                errors.append(
+                    {
+                        "object_id": object_id,
+                        "reason": f"Object {obj.id}, Name {obj.name} does not belong to tenant {rule.tenant_id_id} and is not global",
+                    }
+                )
+                continue
+
+            content_type = ContentType.objects.get_for_model(obj)
+
+            rule_match, created = RuleMatch.objects.get_or_create(
+                rule=rule,
+                match=match_type,
+                content_type=content_type,
+                object_id=obj.id,
+            )
+
+            if created:
+                rule.increment_hit_count()
+                added.append(
+                    {
+                        "object_id": obj.id,
+                        "name": getattr(obj, "name", str(obj)),
+                        "match": match_type,
+                    }
+                )
+            else:
+                already_exists.append(
+                    {
+                        "object_id": obj.id,
+                        "name": getattr(obj, "name", str(obj)),
+                        "match": match_type,
+                    }
+                )
+
+        except Exception as e:
+            errors.append(
+                {
+                    "object_id": object_id,
+                    "reason": str(e),
+                }
+            )
+
+    return {
+        "rule_id": rule_id,
+        "added": added,
+        "already_exists": already_exists,
+        "errors": errors,
+        "added_count": len(added),
+        "already_exists_count": len(already_exists),
+        "error_count": len(errors),
+    }
