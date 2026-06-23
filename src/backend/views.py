@@ -158,51 +158,51 @@ def get_add_modal_config(object_type):
     configs = {
         "devices": {
             "title": "Add Device",
-            "supports_variants": True,
-            "default_variant": "item",
-            "variant_labels": {
+            "supports_types": True,
+            "default_type": "item",
+            "type_labels": {
                 "item": "Device",
                 "group": "Device Group",
             },
-            "variants": {
+            "types": {
                 "item": "partials/modals/_devices_form.html",
                 "group": "partials/modals/_device_groups_form.html",
             },
         },
         "filters": {
             "title": "Add Filter",
-            "supports_variants": False,
+            "supports_types": False,
             "form_partial": "partials/modals/_filters_form.html",
         },
         "addresses": {
             "title": "Add Address",
-            "supports_variants": True,
-            "default_variant": "item",
-            "variant_labels": {
+            "supports_types": True,
+            "default_type": "item",
+            "type_labels": {
                 "item": "Address",
                 "group": "Address Group",
             },
-            "variants": {
+            "types": {
                 "item": "partials/modals/_addresses_form.html",
                 "group": "partials/modals/_address_groups_form.html",
             },
         },
         "services": {
             "title": "Add Service",
-            "supports_variants": True,
-            "default_variant": "item",
-            "variant_labels": {
+            "supports_types": True,
+            "default_type": "item",
+            "type_labels": {
                 "item": "Service",
                 "group": "Service Group",
             },
-            "variants": {
+            "types": {
                 "item": "partials/modals/_services_form.html",
                 "group": "partials/modals/_service_groups_form.html",
             },
         },
         "tags": {
             "title": "Add Tag",
-            "supports_variants": False,
+            "supports_types": False,
             "form_partial": "partials/modals/_tags_form.html",
         },
     }
@@ -212,11 +212,11 @@ def get_add_modal_config(object_type):
 def get_add_modal(request, object_type):
     config = get_add_modal_config(object_type)
 
-    if config.get("supports_variants"):
-        selected_variant = config["default_variant"]
-        modal_content_partial = config["variants"][selected_variant]
+    if config.get("supports_types"):
+        selected_type = config["default_type"]
+        modal_content_partial = config["types"][selected_type]
     else:
-        selected_variant = None
+        selected_type = None
         modal_content_partial = config["form_partial"]
 
     return render(
@@ -226,25 +226,25 @@ def get_add_modal(request, object_type):
             "modal_title": config["title"],
             "modal_mode": "add",
             "modal_object_type": object_type,
-            "modal_variant": selected_variant,
-            "modal_supports_variants": config.get("supports_variants", False),
-            "modal_variant_labels": config.get("variant_labels", {}),
+            "modal_type": selected_type,
+            "modal_supports_types": config.get("supports_types", False),
+            "modal_type_labels": config.get("type_labels", {}),
             "modal_content_partial": modal_content_partial,
         },
     )
 
 
-def get_add_modal_form_content(request, object_type, variant):
+def get_add_modal_form_content(request, object_type, type):
     config = get_add_modal_config(object_type)
 
     return render(
         request,
-        "partials/modals/_variant_content.html",
+        "partials/modals/_type_content.html",
         {
             "modal_object_type": object_type,
-            "modal_variant": variant,
-            "modal_supports_variants": config.get("supports_variants", False),
-            "modal_variant_labels": config.get("variant_labels", {}),
-            "modal_content_partial": config["variants"][variant],
+            "modal_type": type,
+            "modal_supports_types": config.get("supports_types", False),
+            "modal_type_labels": config.get("type_labels", {}),
+            "modal_content_partial": config["types"][type],
         },
     )

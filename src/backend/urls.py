@@ -48,5 +48,5 @@ urlpatterns = [
     path("objects/services/", get_objects_services, name="objects-services"),
     path("tags/", get_tags_page, name="tags"),
     path("modal/add/<str:object_type>/", get_add_modal, name="modal-add"),
-    path("modal/add/<str:object_type>/<str:variant>/form/", get_add_modal_form_content, name="modal-add-form-content"),
+    path("modal/add/<str:object_type>/<str:type>/form/", get_add_modal_form_content, name="modal-add-form-content"),
 ]
