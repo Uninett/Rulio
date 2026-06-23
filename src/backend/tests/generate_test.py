@@ -308,3 +308,118 @@ class TestGenerateConfig:
                         f"# Generated on {datetime.datetime.now()}\n# Test for generating using both Address and Service objects\n\n"
                     )
                     f.write(content)
+
+    def test_generate_realistic_router_policy(self, realistic_acl_policy_rules, request_with_session):
+        for vendor, policy_type in self.vendor_policy_type_pairs:
+            policy = Policy(
+                name="Realistic_Router_Policy",
+                rules=realistic_acl_policy_rules,
+                vendor=vendor,
+                request=request_with_session,
+                policy_type=policy_type,
+            )
+
+            if vendor in self.log_for_vendors:
+                logger.info(
+                    "Generated realistic policy YAML:\n%s",
+                    yaml.dump(policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+                )
+                logger.info(
+                    "Generated realistic networks:\n%s",
+                    yaml.dump(policy.networks, sort_keys=False, default_flow_style=False),
+                )
+                logger.info(
+                    "Generated realistic services:\n%s",
+                    yaml.dump(policy.services, sort_keys=False, default_flow_style=False),
+                )
+
+            assert policy.name == "Realistic_Router_Policy"
+            assert policy.YAMLConfig["filename"] == "Realistic_Router_Policy"
+
+            terms = policy.YAMLConfig["filters"][0]["terms"]
+
+            # seq 10 -> tcp
+            # seq 20 -> tcp + udp
+            # seq 30 -> tcp
+            # seq 40 -> icmp
+            assert len(terms) == 5
+
+            assert "ACL_Trusted_Sources" in policy.networks["networks"]
+            assert "ACL_Web_Servers" in policy.networks["networks"]
+            assert "ACL_Dst_Web_1" in policy.networks["networks"]
+            assert "ACL_Dst_DNS" in policy.networks["networks"]
+            assert "ACL_Dst_Blocked" in policy.networks["networks"]
+            assert "ACL_Any" in policy.networks["networks"]
+
+            assert "ACL_HTTP" in policy.services["services"]
+            assert "ACL_HTTPS" in policy.services["services"]
+            assert "ACL_DNS_TCP" in policy.services["services"]
+            assert "ACL_DNS_UDP" in policy.services["services"]
+            assert "ACL_ICMP" in policy.services["services"]
+
+            # Checks that at least one term exists with the correct config
+            assert any(
+                term.get("action") == "accept"
+                and term.get("protocol") == "tcp"
+                and term.get("source-address") == ["ACL_Trusted_Sources"]
+                and term.get("destination-address") == ["ACL_Web_Servers", "ACL_Dst_Web_1"]
+                and term.get("destination-port") == ["ACL_HTTP", "ACL_HTTPS"]
+                for term in terms
+            )
+
+            assert any(
+                term.get("action") == "accept"
+                and term.get("protocol") == "tcp"
+                and term.get("source-address") == ["ACL_Trusted_Sources"]
+                and term.get("destination-address") == ["ACL_Dst_DNS"]
+                and term.get("destination-port") == ["ACL_DNS_TCP"]
+                for term in terms
+            )
+
+            assert any(
+                term.get("action") == "accept"
+                and term.get("protocol") == "udp"
+                and term.get("source-address") == ["ACL_Trusted_Sources"]
+                and term.get("destination-address") == ["ACL_Dst_DNS"]
+                and term.get("destination-port") == ["ACL_DNS_UDP"]
+                for term in terms
+            )
+
+            assert any(
+                term.get("action") == "deny"
+                and term.get("protocol") == "tcp"
+                and term.get("source-address") == ["ACL_Src_Admins"]
+                and term.get("destination-address") == ["ACL_Dst_Blocked"]
+                and term.get("destination-port") == ["ACL_HTTPS"]
+                for term in terms
+            )
+
+            assert any(
+                term.get("action") == "accept"
+                and term.get("protocol") == "icmp"
+                and term.get("source-address") == ["ACL_Src_Admins"]
+                and term.get("destination-address") == ["ACL_Any"]
+                and "destination-port" not in term
+                for term in terms
+            )
+
+            config = generate_config(policy)
+            assert config
+            assert len(config) >= 1
+
+            filepath = TEST_LOGPATH / "realistic" / f"{vendor.upper()}_generated_config.yaml"
+            os.makedirs(TEST_LOGPATH / "realistic", exist_ok=True)
+
+            for filename, content in config.items():
+                assert content
+                if vendor in self.log_for_vendors:
+                    logger.info(
+                        "\n=== Generated realistic config: %s ===\n%s\n=== End config ===",
+                        filename,
+                        content,
+                    )
+                with open(filepath, "w") as f:
+                    f.write(
+                        f"# Generated on {datetime.datetime.now()}\n# Test for generating a realistic router ACL policy\n\n"
+                    )
+                    f.write(content)
