@@ -1,31 +1,35 @@
 {% if modal_supports_types %}
 {% include "partials/modals/_type_switch.html" %}
+{% endif %}
 
-<div class="form-row">
-    <div class="form-group">
-        <label for="name">Name<span class="required"> *</span></label>
-        <input id="name" name="name" type="text" required> <!-- Use required on mandatory fields -->
-    </div>
+<div id="modal-form-content" class="modal-form-content">
+    {% if modal_supports_types %}
+    <div class="form-row">
+        <div class="form-group">
+            <label for="name">Name<span class="required"> *</span></label>
+            <input id="name" name="name" type="text" required>
+        </div>
 
-    <div class="form-group">
-        <label for="type">Type</label>
-        <input id="type" class="type" name="type" type="text"
-            value="{% if modal_type == 'item' %}{{ modal_type_labels.item }}{% else %}{{ modal_type_labels.group }}{% endif %}"" disabled>
+        <div class="form-group">
+            <label for="type">Type</label>
+            <input id="type" class="type" name="type_display" type="text"
+                value="{% if modal_type == 'item' %}{{ modal_type_labels.item }}{% else %}{{ modal_type_labels.group }}{% endif %}"
+                disabled>
+            <input type="hidden" name="type" value="{{ modal_type }}">
+        </div>
     </div>
-</div>
-{% else %}
-    <div class=" form-group">
+    {% else %}
+    <hr>
+    <div class="form-group">
         <label for="name">Name<span class="required"> *</span></label>
         <input id="name" name="name" type="text" required>
+    </div>
+    {% endif %}
 
-        {% endif %}
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description"></textarea>
+    </div>
 
-
-        <div class=" form-group">
-            <label for="description">Description</label>
-            <textarea id="description" name="description"></textarea>
-        </div>
-
-        <div id="modal-form-content" class="modal-form-content">
-            {% include modal_content_partial %}
-        </div>
+    {% include modal_content_partial %}
+</div>
