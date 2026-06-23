@@ -6,7 +6,9 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
-from backend.services.create import add_addresses_to_group, add_services_to_group, get_or_create_address
+from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
+from backend.services.create import add_addresses_to_group, add_services_to_group, create_filter, create_rule, get_or_create_address
 from backend.services.generate_config import PolicyRule
 from constants import TESTING_TENANT_ID
 
@@ -624,3 +626,30 @@ def realistic_acl_policy_rules(
             sequence=40,
         ),
     ]
+
+@pytest.fixture
+def sample_filter(request_with_session):
+    return create_filter(
+        request=request_with_session,
+        name="Sample Filter",
+        description="This is a sample filter for testing.",
+        tenant_id=TESTING_TENANT_ID,
+        enable=True,
+    )
+
+@pytest.fixture
+def sample_rule(request_with_session):
+    return create_rule(
+        request=request_with_session,
+        name="Sample Rule",
+        description="This is a sample rule for testing.",
+        tenant_id=TESTING_TENANT_ID,
+        action="accept",
+        log_type="all",
+        hit_count=0,
+        created_by=1,
+        changed_by=1,
+        direction="source",
+        enable=True,
+    )
+

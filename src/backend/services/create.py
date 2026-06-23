@@ -7,6 +7,7 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
@@ -341,6 +342,7 @@ def create_rule(
     action: str,
     log_type: str,
     hit_count: int,
+    direction: str,
     enable: bool = True,
 ) -> Rule:
     tenant = Tenant.objects.get(pk=tenant_id)
@@ -352,6 +354,7 @@ def create_rule(
         action=action,
         log_type=log_type,
         hit_count=hit_count,
+        direction=direction,
         date_created=now,
         date_changed=now,
         created_by=request.user.id if hasattr(request, "user") else None,
@@ -368,9 +371,33 @@ def create_rule(
     logger.info(f"Created {rule} for tenant={rule.tenant_id}")
     return rule
 
+def create_filter(
+    request: object,
+    name: str,
+    description: str,
+    tenant_id: int,
+    enable: bool = False,
+) -> Filter:
+    tenant = Tenant.objects.get(pk=tenant_id)
+    filter_obj = Filter(
+        name=name,
+        description=description,
+        tenant_id=tenant,
+        enable=enable,
+    )
+    try:
+        filter_obj.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Filter validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    filter_obj.save()
+    logger.info(f"Created {filter_obj} for tenant={filter_obj.tenant_id}")
+    return filter_obj
+
 
 def match_rule_to_objects(
-    request: object, #why not a request?
+    request: object,
     rule_id: int,
     match_type: str,
     object_type: str,
@@ -439,6 +466,23 @@ def match_rule_to_objects(
         "already_exists_count": len(already_exists),
         "error_count": len(errors),
     }
+
+def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: int):
+    rule = Rule.objects.get(id=rule_id)
+    filter_obj = Filter.objects.get(id=filter_id)
+
+    rule_filter, created = RuleFilter.objects.get_or_create(
+        rule_id=rule,
+        filter_id=filter_obj,
+        defaults={"sequence": sequence},
+    )
+
+    if not created:
+        rule_filter.sequence = sequence
+        rule_filter.save()
+
+    logger.info(f"Added Rule {rule.id} to Filter {filter_obj.id} with sequence {sequence}")
+    return rule_filter
 
 def create_config_from_filter(request, filter_id, vendor, policy_type):
     filter_obj = get_object_by_type_and_id("filter", filter_id)

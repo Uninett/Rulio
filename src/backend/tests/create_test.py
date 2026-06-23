@@ -6,9 +6,12 @@ from backend.services.create import (
     add_addresses_to_group,
     create_address,
     create_address_group,
+    create_filter,
+    create_rule,
     create_service,
     create_service_group,
     add_services_to_group,
+    match_rule_to_objects,
 )
 from constants import TESTING_TENANT_ID
 
@@ -163,3 +166,59 @@ class TestAddServicesToGroup:
         assert response3["added_service_ids"] == []
         assert response3["already_present_service_ids"] == []
         assert response3["not_found_service_ids"] == [9999]
+
+@pytest.mark.django_db
+class TestCreateRule:
+    def test_create_rule(self, request_with_session):
+        request = request_with_session
+        rule = create_rule(
+            request=request,
+            name="Test Rule",
+            description="This is a test rule",
+            tenant_id=TESTING_TENANT_ID,
+            action="allow",
+            log_type="log",
+            hit_count=0,
+            direction="source",
+        )
+        assert rule is not None
+        assert rule.name == "Test Rule"
+        assert rule.description == "This is a test rule"
+        assert rule.tenant_id.id == TESTING_TENANT_ID
+        assert rule.action == "allow"
+        assert rule.log_type == "log"
+        assert rule.direction == "source"
+
+@pytest.mark.django_db
+class TestCreateFilter:
+    def test_create_filter(self, request_with_session):
+        request = request_with_session
+        filter_obj = create_filter(
+            request=request,
+            name="Test Filter",
+            description="This is a test filter",
+            tenant_id=TESTING_TENANT_ID,
+            enable=True,
+        )
+        assert filter_obj is not None
+        assert filter_obj.name == "Test Filter"
+        assert filter_obj.description == "This is a test filter"
+        assert filter_obj.tenant_id == TESTING_TENANT_ID
+        assert filter_obj.enable is True
+
+@pytest.mark.django_db
+class TestMatchRuleToObjects:
+    def test_match_rule_to_objects(self, sample_rule, sample_addresses, sample_services, request_with_session):
+        request = request_with_session
+        rule_id = sample_rule.id
+        match_type = "address"
+        object_type = "address"
+
+        match_rule_to_objects(
+            request=request,
+            rule_id=rule_id,
+            match_type=match_type,
+            object_type=object_type,
+        )
+
+
