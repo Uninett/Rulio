@@ -1,7 +1,9 @@
 import django.db.models as models
 
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
-class AddressGroup(models.Model):
+
+class AddressGroup(TaggableMixin, models.Model):
     tenant_id = models.IntegerField()
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
