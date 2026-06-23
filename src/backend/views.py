@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .api import list_addresses
+from .api import get_addresses_and_groups_with_tags_endpoint
 from django.urls import reverse
 
 """
@@ -102,23 +102,32 @@ def get_objects_addresses(request):
 
 # Fetch addresses from the API and map them to data.
 def get_addresses_view(request):
-    status, api_addresses = list_addresses(request)
+    status, api_objects = get_addresses_and_groups_with_tags_endpoint(request)
 
     if status != 200:
-        addresses = []
+        return []
 
-    else:
-        addresses = [
-            {
-                "type": "address" if item.get("id") else "group",
-                "name": item.get("name", ""),
-                "ipv4": item.get("ipv4Network") or "",
-                "ipv6": item.get("ipv6Network") or "",
-                "description": item.get("description", ""),
-                "tags": "",
-            }
-            for item in api_addresses
-        ]
+    addresses = [
+        {
+            "id": f"{item.get('type', '').lower()}-{item.get('id')}",
+            "type": item.get("type", ""),
+            "name": item.get("name", ""),
+            "description": item.get("description", ""),
+            "ipv4": item.get("ipv4Network") or "-",
+            "ipv6": item.get("ipv6Network") or "-",
+            "tags": item.get("tags", ""),
+            "ipv4_type": item.get("ipv4_type", ""),
+            "ipv6_type": item.get("ipv6_type", ""),
+            "ipv4_start": item.get("ipv4Address_start") or "",
+            "ipv4_end": item.get("ipv4Address_end") or "",
+            "ipv6_start": item.get("ipv6Address_start") or "",
+            "ipv6_end": item.get("ipv6Address_end") or "",
+            "address_groups": item.get("address_groups", []),
+            "group_addresses": item.get("addresses", []),
+        }
+        for item in api_objects
+    ]
+
     return addresses
 
 
