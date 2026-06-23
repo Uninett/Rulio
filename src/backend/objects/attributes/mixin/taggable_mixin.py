@@ -6,10 +6,7 @@ from backend.objects.attributes.tag_connection import TagConnection
 
 
 class TaggableMixin(models.Model):
-    tag_objects = GenericRelation(
-        TagConnection,
-        related_query_name="%(app_label)s_%(class)s"
-    )
+    tag_objects = GenericRelation(TagConnection, related_query_name="%(app_label)s_%(class)s")
 
     class Meta:
         abstract = True

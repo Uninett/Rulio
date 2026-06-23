@@ -49,6 +49,7 @@ def delete_tag_from_tenant(tag_id: int, tenant_id: int) -> int:
     logger.info(f"Deleted tag id={tag_id} from tenant={tenant_id}. Deleted connections: {deleted_count}.")
     return deleted_count
 
+
 def delete_rule(rule_id: int, tenant_id: int) -> None:
     try:
         rule = Rule.objects.get(id=rule_id, tenant_id=tenant_id)

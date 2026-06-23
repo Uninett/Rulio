@@ -25,10 +25,7 @@ class TagConnection(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["tag", "content_type", "object_id"],
-                name="unique_tag_per_object"
-            )
+            models.UniqueConstraint(fields=["tag", "content_type", "object_id"], name="unique_tag_per_object")
         ]
         indexes = [
             models.Index(fields=["content_type", "object_id"]),

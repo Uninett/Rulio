@@ -6,6 +6,7 @@ from backend.services.helper_user_tenant import (
     can_read_tenant,
 )
 
+
 def require_write_tenant(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
@@ -30,6 +31,7 @@ def require_write_tenant(view_func):
                 "message": "You do not have permission to modify this tenant.",
             }
         return view_func(request, *args, **kwargs)
+
     return wrapper
 
 
@@ -57,7 +59,9 @@ def require_read_tenant(view_func):
                 "message": "You do not have permission to access this tenant.",
             }
         return view_func(request, *args, **kwargs)
+
     return wrapper
+
 
 def require_superadmin(view_func):
     @wraps(view_func)
@@ -68,5 +72,5 @@ def require_superadmin(view_func):
                 "message": "You do not have permission to perform this action.",
             }
         return view_func(request, *args, **kwargs)
-    return wrapper
 
+    return wrapper
