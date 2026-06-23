@@ -1,7 +1,9 @@
 from django.db import models
 
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
-class Filter(models.Model):
+
+class Filter(TaggableMixin, models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     tenant_id = models.IntegerField()

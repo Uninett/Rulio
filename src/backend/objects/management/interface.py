@@ -1,7 +1,8 @@
 from django.db import models
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
 
-class Interface(models.Model):
+class Interface(TaggableMixin, models.Model):
     device_id = models.ForeignKey("Device", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=255)

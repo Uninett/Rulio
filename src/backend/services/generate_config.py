@@ -1,24 +1,39 @@
+from collections import defaultdict
+
 from aerleon.lib import naming
 from aerleon import api as aerleon_api
-
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.services.get import get_service_group_members, get_address_group_members
+from backend.utils.logger import set_up_logger
+
+
+logger = set_up_logger(__name__)
 
 
 class PolicyRule:
     """
-    A class representing a policy rule. From ER Diagram. this is basically the rule object joined with a Address, Service or group.
+    A class representing a policy rule. From ER Diagram this is basically
+    the rule object joined with an Address, Service or group.
+    PolicyRules with the same sequence number are merged into the same logical term in the generated config.
+
     Args:
-    name (str): The name of the rule.
-    type (str): The type of the rule, which can be "address", "service", "address_group", or "service_group".
-    action (str): The action to be taken for the rule.
-    object (Address | Service | AddressGroup | ServiceGroup): The object that the rule is joined with.
-    direction (str, optional): The direction of the rule. Defaults to "destination".
+        name (str): The name of the rule.
+        obj_type (str): The type of the rule, which can be "address",
+            "service", "address_group", or "service_group".
+        action (str): The action to be taken for the rule.
+        object (Address | Service | AddressGroup | ServiceGroup): The object
+            that the rule is joined with.
+        sequence (int): The sequence number used to group rules
+            into the same generated term.
+        direction (str): The direction of the rule. Must be one of
+            "source", "destination", "reverse_source", or "reverse_destination".
     """
+
+    DIRECTION_OPTIONS = ["source", "destination", "reverse_source", "reverse_destination"]
 
     def __init__(
         self,
@@ -26,49 +41,56 @@ class PolicyRule:
         obj_type: str,
         action: str,
         object: Address | Service | AddressGroup | ServiceGroup,
-        sequence: int = 0,
-        direction: str = "destination",
+        sequence: int,
+        direction: str,
     ):
         self.name = name
-        self.type = obj_type
-        self.action = action
+        self.type = obj_type.lower()
+        self.action = action.lower()
         self.object = object
-        self.direction = direction
         self.sequence = sequence
-        self.members = []
-        self.object_name = object.name
-        if obj_type.lower() == "address" and isinstance(object, Address):
-            self.members = object.get_address()
-        elif obj_type.lower() == "service" and isinstance(object, Service):
-            self.members = object
-        elif obj_type.lower() == "address_group" and isinstance(object, AddressGroup):
-            self.members = get_address_group_members(request=None, address_group_id=object.id)
-        elif obj_type.lower() == "service_group" and isinstance(object, ServiceGroup):
-            self.members = get_service_group_members(request=None, service_group_id=object.id)
+
+        if direction.lower() not in self.DIRECTION_OPTIONS:
+            raise ValueError(f"Invalid direction: {direction}. Must be one of {self.DIRECTION_OPTIONS}")
+        self.direction = direction.lower()
 
 
 class Policy:
     """
-    A class for the input to aerleons Generate function.
-    This class will take in a list of rules and convert them into the format that aerleon expects.
-    The rules will be in the form of our internal data models (Address, Service, AddressGroup, ServiceGroup)
-    and this class will convert them into the format that aerleon expects.
+    A class for the input to Aerleon's Generate function.
 
-    Args:
-        name (str): The name of the policy.
-        rules (list[PolicyRule]): A list of rules in the form of our internal data models (Address, Service, AddressGroup, ServiceGroup).
-        vendor (str): The name of the vendor for which to generate the configuration.
+    Rules with the same sequence number are merged into the same logical term.
+    If a sequence contains services with multiple protocols, one Aerleon term
+    is generated per protocol.
     """
 
-    def __init__(self, name: str, rules: list[PolicyRule], vendor: str, policy_type: str = "extended"):
+    PORT_BASED_PROTOCOLS = {"tcp", "udp"}
+
+    def __init__(
+        self,
+        name: str,
+        rules: list[PolicyRule],
+        vendor: str,
+        request=None,
+        policy_type: str = "",
+    ):
         self.name = name
-        if vendor.lower() == "paloalto":
+        self.request = request
+        self.vendor = vendor.lower()
+
+        if rules is None:
+            raise ValueError("rules cannot be None")
+
+        # Build the YAML structure for Aerleon
+        # Palo Alto does not support name in target header
+        if self.vendor == "paloalto":
             self.YAMLConfig = {
                 "filename": name,
                 "filters": [
                     {
                         "header": {
                             "targets": {vendor: policy_type},
+                            "comment": f"Generated by Rulio for {vendor}",
                         },
                         "terms": [],
                     },
@@ -87,85 +109,272 @@ class Policy:
                     },
                 ],
             }
-        rules.sort(key=lambda r: r.sequence)
 
+        # Store all network and service definitions in a list that Aerlon parses for name -> value mappings
         self.networks = {"networks": {}}
         self.services = {"services": {}}
+
+        # Build a rule dictionary by sequence number
+        grouped_rules = self._group_rules_by_sequence(rules)
+
+        # For each sequence nr, add terms to the YAMLConfig
+        for sequence, sequence_rules in grouped_rules.items():
+            self._add_sequence_term(sequence, sequence_rules)
+
+    # Generate a dict of sequence nr -> list of rules with that sequence nr
+    def _group_rules_by_sequence(self, rules: list[PolicyRule]) -> dict[int, list[PolicyRule]]:
+        grouped = defaultdict(list)
+        for rule in rules:
+            grouped[rule.sequence].append(rule)
+        return dict(sorted(grouped.items()))
+
+    # Build the base name for generated terms
+    def _base_term_name(self, rules: list[PolicyRule], sequence: int) -> str:
+        base_name = f"seq{sequence}-{rules[0].name}"
+        if len(base_name) > 55:
+            base_name = base_name[:55]
+            base_name += "-..."
+        return base_name
+
+    # When we have multiple protocols in the same sequence, we need to generate a unique term name per protocol
+    def _protocol_term_name(self, base_name: str, protocol: str) -> str:
+        return f"{base_name}-{protocol}"
+
+    # Add one or more terms to the YAMLConfig for a given sequence number
+    def _add_sequence_term(self, sequence: int, rules: list[PolicyRule]) -> None:
+
+        # Check that all rules in the same sequence have the same action,
+        actions = {rule.action for rule in rules}
+        if len(actions) != 1:
+            logger.error(f"All rules in sequence {sequence} must have the same action. Found actions: {actions}")
+            raise ValueError(f"All rules in sequence {sequence} must have the same action")
+
+        action = rules[0].action
+        base_name = self._base_term_name(rules, sequence)
+
+        source_addresses = []
+        destination_addresses = []
+        reverse_source_addresses = []
+        reverse_destination_addresses = []
+
+        # Ports must be tracked by protocol because Aerleon terms need protocol context
+        source_ports_by_protocol = defaultdict(list)
+        destination_ports_by_protocol = defaultdict(list)
+        reverse_source_ports_by_protocol = defaultdict(list)
+        reverse_destination_ports_by_protocol = defaultdict(list)
+
+        # For each rule in this sequence, add the appropriate addresses and services
         for rule in rules:
             match rule.type:
                 case "address":
-                    self.add_address(rule)
-                case "service":
-                    self.add_service(rule)
+                    self._add_address_translation_to_networks(rule)
+                    self._append_by_direction(
+                        direction=rule.direction,
+                        source_list=source_addresses,
+                        destination_list=destination_addresses,
+                        reverse_source_list=reverse_source_addresses,
+                        reverse_destination_list=reverse_destination_addresses,
+                        value=rule.object.name,
+                    )
+
                 case "address_group":
-                    self.add_address_group(rule)
+                    self._add_address_group_translation_to_networks(rule)
+                    self._append_by_direction(
+                        direction=rule.direction,
+                        source_list=source_addresses,
+                        destination_list=destination_addresses,
+                        reverse_source_list=reverse_source_addresses,
+                        reverse_destination_list=reverse_destination_addresses,
+                        value=rule.object.name,
+                    )
+
+                case "service":
+                    service_name, protocol, is_port_based = self._add_service_translation_to_services(rule)
+                    self._append_ports_by_direction_and_protocol(
+                        direction=rule.direction,
+                        protocol=protocol,
+                        source_dict=source_ports_by_protocol,
+                        destination_dict=destination_ports_by_protocol,
+                        reverse_source_dict=reverse_source_ports_by_protocol,
+                        reverse_destination_dict=reverse_destination_ports_by_protocol,
+                        value=service_name,
+                        append_ports=is_port_based,
+                    )
+
                 case "service_group":
-                    self.add_service_group(rule)
+                    service_entries = self._add_service_group_translation_to_services(rule)
+                    for service_name, protocol, is_port_based in service_entries:
+                        self._append_ports_by_direction_and_protocol(
+                            direction=rule.direction,
+                            protocol=protocol,
+                            source_dict=source_ports_by_protocol,
+                            destination_dict=destination_ports_by_protocol,
+                            reverse_source_dict=reverse_source_ports_by_protocol,
+                            reverse_destination_dict=reverse_destination_ports_by_protocol,
+                            value=service_name,
+                            append_ports=is_port_based,
+                        )
+
                 case _:
-                    raise ValueError(f"Unsupported rule type: {rule.__class__.__name__}")
+                    raise ValueError(f"Unsupported rule type: {rule.type}")
 
-    def add_address(self, rule: PolicyRule):
-        if rule.direction == "destination":
-            field_name = "destination-address"
-        elif rule.direction == "source":
-            field_name = "source-address"
-        else:
-            raise ValueError(f"Unsupported rule direction: {rule.direction}")
+        # Remove duplicates while preserving order
+        source_addresses = self._dedupe_preserve_order(source_addresses)
+        destination_addresses = self._dedupe_preserve_order(destination_addresses)
+        reverse_source_addresses = self._dedupe_preserve_order(reverse_source_addresses)
+        reverse_destination_addresses = self._dedupe_preserve_order(reverse_destination_addresses)
 
-        self.YAMLConfig["filters"][0]["terms"].append(
-            {
-                "name": rule.name,
-                field_name: rule.object_name,
-                "action": rule.action,
-            }
+        # Each protocol in the sequence needs its own term, so we find all protocols referenced in the sequence
+        all_protocols = (
+            set(source_ports_by_protocol.keys())
+            | set(destination_ports_by_protocol.keys())
+            | set(reverse_source_ports_by_protocol.keys())
+            | set(reverse_destination_ports_by_protocol.keys())
         )
-        values = []
-        for ipv in rule.members:
-            for addr in ipv:
-                values.append(str(addr))
-        self.networks["networks"][rule.object_name] = {"values": values}
 
-    def add_service(self, rule: PolicyRule):
-        if rule.direction == "destination":
-            field_name = "destination-port"
-        elif rule.direction == "source":
-            field_name = "source-port"
+        # If the sequence has no protocol specific rules, we can just create a single term for the sequence
+        if not all_protocols:
+            term = {
+                "name": base_name,
+                "action": action,
+            }
+
+            if source_addresses:
+                term["source-address"] = source_addresses
+
+            if destination_addresses:
+                term["destination-address"] = destination_addresses
+
+            if reverse_source_addresses:
+                term["reverse-source-address"] = reverse_source_addresses
+
+            if reverse_destination_addresses:
+                term["reverse-destination-address"] = reverse_destination_addresses
+
+            self.YAMLConfig["filters"][0]["terms"].append(term)
+            return
+
+        # Otherwise create one term per protocol
+        for protocol in sorted(all_protocols):
+            if len(all_protocols) > 1:
+                term_name = self._protocol_term_name(base_name, protocol)
+            else:
+                term_name = base_name
+            if len(term_name) > 62:
+                term_name = term_name[:62]
+            term = {
+                "name": term_name,
+                "action": action,
+                "protocol": protocol,
+            }
+
+            source_ports = self._dedupe_preserve_order(source_ports_by_protocol.get(protocol, []))
+            destination_ports = self._dedupe_preserve_order(destination_ports_by_protocol.get(protocol, []))
+            reverse_source_ports = self._dedupe_preserve_order(reverse_source_ports_by_protocol.get(protocol, []))
+            reverse_destination_ports = self._dedupe_preserve_order(
+                reverse_destination_ports_by_protocol.get(protocol, [])
+            )
+
+            if source_addresses:
+                term["source-address"] = source_addresses
+
+            if destination_addresses:
+                term["destination-address"] = destination_addresses
+
+            if reverse_source_addresses:
+                term["reverse-source-address"] = reverse_source_addresses
+
+            if reverse_destination_addresses:
+                term["reverse-destination-address"] = reverse_destination_addresses
+
+            # Only port-based protocols should reference source/destination port fields
+            if protocol in self.PORT_BASED_PROTOCOLS:
+                if source_ports:
+                    term["source-port"] = source_ports
+
+                if destination_ports:
+                    term["destination-port"] = destination_ports
+
+                if reverse_source_ports:
+                    term["reverse-source-port"] = reverse_source_ports
+
+                if reverse_destination_ports:
+                    term["reverse-destination-port"] = reverse_destination_ports
+
+            self.YAMLConfig["filters"][0]["terms"].append(term)
+
+    # Append address to the correct address list based on the rules direction
+    def _append_by_direction(
+        self,
+        direction: str,
+        source_list: list[str],
+        destination_list: list[str],
+        reverse_source_list: list[str],
+        reverse_destination_list: list[str],
+        value: str,
+    ) -> None:
+        if direction == "source":
+            source_list.append(value)
+        elif direction == "destination":
+            destination_list.append(value)
+        elif direction == "reverse_source":
+            reverse_source_list.append(value)
+        elif direction == "reverse_destination":
+            reverse_destination_list.append(value)
         else:
-            raise ValueError(f"Unsupported rule direction: {rule.direction}")
+            raise ValueError(f"Unsupported rule direction: {direction}")
 
-        service = rule.members
-        service_name = service.name
-        has_ports = service.is_port_based()
-        port_value = service.get_ports()
+    # Append a service name to the correct port list based on direction and protocol
+    # Non-port-based protocols are still tracked by protocol, but do not add port references
+    def _append_ports_by_direction_and_protocol(
+        self,
+        direction: str,
+        protocol: str,
+        source_dict: dict[str, list[str]],
+        destination_dict: dict[str, list[str]],
+        reverse_source_dict: dict[str, list[str]],
+        reverse_destination_dict: dict[str, list[str]],
+        value: str,
+        append_ports: bool,
+    ) -> None:
+        if not append_ports:
+            source_dict.setdefault(protocol, [])
+            destination_dict.setdefault(protocol, [])
+            reverse_source_dict.setdefault(protocol, [])
+            reverse_destination_dict.setdefault(protocol, [])
+            return
 
-        entry = {"protocol": service.get_protocol()}
-        if port_value is not None:
-            entry["port"] = port_value
-
-        self.services["services"][service_name] = [entry]
-
-        term = {
-            "name": rule.name,
-            "action": rule.action,
-            "protocol": service.get_protocol(),
-        }
-
-        if has_ports:
-            term[field_name] = service_name
-
-        self.YAMLConfig["filters"][0]["terms"].append(term)
-
-    def add_address_group(self, rule: PolicyRule):
-        if rule.direction == "destination":
-            field_name = "destination-address"
-        elif rule.direction == "source":
-            field_name = "source-address"
+        if direction == "source":
+            source_dict[protocol].append(value)
+        elif direction == "destination":
+            destination_dict[protocol].append(value)
+        elif direction == "reverse_source":
+            reverse_source_dict[protocol].append(value)
+        elif direction == "reverse_destination":
+            reverse_destination_dict[protocol].append(value)
         else:
-            raise ValueError(f"Unsupported rule direction: {rule.direction}")
+            raise ValueError(f"Unsupported rule direction: {direction}")
+
+    # Add networks definitions for an Address object
+    def _add_address_translation_to_networks(self, rule: PolicyRule) -> None:
+        values = []
+        ipv4_addrs, ipv6_addrs = rule.object.get_address()
+
+        for addr in ipv4_addrs:
+            values.append(str(addr))
+
+        for addr in ipv6_addrs:
+            values.append(str(addr))
+
+        self.networks["networks"][rule.object.name] = {"values": values}
+
+    # Add networks definitions for an AddressGroup object
+    def _add_address_group_translation_to_networks(self, rule: PolicyRule) -> None:
+        if self.request is None:
+            raise ValueError("Request object is required to fetch address group members.")
 
         values = []
-
-        for address in rule.members:
+        for address in get_address_group_members(request=self.request, address_group_id=rule.object.id):
             ipv4_addrs, ipv6_addrs = address.get_address()
 
             for addr in ipv4_addrs:
@@ -174,45 +383,49 @@ class Policy:
             for addr in ipv6_addrs:
                 values.append(str(addr))
 
-        self.networks["networks"][rule.object_name] = {"values": values}
+        self.networks["networks"][rule.object.name] = {"values": values}
 
-        self.YAMLConfig["filters"][0]["terms"].append(
-            {
-                "name": rule.name,
-                field_name: rule.object_name,
-                "action": rule.action,
-            }
-        )
+    # Add service definitions for a Service object
+    def _add_service_translation_to_services(self, rule: PolicyRule) -> tuple[str, str, bool]:
+        service = rule.object
+        service_name = service.name
+        protocol = service.get_protocol()
+        port_value = service.get_ports()
+        is_port_based = service.is_port_based()
 
-    def add_service_group(self, rule: PolicyRule):
-        if rule.direction == "destination":
-            field_name = "destination-port"
-        elif rule.direction == "source":
-            field_name = "source-port"
-        else:
-            raise ValueError(f"Unsupported rule direction: {rule.direction}")
+        entry = {"protocol": protocol}
+        if port_value is not None:
+            entry["port"] = port_value
 
-        for i, service in enumerate(rule.members):
+        self.services["services"][service_name] = [entry]
+        return service_name, protocol, is_port_based
+
+    # Add service definitions for a ServiceGroup object
+    def _add_service_group_translation_to_services(self, rule: PolicyRule) -> list[tuple[str, str, bool]]:
+        if self.request is None:
+            raise ValueError("Request object is required to fetch service group members.")
+
+        service_entries = []
+
+        for service in get_service_group_members(request=self.request, service_group_id=rule.object.id):
             service_name = service.name
-            has_ports = service.is_port_based()
+            protocol = service.get_protocol()
             port_value = service.get_ports()
+            is_port_based = service.is_port_based()
 
-            entry = {"protocol": service.get_protocol()}
+            entry = {"protocol": protocol}
             if port_value is not None:
                 entry["port"] = port_value
 
             self.services["services"][service_name] = [entry]
+            service_entries.append((service_name, protocol, is_port_based))
 
-            term = {
-                "name": f"{rule.name}_Rule_{i}",
-                "action": rule.action,
-                "protocol": service.get_protocol(),
-            }
+        return service_entries
 
-            if has_ports:
-                term[field_name] = service_name
-
-            self.YAMLConfig["filters"][0]["terms"].append(term)
+    # Remove duplicates from a list while preserving original order
+    @staticmethod
+    def _dedupe_preserve_order(items: list[str]) -> list[str]:
+        return list(dict.fromkeys(items))
 
 
 def generate_config(policy: Policy) -> str:
@@ -220,7 +433,7 @@ def generate_config(policy: Policy) -> str:
     Generates a configuration for the specified vendor based on the provided YAML configuration.
 
     Args:
-        policy (Policy): The policy object containing the rules and configuration to be converted..
+        policy (Policy): The policy object containing the rules and configuration to be converted.
 
     Returns:
         str: The generated configuration as a string.

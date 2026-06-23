@@ -1,7 +1,9 @@
 from django.db import models
 
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
-class Service(models.Model):
+
+class Service(TaggableMixin, models.Model):
     PROTOCOL_CHOICES = [
         ("TCP", "TCP"),
         ("UDP", "UDP"),

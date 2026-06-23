@@ -1,6 +1,8 @@
+from datetime import datetime, timezone
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
 
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
@@ -9,8 +11,13 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
+from backend.objects.attributes.tag import Tag
+from backend.objects.filters.rule_match import RuleMatch
+from backend.objects.filters.rule import Rule
 from backend.utils.logger import set_up_logger
 from django.db import transaction
+from backend.services.get import get_object_by_type_and_id
+from django.contrib.contenttypes.models import ContentType
 
 
 # Setup logger
@@ -385,3 +392,143 @@ def add_address_to_group(request: object, address_group_id: int, address_id: int
     address_group.addresses.add(address)
     logger.info(f"Added {address} to {address_group}")
     return address_group
+
+
+def create_tag(request: object, name: str, description: str) -> Tag:
+    tenant_id = get_current_tenant_id(request)
+
+    tag = Tag(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    try:
+        tag.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Tag validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    tag.save()
+    logger.info(f"Created {tag} for tenant={tag.tenant_id}")
+    return tag
+
+
+def create_and_add_tag_to_object(
+    request: object, tag_name: str, tag_description: str, object_type: str, object_id: int
+) -> Tag:
+    tag = create_tag(request, tag_name, tag_description)
+    obj = get_object_by_type_and_id(object_type, object_id)
+    if isinstance(obj, TaggableMixin):
+        obj.add_tag(tag)
+        logger.info(f"Added {tag} to {obj}")
+    else:
+        logger.warning(f"Object {obj} is not taggable. Created tag {tag} but did not add it to the object.")
+    return tag
+
+
+def create_rule(
+    request: object,
+    name: str,
+    description: str,
+    tenant_id: int,
+    action: str,
+    log_type: str,
+    hit_count: int,
+    enable: bool = True,
+) -> Rule:
+    tenant = Tenant.objects.get(pk=tenant_id)
+    now = datetime.now(timezone.utc)
+    rule = Rule(
+        name=name,
+        description=description,
+        tenant_id=tenant,
+        action=action,
+        log_type=log_type,
+        hit_count=hit_count,
+        date_created=now,
+        date_changed=now,
+        created_by=request.user.id if hasattr(request, "user") else None,
+        changed_by=request.user.id if hasattr(request, "user") else None,
+        enable=enable,
+    )
+    try:
+        rule.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Rule validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    rule.save()
+    logger.info(f"Created {rule} for tenant={rule.tenant_id}")
+    return rule
+
+
+def match_rule_to_objects(
+    request: object,
+    rule_id: int,
+    match_type: str,
+    object_type: str,
+    object_ids: list[int],
+):
+    rule = Rule.objects.get(id=rule_id)
+
+    added = []
+    already_exists = []
+    errors = []
+
+    for object_id in object_ids:
+        try:
+            obj = get_object_by_type_and_id(object_type, object_id)
+
+            if obj.tenant_id not in (0, rule.tenant_id_id):
+                errors.append(
+                    {
+                        "object_id": object_id,
+                        "reason": f"Object {obj.id}, Name {obj.name} does not belong to tenant {rule.tenant_id_id} and is not global",
+                    }
+                )
+                continue
+
+            content_type = ContentType.objects.get_for_model(obj)
+
+            rule_match, created = RuleMatch.objects.get_or_create(
+                rule=rule,
+                match=match_type,
+                content_type=content_type,
+                object_id=obj.id,
+            )
+
+            if created:
+                rule.increment_hit_count()
+                added.append(
+                    {
+                        "object_id": obj.id,
+                        "name": getattr(obj, "name", str(obj)),
+                        "match": match_type,
+                    }
+                )
+            else:
+                already_exists.append(
+                    {
+                        "object_id": obj.id,
+                        "name": getattr(obj, "name", str(obj)),
+                        "match": match_type,
+                    }
+                )
+
+        except Exception as e:
+            errors.append(
+                {
+                    "object_id": object_id,
+                    "reason": str(e),
+                }
+            )
+
+    return {
+        "rule_id": rule_id,
+        "added": added,
+        "already_exists": already_exists,
+        "errors": errors,
+        "added_count": len(added),
+        "already_exists_count": len(already_exists),
+        "error_count": len(errors),
+    }

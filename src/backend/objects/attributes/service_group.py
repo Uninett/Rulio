@@ -1,7 +1,9 @@
 from django.db import models
 
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
-class ServiceGroup(models.Model):
+
+class ServiceGroup(TaggableMixin, models.Model):
     tenant_id = models.IntegerField()
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)

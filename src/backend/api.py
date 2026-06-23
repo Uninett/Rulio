@@ -8,21 +8,36 @@ from backend.objects.attributes.service import Service
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
+from backend.services.authentication import require_read_tenant, require_superadmin, require_write_tenant
+from backend.services.delete import (
+    clear_all_tags_from_object,
+    delete_tag_from_tenant,
+    remove_tag_from_object,
+    delete_rule,
+)
 from backend.services.get import (
+    get_all_addresses_and_groups_with_tags,
+    get_all_tags_from_object,
     get_service_groups_with_services_from_tenant,
     get_address_groups_with_addresses_from_tenant,
+    get_all_tags_from_tenant,
+    get_all_services_and_groups_with_tags,
+    get_all_rules_from_tenant,
 )
 from backend.services.create import (
     add_services_to_group,
     create_address,
+    create_and_add_tag_to_object,
     create_service,
+    create_tag,
     create_tenant_user_member,
     create_tenant,
     create_address_group,
-    get_current_tenant_id,
     create_service_group,
     add_service_to_group,
     add_addresses_to_group,
+    create_rule,
+    match_rule_to_objects,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -32,12 +47,11 @@ from backend.schemas.login import LoginSchema
 from backend.schemas.create_user import CreateUserSchema
 from backend.schemas.tenant import CreateTenantSchema
 from backend.schemas.message import MessageSchema
+from backend.schemas.rule import CreateRuleSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
-from backend.objects.attributes.tag import Tag
 from backend.objects.management.tenant import Tenant
-from backend.objects.attributes.tag_object import TagObject
 from backend.services.helper_user_tenant import (
     is_superadmin,
     can_write_tenant,
@@ -84,23 +98,48 @@ Attributes
 """
 
 
+@api.get(
+    "/get_address_group_and_addresses",
+    tags=["Attributes - Address"],
+    response={200: list[dict], 403: MessageSchema},
+)
+@require_read_tenant
+def get_address_group_and_addresses_endpoint(request, get="all"):
+    response = get_address_groups_with_addresses_from_tenant(
+        request.session["current_tenant_id"],
+        get=get,
+    )
+    return 200, response
+
+
+@api.get(
+    "/get_addresses_and_groups_with_tags",
+    tags=["Attributes - Address"],
+    response={200: list[dict], 403: MessageSchema},
+)
+@require_read_tenant
+def get_addresses_and_groups_with_tags_endpoint(request):
+    response = get_all_addresses_and_groups_with_tags(request.session["current_tenant_id"])
+    return 200, response
+
+
+@api.get("/list_addresses", tags=["Attributes - Address"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_addresses(request):
+    addresses = Address.objects.filter(tenant_id=request.session["current_tenant_id"])
+    return 200, list(addresses.values())
+
+
 @api.post(
     "/create_address",
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_write_tenant
 def create_address_endpoint(
     request,
     payload: CreateAddressSchema,
 ):
-    if can_write_tenant(request.user, Tenant.objects.get(id=get_current_tenant_id(request))) is False:
-        logger.warning(
-            f"Unauthorized attempt to create service with name={payload.name} for tenant_id={get_current_tenant_id(request)} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create a service for this tenant.",
-        }
     address = create_address(
         request=request,
         name=payload.name,
@@ -123,22 +162,183 @@ def create_address_endpoint(
 
 
 @api.post(
+    "/create_address_group",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+@require_write_tenant
+def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
+    address_group = create_address_group(request, payload.name, payload.description)
+    logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
+    return 200, {
+        "status": "success",
+        "message": f"Address Group created: {address_group}",
+    }
+
+
+@api.post(
+    "/add_address_to_group",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+def add_address_to_group_endpoint(request, address_id: int, group_id: int):
+    if not can_write_tenant(
+        request.user,
+        Tenant.objects.get(id=AddressGroup.objects.get(id=group_id).tenant_id),
+    ):
+        logger.warning(
+            f"Unauthorized attempt to add address id={address_id} to group id={group_id} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to modify this address group.",
+        }
+    add_address_to_group(request, group_id, address_id)
+    logger.info(f"add_address_to_group endpoint succeeded for address id={address_id} and group id={group_id}")
+    return 200, {
+        "status": "success",
+        "message": f"Address id={address_id} added to group id={group_id}",
+    }
+
+
+@api.post(
+    "/add_addresses_to_group",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: int):
+    try:
+        address_group = AddressGroup.objects.get(id=group_id)
+    except AddressGroup.DoesNotExist:
+        return 404, {
+            "status": "error",
+            "message": f"Address group id={group_id} not found.",
+        }
+
+    if not can_write_tenant(request.user, address_group.tenant_id):
+        logger.warning(
+            f"Unauthorized attempt to add addresses id={address_ids} "
+            f"to group id={group_id} by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to modify this address group.",
+        }
+
+    response = add_addresses_to_group(group_id, address_ids)
+
+    logger.info(
+        f"add_addresses_to_group endpoint succeeded for "
+        f"address ids={response['added_address_ids']} and group id={group_id}"
+    )
+
+    return 200, {
+        "status": "success",
+        "message": (
+            f"Processed address ids for group id={group_id}. "
+            f"Added={response['added_address_ids']}, "
+            f"already_present={response['already_present_address_ids']}, "
+            f"not_found={response['not_found_address_ids']}"
+        ),
+    }
+
+
+@api.delete(
+    "/delete_address",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_address_endpoint(request, address_id: int):
+    try:
+        address = Address.objects.get(id=address_id, tenant_id=request.session["current_tenant_id"])
+        address.delete()
+        logger.info(f"Address deleted: {address}")
+        return 200, {
+            "status": "success",
+            "message": f"Address with id {address_id} deleted.",
+        }
+    except Address.DoesNotExist:
+        logger.warning(f"Tried to delete address with id {address_id}, but it does not exist.")
+        return 404, {
+            "status": "error",
+            "message": f"Address with id {address_id} does not exist.",
+        }
+
+
+@api.delete(
+    "/delete_address_group",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_address_group_endpoint(request, group_id: int):
+    try:
+        address_group = AddressGroup.objects.get(id=group_id, tenant_id=request.session["current_tenant_id"])
+        address_group.delete()
+        logger.info(f"Address Group deleted: {address_group}")
+        return 200, {
+            "status": "success",
+            "message": f"Address Group with id {group_id} deleted.",
+        }
+    except AddressGroup.DoesNotExist:
+        logger.warning(f"Tried to delete address group with id {group_id}, but it does not exist.")
+        return 404, {
+            "status": "error",
+            "message": f"Address Group with id {group_id} does not exist.",
+        }
+
+
+@api.get("/list_services", tags=["Attributes - Service"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_services(request):
+    services = Service.objects.filter(tenant_id=request.session["current_tenant_id"])
+    return 200, list(services.values())
+
+
+@api.get(
+    "/get_service_group_and_services",
+    tags=["Attributes - Service"],
+    response={200: list[dict], 403: MessageSchema},
+)
+def get_service_group_and_services_endpoint(request, get="all"):
+    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
+        logger.warning(
+            f"Unauthorized attempt to read services from tenant={request.session['current_tenant_id']} "
+            f"by user {request.user.username}"
+        )
+        return 403, {
+            "status": "error",
+            "message": "You do not have permission to read services from this tenant.",
+        }
+    response = get_service_groups_with_services_from_tenant(
+        request.session["current_tenant_id"],
+        get=get,
+    )
+    return 200, response
+
+
+@api.get(
+    "/get_services_and_groups_with_tags",
+    tags=["Attributes - Service"],
+    response={200: list[dict], 403: MessageSchema},
+)
+@require_read_tenant
+def get_services_and_groups_with_tags_endpoint(request):
+    response = get_all_services_and_groups_with_tags(request.session["current_tenant_id"])
+    return 200, response
+
+
+@api.post(
     "/create_service",
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_write_tenant
 def create_service_endpoint(
     request,
     payload: CreateServiceSchema,
 ):
-    if can_write_tenant(request.user, Tenant.objects.get(id=get_current_tenant_id(request))) is False:
-        logger.warning(
-            f"Unauthorized attempt to create service with name={payload.name} for tenant_id={get_current_tenant_id(request)} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create a service for this tenant.",
-        }
     service = create_service(
         request=request,
         name=payload.name,
@@ -155,15 +355,9 @@ def create_service_endpoint(
 
 
 @api.post("/create_service_group", tags=["Attributes - Service"])
+@require_write_tenant
 def create_service_group_endpoint(request, payload: CreateAddressGroupSchema):
-    if not can_write_tenant(request.user, Tenant.objects.get(id=payload.tenant_id)):
-        logger.warning(
-            f"Unauthorized attempt to create service group with name={payload.name} for tenant_id={payload.tenant_id} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create a service group for this tenant.",
-        }
+
     service_group = create_service_group(request, payload.name, payload.description)
     logger.info(f"Service Group created: {service_group}")
     return 200, {
@@ -236,184 +430,145 @@ def add_services_to_group_endpoint(request, service_ids: list[int], group_id: in
     }
 
 
-@api.post(
-    "/create_address_group",
-    tags=["Attributes - Address"],
-    response={200: MessageSchema, 403: MessageSchema},
-)
-def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
-    tenant_id = request.session.get("current_tenant_id")
-    if not can_write_tenant(request.user, Tenant.objects.get(id=tenant_id)):
-        logger.warning(
-            f"Unauthorized attempt to create address group with name={payload.name} for tenant_id={tenant_id} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to create an address group for this tenant.",
-        }
-    address_group = create_address_group(request, payload.name, payload.description, tenant_id)
-    logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
-    return 200, {
-        "status": "success",
-        "message": f"Address Group created: {address_group}",
-    }
-
-
-@api.post("/create_tag", tags=["Attributes - Tag"])
-def create_tag_endpoint(request, payload: CreateTagSchema):
-    tag = Tag()
-    # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
-    logger.info(f"Tag created: {tag}")
-    return f"Tag created {tag}"
-
-
-@api.post("/create_tag_object", tags=["Attributes - Tag"])
-def create_tag_object_endpoint(request, payload: CreateTagObjectSchema):
-    tag_object = TagObject()
-    # Do this properly when we have the model set up, this is just a placeholder to get the endpoint working for now
-    logger.info(f"Tag Object created: {tag_object}")
-    return f"Tag Object created {tag_object}"
-
-
-@api.post(
-    "/add_address_to_group",
-    tags=["Attributes - Address"],
-    response={200: MessageSchema, 403: MessageSchema},
-)
-def add_address_to_group_endpoint(request, address_id: int, group_id: int):
-    if not can_write_tenant(
-        request.user,
-        Tenant.objects.get(id=AddressGroup.objects.get(id=group_id).tenant_id),
-    ):
-        logger.warning(
-            f"Unauthorized attempt to add address id={address_id} to group id={group_id} by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to modify this address group.",
-        }
-    add_address_to_group(request, group_id, address_id)
-    logger.info(f"add_address_to_group endpoint succeeded for address id={address_id} and group id={group_id}")
-    return 200, {
-        "status": "success",
-        "message": f"Address id={address_id} added to group id={group_id}",
-    }
-
-
-@api.post(
-    "/add_addresses_to_group",
-    tags=["Attributes - Address"],
+@api.delete(
+    "/delete_service",
+    tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: int):
+@require_write_tenant
+def delete_service_endpoint(request, service_id: int):
     try:
-        address_group = AddressGroup.objects.get(id=group_id)
-    except AddressGroup.DoesNotExist:
+        service = Service.objects.get(id=service_id, tenant_id=request.session["current_tenant_id"])
+        service.delete()
+        logger.info(f"Service deleted: {service}")
+        return 200, {
+            "status": "success",
+            "message": f"Service with id {service_id} deleted.",
+        }
+    except Service.DoesNotExist:
+        logger.warning(f"Tried to delete service with id {service_id}, but it does not exist.")
         return 404, {
             "status": "error",
-            "message": f"Address group id={group_id} not found.",
+            "message": f"Service with id {service_id} does not exist.",
         }
 
-    if not can_write_tenant(request.user, address_group.tenant_id):
-        logger.warning(
-            f"Unauthorized attempt to add services id={address_ids} "
-            f"to group id={group_id} by user {request.user.username}"
-        )
-        return 403, {
+
+@api.delete(
+    "/delete_service_group",
+    tags=["Attributes - Service"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_service_group_endpoint(request, group_id: int):
+    try:
+        service_group = ServiceGroup.objects.get(id=group_id, tenant_id=request.session["current_tenant_id"])
+        service_group.delete()
+        logger.info(f"Service Group deleted: {service_group}")
+        return 200, {
+            "status": "success",
+            "message": f"Service Group with id {group_id} deleted.",
+        }
+    except ServiceGroup.DoesNotExist:
+        logger.warning(f"Tried to delete service group with id {group_id}, but it does not exist.")
+        return 404, {
             "status": "error",
-            "message": "You do not have permission to modify this service group.",
+            "message": f"Service Group with id {group_id} does not exist.",
         }
 
-    response = add_addresses_to_group(group_id, address_ids)
 
-    logger.info(
-        f"add_addresses_to_group endpoint succeeded for "
-        f"service ids={response['added_addresses_ids']} and group id={group_id}"
-    )
+@api.get("/get_all_tags_from_object", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def get_all_tags_from_object_endpoint(request, object_id: int, object_type: str):
+    tags = get_all_tags_from_object(object_id, object_type)
+    return 200, [
+        {
+            "id": tag.id,
+            "name": tag.name,
+            "description": tag.description,
+            "tenant_id": tag.tenant_id,
+        }
+        for tag in tags
+    ]
 
+
+@api.get("/get_all_tags_from_tenant", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def get_all_tags_from_tenant_endpoint(request):
+    tags = get_all_tags_from_tenant(request.session["current_tenant_id"])
+    return 200, [
+        {
+            "id": tag.id,
+            "name": tag.name,
+            "description": tag.description,
+            "tenant_id": tag.tenant_id,
+        }
+        for tag in tags
+    ]
+
+
+@api.post("/create_tag", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_tag_endpoint(request, payload: CreateTagSchema):
+    tag = create_tag(request, payload.name, payload.description)
+    logger.info(f"create_tag endpoint succeeded for tag id={tag.id}")
     return 200, {
         "status": "success",
-        "message": (
-            f"Processed address ids for group id={group_id}. "
-            f"Added={response['added_addresses_ids']}, "
-            f"already_present={response['already_present_address_ids']}, "
-            f"not_found={response['not_found_address_ids']}"
-        ),
+        "message": f"Tag created with id {tag.id}",
     }
 
 
-@api.get(
-    "/get_service_group_and_services",
-    tags=["Attributes - Service"],
-    response={200: list[dict], 403: MessageSchema},
-)
-def get_service_group_and_services_endpoint(request, get="all"):
-    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
-        logger.warning(
-            f"Unauthorized attempt to read services from tenant={request.session['current_tenant_id']} "
-            f"by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to read services from this tenant.",
-        }
-    response = get_service_groups_with_services_from_tenant(
-        request.session["current_tenant_id"],
-        get=get,
+@api.post("/create_and_add_tag_to_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchema):
+    tag = create_and_add_tag_to_object(
+        request, payload.name, payload.description, payload.object_type, payload.object_id
     )
-    return 200, response
-
-
-@api.get(
-    "/get_address_group_and_addresses",
-    tags=["Attributes - Address"],
-    response={200: list[dict], 403: MessageSchema},
-)
-def get_address_group_and_addresses_endpoint(request, get="all"):
-    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
-        logger.warning(
-            f"Unauthorized attempt to read addresses from tenant={request.session['current_tenant_id']} "
-            f"by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to read addresses from this tenant.",
-        }
-    response = get_address_groups_with_addresses_from_tenant(
-        request.session["current_tenant_id"],
-        get=get,
+    logger.info(
+        f"create_and_add_tag_to_object endpoint succeeded for tag id={tag.id} and object id={payload.object_id}"
     )
-    return 200, response
+    return 200, {
+        "status": "success",
+        "message": f"Tag created with id {tag.id} and added to object id={payload.object_id}",
+    }
 
 
-@api.get("/list_services", tags=["Attributes - Service"], response={200: list[dict], 403: MessageSchema})
-def list_services(request):
-    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
-        logger.warning(
-            f"Unauthorized attempt to read services from tenant={request.session['current_tenant_id']} "
-            f"by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to read services from this tenant.",
-        }
-    services = Service.objects.filter(tenant_id=request.session["current_tenant_id"])
-    return 200, list(services.values())
+@api.delete("/clear_all_tags_from_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def clear_all_tags_from_object_endpoint(request, object_id: int, object_type: str):
+    deleted_count = clear_all_tags_from_object(object_id, object_type)
+    logger.info(
+        f"clear_all_tags_from_object endpoint succeeded for object id={object_id} and object type={object_type}. Deleted {deleted_count} tag connections."
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Cleared all tags from object id={object_id} of type {object_type}. Deleted {deleted_count} tag connections.",
+    }
 
 
-@api.get("/list_addresses", tags=["Attributes - Address"], response={200: list[dict], 403: MessageSchema})
-def list_addresses(request):
-    if not can_read_tenant(request.user, request.session["current_tenant_id"]):
-        logger.warning(
-            f"Unauthorized attempt to read addresses from tenant={request.session['current_tenant_id']} "
-            f"by user {request.user.username}"
-        )
-        return 403, {
-            "status": "error",
-            "message": "You do not have permission to read addresses from this tenant.",
-        }
-    addresses = Address.objects.filter(tenant_id=request.session["current_tenant_id"])
-    return 200, list(addresses.values())
+@api.delete("/remove_tag_from_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def remove_tag_from_object_endpoint(request, object_id: int, object_type: str, tag_id: int):
+    deleted_count = remove_tag_from_object(object_id, object_type, tag_id)
+    logger.info(
+        f"remove_tag_from_object endpoint succeeded for tag id={tag_id} and object id={object_id} of type {object_type}. Deleted {deleted_count} tag connections."
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Removed tag id={tag_id} from object id={object_id} of type {object_type}. Deleted {deleted_count} tag connections.",
+    }
+
+
+@api.delete("/delete_tag_from_tenant", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def delete_tag_from_tenant_endpoint(request, tag_id: int):
+    deleted_count = delete_tag_from_tenant(tag_id, request.session["current_tenant_id"])
+    logger.info(
+        f"delete_tag_from_tenant endpoint succeeded for tag id={tag_id} in tenant={request.session['current_tenant_id']}. Deleted {deleted_count} tag connections."
+    )
+    return 200, {
+        "status": "success",
+        "message": f"Deleted tag id={tag_id} from tenant. Deleted {deleted_count} tag connections.",
+    }
 
 
 """
@@ -431,6 +586,89 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
         "message": "Tenant created",
         "status": f"Tenant created with id {tenant.id}",
     }
+
+
+@api.get("/list_tenants", tags=["Management - Tenant"], response={200: list[dict], 403: MessageSchema})
+@require_superadmin
+def list_tenants(request):
+    tenants = Tenant.objects.all()
+    return 200, list(tenants.values())
+
+
+"""
+====================================================================
+Filter Objects
+====================================================================
+"""
+
+
+@api.post("/create_rule", tags=["Filter - Rule"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_rule_endpoint(request, payload: CreateRuleSchema):
+    rule = create_rule(
+        request=request,
+        name=payload.name,
+        description=payload.description,
+        tenant_id=request.session["current_tenant_id"],
+        action=payload.action,
+        log_type=payload.log_type,
+        hit_count=0,
+        enable=payload.enable,
+    )
+    logger.info(f"create_rule endpoint succeeded for rule id={rule.id}")
+    return 200, {
+        "message": "Rule created",
+        "status": f"Rule created with id {rule.id}",
+    }
+
+
+@api.post(
+    "/match_rule_to_objects",
+    tags=["Filter - Rule"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def match_rule_to_objects_endpoint(request, rule_id: int, match_type: str, object_type: str, object_ids: list[int]):
+    try:
+        result = match_rule_to_objects(request, rule_id, match_type, object_type, object_ids)
+        logger.info(f"match_rule_to_objects endpoint succeeded for rule id={rule_id}")
+        return 200, {
+            "status": "success",
+            "message": str(result),
+        }
+    except ValueError as e:
+        logger.warning(str(e))
+        return 404, {
+            "status": "error",
+            "message": str(e),
+        }
+
+
+@api.get("/list_rules", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_rules(request):
+    rules = get_all_rules_from_tenant(request.session["current_tenant_id"])
+    return 200, list(rules.values())
+
+
+@api.delete(
+    "/delete_rule", tags=["Filter - Rule"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
+)
+@require_write_tenant
+def delete_rule_endpoint(request, rule_id: int):
+    try:
+        delete_rule(rule_id, request.session["current_tenant_id"])
+        logger.info(f"Rule deleted: id={rule_id}")
+        return 200, {
+            "status": "success",
+            "message": f"Rule with id {rule_id} deleted.",
+        }
+    except ValueError as e:
+        logger.warning(str(e))
+        return 404, {
+            "status": "error",
+            "message": str(e),
+        }
 
 
 """

@@ -1,9 +1,8 @@
 from ninja import Schema, Field
-from pydantic import ConfigDict
 
 
 class CreateTagObjectSchema(Schema):
-    model_config = ConfigDict(extra="forbid")
-    tag_id: int = Field(..., ge=1)
-    object_type: str = Field(..., min_length=1, max_length=255)
-    object_id: int = Field(..., ge=1)
+    object_type: str = Field(..., description="The type of the object to tag (e.g., 'Address', 'Service').")
+    object_id: int = Field(..., description="The ID of the object to tag.")
+    name: str = Field(..., description="The name of the tag.")
+    description: str = Field("", description="A description for the tag.")

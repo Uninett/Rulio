@@ -2,8 +2,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from ipaddress import summarize_address_range, IPv4Address, IPv6Address, IPv4Network, IPv6Network
 
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
-class Address(models.Model):
+
+class Address(TaggableMixin, models.Model):
     """
     Model representing an IP address or range, which can be either IPv4 or IPv6.
     The model supports two types of addresses: 'standard', which is a single IP address or a network in CIDR notation,
