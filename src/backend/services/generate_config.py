@@ -17,7 +17,8 @@ logger = set_up_logger(__name__)
 class PolicyRule:
     """
     A class representing a policy rule. From ER Diagram this is basically
-    the rule object joined with an Address, Service or group.
+    the rule object joined with an Address, Service or group. 
+    PolicyRules with the same sequence number are merged into the same logical term in the generated config.
 
     Args:
         name (str): The name of the rule.
@@ -26,10 +27,10 @@ class PolicyRule:
         action (str): The action to be taken for the rule.
         object (Address | Service | AddressGroup | ServiceGroup): The object
             that the rule is joined with.
-        sequence (int, optional): The sequence number used to group rules
+        sequence (int): The sequence number used to group rules
             into the same generated term.
-        direction (str, optional): The direction of the rule. Defaults to
-            "destination".
+        direction (str): The direction of the rule. Must be one of
+            "source", "destination", "reverse_source", or "reverse_destination".
     """
 
     DIRECTION_OPTIONS = ["source", "destination", "reverse_source", "reverse_destination"]
@@ -40,8 +41,8 @@ class PolicyRule:
         obj_type: str,
         action: str,
         object: Address | Service | AddressGroup | ServiceGroup,
-        sequence: int = 0,
-        direction: str = "destination",
+        sequence: int,
+        direction: str,
     ):
         self.name = name
         self.type = obj_type.lower()
@@ -128,8 +129,12 @@ class Policy:
         return dict(sorted(grouped.items()))
 
     # Build the base name for generated terms
-    def _base_term_name(self, sequence: int) -> str:
-        return f"{self.name}-term-{sequence}"
+    def _base_term_name(self, rules: list[PolicyRule], sequence: int) -> str:
+        base_name = f"seq{sequence}-{rules[0].name}"
+        if len(base_name) > 55:
+            base_name = base_name[:55]
+            base_name += "-..."
+        return base_name
 
     # When we have multiple protocols in the same sequence, we need to generate a unique term name per protocol
     def _protocol_term_name(self, base_name: str, protocol: str) -> str:
@@ -145,7 +150,7 @@ class Policy:
             raise ValueError(f"All rules in sequence {sequence} must have the same action")
         
         action = rules[0].action
-        base_name = self._base_term_name(sequence)
+        base_name = self._base_term_name(rules, sequence)
 
         source_addresses = []
         destination_addresses = []
@@ -251,8 +256,14 @@ class Policy:
 
         # Otherwise create one term per protocol
         for protocol in sorted(all_protocols):
+            if len(all_protocols) > 1:
+                term_name = self._protocol_term_name(base_name, protocol)
+            else:
+                term_name = base_name
+            if len(term_name) > 62:
+                term_name = term_name[:62]
             term = {
-                "name": self._protocol_term_name(base_name, protocol),
+                "name": term_name,
                 "action": action,
                 "protocol": protocol,
             }
