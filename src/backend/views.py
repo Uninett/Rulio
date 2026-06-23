@@ -1,13 +1,70 @@
-# Frontend
 from django.shortcuts import render
 from .api import list_addresses
 from django.urls import reverse
 
 """
-Frontend
+====================================================================
+Device Page
+====================================================================
 """
 
 
+#
+def get_devices_page(request):
+    return render(
+        request,
+        "devices.html",
+        {
+            "active_page": "devices",
+            "page_title": "Devices",
+            "object_type": "devices",
+            "add_button_label": "Add Device",
+        },
+    )
+
+
+"""
+====================================================================
+Filters Page
+====================================================================
+"""
+
+
+def get_filters_page(request):
+    return render(
+        request,
+        "filters.html",
+        {
+            "active_page": "filters",
+            "page_title": "Filters",
+            "object_type": "filters",
+            "add_button_label": "Add Filter",
+        },
+    )
+
+
+"""
+====================================================================
+Objects Page
+====================================================================
+"""
+
+
+def get_objects_page(request):
+    return render(
+        request,
+        "objects.html",
+        {
+            "active_page": "objects",
+            "page_title": "Addresses",
+            "object_type": "addresses",
+            **get_objects_toolbar_context("addresses"),  # Render the Objects page with Addresses as the default tab.
+            "addresses": get_addresses_view(request),  # Address data for the page
+        },
+    )
+
+
+# Build shared toolbar context for the Objects page tabs.
 def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
     return {
         "active_tool": active_tool,
@@ -15,19 +72,35 @@ def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
             {
                 "key": "addresses",
                 "label": "Addresses",
-                "url": reverse("objects-addresses"),
+                "url": reverse("objects-addresses"),  # URL for loading the Addresses tab content
             },
             {
                 "key": "services",
                 "label": "Services",
-                "url": reverse("objects-services"),
+                "url": reverse("objects-services"),  # URL for loading the Service tab content
             },
         ],
         "add_button_label": add_button_label,
     }
 
 
-# This is a temporary implementation with hardcoded data for demonstration purposes.
+# Render the Addresses tab content for the Objects page.
+def get_objects_addresses(request):
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Addresses",
+            "object_type": "addresses",
+            "addresses": get_addresses_view(request),  # Address data for the page
+            **get_objects_toolbar_context(
+                "addresses", add_button_label="Add Address"
+            ),  # Render the Objects page with Addresses as the active tab.
+        },
+    )
+
+
+# Fetch addresses from the API and map them to data.
 def get_addresses_view(request):
     status, api_addresses = list_addresses(request)
 
@@ -49,77 +122,12 @@ def get_addresses_view(request):
     return addresses
 
 
-def get_devices_page(request):
-    return render(
-        request,
-        "devices.html",
-        {
-            "active_page": "devices",
-            "page_title": "Devices",
-            "object_type": "devices",
-            "add_button_label": "Add Device",
-        },
-    )
-
-
-def get_filters_page(request):
-    return render(
-        request,
-        "filters.html",
-        {
-            "active_page": "filters",
-            "page_title": "Filters",
-            "object_type": "filters",
-            "add_button_label": "Add Filter",
-        },
-    )
-
-
-# This is a temporary implementation with hardcoded data for demonstration purposes.
-def get_objects_page(request):
-    return render(
-        request,
-        "objects.html",
-        {
-            "active_page": "objects",
-            "page_title": "Addresses",
-            "addresses": get_addresses_view(request),
-            "object_type": "addresses",
-            **get_objects_toolbar_context("addresses"),
-        },
-    )
-
-
-def get_objects_addresses(request):
-    addresses = get_addresses_view(request)
-    return render(
-        request,
-        "partials/_page_content.html",
-        {
-            "title": "Addresses",
-            "object_type": "addresses",
-            "addresses": addresses,
-            **get_objects_toolbar_context("addresses", add_button_label="Add Address"),
-        },
-    )
-
-
-def get_objects_services(request):
-    return render(
-        request,
-        "partials/_page_content.html",
-        {
-            "title": "Services",
-            "object_type": "services",
-            **get_objects_toolbar_context("services", add_button_label="Add Service"),
-        },
-    )
-
-
+# Render an empty editable address row.
 def get_empty_address_row_partial(request):
     return render(request, "partials/objects/_addressesRowEdit.html")
 
 
+# Build and render a saved address row from submitted form data.
 def post_address_row_partial(request):
     address = {
         "name": request.POST.get("name", ""),
@@ -133,12 +141,27 @@ def post_address_row_partial(request):
     return render(request, "partials/objects/_addressesRow.html", {"address": address})
 
 
-def get_addresses_content(request):
-    return render(request, "partials/objects/_objects_addresses.html")
+# Render the Services tab content for the Objects page. TODO: Create get_services_view.
+def get_objects_services(request):
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Services",
+            "object_type": "services",
+            # "services": get_services_view(request), # Service data for the page
+            **get_objects_toolbar_context(
+                "services", add_button_label="Add Service"
+            ),  # Render the Objects page with Services as the active tab.
+        },
+    )
 
 
-def get_services_content(request):
-    return render(request, "partials/objects/_objects_services.html")
+"""
+====================================================================
+Tags Page
+====================================================================
+"""
 
 
 def get_tags_page(request):
@@ -154,6 +177,14 @@ def get_tags_page(request):
     )
 
 
+"""
+====================================================================
+Modal Partial
+====================================================================
+"""
+
+
+# Return modal configuration for each object type.
 def get_add_modal_config(object_type):
     configs = {
         "devices": {
@@ -206,12 +237,14 @@ def get_add_modal_config(object_type):
             "form_partial": "partials/modals/_tags_form.html",
         },
     }
-    return configs[object_type]
+    return configs[object_type]  # Return the modal config for the selected object type
 
 
+# Render the Add modal with the default form for the selected object type.
 def get_add_modal(request, object_type):
     config = get_add_modal_config(object_type)
 
+    # Check if modal supports multiple types
     if config.get("supports_types"):
         selected_type = config["default_type"]
         modal_content_partial = config["types"][selected_type]
@@ -234,8 +267,9 @@ def get_add_modal(request, object_type):
     )
 
 
+# Render the modal content when switching between item/group form types.
 def get_add_modal_form_content(request, object_type, type):
-    config = get_add_modal_config(object_type)
+    config = get_add_modal_config(object_type)  # Load modal settings for this object type
 
     return render(
         request,
