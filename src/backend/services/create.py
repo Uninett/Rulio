@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
 
@@ -11,6 +12,7 @@ from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
+from backend.objects.filters.rule import Rule
 from backend.utils.logger import set_up_logger
 from django.db import transaction
 from backend.services.get import get_object_by_type_and_id
@@ -420,3 +422,39 @@ def create_and_add_tag_to_object(
     else:
         logger.warning(f"Object {obj} is not taggable. Created tag {tag} but did not add it to the object.")
     return tag
+
+
+def create_rule(
+    request: object,
+    name: str,
+    description: str,
+    tenant_id: int,
+    action: str,
+    log_type: str,
+    hit_count: int,
+    enable: bool = True,
+) -> Rule:
+    tenant = Tenant.objects.get(pk=tenant_id)
+    now = datetime.now(timezone.utc)
+    rule = Rule(
+        name=name,
+        description=description,
+        tenant_id=tenant,
+        action=action,
+        log_type=log_type,
+        hit_count=hit_count,
+        date_created=now,
+        date_changed=now,
+        created_by=request.user.id if hasattr(request, "user") else None,
+        changed_by=request.user.id if hasattr(request, "user") else None,
+        enable=enable,
+    )
+    try:
+        rule.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Rule validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    rule.save()
+    logger.info(f"Created {rule} for tenant={rule.tenant_id}")
+    return rule

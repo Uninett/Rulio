@@ -5,11 +5,17 @@ from ninja.security import django_auth
 from django.conf import settings
 
 from backend.objects.attributes.service import Service
+from backend.objects.filters.rule import Rule
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.authentication import require_read_tenant, require_superadmin, require_write_tenant
-from backend.services.delete import clear_all_tags_from_object, delete_tag_from_tenant, remove_tag_from_object
+from backend.services.delete import (
+    clear_all_tags_from_object,
+    delete_tag_from_tenant,
+    remove_tag_from_object,
+    delete_rule,
+)
 from backend.services.get import (
     get_all_addresses_and_groups_with_tags,
     get_all_tags_from_object,
@@ -30,6 +36,7 @@ from backend.services.create import (
     create_service_group,
     add_service_to_group,
     add_addresses_to_group,
+    create_rule,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -39,6 +46,7 @@ from backend.schemas.login import LoginSchema
 from backend.schemas.create_user import CreateUserSchema
 from backend.schemas.tenant import CreateTenantSchema
 from backend.schemas.message import MessageSchema
+from backend.schemas.rule import CreateRuleSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
@@ -227,18 +235,57 @@ def get_addresses_and_groups_with_tags_endpoint(request):
     return 200, response
 
 
-@api.get("/list_services", tags=["Attributes - Service"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
-def list_services(request):
-    services = Service.objects.filter(tenant_id=request.session["current_tenant_id"])
-    return 200, list(services.values())
-
-
 @api.get("/list_addresses", tags=["Attributes - Address"], response={200: list[dict], 403: MessageSchema})
 @require_read_tenant
 def list_addresses(request):
     addresses = Address.objects.filter(tenant_id=request.session["current_tenant_id"])
     return 200, list(addresses.values())
+
+
+@api.delete(
+    "/delete_address",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_address_endpoint(request, address_id: int):
+    try:
+        address = Address.objects.get(id=address_id, tenant_id=request.session["current_tenant_id"])
+        address.delete()
+        logger.info(f"Address deleted: {address}")
+        return 200, {
+            "status": "success",
+            "message": f"Address with id {address_id} deleted.",
+        }
+    except Address.DoesNotExist:
+        logger.warning(f"Tried to delete address with id {address_id}, but it does not exist.")
+        return 404, {
+            "status": "error",
+            "message": f"Address with id {address_id} does not exist.",
+        }
+
+
+@api.delete(
+    "/delete_address_group",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_address_group_endpoint(request, group_id: int):
+    try:
+        address_group = AddressGroup.objects.get(id=group_id, tenant_id=request.session["current_tenant_id"])
+        address_group.delete()
+        logger.info(f"Address Group deleted: {address_group}")
+        return 200, {
+            "status": "success",
+            "message": f"Address Group with id {group_id} deleted.",
+        }
+    except AddressGroup.DoesNotExist:
+        logger.warning(f"Tried to delete address group with id {group_id}, but it does not exist.")
+        return 404, {
+            "status": "error",
+            "message": f"Address Group with id {group_id} does not exist.",
+        }
 
 
 @api.post(
@@ -342,6 +389,13 @@ def add_services_to_group_endpoint(request, service_ids: list[int], group_id: in
     }
 
 
+@api.get("/list_services", tags=["Attributes - Service"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_services(request):
+    services = Service.objects.filter(tenant_id=request.session["current_tenant_id"])
+    return 200, list(services.values())
+
+
 @api.get(
     "/get_service_group_and_services",
     tags=["Attributes - Service"],
@@ -388,6 +442,52 @@ def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchem
         "status": "success",
         "message": f"Tag created with id {tag.id} and added to object id={payload.object_id}",
     }
+
+
+@api.delete(
+    "/delete_service",
+    tags=["Attributes - Service"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_service_endpoint(request, service_id: int):
+    try:
+        service = Service.objects.get(id=service_id, tenant_id=request.session["current_tenant_id"])
+        service.delete()
+        logger.info(f"Service deleted: {service}")
+        return 200, {
+            "status": "success",
+            "message": f"Service with id {service_id} deleted.",
+        }
+    except Service.DoesNotExist:
+        logger.warning(f"Tried to delete service with id {service_id}, but it does not exist.")
+        return 404, {
+            "status": "error",
+            "message": f"Service with id {service_id} does not exist.",
+        }
+
+
+@api.delete(
+    "/delete_service_group",
+    tags=["Attributes - Service"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_service_group_endpoint(request, group_id: int):
+    try:
+        service_group = ServiceGroup.objects.get(id=group_id, tenant_id=request.session["current_tenant_id"])
+        service_group.delete()
+        logger.info(f"Service Group deleted: {service_group}")
+        return 200, {
+            "status": "success",
+            "message": f"Service Group with id {group_id} deleted.",
+        }
+    except ServiceGroup.DoesNotExist:
+        logger.warning(f"Tried to delete service group with id {group_id}, but it does not exist.")
+        return 404, {
+            "status": "error",
+            "message": f"Service Group with id {group_id} does not exist.",
+        }
 
 
 @api.get("/get_all_tags_from_object", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
@@ -492,6 +592,60 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
 def list_tenants(request):
     tenants = Tenant.objects.all()
     return 200, list(tenants.values())
+
+
+"""
+====================================================================
+Filter Objects
+====================================================================
+"""
+
+
+@api.post("/create_rule", tags=["Filter - Rule"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_rule_endpoint(request, payload: CreateRuleSchema):
+    rule = create_rule(
+        request=request,
+        name=payload.name,
+        description=payload.description,
+        tenant_id=request.session["current_tenant_id"],
+        action=payload.action,
+        log_type=payload.log_type,
+        hit_count=0,
+        enable=payload.enable,
+    )
+    logger.info(f"create_rule endpoint succeeded for rule id={rule.id}")
+    return 200, {
+        "message": "Rule created",
+        "status": f"Rule created with id {rule.id}",
+    }
+
+
+@api.get("/list_rules", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_rules(request):
+    rules = Rule.objects.filter(tenant_id=request.session["current_tenant_id"])
+    return 200, list(rules.values())
+
+
+@api.delete(
+    "/delete_rule", tags=["Filter - Rule"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
+)
+@require_write_tenant
+def delete_rule_endpoint(request, rule_id: int):
+    try:
+        delete_rule(rule_id, request.session["current_tenant_id"])
+        logger.info(f"Rule deleted: id={rule_id}")
+        return 200, {
+            "status": "success",
+            "message": f"Rule with id {rule_id} deleted.",
+        }
+    except ValueError as e:
+        logger.warning(str(e))
+        return 404, {
+            "status": "error",
+            "message": str(e),
+        }
 
 
 """

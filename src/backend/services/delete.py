@@ -2,6 +2,7 @@ from backend.utils.logger import set_up_logger
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.services.get import get_object_by_type_and_id
 from backend.objects.attributes.tag import Tag
+from backend.objects.filters.rule import Rule
 
 
 logger = set_up_logger(__name__)
@@ -47,3 +48,12 @@ def delete_tag_from_tenant(tag_id: int, tenant_id: int) -> int:
     deleted_count, _ = tag.delete()
     logger.info(f"Deleted tag id={tag_id} from tenant={tenant_id}. Deleted connections: {deleted_count}.")
     return deleted_count
+
+def delete_rule(rule_id: int, tenant_id: int) -> None:
+    try:
+        rule = Rule.objects.get(id=rule_id, tenant_id=tenant_id)
+    except Rule.DoesNotExist:
+        raise ValueError(f"Rule with id={rule_id} does not exist in tenant={tenant_id}.")
+
+    rule.delete()
+    logger.info(f"Deleted rule id={rule_id} from tenant={tenant_id}.")

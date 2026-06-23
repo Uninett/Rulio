@@ -2,8 +2,14 @@ from django.db import models
 
 
 class RuleMatch(models.Model):
+    MATCH_TYPE_CHOICES = [
+        ("Source", "Source"),
+        ("Destination", "Destination"),
+        ("Reverse_Source", "Reverse Source"),
+        ("Reverse_Destination", "Reverse Destination"),
+    ]
     rule_id = models.IntegerField()
-    match = models.BooleanField()
+    match = models.CharField(max_length=20, choices=MATCH_TYPE_CHOICES)
     object_type = models.CharField(max_length=255)
     object_id = models.ForeignKey("Rule", on_delete=models.CASCADE)
 
