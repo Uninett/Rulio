@@ -10,15 +10,14 @@ from backend.services.create import (
     create_service_group,
     add_services_to_group,
 )
-from backend.tests.conftest import MockRequest
 from constants import TESTING_TENANT_ID
 
 
 @pytest.mark.django_db
 class TestCreateAddress:
-    def test_create_address(self):
+    def test_create_address(self, request_with_session):
 
-        request = MockRequest()
+        request = request_with_session
         address = create_address(
             request=request,
             name="Test Address",
@@ -41,8 +40,8 @@ class TestCreateAddress:
 
 @pytest.mark.django_db
 class TestCreateService:
-    def test_create_service(self):
-        request = MockRequest()
+    def test_create_service(self, request_with_session):
+        request = request_with_session
         service = create_service(
             request=request,
             name="Test Service",
@@ -62,8 +61,8 @@ class TestCreateService:
 
 @pytest.mark.django_db
 class TestCreateAddressGroup:
-    def test_create_address_group(self):
-        request = MockRequest()
+    def test_create_address_group(self, request_with_session):
+        request = request_with_session
         address_group = create_address_group(
             request=request,
             name="Test Address Group",
@@ -77,8 +76,8 @@ class TestCreateAddressGroup:
 
 @pytest.mark.django_db
 class TestCreateServiceGroup:
-    def test_create_service_group(self):
-        request = MockRequest()
+    def test_create_service_group(self, request_with_session):
+        request = request_with_session
         service_group = create_service_group(
             request=request,
             name="Test Service Group",
@@ -92,8 +91,8 @@ class TestCreateServiceGroup:
 
 @pytest.mark.django_db
 class TestAddAddressToGroup:
-    def test_add_address_to_group(self, sample_addresses):
-        request = MockRequest()
+    def test_add_address_to_group(self, sample_addresses, request_with_session):
+        request = request_with_session
         sample_address_ids = [address.id for address in sample_addresses]
         address_group = create_address_group(
             request=request,
@@ -120,8 +119,8 @@ class TestAddAddressToGroup:
 
 @pytest.mark.django_db
 class TestAddServicesToGroup:
-    def test_add_services_to_group(self, sample_services):
-        request = MockRequest
+    def test_add_services_to_group(self, sample_services, request_with_session):
+        request = request_with_session
         service_group = create_service_group(
             request=request,
             name="Test Service Group",
