@@ -299,6 +299,7 @@ def get_add_modal_config(object_type):
             "title": "Add Device",
             "supports_types": True,
             "default_type": "item",
+            "item_type_editable": True,  # Device object contains a type (i.e. host, switch etc.)
             "type_labels": {
                 "item": "Device",
                 "group": "Device Group",
@@ -317,6 +318,7 @@ def get_add_modal_config(object_type):
             "title": "Add Address",
             "supports_types": True,
             "default_type": "item",
+            "item_type_editable": True,
             "type_labels": {
                 "item": "Address",
                 "group": "Address Group",
@@ -329,7 +331,8 @@ def get_add_modal_config(object_type):
         "services": {
             "title": "Add Service",
             "supports_types": True,
-            "default_type": "item",
+            "default_type": "item",  # Address object contains a type (i.e. host, switch etc.)
+            "item_type_editable": False,
             "type_labels": {
                 "item": "Service",
                 "group": "Service Group",
@@ -369,6 +372,7 @@ def get_add_modal(request, object_type):
             "modal_object_type": object_type,
             "modal_type": selected_type,
             "modal_supports_types": config.get("supports_types", False),
+            "item_type_editable": config.get("item_type_editable", False),
             "modal_type_labels": config.get("type_labels", {}),
             "modal_content_partial": modal_content_partial,
         },
@@ -386,6 +390,7 @@ def get_add_modal_form_content(request, object_type, type):
             "modal_object_type": object_type,
             "modal_type": type,
             "modal_supports_types": config.get("supports_types", False),
+            "item_type_editable": config.get("item_type_editable", False),
             "modal_type_labels": config.get("type_labels", {}),
             "modal_content_partial": config["types"][type],
         },

@@ -12,10 +12,16 @@
 
         <div class="form-group">
             <label for="type">Type</label>
+
+            {% if modal_type == "item" and item_type_editable %}
+            <input id="type" class="type" name="type" type="text">
+            {% else %}
             <input id="type" class="type" name="type_display" type="text"
                 value="{% if modal_type == 'item' %}{{ modal_type_labels.item }}{% else %}{{ modal_type_labels.group }}{% endif %}"
                 disabled>
-            <input type="hidden" name="type" value="{{ modal_type }}">
+            <input type="hidden" name="type"
+                value="{% if modal_type == 'item' %}{{ modal_type_labels.item }}{% else %}{{ modal_type_labels.group }}{% endif %}">
+            {% endif %}
         </div>
     </div>
     {% else %}
