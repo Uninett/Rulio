@@ -172,12 +172,6 @@ def get_or_create_service(
     return service, service.id, created
 
 
-def create_tenant(request: object, name: str):
-    tenant = Tenant.objects.create(tenant_name=name)
-    logger.info(f"Tenant created: {tenant}")
-    return tenant
-
-
 def create_service_group(
     request: object,
     name: str,
@@ -199,14 +193,6 @@ def create_service_group(
 
     service_group.save()
     logger.info(f"Created {service_group} for tenant={service_group.tenant_id}")
-    return service_group
-
-
-def add_service_to_group(request: object, service_group_id: int, service_id: int) -> ServiceGroup:
-    service_group = ServiceGroup.objects.get(id=service_group_id)
-    service = Service.objects.get(id=service_id)
-    service_group.services.add(service)
-    logger.info(f"Added {service} to {service_group}")
     return service_group
 
 
@@ -255,6 +241,66 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
     }
 
 
+def get_or_create_service_group(
+    request: object,
+    name: str,
+    description: str,
+    members: list[int] | None = None,
+) -> tuple[ServiceGroup, int, bool]:
+
+    tenant_id = get_current_tenant_id(request)
+
+    service_group, created = ServiceGroup.objects.get_or_create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    if created:
+        logger.info(f"Created {service_group} for tenant={service_group.tenant_id}")
+        if members:
+            add_services_to_group(service_group_id=service_group.id, service_ids=members)
+            logger.info(f"Added members to {service_group}: {members}")
+    else:
+        logger.warning(f"Service Group already exists: {service_group} for tenant={service_group.tenant_id}")
+        if members:
+            add_services_to_group(service_group_id=service_group.id, service_ids=members)
+            logger.info(f"Added members to existing {service_group}: {members}")
+    return service_group, service_group.id, created
+
+
+def add_service_to_group(request: object, service_group_id: int, service_id: int) -> ServiceGroup:
+    service_group = ServiceGroup.objects.get(id=service_group_id)
+    service = Service.objects.get(id=service_id)
+    service_group.services.add(service)
+    logger.info(f"Added {service} to {service_group}")
+    return service_group
+
+
+def create_address_group(
+    request: object,
+    name: str,
+    description: str,
+) -> AddressGroup:
+
+    tenant_id = get_current_tenant_id(request)
+
+    address_group = AddressGroup(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+        addr_type="Group",
+    )
+    try:
+        address_group.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Address Group validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    address_group.save()
+    logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
+    return address_group
+
+
 def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dict:
     address_group = AddressGroup.objects.get(id=address_group_id)
 
@@ -292,29 +338,39 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
     }
 
 
-def create_address_group(
+def get_or_create_address_group(
     request: object,
     name: str,
     description: str,
-) -> AddressGroup:
+    members: list[int] | None = None,
+) -> tuple[AddressGroup, int, bool]:
 
     tenant_id = get_current_tenant_id(request)
 
-    address_group = AddressGroup(
+    address_group, created = AddressGroup.objects.get_or_create(
         name=name,
         description=description,
         tenant_id=tenant_id,
         addr_type="Group",
     )
-    try:
-        address_group.full_clean()
-    except DjangoValidationError as e:
-        logger.warning(f"Address Group validation failed: {e.message_dict}")
-        raise ValueError(e.message_dict) from e
+    if created:
+        logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
+        if members:
+            add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
+            logger.info(f"Added members to {address_group}: {members}")
+    else:
+        logger.warning(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
+        if members:
+            add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
+            logger.info(f"Added members to existing {address_group}: {members}")
 
-    address_group.save()
-    logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
-    return address_group
+    return address_group, address_group.id, created
+
+
+def create_tenant(request: object, name: str):
+    tenant = Tenant.objects.create(tenant_name=name)
+    logger.info(f"Tenant created: {tenant}")
+    return tenant
 
 
 def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str) -> TenantUserMember:

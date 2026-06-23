@@ -11,7 +11,7 @@ from backend.services.create import (
     add_services_to_group,
 )
 from backend.tests.conftest import MockRequest
-from constants import TESTING_TENNANT_ID
+from constants import TESTING_TENANT_ID
 
 
 @pytest.mark.django_db
@@ -32,7 +32,7 @@ class TestCreateAddress:
         assert address is not None
         assert address.name == "Test Address"
         assert address.description == "This is a test address"
-        assert address.tenant_id == TESTING_TENNANT_ID
+        assert address.tenant_id == TESTING_TENANT_ID
         assert address.get_address()[0][0].__str__() == "192.168.1.1/32"
         assert address.get_address()[1][0].__str__() == "2001:db8::1/128"
         assert address.ipv4_type == "standard"
@@ -54,7 +54,7 @@ class TestCreateService:
         assert service is not None
         assert service.name == "Test Service"
         assert service.description == "This is a test service"
-        assert service.tenant_id == TESTING_TENNANT_ID
+        assert service.tenant_id == TESTING_TENANT_ID
         assert service.protocol == "TCP"
         assert service.port_start == 80
         assert service.port_end == 80
@@ -72,7 +72,7 @@ class TestCreateAddressGroup:
         assert address_group is not None
         assert address_group.name == "Test Address Group"
         assert address_group.description == "This is a test address group"
-        assert address_group.tenant_id == TESTING_TENNANT_ID
+        assert address_group.tenant_id == TESTING_TENANT_ID
 
 
 @pytest.mark.django_db
@@ -87,7 +87,7 @@ class TestCreateServiceGroup:
         assert service_group is not None
         assert service_group.name == "Test Service Group"
         assert service_group.description == "This is a test service group"
-        assert service_group.tenant_id == TESTING_TENNANT_ID
+        assert service_group.tenant_id == TESTING_TENANT_ID
 
 
 @pytest.mark.django_db

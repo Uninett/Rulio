@@ -1,13 +1,13 @@
 from backend.services.create import get_or_create_service
 from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENNANT_ID
+from constants import GLOBAL_TENANT_ID
 
 
 logger = set_up_logger(__name__)
 
 
 class MockRequest:
-    session = {"current_tenant_id": GLOBAL_TENNANT_ID}
+    session = {"current_tenant_id": GLOBAL_TENANT_ID}
 
 
 def seed_services():
