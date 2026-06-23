@@ -1,5 +1,4 @@
 from ninja import Schema, Field
-from pydantic import ConfigDict
 
 
 class CreateTagObjectSchema(Schema):

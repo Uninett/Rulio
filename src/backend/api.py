@@ -5,7 +5,6 @@ from ninja.security import django_auth
 from django.conf import settings
 
 from backend.objects.attributes.service import Service
-from backend.objects.filters.rule import Rule
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
