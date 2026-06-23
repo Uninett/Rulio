@@ -7,9 +7,7 @@
     <td>{{ address.addresses }}</td>
     <td>{{ address.tags }}</td>
     <td>
-        <button class="delete-btn" hx-delete="/addresses/delete/" hx-target="closest tr" hx-swap="outerHTML" hx-vals='{
-                "name": "{{ address.name }}"
-            }'>
+        <button class="delete-btn" hx-delete="/addresses/delete/" hx-target="closest tr" hx-swap="outerHTML">
             ✕
         </button>
     </td>
