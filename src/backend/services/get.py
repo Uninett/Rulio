@@ -5,6 +5,7 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.tag import Tag
+from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.utils.logger import set_up_logger
 
@@ -12,6 +13,18 @@ from backend.utils.logger import set_up_logger
 # Setup logger
 logger = set_up_logger(__name__)
 
+DJANGO_MODEL_MAPPING = {
+        "address": Address,
+        "address_group": AddressGroup,
+        "service": Service,
+        "service_group": ServiceGroup,
+        "rule": Rule,
+        "tag": Tag,
+        "address_group_member": AddressGroupMember,
+        "service_group_member": ServiceGroupMember,
+        "filter": Filter,
+        
+    }
 
 def get_all_service_groups_from_tenant(tenant_id: int) -> list[ServiceGroup]:
     requested_service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
@@ -320,13 +333,7 @@ def get_all_tags_from_tenant(tenant_id: int) -> list[Tag]:
 
 def get_object_by_type_and_id(object_type: str, object_id: int):
     object_type = object_type.lower()
-    model_mapping = {
-        "address": Address,
-        "addressGroup": AddressGroup,
-        "service": Service,
-        "servicegroup": ServiceGroup,
-    }
-    model = model_mapping.get(object_type)
+    model = DJANGO_MODEL_MAPPING.get(object_type)
     if not model:
         raise ValueError(f"Unsupported object type: {object_type}")
     return model.objects.get(id=object_id)

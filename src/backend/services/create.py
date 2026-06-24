@@ -2,11 +2,13 @@ from datetime import datetime, timezone
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
 
+from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.management.tenant import Tenant
@@ -24,6 +26,18 @@ from backend.services.membership import (
 
 from django.contrib.contenttypes.models import ContentType
 
+DJANGO_MODEL_MAPPING = {
+        "address": Address,
+        "addressgroup": AddressGroup,
+        "service": Service,
+        "servicegroup": ServiceGroup,
+        "rule": Rule,
+        "tag": Tag,
+        "addressgroupmember": AddressGroupMember,
+        "servicegroupmember": ServiceGroupMember,
+        "filter": Filter,
+        
+    }
 
 # Setup logger
 logger = set_up_logger(__name__)
@@ -350,7 +364,6 @@ def create_rule(
     action: str,
     log_type: str,
     hit_count: int,
-    direction: str,
     enable: bool = True,
 ) -> Rule:
     tenant = get_current_tenant(request)
@@ -362,7 +375,6 @@ def create_rule(
         action=action,
         log_type=log_type,
         hit_count=hit_count,
-        direction=direction,
         date_created=now,
         date_changed=now,
         created_by=request.user.id if hasattr(request, "user") else None,
@@ -531,9 +543,18 @@ def create_config_from_filter(request, filter_id, vendor, policy_type):
             # Get object type and ID from RuleMatch
             object_type = rule_match.object_type
             object_id = rule_match.object_id
+
             if not object_type or not object_id:
                 raise ValueError(f"Object type or object ID is not set for rule with ID {rule.id}.")
-            if object_type not in ["Address", "Service", "AddressGroup", "ServiceGroup"]:
+
+            model_class = object_type.model_class()
+            model_name = object_type.model  # e.g. "address", "service", etc.
+            if model_name == "addressgroup":
+                model_name = "address_group"
+            elif model_name == "servicegroup":
+                model_name = "service_group"
+
+            if model_name not in ["address", "service", "address_group", "service_group"]:
                 raise ValueError(f"Invalid object type {object_type} for rule with ID {rule.id}.")
 
             # Get actual object from object type and ID
@@ -544,14 +565,14 @@ def create_config_from_filter(request, filter_id, vendor, policy_type):
             # Create PolicyRule object
             policy_rule = PolicyRule(
                 name=rule.name,
-                obj_type=object_type,
+                obj_type=model_name,
                 action=rule.action,
                 object=obj,
                 sequence=sequence,
                 direction=rule_match.match,
             )
             policy_rules.append(policy_rule)
-    print(f"Policy Rules: {policy_rules}")
+   
     policy = Policy(
         name=filter.name,
         rules=policy_rules,
