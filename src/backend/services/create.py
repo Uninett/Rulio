@@ -409,6 +409,8 @@ def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> 
     if not obj:
         raise ValueError(f"Object with ID {rule_match.object_id} does not exist for rule with ID {rule.id}.")
     model_name = rule_match.object_type.model
+
+
 def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: int):
     rule = Rule.objects.get(id=rule_id)
     filter = Filter.objects.get(id=filter_id)
