@@ -3,8 +3,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from constants import DIRECTION_CHOICES_DJANGO
 
-class RuleMatch(models.Model):
 
+class RuleMatch(models.Model):
     rule = models.ForeignKey("Rule", on_delete=models.CASCADE, related_name="matches")
     match = models.CharField(max_length=30, choices=DIRECTION_CHOICES_DJANGO)
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)

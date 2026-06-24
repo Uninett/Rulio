@@ -1,8 +1,9 @@
 import pytest
 
-from django.core.exceptions import ObjectDoesNotExist 
+from django.core.exceptions import ObjectDoesNotExist
 from backend.objects.attributes.address import Address
 from backend.services.get import get_object_by_type_and_id
+
 
 @pytest.mark.django_db
 class TestGetObjectByTypeAndId:
@@ -10,7 +11,6 @@ class TestGetObjectByTypeAndId:
         address = Address.objects.get(id=sample_addresses[0].id)
         assert address is not None
         assert isinstance(address, Address)
-
 
     def test_get_object_by_type_and_id_valid(self, sample_addresses):
         address = get_object_by_type_and_id("address", sample_addresses[0].id)

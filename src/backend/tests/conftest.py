@@ -9,15 +9,23 @@ from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.management.tenant import Tenant
-from backend.services.create import add_addresses_to_group, add_services_to_group, create_filter, create_rule, get_or_create_address
+from backend.services.create import (
+    add_addresses_to_group,
+    add_services_to_group,
+    create_filter,
+    create_rule,
+    get_or_create_address,
+)
 from backend.services.generate_config import PolicyRule
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
 
+
 class MockUser:
     def __init__(self, user_id):
         self.id = user_id
+
 
 @pytest.fixture(scope="session")
 def create_testing_tenant(django_db_setup, django_db_blocker):
@@ -27,12 +35,13 @@ def create_testing_tenant(django_db_setup, django_db_blocker):
         )
         return tenant
 
+
 @pytest.fixture
 def request_with_session(create_testing_tenant):
     factory = RequestFactory()
     request = factory.get("/")
     request.session = {"current_tenant_id": create_testing_tenant.id}
-    request.tenant = create_testing_tenant  
+    request.tenant = create_testing_tenant
     request.user = MockUser(user_id=2)  # Mock user for testing purposes
     return request
 
@@ -643,6 +652,7 @@ def realistic_acl_policy_rules(
         ),
     ]
 
+
 @pytest.fixture
 def sample_filter(request_with_session, create_testing_tenant):
     return create_filter(
@@ -651,6 +661,7 @@ def sample_filter(request_with_session, create_testing_tenant):
         description="This is a sample filter for testing.",
         enable=True,
     )
+
 
 @pytest.fixture
 def sample_rule(request_with_session, create_testing_tenant):
@@ -664,4 +675,3 @@ def sample_rule(request_with_session, create_testing_tenant):
         direction="source",
         enable=True,
     )
-

@@ -25,6 +25,7 @@ from constants import TEST_LOGPATH
 
 logger = set_up_logger(__name__)
 
+
 @pytest.mark.django_db
 class TestCreateAddress:
     def test_create_address(self, request_with_session, create_testing_tenant):
@@ -176,6 +177,7 @@ class TestAddServicesToGroup:
         assert response3["already_present_service_ids"] == []
         assert response3["not_found_service_ids"] == [9999]
 
+
 @pytest.mark.django_db
 class TestCreateRule:
     def test_create_rule(self, request_with_session, create_testing_tenant, db):
@@ -197,6 +199,7 @@ class TestCreateRule:
         assert rule.log_type == "log"
         assert rule.direction == "source"
 
+
 @pytest.mark.django_db
 class TestCreateFilter:
     def test_create_filter(self, request_with_session, create_testing_tenant):
@@ -213,9 +216,12 @@ class TestCreateFilter:
         assert filter_obj.tenant_id == create_testing_tenant.id
         assert filter_obj.enable is True
 
+
 @pytest.mark.django_db
 class TestMatchRuleToObjects:
-    def test_match_rule_to_objects(self, sample_rule, sample_addresses, sample_services, request_with_session, create_testing_tenant):
+    def test_match_rule_to_objects(
+        self, sample_rule, sample_addresses, sample_services, request_with_session, create_testing_tenant
+    ):
         request = request_with_session
         rule_id = sample_rule.id
         match_type = "address"
@@ -226,36 +232,32 @@ class TestMatchRuleToObjects:
             rule_id=rule_id,
             match_type=match_type,
             object_type=object_type,
-            object_ids=[address.id for address in sample_addresses]
+            object_ids=[address.id for address in sample_addresses],
         )
+
 
 @pytest.mark.django_db
 class GenerateConfigFromFilterObject:
-    def test_generate_config_from_filter_object(self, sample_filter, sample_rule, request_with_session, create_testing_tenant):
+    def test_generate_config_from_filter_object(
+        self, sample_filter, sample_rule, request_with_session, create_testing_tenant
+    ):
         request = request_with_session
         filter_id = sample_filter.id
         rule_id = sample_rule.id
 
-        add_rule_to_filter(
-            request=request,
-            rule_id=rule_id,
-            filter_id=filter_id,
-            sequence=10
+        add_rule_to_filter(request=request, rule_id=rule_id, filter_id=filter_id, sequence=10)
+        logger.info(
+            f"Added rule {rule_id} to filter {filter_id} with sequence 10, respone:\n{add_rule_to_filter.__name__}"
         )
-        logger.info(f"Added rule {rule_id} to filter {filter_id} with sequence 10, respone:\n{add_rule_to_filter.__name__}")
 
         # Match the rule to the filter
         match_rule_to_objects(
-            request=request,
-            rule_id=rule_id,
-            match_type="filter",
-            object_type= Filter,
-            object_ids=[filter_id]
+            request=request, rule_id=rule_id, match_type="filter", object_type=Filter, object_ids=[filter_id]
         )
         logger.info(f"Matched rule {rule_id} to filter {filter_id}, response:\n{match_rule_to_objects.__name__}")
-        vendor = "JUNIPER"  
+        vendor = "JUNIPER"
         # Now generate the configuration from the filter object
-        config = create_config_from_filter(request_with_session, sample_filter.id, vendor, policy_type = "")
+        config = create_config_from_filter(request_with_session, sample_filter.id, vendor, policy_type="")
         print(config)
         filepath = TEST_LOGPATH / "from_filter" / f"{vendor.upper()}_generated_config.yaml"
         os.makedirs(TEST_LOGPATH / "from_filter", exist_ok=True)
@@ -272,4 +274,3 @@ class GenerateConfigFromFilterObject:
                     f"# Generated on {datetime.datetime.now()}\n# Test for generating using only Address objects\n\n"
                 )
                 f.write(content)
-

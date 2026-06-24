@@ -309,7 +309,9 @@ class TestGenerateConfig:
                     )
                     f.write(content)
 
-    def test_generate_realistic_router_policy(self, realistic_acl_policy_rules, request_with_session, create_testing_tenant):
+    def test_generate_realistic_router_policy(
+        self, realistic_acl_policy_rules, request_with_session, create_testing_tenant
+    ):
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(
                 name="Realistic_Router_Policy",

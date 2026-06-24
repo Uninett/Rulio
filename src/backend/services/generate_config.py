@@ -34,7 +34,6 @@ class PolicyRule:
             "source", "destination", "reverse_source", or "reverse_destination".
     """
 
-
     def __init__(
         self,
         name: str,
