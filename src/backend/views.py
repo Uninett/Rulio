@@ -1,7 +1,16 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from .api import get_addresses_and_groups_with_tags_endpoint, list_tenants, get_services_and_groups_with_tags_endpoint
+from .api import (
+    get_addresses_and_groups_with_tags_endpoint,
+    list_tenants,
+    get_services_and_groups_with_tags_endpoint,
+    create_address_endpoint,
+)
 from django.urls import reverse
+
+
+class Payload:
+    pass
 
 
 """
@@ -248,6 +257,63 @@ def post_address_row_partial(request):
     return render(request, "partials/objects/_tableRow.html", {"address": address})
 
 
+def post_address_view(request):
+    payload = Payload()
+    payload.name = request.POST.get("name", "")
+    payload.description = request.POST.get("description", "")
+    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+    payload.addr_type = request.POST.get("addr_type", "host")
+    payload.ipv4_type = request.POST.get("ipv4_type") or None
+    payload.ipv6_type = request.POST.get("ipv6_type") or None
+    payload.ipv4Network = request.POST.get("ipv4Network") or None
+    payload.ipv6Network = request.POST.get("ipv6Network") or None
+    payload.ipv4Address_start = request.POST.get("ipv4Address_start") or None
+    payload.ipv4Address_end = request.POST.get("ipv4Address_end") or None
+    payload.ipv6Address_start = request.POST.get("ipv6Address_start") or None
+    payload.ipv6Address_end = request.POST.get("ipv6Address_end") or None
+
+    status, created_address = create_address_endpoint(request, payload)
+
+    if status not in [200, 201]:
+        return render(
+            request,
+            "partials/modals/_type_content.html",
+            {
+                "modal_object_type": "addresses",
+                "modal_content_partial": "partials/modals/_addresses_form.html",
+                "modal_supports_types": True,
+                "modal_type": "item",
+                "item_type_editable": True,
+                "modal_type_labels": {
+                    "item": "Address",
+                    "group": "Group",
+                },
+                "error_message": "Could not create address.",
+            },
+            status=400,
+        )
+
+    address = {
+        "id": f"{created_address.get('type', '').lower()}-{created_address.get('id')}",
+        "type": created_address.get("addr_type", ""),
+        "name": created_address.get("name", ""),
+        "description": created_address.get("description", ""),
+        "ipv4": created_address.get("ipv4Network") or "-",
+        "ipv6": created_address.get("ipv6Network") or "-",
+        "tags": created_address.get("tags", ""),
+        "ipv4_type": created_address.get("ipv4_type", ""),
+        "ipv6_type": created_address.get("ipv6_type", ""),
+        "ipv4_start": created_address.get("ipv4Address_start") or "",
+        "ipv4_end": created_address.get("ipv4Address_end") or "",
+        "ipv6_start": created_address.get("ipv6Address_start") or "",
+        "ipv6_end": created_address.get("ipv6Address_end") or "",
+        "address_groups": created_address.get("address_groups", []),
+        "group_addresses": created_address.get("addresses", []),
+    }
+
+    return render(request, "partials/objects/_addressesRow.html", {"address": address})
+
+
 # Render the Services tab content for the Objects page. TODO: Create get_services_view.
 def get_objects_services(request):
     return render(
@@ -327,6 +393,10 @@ def get_add_modal_config(object_type):
                 "item": "partials/modals/_addresses_form.html",
                 "group": "partials/modals/_address_groups_form.html",
             },
+            "post_url": reverse("post-address-view"),
+            "target": "#addresses-table",
+            "swap": "beforeend",
+            "submit_handler": "prepareAddressForm",
         },
         "services": {
             "title": "Add Service",
@@ -375,6 +445,10 @@ def get_add_modal(request, object_type):
             "item_type_editable": config.get("item_type_editable", False),
             "modal_type_labels": config.get("type_labels", {}),
             "modal_content_partial": modal_content_partial,
+            "modal_post_url": config.get("post_url"),
+            "modal_target": config.get("target"),
+            "modal_swap": config.get("swap"),
+            "modal_submit_handler": config.get("submit_handler"),
         },
     )
 
