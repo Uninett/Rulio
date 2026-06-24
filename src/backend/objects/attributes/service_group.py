@@ -4,7 +4,7 @@ from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
 
 class ServiceGroup(TaggableMixin, models.Model):
-    tenant_id = models.IntegerField()
+    tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     service_type = models.CharField(max_length=20, default="Group", editable=False)
