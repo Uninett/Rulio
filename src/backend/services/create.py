@@ -345,7 +345,7 @@ def create_rule(
     rule = Rule(
         name=name,
         description=description,
-        tenant_id=tenant,
+        tenant=tenant,
         action=action,
         log_type=log_type,
         hit_count=hit_count,
@@ -383,11 +383,11 @@ def match_rule_to_objects(
         try:
             obj = get_object_by_type_and_id(object_type, object_id)
 
-            if obj.tenant_id not in (0, rule.tenant_id_id):
+            if obj.tenant_id not in (0, rule.tenant_id):
                 errors.append(
                     {
                         "object_id": object_id,
-                        "reason": f"Object {obj.id}, Name {obj.name} does not belong to tenant {rule.tenant_id_id} and is not global",
+                        "reason": f"Object {obj.id}, Name {obj.name} does not belong to tenant {rule.tenant_id} and is not global",
                     }
                 )
                 continue
