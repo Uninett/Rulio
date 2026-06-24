@@ -126,6 +126,7 @@ def get_address_groups_with_addresses_from_tenant(tenant_id: int, get="all") -> 
                 {
                     "address_id": membership.address.id,
                     "address_name": membership.address.name,
+                    "addr_type": membership.address.addr_type,
                     "ipv4_type": membership.address.ipv4_type,
                     "ipv6_type": membership.address.ipv6_type,
                     "ipv4Network": membership.address.ipv4Network,
@@ -203,6 +204,7 @@ def get_all_addresses_and_groups_with_tags(tenant_id: int) -> list[dict]:
                 "id": address.id,
                 "name": address.name,
                 "description": address.description,
+                "addr_type": address.addr_type,
                 "ipv4_type": address.ipv4_type,
                 "ipv6_type": address.ipv6_type,
                 "ipv4Network": address.ipv4Network,
