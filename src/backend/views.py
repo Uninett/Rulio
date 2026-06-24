@@ -293,25 +293,29 @@ def post_address_view(request):
             status=400,
         )
 
-    address = {
+    row = {
         "id": f"{created_address.get('type', '').lower()}-{created_address.get('id')}",
-        "type": created_address.get("addr_type", ""),
-        "name": created_address.get("name", ""),
-        "description": created_address.get("description", ""),
-        "ipv4": created_address.get("ipv4Network") or "-",
-        "ipv6": created_address.get("ipv6Network") or "-",
-        "tags": created_address.get("tags", ""),
-        "ipv4_type": created_address.get("ipv4_type", ""),
-        "ipv6_type": created_address.get("ipv6_type", ""),
-        "ipv4_start": created_address.get("ipv4Address_start") or "",
-        "ipv4_end": created_address.get("ipv4Address_end") or "",
-        "ipv6_start": created_address.get("ipv6Address_start") or "",
-        "ipv6_end": created_address.get("ipv6Address_end") or "",
-        "address_groups": created_address.get("address_groups", []),
-        "group_addresses": created_address.get("addresses", []),
+        "cells": [
+            created_address.get("addr_type", ""),
+            created_address.get("name", ""),
+            created_address.get("description", ""),
+            created_address.get("ipv4Network") or "-",
+            created_address.get("ipv6Network") or "-",
+            created_address.get("tags", ""),
+        ],
+        "expand": [
+            created_address.get("ipv4_type", ""),
+            created_address.get("ipv6_type", ""),
+            created_address.get("ipv4Address_start") or "",
+            created_address.get("ipv4Address_end") or "",
+            created_address.get("ipv6Address_start") or "",
+            created_address.get("ipv6Address_end") or "",
+            created_address.get("address_groups", []),
+            created_address.get("addresses", []),
+        ],
     }
 
-    return render(request, "partials/objects/_addressesRow.html", {"address": address})
+    return render(request, "partials/objects/_tableRow.html", {"row": row})
 
 
 # Render the Services tab content for the Objects page. TODO: Create get_services_view.
