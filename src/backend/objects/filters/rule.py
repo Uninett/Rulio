@@ -6,7 +6,7 @@ from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 class Rule(TaggableMixin, models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    tenant_id = models.ForeignKey("Tenant", on_delete=models.CASCADE)
+    tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE)
     action = models.CharField(max_length=255)
     log_type = models.CharField(max_length=255)
     hit_count = models.IntegerField(default=0)
