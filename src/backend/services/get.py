@@ -76,26 +76,26 @@ def get_address_groups_with_addresses_from_tenant(tenant_id: int, get="all") -> 
         group_map[group.id] = group_dict
 
     memberships = AddressGroupMember.objects.filter(
-        group_id__tenant_id=tenant_id,
-        address_id__tenant_id=tenant_id,
-    ).select_related("group_id", "address_id")
+        group__tenant_id=tenant_id,
+        address__tenant_id=tenant_id,
+    ).select_related("group", "address")
 
     for membership in memberships:
-        group_id = membership.group_id.id
+        group_id = membership.group.id
 
         if group_id in group_map:
             group_map[group_id]["addresses"].append(
                 {
-                    "address_id": membership.address_id.id,
-                    "address_name": membership.address_id.name,
-                    "ipv4_type": membership.address_id.ipv4_type,
-                    "ipv6_type": membership.address_id.ipv6_type,
-                    "ipv4Network": membership.address_id.ipv4Network,
-                    "ipv6Network": membership.address_id.ipv6Network,
-                    "ipv4Address_start": membership.address_id.ipv4Address_start,
-                    "ipv4Address_end": membership.address_id.ipv4Address_end,
-                    "ipv6Address_start": membership.address_id.ipv6Address_start,
-                    "ipv6Address_end": membership.address_id.ipv6Address_end,
+                    "address_id": membership.address.id,
+                    "address_name": membership.address.name,
+                    "ipv4_type": membership.address.ipv4_type,
+                    "ipv6_type": membership.address.ipv6_type,
+                    "ipv4Network": membership.address.ipv4Network,
+                    "ipv6Network": membership.address.ipv6Network,
+                    "ipv4Address_start": membership.address.ipv4Address_start,
+                    "ipv4Address_end": membership.address.ipv4Address_end,
+                    "ipv6Address_start": membership.address.ipv6Address_start,
+                    "ipv6Address_end": membership.address.ipv6Address_end,
                 }
             )
 
@@ -112,16 +112,16 @@ def get_all_addresses_and_groups_with_tags(tenant_id: int) -> list[dict]:
     addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     memberships = AddressGroupMember.objects.filter(
-        group_id__tenant_id=tenant_id,
-        address_id__tenant_id=tenant_id,
-    ).select_related("group_id", "address_id")
+        group__tenant_id=tenant_id,
+        address__tenant_id=tenant_id,
+    ).select_related("group", "address")
 
     addresses_by_group = {}
     groups_by_address = {}
 
     for membership in memberships:
-        group = membership.group_id
-        address = membership.address_id
+        group = membership.group
+        address = membership.address
 
         addresses_by_group.setdefault(group.id, []).append(
             {
@@ -193,16 +193,16 @@ def get_all_services_and_groups_with_tags(tenant_id: int) -> list[dict]:
     services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     memberships = ServiceGroupMember.objects.filter(
-        group_id__tenant_id=tenant_id,
-        service_id__tenant_id=tenant_id,
+        group__tenant_id=tenant_id,
+        service__tenant_id=tenant_id,
     ).select_related("group", "service")
 
     services_by_group = {}
     groups_by_service = {}
 
     for membership in memberships:
-        group = membership.group_id
-        service = membership.service_id
+        group = membership.group
+        service = membership.service
 
         services_by_group.setdefault(group.id, []).append(
             {

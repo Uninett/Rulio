@@ -13,7 +13,7 @@ class Address(TaggableMixin, models.Model):
     \nFields:
     \nname (str): The name of the address.
     \ndescription (str): A description of the address.
-    \ntenant_id (int): The ID of the tenant to which this address belongs.
+    \ntenant (Tenant): The tenant to which this address belongs.
     \nipv4_type (str): The type of the IPv4 address, either 'standard' or 'custom_range'.
     \nipv6_type (str): The type of the IPv6 address, either 'standard' or 'custom_range'.
     \nipv4Network (str): The IPv4 network in CIDR notation
@@ -35,7 +35,7 @@ class Address(TaggableMixin, models.Model):
     ]
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    tenant_id = models.IntegerField()
+    tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE)
     addr_type = models.CharField(max_length=20, choices=ADDR_TYPE_CHOICES, default="host")
     ipv4_type = models.CharField(max_length=20, choices=TYPE_CHOICES, null=True, blank=True)
     ipv6_type = models.CharField(max_length=20, choices=TYPE_CHOICES, null=True, blank=True)

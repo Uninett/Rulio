@@ -3,7 +3,7 @@ from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
 
 class Interface(TaggableMixin, models.Model):
-    device_id = models.ForeignKey("Device", on_delete=models.CASCADE)
+    device = models.ForeignKey("Device", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=255)
     VRF = models.CharField(max_length=255)

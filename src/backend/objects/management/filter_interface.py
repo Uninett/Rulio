@@ -2,8 +2,8 @@ from django.db import models
 
 
 class FilterInterface(models.Model):
-    interface_id = models.ForeignKey("Interface", on_delete=models.CASCADE)
-    filter_id = models.ForeignKey("Filter", on_delete=models.CASCADE)
+    interface = models.ForeignKey("Interface", on_delete=models.CASCADE)
+    filter = models.ForeignKey("Filter", on_delete=models.CASCADE)
     direction = models.CharField(max_length=50)
     sequence = models.IntegerField()
 

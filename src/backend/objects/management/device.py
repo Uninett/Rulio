@@ -4,7 +4,7 @@ from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
 
 class Device(TaggableMixin, models.Model):
-    tenant_id = models.ForeignKey("Tenant", on_delete=models.CASCADE)
+    tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     platform = models.CharField(max_length=255)
     type = models.CharField(max_length=255)

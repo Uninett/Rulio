@@ -16,7 +16,7 @@ class Service(TaggableMixin, models.Model):
     ]
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    tenant_id = models.IntegerField()
+    tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE)
     protocol = models.CharField(max_length=50, choices=PROTOCOL_CHOICES)
     port_start = models.IntegerField(null=True, blank=True)
     port_end = models.IntegerField(null=True, blank=True)
