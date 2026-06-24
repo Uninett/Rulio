@@ -15,7 +15,7 @@ from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.rule import Rule
-from backend.services.generate_config import Policy, PolicyRule
+from backend.services.generate_config import Policy, PolicyRule, generate_config
 from backend.objects.management.device import Device
 from backend.objects.management.device_group import DeviceGroup
 from backend.utils.logger import set_up_logger
