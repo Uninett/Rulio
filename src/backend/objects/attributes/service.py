@@ -20,9 +20,10 @@ class Service(TaggableMixin, models.Model):
     protocol = models.CharField(max_length=50, choices=PROTOCOL_CHOICES)
     port_start = models.IntegerField(null=True, blank=True)
     port_end = models.IntegerField(null=True, blank=True)
+    service_type = models.CharField(max_length=20, default="Service", editable=False)
 
     def __str__(self):
-        return f"Service(id={self.id}, name='{self.name}', description='{self.description}', tenant_id={self.tenant_id}, protocol='{self.protocol.upper()}', port_start={self.port_start}, port_end={self.port_end})"
+        return f"Service(id={self.id}, tenant_id={self.tenant_id}, type='{self.service_type}', name='{self.name}', description='{self.description}', protocol='{self.protocol.upper()}', port_start={self.port_start}, port_end={self.port_end})"
 
     def get_ports(self):
         if self.port_start is None and self.port_end is None:
