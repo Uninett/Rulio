@@ -9,6 +9,7 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.services.get import get_service_group_members, get_address_group_members
 from backend.utils.logger import set_up_logger
+from constants import DIRECTION_CHOICES
 
 
 logger = set_up_logger(__name__)
@@ -33,8 +34,6 @@ class PolicyRule:
             "source", "destination", "reverse_source", or "reverse_destination".
     """
 
-    DIRECTION_OPTIONS = ["source", "destination", "reverse_source", "reverse_destination"]
-
     def __init__(
         self,
         name: str,
@@ -50,8 +49,8 @@ class PolicyRule:
         self.object = object
         self.sequence = sequence
 
-        if direction.lower() not in self.DIRECTION_OPTIONS:
-            raise ValueError(f"Invalid direction: {direction}. Must be one of {self.DIRECTION_OPTIONS}")
+        if direction.lower() not in DIRECTION_CHOICES:
+            raise ValueError(f"Invalid direction: {direction}. Must be one of {DIRECTION_CHOICES}")
         self.direction = direction.lower()
 
 

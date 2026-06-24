@@ -1,3 +1,5 @@
+from django.test import RequestFactory
+
 from backend.services.create import get_or_create_address
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
@@ -7,6 +9,8 @@ logger = set_up_logger(__name__)
 
 
 class MockRequest:
+    factory = RequestFactory()
+    request = factory.get("/")
     session = {"current_tenant_id": GLOBAL_TENANT_ID}
 
 

@@ -34,8 +34,6 @@ EOF
 echo "Running migrations..."
 python manage.py migrate --noinput
 
-echo "Seeding database..."
-python manage.py shell -c "from backend.services.seed.populate import populate_db; populate_db()"
 
 echo "Creating superuser if needed..."
 python manage.py shell << EOF
@@ -62,5 +60,21 @@ else:
         print("Superuser already exists.")
 EOF
 
+echo "Creating default tenant if needed..."
+python manage.py shell << EOF
+from backend.objects.management.tenant import Tenant
+
+tenant, created = Tenant.objects.get_or_create(
+    tenant_name="Global Tenant",
+)
+
+if not created:
+    tenant.save()
+
+print(f"Tenant ready: id={tenant.id}, name={tenant.tenant_name}, created={created}")
+EOF
+
+echo "Seeding database..."
+python manage.py shell -c "from backend.services.seed.populate import populate_db; populate_db()"
 echo "Starting Django..."
 exec python manage.py runserver 0.0.0.0:8000
