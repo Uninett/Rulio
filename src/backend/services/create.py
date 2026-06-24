@@ -353,7 +353,7 @@ def create_rule(
     direction: str,
     enable: bool = True,
 ) -> Rule:
-    tenant_id = get_current_tenant(request)
+    tenant = get_current_tenant(request)
     now = datetime.now(timezone.utc)
     rule = Rule(
         name=name,
@@ -407,7 +407,7 @@ def match_rule_to_objects(
     request: object,
     rule_id: int,
     match_type: str,
-    object_type: object,
+    object_type: str,
     object_ids: list[int],
 ):
     rule = Rule.objects.get(id=rule_id)
@@ -478,11 +478,11 @@ def match_rule_to_objects(
 
 def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: int):
     rule = Rule.objects.get(id=rule_id)
-    filter_obj = Filter.objects.get(id=filter_id)
+    filter = Filter.objects.get(id=filter_id)
 
     rule_filter, created = RuleFilter.objects.get_or_create(
-        rule_id=rule,
-        filter_id=filter_obj,
+        rule=rule,
+        filter=filter,
         defaults={"sequence": sequence},
     )
 
@@ -490,35 +490,35 @@ def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: 
         rule_filter.sequence = sequence
         rule_filter.save()
 
-    logger.info(f"Added Rule {rule.id} to Filter {filter_obj.id} with sequence {sequence}")
+    logger.info(f"Added Rule {rule.id} to Filter {filter.id} with sequence {sequence}")
     return rule_filter
 
 def create_config_from_filter(request, filter_id, vendor, policy_type):
 
     # Get filter object by ID
-    filter_obj = Filter.objects.get(id=filter_id)
-    if not filter_obj:
+    filter = Filter.objects.get(id=filter_id)
+    if not filter:
         raise ValueError(f"Filter with ID {filter_id} does not exist.")
 
     # Join filter with rules using RuleFilter
-    rule_filter_matches = RuleFilter.objects.filter(filter_id=filter_obj)
+    rule_filter_matches = RuleFilter.objects.filter(filter_id=filter)
     if not rule_filter_matches.exists():
         raise ValueError(f"No rule matches found for filter with ID {filter_id}.")
     
     # Create PolicyRule objects for each rule 
     policy_rules = []
     for rule_filter in rule_filter_matches:
-        if not rule_filter.rule_id:
-            raise ValueError(f"Rule with ID {rule_filter.rule_id_id} does not exist.")
+        if not rule_filter.rule.id:
+            raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
         # Get sequence from RuleFilter
         sequence = rule_filter.sequence
         if not sequence:
             raise ValueError(f"Sequence is not set for rule match with ID {rule_filter.id}.")
         
         # Get actual rule object from join on RuleFilter
-        rule = Rule.objects.get(id=rule_filter.rule_id_id)
+        rule = Rule.objects.get(id=rule_filter.rule.id)
         if not rule:
-            raise ValueError(f"Rule with ID {rule_filter.rule_id} does not exist.")
+            raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
         
         # Join rule with objects using RuleMatch to retrieve the actual rules
         rule_matches = RuleMatch.objects.filter(rule=rule)
@@ -531,7 +531,7 @@ def create_config_from_filter(request, filter_id, vendor, policy_type):
             object_id = rule_match.object_id
             if not object_type or not object_id:
                 raise ValueError(f"Object type or object ID is not set for rule with ID {rule.id}.")
-            if object_type not in [Address, Service, AddressGroup, ServiceGroup]:
+            if object_type not in ["Address", "Service", "AddressGroup", "ServiceGroup"]:
                 raise ValueError(f"Invalid object type {object_type} for rule with ID {rule.id}.")
             
             # Get actual object from object type and ID
@@ -551,7 +551,7 @@ def create_config_from_filter(request, filter_id, vendor, policy_type):
             policy_rules.append(policy_rule)
     print(f"Policy Rules: {policy_rules}")
     policy = Policy(
-        name=filter_obj.name,
+        name=filter.name,
         rules=policy_rules,
         vendor=vendor,
         policy_type=policy_type,

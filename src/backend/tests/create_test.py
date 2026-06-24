@@ -192,7 +192,7 @@ class TestCreateRule:
         assert rule is not None
         assert rule.name == "Test Rule"
         assert rule.description == "This is a test rule"
-        assert rule.tenant_id.id == create_testing_tenant.id
+        assert rule.tenant == create_testing_tenant
         assert rule.action == "allow"
         assert rule.log_type == "log"
         assert rule.direction == "source"
@@ -230,7 +230,7 @@ class TestMatchRuleToObjects:
         )
 
 @pytest.mark.django_db
-class TestGenerateConfigFromFilterObject:
+class GenerateConfigFromFilterObject:
     def test_generate_config_from_filter_object(self, sample_filter, sample_rule, request_with_session, create_testing_tenant):
         request = request_with_session
         filter_id = sample_filter.id

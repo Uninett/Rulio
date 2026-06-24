@@ -319,11 +319,12 @@ def get_all_tags_from_tenant(tenant_id: int) -> list[Tag]:
 
 
 def get_object_by_type_and_id(object_type: str, object_id: int):
+    object_type = object_type.lower()
     model_mapping = {
-        "Address": Address,
-        "AddressGroup": AddressGroup,
-        "Service": Service,
-        "ServiceGroup": ServiceGroup,
+        "address": Address,
+        "addressGroup": AddressGroup,
+        "service": Service,
+        "servicegroup": ServiceGroup,
     }
     model = model_mapping.get(object_type)
     if not model:
