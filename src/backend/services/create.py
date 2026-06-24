@@ -14,7 +14,6 @@ from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.rule import Rule
-from backend.schemas import rule
 from backend.services.generate_config import Policy, PolicyRule, generate_config
 from backend.utils.logger import set_up_logger
 from backend.services.get import get_object_by_type_and_id

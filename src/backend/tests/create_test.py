@@ -19,7 +19,6 @@ from backend.services.create import (
     add_services_to_group,
     match_rule_to_objects,
 )
-from backend.tests.conftest import sample_filter
 from backend.utils.logger import set_up_logger
 from constants import TEST_LOGPATH
 
