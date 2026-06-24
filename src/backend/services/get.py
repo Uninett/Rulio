@@ -14,17 +14,17 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 DJANGO_MODEL_MAPPING = {
-        "address": Address,
-        "address_group": AddressGroup,
-        "service": Service,
-        "service_group": ServiceGroup,
-        "rule": Rule,
-        "tag": Tag,
-        "address_group_member": AddressGroupMember,
-        "service_group_member": ServiceGroupMember,
-        "filter": Filter,
-        
-    }
+    "address": Address,
+    "address_group": AddressGroup,
+    "service": Service,
+    "service_group": ServiceGroup,
+    "rule": Rule,
+    "tag": Tag,
+    "address_group_member": AddressGroupMember,
+    "service_group_member": ServiceGroupMember,
+    "filter": Filter,
+}
+
 
 def get_all_service_groups_from_tenant(tenant_id: int) -> list[ServiceGroup]:
     requested_service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)

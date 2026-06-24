@@ -653,58 +653,60 @@ def realistic_acl_policy_rules(
 
 @pytest.fixture
 def sample_filters(request_with_session, create_testing_tenant):
-    return [create_filter(
-        request=request_with_session,
-        name="Sample_Filter",
-        description="This is a sample filter for testing.",
-        enable=True,
-    ),
-    create_filter(
-        request=request_with_session,
-        name="Sample_Filter_2",
-        description="This is another sample filter for testing.",
-        enable=True,
-    )]
+    return [
+        create_filter(
+            request=request_with_session,
+            name="Sample_Filter",
+            description="This is a sample filter for testing.",
+            enable=True,
+        ),
+        create_filter(
+            request=request_with_session,
+            name="Sample_Filter_2",
+            description="This is another sample filter for testing.",
+            enable=True,
+        ),
+    ]
 
 
 @pytest.fixture
 def sample_rules(request_with_session, create_testing_tenant):
     sample_rules = [
-    create_rule(
-        request=request_with_session,
-        name="Sample_Rule_1",
-        description="This is a sample rule for testing.",
-        action="accept",
-        log_type="all",
-        hit_count=0,
-        enable=True,
-    ),
-    create_rule(
-        request=request_with_session,
-        name="Sample_Rule_2",
-        description="This is another sample rule for testing.",
-        action="deny",
-        log_type="all",
-        hit_count=0,
-        enable=True,
-    ),
-    create_rule(
-        request=request_with_session,
-        name="Sample_Rule_3",
-        description="This is yet another sample rule for testing.",
-        action="accept",
-        log_type="all",
-        hit_count=0,
-        enable=True,
-    ),
-    create_rule(
-        request=request_with_session,
-        name="Sample_Rule_4",
-        description="This is a fourth sample rule for testing.",
-        action="deny",
-        log_type="all",
-        hit_count=0,
-        enable=True,
-    ),
+        create_rule(
+            request=request_with_session,
+            name="Sample_Rule_1",
+            description="This is a sample rule for testing.",
+            action="accept",
+            log_type="all",
+            hit_count=0,
+            enable=True,
+        ),
+        create_rule(
+            request=request_with_session,
+            name="Sample_Rule_2",
+            description="This is another sample rule for testing.",
+            action="deny",
+            log_type="all",
+            hit_count=0,
+            enable=True,
+        ),
+        create_rule(
+            request=request_with_session,
+            name="Sample_Rule_3",
+            description="This is yet another sample rule for testing.",
+            action="accept",
+            log_type="all",
+            hit_count=0,
+            enable=True,
+        ),
+        create_rule(
+            request=request_with_session,
+            name="Sample_Rule_4",
+            description="This is a fourth sample rule for testing.",
+            action="deny",
+            log_type="all",
+            hit_count=0,
+            enable=True,
+        ),
     ]
     return sample_rules

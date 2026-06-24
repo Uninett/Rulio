@@ -248,7 +248,11 @@ class TestGenerateConfigFromFilterObject:
 
         # Match the rule to the filter
         response = match_rule_to_objects(
-            request=request, rule_id=rule_id, match_type="source", object_type="address", object_ids=[sample_addresses[0].id]
+            request=request,
+            rule_id=rule_id,
+            match_type="source",
+            object_type="address",
+            object_ids=[sample_addresses[0].id],
         )
 
         assert response["error_count"] == 0
@@ -276,53 +280,59 @@ class TestGenerateConfigFromFilterObject:
                 f.write(content)
 
     def test_generate_config_from_complex_filter_object(
-        self, sample_filters, sample_rules, request_with_session, create_testing_tenant, realistic_acl_addresses, realistic_acl_services,
-        realistic_acl_address_groups, realistic_acl_service_groups
+        self,
+        sample_filters,
+        sample_rules,
+        request_with_session,
+        create_testing_tenant,
+        realistic_acl_addresses,
+        realistic_acl_services,
+        realistic_acl_address_groups,
+        realistic_acl_service_groups,
     ):
         request = request_with_session
         filter_id = sample_filters[1].id
         rules = [
-        sample_rules[0].id,
-        sample_rules[1].id,
-        sample_rules[2].id,
-        sample_rules[3].id,
+            sample_rules[0].id,
+            sample_rules[1].id,
+            sample_rules[2].id,
+            sample_rules[3].id,
         ]
 
-  
         for i, rule_id in enumerate(rules):
             add_rule_to_filter(request=request, rule_id=rule_id, filter_id=filter_id, sequence=(i + 1) * 10)
             logger.info(
                 f"Added rule {rule_id} to filter {filter_id} with sequence {(i + 1) * 10}, respone:\n{add_rule_to_filter.__name__}"
             )
         responses = [
-        match_rule_to_objects(
-            request=request,
-            rule_id=rules[0],
-            match_type="source",
-            object_type="address",
-            object_ids=[address.id for address in realistic_acl_addresses],
-        ),
-        match_rule_to_objects(
-            request=request,
-            rule_id=rules[1],
-            match_type="destination",
-            object_type="service",
-            object_ids=[service.id for service in realistic_acl_services],
-        ),
-        match_rule_to_objects(
-            request=request,
-            rule_id=rules[2],
-            match_type="source",
-            object_type="address_group",
-            object_ids=[realistic_acl_address_groups["trusted_sources"].id],
-        ),
-        match_rule_to_objects(
-            request=request,
-            rule_id=rules[3],
-            match_type="destination",
-            object_type="service_group",
-            object_ids=[realistic_acl_service_groups["web_services"].id],
-        ),
+            match_rule_to_objects(
+                request=request,
+                rule_id=rules[0],
+                match_type="source",
+                object_type="address",
+                object_ids=[address.id for address in realistic_acl_addresses],
+            ),
+            match_rule_to_objects(
+                request=request,
+                rule_id=rules[1],
+                match_type="destination",
+                object_type="service",
+                object_ids=[service.id for service in realistic_acl_services],
+            ),
+            match_rule_to_objects(
+                request=request,
+                rule_id=rules[2],
+                match_type="source",
+                object_type="address_group",
+                object_ids=[realistic_acl_address_groups["trusted_sources"].id],
+            ),
+            match_rule_to_objects(
+                request=request,
+                rule_id=rules[3],
+                match_type="destination",
+                object_type="service_group",
+                object_ids=[realistic_acl_service_groups["web_services"].id],
+            ),
         ]
         assert all(response["error_count"] == 0 for response in responses)
 
@@ -346,5 +356,3 @@ class TestGenerateConfigFromFilterObject:
                     f"# Generated on {datetime.datetime.now()}\n# Test for generating using complex filter objects\n\n"
                 )
                 f.write(content)
-
-        

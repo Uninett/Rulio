@@ -27,17 +27,16 @@ from backend.services.membership import (
 from django.contrib.contenttypes.models import ContentType
 
 DJANGO_MODEL_MAPPING = {
-        "address": Address,
-        "addressgroup": AddressGroup,
-        "service": Service,
-        "servicegroup": ServiceGroup,
-        "rule": Rule,
-        "tag": Tag,
-        "addressgroupmember": AddressGroupMember,
-        "servicegroupmember": ServiceGroupMember,
-        "filter": Filter,
-        
-    }
+    "address": Address,
+    "addressgroup": AddressGroup,
+    "service": Service,
+    "servicegroup": ServiceGroup,
+    "rule": Rule,
+    "tag": Tag,
+    "addressgroupmember": AddressGroupMember,
+    "servicegroupmember": ServiceGroupMember,
+    "filter": Filter,
+}
 
 # Setup logger
 logger = set_up_logger(__name__)
@@ -547,7 +546,6 @@ def create_config_from_filter(request, filter_id, vendor, policy_type):
             if not object_type or not object_id:
                 raise ValueError(f"Object type or object ID is not set for rule with ID {rule.id}.")
 
-            model_class = object_type.model_class()
             model_name = object_type.model  # e.g. "address", "service", etc.
             if model_name == "addressgroup":
                 model_name = "address_group"
@@ -572,7 +570,7 @@ def create_config_from_filter(request, filter_id, vendor, policy_type):
                 direction=rule_match.match,
             )
             policy_rules.append(policy_rule)
-   
+
     policy = Policy(
         name=filter.name,
         rules=policy_rules,
