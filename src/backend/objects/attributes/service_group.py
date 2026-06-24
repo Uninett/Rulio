@@ -11,3 +11,7 @@ class ServiceGroup(TaggableMixin, models.Model):
 
     def __str__(self):
         return f"ServiceGroup(id={self.id}, tenant_id={self.tenant_id}, type='{self.service_type}', name='{self.name}', description='{self.description}')"
+
+    def save(self, *args, **kwargs):
+        self.service_type = "Group"
+        super().save(*args, **kwargs)
