@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.http import HttpResponse
 from .api import get_addresses_and_groups_with_tags_endpoint, list_tenants
 from django.urls import reverse
