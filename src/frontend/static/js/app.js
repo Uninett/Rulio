@@ -12,7 +12,8 @@ document.addEventListener("click", function (event) {
     button.classList.add("active");
 });
 
-function closeModal(event) {
+function closeModal(event = null) {
+    if (event && event.target !== event.currentTarget) return;
     document.getElementById('modal-container').innerHTML = '';
 }
 
