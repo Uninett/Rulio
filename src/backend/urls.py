@@ -29,8 +29,8 @@ from .views import (
     get_filters_page,
     get_objects_page,
     get_tags_page,
-    post_address_row_partial,
     get_objects_addresses,
+    post_address_view,
     get_objects_services,
     get_add_modal,
     get_add_modal_form_content,
@@ -45,10 +45,11 @@ urlpatterns = [
     path("devices/", get_devices_page, name="devices"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
-    # Objects Page
+    # Objects Page: Address
     path("objects/", get_objects_page, name="objects"),
     path("objects/addresses/", get_objects_addresses, name="objects-addresses"),
-    path("addresses/save/", post_address_row_partial, name="save_address_row"),
+    path("addresses/create/", post_address_view, name="post-address-view"),
+    # Objects Page: Service
     path("objects/services/", get_objects_services, name="objects-services"),
     # Tags Page
     path("tags/", get_tags_page, name="tags"),

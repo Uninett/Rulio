@@ -3,6 +3,10 @@
 {% endif %}
 
 <div id="modal-form-content" class="modal-form-content">
+    {% if error_message %}
+    <p class="form-error">{{ error_message }}</p>
+    {% endif %}
+
     {% if modal_supports_types %}
     <div class="form-row">
         <div class="form-group">
@@ -11,11 +15,24 @@
         </div>
 
         <div class="form-group">
-            <label for="type">Type</label>
+            <label for="type">Type<span class="required"> *</span></label>
+
+            {% if modal_type == "item" and item_type_editable %}
+            {% if modal_object_type == "addresses" %}
+            <select id="type" class="type" name="addr_type">
+                <option value="host">Host</option>
+                <option value="network">Network</option>
+                <option value="range">Range</option>
+            </select>
+            {% else %}
+            <input id="type" class="type" name="type" type="text">
+            {% endif %}
+            {% else %}
             <input id="type" class="type" name="type_display" type="text"
                 value="{% if modal_type == 'item' %}{{ modal_type_labels.item }}{% else %}{{ modal_type_labels.group }}{% endif %}"
                 disabled>
             <input type="hidden" name="type" value="{{ modal_type }}">
+            {% endif %}
         </div>
     </div>
     {% else %}
@@ -26,9 +43,9 @@
     </div>
     {% endif %}
 
-    <div class="form-group">
-        <label for="description">Description</label>
-        <textarea id="description" name="description"></textarea>
+    <div class="form-group form-description">
+        <label for="description">Description<span class="required"> *</span></label>
+        <textarea id="description" name="description" required></textarea>
     </div>
 
     {% include modal_content_partial %}

@@ -8,7 +8,8 @@ td {
     border-top: 1px solid #E0E0E0;
     border-bottom: 1px solid #E0E0E0;
     position: relative;
-    line-height: 1.0;
+    line-height: auto;
+    font-size: smaller;
 
 }
 
@@ -36,7 +37,7 @@ table {
 
 .table-container {
     margin-top: 1rem;
-    height: 70vh;
+    height: auto;
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #ccc;

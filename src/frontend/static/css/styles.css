@@ -107,6 +107,12 @@ button {
     border-radius: 10px;
 }
 
+select[name="addr_type"],
+select[name="tenant"] {
+    background-color: white;
+    border: 1px solid #767676;
+}
+
 hr {
     opacity: 0.5;
 }
