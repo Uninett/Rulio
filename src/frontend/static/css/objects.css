@@ -72,8 +72,8 @@ table {
 }
 
 
-th:nth-child(5),
-td:nth-child(5) {
+th:nth-child(3),
+td:nth-child(3) {
     width: 40%;
 }
 
@@ -87,11 +87,13 @@ td:nth-child(2) {
     width: 20%;
 }
 
-th:nth-child(3),
-td:nth-child(3),
+th:nth-child(5),
+td:nth-child(5),
 th:nth-child(4),
 td:nth-child(4) {
     width: 10%;
+    padding-left: 4px;
+    text-align: center;
 }
 
 td:nth-child(1) {
