@@ -12,7 +12,6 @@ class MockRequest:
     factory = RequestFactory()
     request = factory.get("/")
     session = {"current_tenant_id": GLOBAL_TENANT_ID}
- 
 
 
 def seed_addresses():
