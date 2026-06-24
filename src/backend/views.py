@@ -104,7 +104,7 @@ def get_filters_page(request):
 
 """
 ====================================================================
-Objects Page
+Objects Page: Address
 ====================================================================
 """
 
@@ -203,6 +203,93 @@ def get_addresses_view(request):
     }
 
 
+# Handles creation of a new address from modal form submission.
+def post_address_view(request):
+    payload = Payload()  # Build a payload object from submitted form data.
+    payload.name = request.POST.get("name", "")
+    payload.description = request.POST.get("description", "")
+    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+    payload.addr_type = request.POST.get("addr_type", "host")
+    payload.ipv4_type = request.POST.get("ipv4_type") or None
+    payload.ipv6_type = request.POST.get("ipv6_type") or None
+    payload.ipv4Network = request.POST.get("ipv4Network") or None
+    payload.ipv6Network = request.POST.get("ipv6Network") or None
+    payload.ipv4Address_start = request.POST.get("ipv4Address_start") or None
+    payload.ipv4Address_end = request.POST.get("ipv4Address_end") or None
+    payload.ipv6Address_start = request.POST.get("ipv6Address_start") or None
+    payload.ipv6Address_end = request.POST.get("ipv6Address_end") or None
+
+    status, created_address = create_address_endpoint(request, payload)
+
+    # If creation failed, re-render the modal form content with an error message.
+    if status not in [200, 201]:
+        return render(
+            request,
+            "partials/modals/_type_content.html",
+            {
+                "modal_object_type": "addresses",
+                "modal_content_partial": "partials/modals/_addresses_form.html",
+                "modal_supports_types": True,
+                "modal_type": "item",
+                "item_type_editable": True,
+                "modal_type_labels": {
+                    "item": "Address",
+                    "group": "Group",
+                },
+                "error_message": "Could not create address.",
+            },
+            status=400,
+        )
+
+    # Map the created address response into the generic table row format used by the shared table component.
+    row = {
+        "id": f"{created_address.get('type', '').lower()}-{created_address.get('id')}",
+        "cells": [
+            created_address.get("addr_type", ""),
+            created_address.get("name", ""),
+            created_address.get("description", ""),
+            created_address.get("ipv4Network") or "-",
+            created_address.get("ipv6Network") or "-",
+            created_address.get("tags", ""),
+        ],
+        "expand": [
+            created_address.get("ipv4_type", ""),
+            created_address.get("ipv6_type", ""),
+            created_address.get("ipv4Address_start") or "",
+            created_address.get("ipv4Address_end") or "",
+            created_address.get("ipv6Address_start") or "",
+            created_address.get("ipv6Address_end") or "",
+            created_address.get("address_groups", []),
+            created_address.get("addresses", []),
+        ],
+    }
+
+    return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
+"""
+====================================================================
+Objects Page: Service
+====================================================================
+"""
+
+
+# Render the Services tab content for the Objects page.
+def get_objects_services(request):
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": "Services",
+            "object_type": "services",
+            "services": get_services_view(request),  # Service data for the page
+            **get_objects_toolbar_context(
+                "services", add_button_label="Add Service"
+            ),  # Render the Objects page with Services as the active tab.
+        },
+    )
+
+
 # Fetch services from the API and map them to data.
 def get_services_view(request):
     status, api_services = get_services_and_groups_with_tags_endpoint(request)
@@ -236,83 +323,6 @@ def get_services_view(request):
         "headers": headers,
         "rows": rows,
     }
-
-
-def post_address_view(request):
-    payload = Payload()
-    payload.name = request.POST.get("name", "")
-    payload.description = request.POST.get("description", "")
-    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
-    payload.addr_type = request.POST.get("addr_type", "host")
-    payload.ipv4_type = request.POST.get("ipv4_type") or None
-    payload.ipv6_type = request.POST.get("ipv6_type") or None
-    payload.ipv4Network = request.POST.get("ipv4Network") or None
-    payload.ipv6Network = request.POST.get("ipv6Network") or None
-    payload.ipv4Address_start = request.POST.get("ipv4Address_start") or None
-    payload.ipv4Address_end = request.POST.get("ipv4Address_end") or None
-    payload.ipv6Address_start = request.POST.get("ipv6Address_start") or None
-    payload.ipv6Address_end = request.POST.get("ipv6Address_end") or None
-
-    status, created_address = create_address_endpoint(request, payload)
-
-    if status not in [200, 201]:
-        return render(
-            request,
-            "partials/modals/_type_content.html",
-            {
-                "modal_object_type": "addresses",
-                "modal_content_partial": "partials/modals/_addresses_form.html",
-                "modal_supports_types": True,
-                "modal_type": "item",
-                "item_type_editable": True,
-                "modal_type_labels": {
-                    "item": "Address",
-                    "group": "Group",
-                },
-                "error_message": "Could not create address.",
-            },
-            status=400,
-        )
-
-    row = {
-        "id": f"{created_address.get('type', '').lower()}-{created_address.get('id')}",
-        "cells": [
-            created_address.get("addr_type", ""),
-            created_address.get("name", ""),
-            created_address.get("description", ""),
-            created_address.get("ipv4Network") or "-",
-            created_address.get("ipv6Network") or "-",
-            created_address.get("tags", ""),
-        ],
-        "expand": [
-            created_address.get("ipv4_type", ""),
-            created_address.get("ipv6_type", ""),
-            created_address.get("ipv4Address_start") or "",
-            created_address.get("ipv4Address_end") or "",
-            created_address.get("ipv6Address_start") or "",
-            created_address.get("ipv6Address_end") or "",
-            created_address.get("address_groups", []),
-            created_address.get("addresses", []),
-        ],
-    }
-
-    return render(request, "partials/objects/_tableRow.html", {"row": row})
-
-
-# Render the Services tab content for the Objects page. TODO: Create get_services_view.
-def get_objects_services(request):
-    return render(
-        request,
-        "partials/_page_content.html",
-        {
-            "title": "Services",
-            "object_type": "services",
-            "services": get_services_view(request),  # Service data for the page
-            **get_objects_toolbar_context(
-                "services", add_button_label="Add Service"
-            ),  # Render the Objects page with Services as the active tab.
-        },
-    )
 
 
 """
@@ -386,7 +396,7 @@ def get_add_modal_config(object_type):
         "services": {
             "title": "Add Service",
             "supports_types": True,
-            "default_type": "item",  # Address object contains a type (i.e. host, switch etc.)
+            "default_type": "item",
             "item_type_editable": False,
             "type_labels": {
                 "item": "Service",
