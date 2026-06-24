@@ -1,11 +1,17 @@
+import datetime
+import os
+
 import pytest
 
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
+from backend.objects.filters.filter import Filter
 from backend.services.create import (
     add_addresses_to_group,
+    add_rule_to_filter,
     create_address,
     create_address_group,
+    create_config_from_filter,
     create_filter,
     create_rule,
     create_service,
@@ -13,12 +19,15 @@ from backend.services.create import (
     add_services_to_group,
     match_rule_to_objects,
 )
-from constants import TESTING_TENANT_ID
+from backend.tests.conftest import sample_filter
+from backend.utils.logger import set_up_logger
+from constants import TEST_LOGPATH
 
+logger = set_up_logger(__name__)
 
 @pytest.mark.django_db
 class TestCreateAddress:
-    def test_create_address(self, request_with_session):
+    def test_create_address(self, request_with_session, create_testing_tenant):
 
         request = request_with_session
         address = create_address(
@@ -34,7 +43,7 @@ class TestCreateAddress:
         assert address is not None
         assert address.name == "Test Address"
         assert address.description == "This is a test address"
-        assert address.tenant_id == TESTING_TENANT_ID
+        assert address.tenant_id == create_testing_tenant.id
         assert address.get_address()[0][0].__str__() == "192.168.1.1/32"
         assert address.get_address()[1][0].__str__() == "2001:db8::1/128"
         assert address.ipv4_type == "standard"
@@ -43,7 +52,7 @@ class TestCreateAddress:
 
 @pytest.mark.django_db
 class TestCreateService:
-    def test_create_service(self, request_with_session):
+    def test_create_service(self, request_with_session, create_testing_tenant):
         request = request_with_session
         service = create_service(
             request=request,
@@ -56,7 +65,7 @@ class TestCreateService:
         assert service is not None
         assert service.name == "Test Service"
         assert service.description == "This is a test service"
-        assert service.tenant_id == TESTING_TENANT_ID
+        assert service.tenant_id == create_testing_tenant.id
         assert service.protocol == "TCP"
         assert service.port_start == 80
         assert service.port_end == 80
@@ -64,7 +73,7 @@ class TestCreateService:
 
 @pytest.mark.django_db
 class TestCreateAddressGroup:
-    def test_create_address_group(self, request_with_session):
+    def test_create_address_group(self, request_with_session, create_testing_tenant):
         request = request_with_session
         address_group = create_address_group(
             request=request,
@@ -74,12 +83,12 @@ class TestCreateAddressGroup:
         assert address_group is not None
         assert address_group.name == "Test Address Group"
         assert address_group.description == "This is a test address group"
-        assert address_group.tenant_id == TESTING_TENANT_ID
+        assert address_group.tenant_id == create_testing_tenant.id
 
 
 @pytest.mark.django_db
 class TestCreateServiceGroup:
-    def test_create_service_group(self, request_with_session):
+    def test_create_service_group(self, request_with_session, create_testing_tenant):
         request = request_with_session
         service_group = create_service_group(
             request=request,
@@ -89,7 +98,7 @@ class TestCreateServiceGroup:
         assert service_group is not None
         assert service_group.name == "Test Service Group"
         assert service_group.description == "This is a test service group"
-        assert service_group.tenant_id == TESTING_TENANT_ID
+        assert service_group.tenant_id == create_testing_tenant.id
 
 
 @pytest.mark.django_db
@@ -169,13 +178,12 @@ class TestAddServicesToGroup:
 
 @pytest.mark.django_db
 class TestCreateRule:
-    def test_create_rule(self, request_with_session):
+    def test_create_rule(self, request_with_session, create_testing_tenant, db):
         request = request_with_session
         rule = create_rule(
             request=request,
             name="Test Rule",
             description="This is a test rule",
-            tenant_id=TESTING_TENANT_ID,
             action="allow",
             log_type="log",
             hit_count=0,
@@ -184,31 +192,30 @@ class TestCreateRule:
         assert rule is not None
         assert rule.name == "Test Rule"
         assert rule.description == "This is a test rule"
-        assert rule.tenant_id.id == TESTING_TENANT_ID
+        assert rule.tenant_id.id == create_testing_tenant.id
         assert rule.action == "allow"
         assert rule.log_type == "log"
         assert rule.direction == "source"
 
 @pytest.mark.django_db
 class TestCreateFilter:
-    def test_create_filter(self, request_with_session):
+    def test_create_filter(self, request_with_session, create_testing_tenant):
         request = request_with_session
         filter_obj = create_filter(
             request=request,
             name="Test Filter",
             description="This is a test filter",
-            tenant_id=TESTING_TENANT_ID,
             enable=True,
         )
         assert filter_obj is not None
         assert filter_obj.name == "Test Filter"
         assert filter_obj.description == "This is a test filter"
-        assert filter_obj.tenant_id == TESTING_TENANT_ID
+        assert filter_obj.tenant_id == create_testing_tenant.id
         assert filter_obj.enable is True
 
 @pytest.mark.django_db
 class TestMatchRuleToObjects:
-    def test_match_rule_to_objects(self, sample_rule, sample_addresses, sample_services, request_with_session):
+    def test_match_rule_to_objects(self, sample_rule, sample_addresses, sample_services, request_with_session, create_testing_tenant):
         request = request_with_session
         rule_id = sample_rule.id
         match_type = "address"
@@ -219,6 +226,50 @@ class TestMatchRuleToObjects:
             rule_id=rule_id,
             match_type=match_type,
             object_type=object_type,
+            object_ids=[address.id for address in sample_addresses]
         )
 
+@pytest.mark.django_db
+class TestGenerateConfigFromFilterObject:
+    def test_generate_config_from_filter_object(self, sample_filter, sample_rule, request_with_session, create_testing_tenant):
+        request = request_with_session
+        filter_id = sample_filter.id
+        rule_id = sample_rule.id
+
+        add_rule_to_filter(
+            request=request,
+            rule_id=rule_id,
+            filter_id=filter_id,
+            sequence=10
+        )
+        logger.info(f"Added rule {rule_id} to filter {filter_id} with sequence 10, respone:\n{add_rule_to_filter.__name__}")
+
+        # Match the rule to the filter
+        match_rule_to_objects(
+            request=request,
+            rule_id=rule_id,
+            match_type="filter",
+            object_type= Filter,
+            object_ids=[filter_id]
+        )
+        logger.info(f"Matched rule {rule_id} to filter {filter_id}, response:\n{match_rule_to_objects.__name__}")
+        vendor = "JUNIPER"  
+        # Now generate the configuration from the filter object
+        config = create_config_from_filter(request_with_session, sample_filter.id, vendor, policy_type = "")
+        print(config)
+        filepath = TEST_LOGPATH / "from_filter" / f"{vendor.upper()}_generated_config.yaml"
+        os.makedirs(TEST_LOGPATH / "from_filter", exist_ok=True)
+
+        for filename, content in config.items():
+            if vendor in self.log_for_vendors:
+                logger.info(
+                    "\n=== Generated config: %s ===\n%s\n=== End config ===",
+                    filename,
+                    content,
+                )
+            with open(filepath, "w") as f:
+                f.write(
+                    f"# Generated on {datetime.datetime.now()}\n# Test for generating using only Address objects\n\n"
+                )
+                f.write(content)
 

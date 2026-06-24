@@ -41,6 +41,15 @@ def get_current_tenant_id(request: object) -> int:
     except ValueError:
         logger.warning(f"Invalid tenant ID in session: {tenant_id}")
         raise Exception(f"Invalid tenant ID in session: {tenant_id}")
+    
+def get_current_tenant(request: object) -> Tenant:
+    tenant_id = get_current_tenant_id(request)
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+        return tenant
+    except Tenant.DoesNotExist:
+        logger.warning(f"Tenant with ID {tenant_id} does not exist.")
+        raise Exception(f"Tenant with ID {tenant_id} does not exist.")
 
 
 """"
@@ -338,14 +347,13 @@ def create_rule(
     request: object,
     name: str,
     description: str,
-    tenant_id: int,
     action: str,
     log_type: str,
     hit_count: int,
     direction: str,
     enable: bool = True,
 ) -> Rule:
-    tenant = Tenant.objects.get(pk=tenant_id)
+    tenant_id = get_current_tenant(request)
     now = datetime.now(timezone.utc)
     rule = Rule(
         name=name,
@@ -375,14 +383,13 @@ def create_filter(
     request: object,
     name: str,
     description: str,
-    tenant_id: int,
     enable: bool = False,
 ) -> Filter:
-    tenant = Tenant.objects.get(pk=tenant_id)
+    tenant_id = get_current_tenant_id(request)
     filter_obj = Filter(
         name=name,
         description=description,
-        tenant_id=tenant,
+        tenant_id=tenant_id,
         enable=enable,
     )
     try:
@@ -400,7 +407,7 @@ def match_rule_to_objects(
     request: object,
     rule_id: int,
     match_type: str,
-    object_type: str,
+    object_type: object,
     object_ids: list[int],
 ):
     rule = Rule.objects.get(id=rule_id)
@@ -427,11 +434,12 @@ def match_rule_to_objects(
             rule_match, created = RuleMatch.objects.get_or_create(
                 rule=rule,
                 match=match_type,
-                content_type=content_type,
+                object_type=content_type,
                 object_id=obj.id,
             )
 
             if created:
+                logger.info(f"Created RuleMatch: {rule_match}")
                 rule.increment_hit_count()
                 added.append(
                     {
@@ -441,6 +449,7 @@ def match_rule_to_objects(
                     }
                 )
             else:
+                logger.warning(f"RuleMatch already exists: {rule_match}")
                 already_exists.append(
                     {
                         "object_id": obj.id,
@@ -487,7 +496,7 @@ def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: 
 def create_config_from_filter(request, filter_id, vendor, policy_type):
 
     # Get filter object by ID
-    filter_obj = get_object_by_type_and_id("filter", filter_id)
+    filter_obj = Filter.objects.get(id=filter_id)
     if not filter_obj:
         raise ValueError(f"Filter with ID {filter_id} does not exist.")
 
@@ -511,40 +520,36 @@ def create_config_from_filter(request, filter_id, vendor, policy_type):
         if not rule:
             raise ValueError(f"Rule with ID {rule_filter.rule_id} does not exist.")
         
-        # Join rule with objects using RuleMatch
-        rule_match = RuleMatch.objects.filter(rule=rule)
-
-        # Get object type and ID from RuleMatch
-        object_type = rule_match.object_type.lower() if rule_match.object_type else None
-        object_id = rule_match.object_id
-        if not object_type or not object_id:
-            raise ValueError(f"Object type or object ID is not set for rule with ID {rule.id}.")
-        if object_type not in ["address", "service", "address_group", "service_group"]:
-            raise ValueError(f"Invalid object type {object_type} for rule with ID {rule.id}.")
-        
-        # Get actual object from object type and ID
-        match object_type:
-            case "address":
-                obj = Address.objects.get(id=object_id)
-            case "service":
-                obj = Service.objects.get(id=object_id)
-            case "address_group":
-                obj = AddressGroup.objects.get(id=object_id)
-            case "service_group":
-                obj = ServiceGroup.objects.get(id=object_id)
-        if not obj:
-            raise ValueError(f"Object with ID {object_id} does not exist for rule with ID {rule.id}.")
-        
-        # Create PolicyRule object
-        policy_rule = PolicyRule(
-            name=rule.name,
-            obj_type=object_type,
-            action=rule.action,
-            object=obj,
-            sequence=sequence,
-            direction=rule.direction,
-        )
-        policy_rules.append(policy_rule)
+        # Join rule with objects using RuleMatch to retrieve the actual rules
+        rule_matches = RuleMatch.objects.filter(rule=rule)
+        if not rule_matches.exists():
+            raise ValueError(f"No rule matches found for rule with ID {rule.id}.")
+        for rule_match in rule_matches:
+         
+            # Get object type and ID from RuleMatch
+            object_type = rule_match.object_type
+            object_id = rule_match.object_id
+            if not object_type or not object_id:
+                raise ValueError(f"Object type or object ID is not set for rule with ID {rule.id}.")
+            if object_type not in [Address, Service, AddressGroup, ServiceGroup]:
+                raise ValueError(f"Invalid object type {object_type} for rule with ID {rule.id}.")
+            
+            # Get actual object from object type and ID
+            obj = rule_match.object if rule_match.object else None
+            if not obj:
+                raise ValueError(f"Object with ID {object_id} does not exist for rule with ID {rule.id}.")
+            
+            # Create PolicyRule object
+            policy_rule = PolicyRule(
+                name=rule.name,
+                obj_type=object_type,
+                action=rule.action,
+                object=obj,
+                sequence=sequence,
+                direction=rule_match.match,
+            )
+            policy_rules.append(policy_rule)
+    print(f"Policy Rules: {policy_rules}")
     policy = Policy(
         name=filter_obj.name,
         rules=policy_rules,
