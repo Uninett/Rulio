@@ -9,12 +9,15 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
+from backend.objects.management.device_group_member import DeviceGroupMember
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.rule import Rule
-from backend.services.generate_config import Policy, PolicyRule
+from backend.services.generate_config import Policy, PolicyRule, generate_config
+from backend.objects.management.device import Device
+from backend.objects.management.device_group import DeviceGroup
 from backend.utils.logger import set_up_logger
 from backend.services.get import get_object_by_type_and_id
 from backend.services.membership import (
@@ -405,6 +408,9 @@ def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> 
     if not obj:
         raise ValueError(f"Object with ID {rule_match.object_id} does not exist for rule with ID {rule.id}.")
     model_name = rule_match.object_type.model
+def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: int):
+    rule = Rule.objects.get(id=rule_id)
+    filter = Filter.objects.get(id=filter_id)
 
     if model_name not in ["address", "service", "addressgroup", "servicegroup"]:
         raise ValueError(f"Invalid object type {rule_match.object_type} for rule with ID {rule.id}.")
@@ -468,3 +474,79 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
         request=request,
     )
     return policy
+
+def create_device(
+    request: object, name: str, vendor: str, platform: str, model: str, role: str, description: str
+) -> object:
+    tenant_id = get_current_tenant_id(request)
+
+    device = Device(
+        name=name,
+        vendor=vendor,
+        platform=platform,
+        model=model,
+        role=role,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    try:
+        device.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Device validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    device.save()
+    logger.info(f"Created {device} for tenant={device.tenant_id}")
+    return device
+
+
+def create_device_group(request: object, name: str, description: str) -> object:
+    tenant_id = get_current_tenant_id(request)
+
+    device_group = DeviceGroup(
+        name=name,
+        description=description,
+        tenant_id_id=tenant_id,
+    )
+    try:
+        device_group.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Device Group validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    device_group.save()
+    logger.info(f"Created {device_group} for tenant={device_group.tenant_id}")
+    return device_group
+
+
+def add_devices_to_group(device_group_id: int, device_ids: list[int]) -> dict:
+    device_group = DeviceGroup.objects.get(id=device_group_id)
+
+    requested_ids = set(device_ids)
+
+    existing_devices = Device.objects.filter(id__in=requested_ids)
+    found_ids = set(existing_devices.values_list("id", flat=True))
+    not_found_ids = requested_ids - found_ids
+
+    already_present_ids = set(
+        DeviceGroupMember.objects.filter(
+            device_group=device_group,
+            device__id__in=found_ids,
+        ).values_list("device__id", flat=True)
+    )
+
+    new_ids = found_ids - already_present_ids
+
+    new_members = [DeviceGroupMember(device_group=device_group, device_id=device_id) for device_id in new_ids]
+
+    with transaction.atomic():
+        DeviceGroupMember.objects.bulk_create(new_members)
+
+    added_ids = sorted(new_ids)
+
+    return {
+        "device_group_id": device_group.id,
+        "added_device_ids": added_ids,
+        "already_present_device_ids": sorted(already_present_ids),
+        "not_found_device_ids": sorted(not_found_ids),
+    }

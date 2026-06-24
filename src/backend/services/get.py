@@ -8,6 +8,7 @@ from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.management.tenant import Tenant
+from backend.schemas import tenant
 from backend.utils.logger import set_up_logger
 
 

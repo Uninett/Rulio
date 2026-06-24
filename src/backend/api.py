@@ -5,6 +5,7 @@ from ninja.security import django_auth
 from django.conf import settings
 
 from backend.objects.attributes.service import Service
+from backend.objects.management.device_group import DeviceGroup
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
@@ -617,6 +618,60 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
 def list_tenants(request):
     tenants = Tenant.objects.all()
     return 200, list(tenants.values())
+
+
+@api.post("/create_device", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_device_endpoint(request, name: str, vendor: str, platform: str, model: str, role: str, description: str):
+    device = create_device(
+        request=request,
+        name=name,
+        vendor=vendor,
+        platform=platform,
+        model=model,
+        role=role,
+        description=description,
+    )
+    logger.info(f"create_device endpoint succeeded for device id={device.id}")
+    return 200, {
+        "message": "Device created",
+        "status": f"Device created with id {device.id}",
+    }
+
+
+@api.post("/create_device_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_device_group_endpoint(request, payload: CreateAddressGroupSchema):
+    device_group = create_device_group(
+        request=request,
+        name=payload.name,
+        description=payload.description,
+    )
+    logger.info(f"create_device_group endpoint succeeded for device group id={device_group.id}")
+    return 200, {
+        "message": "Device Group created",
+        "status": f"Device Group created with id {device_group.id}",
+    }
+
+
+@api.post("/add_devices_to_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int):
+    response = add_devices_to_group(group_id, device_ids)
+
+    logger.info(
+        f"add_devices_to_group endpoint succeeded for device ids={response['added_device_ids']} and group id={group_id}"
+    )
+
+    return 200, {
+        "status": "success",
+        "message": (
+            f"Processed device ids for group id={group_id}. "
+            f"Added={response['added_device_ids']}, "
+            f"already_present={response['already_present_device_ids']}, "
+            f"not_found={response['not_found_device_ids']}"
+        ),
+    }
 
 
 """
