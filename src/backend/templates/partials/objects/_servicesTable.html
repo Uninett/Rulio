@@ -2,14 +2,14 @@
     <table>
         <thead>
             <tr>
-                {% for header in addresses.headers %}
+                {% for header in services.headers %}
                 <th>{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
-            {% for row in addresses.rows %}
-            {% include "partials/objects/_tableRow.html" with row=row headers=headers%}
+            {% for row in services.rows %}
+            {% include "partials/objects/_tableRow.html" with row=row headers=services.headers%}
             {% endfor %}
         </tbody>
     </table>

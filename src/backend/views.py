@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from .api import get_addresses_and_groups_with_tags_endpoint, list_tenants
+from .api import get_addresses_and_groups_with_tags_endpoint, list_tenants, get_services_and_groups_with_tags_endpoint
 from django.urls import reverse
 
 
@@ -156,30 +156,77 @@ def get_addresses_view(request):
     status, api_objects = get_addresses_and_groups_with_tags_endpoint(request)
 
     if status != 200:
-        return []
+        return {
+            "headers": [],
+            "rows": [],
+        }
 
-    addresses = [
+    headers = ["Type", "Name", "Description", "IPv4", "IPv6", "Tags"]
+
+    rows = [
         {
             "id": f"{item.get('type', '').lower()}-{item.get('id')}",
-            "type": item.get("type", ""),
-            "name": item.get("name", ""),
-            "description": item.get("description", ""),
-            "ipv4": item.get("ipv4Network") or "-",
-            "ipv6": item.get("ipv6Network") or "-",
-            "tags": item.get("tags", ""),
-            "ipv4_type": item.get("ipv4_type", ""),
-            "ipv6_type": item.get("ipv6_type", ""),
-            "ipv4_start": item.get("ipv4Address_start") or "",
-            "ipv4_end": item.get("ipv4Address_end") or "",
-            "ipv6_start": item.get("ipv6Address_start") or "",
-            "ipv6_end": item.get("ipv6Address_end") or "",
-            "address_groups": item.get("address_groups", []),
-            "group_addresses": item.get("addresses", []),
+            "cells": [
+                item.get("type", ""),
+                item.get("name", ""),
+                item.get("description", ""),
+                item.get("ipv4Network") or "-",
+                item.get("ipv6Network") or "-",
+                item.get("tags", ""),
+            ],
+            "expand": [
+                item.get("ipv4_type", ""),
+                item.get("ipv6_type", ""),
+                item.get("ipv4Address_start") or "",
+                item.get("ipv4Address_end") or "",
+                item.get("ipv6Address_start") or "",
+                item.get("ipv6Address_end") or "",
+                item.get("address_groups", []),
+                item.get("addresses", []),
+            ],
         }
         for item in api_objects
     ]
 
-    return addresses
+    return {
+        "headers": headers,
+        "rows": rows,
+    }
+
+
+# Fetch services from the API and map them to data.
+def get_services_view(request):
+    status, api_services = get_services_and_groups_with_tags_endpoint(request)
+
+    if status != 200:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    headers = ["Type", "Name", "Description", "Protocol", "Port Start", "Port End", "Tags"]
+
+    rows = [
+        {
+            "id": item.get("id", ""),
+            "cells": [
+                item.get("type", ""),
+                item.get("name", ""),
+                item.get("description", ""),
+                item.get("protocol", ""),
+                item.get("port_start", ""),
+                item.get("port_end", ""),
+                item.get("tags", ""),
+            ],
+            "raw": item,
+        }
+        for item in api_services
+    ]
+
+    return {
+        "headers": headers,
+        "rows": rows,
+    }
 
 
 # Render an empty editable address row.
@@ -198,7 +245,7 @@ def post_address_row_partial(request):
         "addresses": request.POST.get("addresses", ""),
         "tags": request.POST.get("tags", ""),
     }
-    return render(request, "partials/objects/_addressesRow.html", {"address": address})
+    return render(request, "partials/objects/_tableRow.html", {"address": address})
 
 
 # Render the Services tab content for the Objects page. TODO: Create get_services_view.
@@ -209,7 +256,7 @@ def get_objects_services(request):
         {
             "title": "Services",
             "object_type": "services",
-            # "services": get_services_view(request), # Service data for the page
+            "services": get_services_view(request),  # Service data for the page
             **get_objects_toolbar_context(
                 "services", add_button_label="Add Service"
             ),  # Render the Objects page with Services as the active tab.
