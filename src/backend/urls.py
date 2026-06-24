@@ -29,7 +29,6 @@ from .views import (
     get_filters_page,
     get_objects_page,
     get_tags_page,
-    post_address_row_partial,
     get_objects_addresses,
     post_address_view,
     get_objects_services,
@@ -49,7 +48,6 @@ urlpatterns = [
     # Objects Page
     path("objects/", get_objects_page, name="objects"),
     path("objects/addresses/", get_objects_addresses, name="objects-addresses"),
-    path("addresses/save/", post_address_row_partial, name="save_address_row"),
     path("addresses/create/", post_address_view, name="post-address-view"),
     path("objects/services/", get_objects_services, name="objects-services"),
     # Tags Page

@@ -238,25 +238,6 @@ def get_services_view(request):
     }
 
 
-# Render an empty editable address row.
-def get_empty_address_row_partial(request):
-    return render(request, "partials/objects/_addressesRowEdit.html")
-
-
-# Build and render a saved address row from submitted form data.
-def post_address_row_partial(request):
-    address = {
-        "name": request.POST.get("name", ""),
-        "description": request.POST.get("description", ""),
-        "type": request.POST.get("type", ""),
-        "group": request.POST.get("group", ""),
-        "referenced_to": request.POST.get("referenced_to", ""),
-        "addresses": request.POST.get("addresses", ""),
-        "tags": request.POST.get("tags", ""),
-    }
-    return render(request, "partials/objects/_tableRow.html", {"address": address})
-
-
 def post_address_view(request):
     payload = Payload()
     payload.name = request.POST.get("name", "")
