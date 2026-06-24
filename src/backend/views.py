@@ -5,6 +5,7 @@ from .api import (
     list_tenants,
     get_services_and_groups_with_tags_endpoint,
     create_address_endpoint,
+    create_service_endpoint,
 )
 from django.urls import reverse
 
@@ -325,6 +326,54 @@ def get_services_view(request):
     }
 
 
+# Handles creation of a new service from modal form submission.
+def post_services_view(request):
+    payload = Payload()
+    payload.name = request.POST.get("name", "")
+    payload.description = request.POST.get("description", "")
+    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+    payload.protocol = request.POST.get("protocol", "")
+    payload.port_start = request.POST.get("port_start") or None
+    payload.port_end = request.POST.get("port_end") or None
+
+    status, created_service = create_service_endpoint(request, payload)
+
+    if status not in [200, 201]:
+        return render(
+            request,
+            "partials/modals/_type_content.html",
+            {
+                "modal_object_type": "services",
+                "modal_content_partial": "partials/modals/_services_form.html",
+                "modal_supports_types": True,
+                "modal_type": "item",
+                "item_type_editable": False,
+                "modal_type_labels": {
+                    "item": "Service",
+                    "group": "Group",
+                },
+                "error_message": "Could not create service.",
+            },
+            status=400,
+        )
+
+    row = {
+        "id": f"{created_service.get('type', '').lower()}-{created_service.get('id')}",
+        "cells": [
+            created_service.get("type", ""),
+            created_service.get("name", ""),
+            created_service.get("description", ""),
+            created_service.get("protocol", ""),
+            created_service.get("port_start", ""),
+            created_service.get("port_end", ""),
+            created_service.get("tags", ""),
+        ],
+        "raw": created_service,
+    }
+
+    return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
 """
 ====================================================================
 Tags Page
@@ -397,7 +446,7 @@ def get_add_modal_config(object_type):
             "title": "Add Service",
             "supports_types": True,
             "default_type": "item",
-            "item_type_editable": False,
+            "item_type_editable": True,
             "type_labels": {
                 "item": "Service",
                 "group": "Service Group",
@@ -406,6 +455,9 @@ def get_add_modal_config(object_type):
                 "item": "partials/modals/_services_form.html",
                 "group": "partials/modals/_service_groups_form.html",
             },
+            "post_url": reverse("post-services-view"),
+            "target": "#services-table",
+            "swap": "beforeend",
         },
         "tags": {
             "title": "Add Tag",

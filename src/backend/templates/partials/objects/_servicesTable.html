@@ -7,7 +7,7 @@
                 {% endfor %}
             </tr>
         </thead>
-        <tbody>
+        <tbody id="services-table">
             {% for row in services.rows %}
             {% include "partials/objects/_tableRow.html" with row=row headers=services.headers%}
             {% endfor %}
