@@ -54,7 +54,12 @@ from backend.services.helper_user_tenant import (
     can_write_tenant,
     can_read_tenant,
 )
-from backend.services.membership import add_address_to_group, add_service_to_group, add_addresses_to_group, add_services_to_group
+from backend.services.membership import (
+    add_address_to_group,
+    add_service_to_group,
+    add_addresses_to_group,
+    add_services_to_group,
+)
 from backend.utils.logger import set_up_logger
 
 

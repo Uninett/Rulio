@@ -18,6 +18,7 @@ def add_address_to_group(request: object, address_group_id: int, address_id: int
         address=_address,
     )
 
+
 def add_service_to_group(request: object, service_group_id: int, service_id: int) -> ServiceGroup:
     _service_group = ServiceGroup.objects.get(id=service_group_id)
     _service = Service.objects.get(id=service_id)
@@ -25,6 +26,7 @@ def add_service_to_group(request: object, service_group_id: int, service_id: int
         group=_service_group,
         service=_service,
     )
+
 
 def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dict:
     address_group = AddressGroup.objects.get(id=address_group_id)
@@ -61,6 +63,7 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
         "already_present_address_ids": sorted(already_present_ids),
         "not_found_address_ids": sorted(not_found_ids),
     }
+
 
 def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict:
     """
