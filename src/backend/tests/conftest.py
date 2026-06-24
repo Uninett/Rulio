@@ -1,5 +1,7 @@
 import pytest
 
+from django.test import RequestFactory
+
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
@@ -9,8 +11,12 @@ from backend.services.generate_config import PolicyRule
 from constants import TESTING_TENANT_ID
 
 
-class MockRequest:
-    session = {"current_tenant_id": TESTING_TENANT_ID}
+@pytest.fixture
+def request_with_session():
+    factory = RequestFactory()
+    request = factory.get("/")
+    request.session = {"current_tenant_id": TESTING_TENANT_ID}
+    return request
 
 
 @pytest.fixture
@@ -59,6 +65,7 @@ def sample_addresses():
             ipv6Address_end="ff00::20",
         ),
     ]
+
     for address in sample_addresses:
         address.save()
 
@@ -68,6 +75,7 @@ def sample_addresses():
 @pytest.fixture
 def address_policy_rules(sample_addresses):
     policy_rules = []
+
     for i, address in enumerate(sample_addresses):
         rule = PolicyRule(
             name=f"Test_Address_Rule_{i + 1}",
@@ -130,14 +138,17 @@ def sample_services():
             protocol="gre",
         ),
     ]
+
     for service in services:
         service.save()
+
     return services
 
 
 @pytest.fixture
 def service_policy_rules(sample_services):
     policy_rules = []
+
     for i, service in enumerate(sample_services):
         rule = PolicyRule(
             name=f"Test_Service_Rule_{i + 1}",
@@ -145,6 +156,7 @@ def service_policy_rules(sample_services):
             action="accept" if i % 2 == 0 else "deny",
             object=service,
             direction="destination",
+            sequence=i,
         )
         policy_rules.append(rule)
 
@@ -152,7 +164,7 @@ def service_policy_rules(sample_services):
 
 
 @pytest.fixture
-def sample_address_group(sample_addresses):
+def sample_address_group(sample_addresses, request_with_session):
     sample_address_group_1 = AddressGroup(
         name="Test_Address_Group_1",
         description="This is a test address group",
@@ -173,24 +185,23 @@ def sample_address_group(sample_addresses):
     )
     sample_address_group_2.save()
 
-    mock_request = MockRequest()
     sample_address_group_2_addresses = [
         get_or_create_address(
-            request=mock_request,
+            request=request_with_session,
             name="Private_Class_A_IPv4_RFC1918",
             description="RFC1918 private IPv4 Class A address space for internal networks.",
             ipv4_type="standard",
             ipv4Network="10.0.0.0/8",
         )[0],
         get_or_create_address(
-            request=mock_request,
+            request=request_with_session,
             name="Private_Class_B_IPv4_RFC1918",
             description="RFC1918 private IPv4 Class B address space for internal networks.",
             ipv4_type="standard",
             ipv4Network="172.16.0.0/12",
         )[0],
         get_or_create_address(
-            request=mock_request,
+            request=request_with_session,
             name="Private_Class_C_IPv4_RFC1918",
             description="RFC1918 private IPv4 Class C address space for internal networks.",
             ipv4_type="standard",
@@ -215,6 +226,7 @@ def sample_service_group(sample_services):
         tenant_id=TESTING_TENANT_ID,
     )
     sample_service_group_1.save()
+
     add_services_to_group(
         service_group_id=sample_service_group_1.id,
         service_ids=[service.id for service in sample_services],
@@ -226,9 +238,7 @@ def sample_service_group(sample_services):
 
 @pytest.fixture
 def address_group_policy_rules(sample_address_group):
-    policy_rules = []
-
-    policy_rules.append(
+    return [
         PolicyRule(
             name="Test_Rule_for_Address_Group_1",
             obj_type="address_group",
@@ -236,10 +246,7 @@ def address_group_policy_rules(sample_address_group):
             object=sample_address_group[0],
             direction="destination",
             sequence=0,
-        )
-    )
-
-    policy_rules.append(
+        ),
         PolicyRule(
             name="Test_Rule_for_Address_Group_2",
             obj_type="address_group",
@@ -247,17 +254,13 @@ def address_group_policy_rules(sample_address_group):
             object=sample_address_group[1],
             direction="source",
             sequence=1,
-        )
-    )
-
-    return policy_rules
+        ),
+    ]
 
 
 @pytest.fixture
 def service_group_policy_rules(sample_service_group):
-    policy_rules = []
-
-    policy_rules.append(
+    return [
         PolicyRule(
             name="Test_Rule_for_Service_Group_1",
             obj_type="service_group",
@@ -266,6 +269,358 @@ def service_group_policy_rules(sample_service_group):
             direction="destination",
             sequence=0,
         )
+    ]
+
+
+@pytest.fixture
+def combined_policy_rules(sample_addresses, sample_services):
+    return [
+        PolicyRule(
+            name="Combined_Rule_1_Address",
+            obj_type="address",
+            action="accept",
+            object=sample_addresses[0],
+            direction="destination",
+            sequence=0,
+        ),
+        PolicyRule(
+            name="Combined_Rule_1_Service",
+            obj_type="service",
+            action="accept",
+            object=sample_services[0],
+            direction="destination",
+            sequence=0,
+        ),
+        PolicyRule(
+            name="Combined_Rule_2_Address",
+            obj_type="address",
+            action="deny",
+            object=sample_addresses[1],
+            direction="source",
+            sequence=1,
+        ),
+        PolicyRule(
+            name="Combined_Rule_2_Service",
+            obj_type="service",
+            action="deny",
+            object=sample_services[1],
+            direction="destination",
+            sequence=1,
+        ),
+    ]
+
+
+@pytest.fixture
+def realistic_acl_addresses():
+    addresses = [
+        Address(
+            name="ACL_Src_Users",
+            description="Internal user subnet",
+            tenant_id=TESTING_TENANT_ID,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="10.10.10.0/24",
+        ),
+        Address(
+            name="ACL_Src_Admins",
+            description="Admin subnet",
+            tenant_id=TESTING_TENANT_ID,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="10.20.20.0/24",
+        ),
+        Address(
+            name="ACL_Dst_Web_1",
+            description="Primary web server",
+            tenant_id=TESTING_TENANT_ID,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="172.16.10.10/32",
+        ),
+        Address(
+            name="ACL_Dst_Web_2",
+            description="Secondary web server",
+            tenant_id=TESTING_TENANT_ID,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="172.16.10.11/32",
+        ),
+        Address(
+            name="ACL_Dst_DNS",
+            description="DNS server",
+            tenant_id=TESTING_TENANT_ID,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="172.16.20.53/32",
+        ),
+        Address(
+            name="ACL_Dst_Blocked",
+            description="Blocked external host",
+            tenant_id=TESTING_TENANT_ID,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="203.0.113.66/32",
+        ),
+        Address(
+            name="ACL_Any",
+            description="Any IPv4 destination",
+            tenant_id=TESTING_TENANT_ID,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="0.0.0.0/0",
+        ),
+    ]
+
+    for address in addresses:
+        address.save()
+
+    return addresses
+
+
+@pytest.fixture
+def realistic_acl_services():
+    services = [
+        Service(
+            name="ACL_HTTP",
+            description="HTTP",
+            tenant_id=TESTING_TENANT_ID,
+            protocol="tcp",
+            port_start=80,
+            port_end=80,
+        ),
+        Service(
+            name="ACL_HTTPS",
+            description="HTTPS",
+            tenant_id=TESTING_TENANT_ID,
+            protocol="tcp",
+            port_start=443,
+            port_end=443,
+        ),
+        Service(
+            name="ACL_DNS_TCP",
+            description="DNS over TCP",
+            tenant_id=TESTING_TENANT_ID,
+            protocol="tcp",
+            port_start=53,
+            port_end=53,
+        ),
+        Service(
+            name="ACL_DNS_UDP",
+            description="DNS over UDP",
+            tenant_id=TESTING_TENANT_ID,
+            protocol="udp",
+            port_start=53,
+            port_end=53,
+        ),
+        Service(
+            name="ACL_ICMP",
+            description="ICMP",
+            tenant_id=TESTING_TENANT_ID,
+            protocol="icmp",
+        ),
+    ]
+
+    for service in services:
+        service.save()
+
+    return services
+
+
+@pytest.fixture
+def realistic_acl_address_groups(realistic_acl_addresses):
+    by_name = {address.name: address for address in realistic_acl_addresses}
+
+    trusted_sources = AddressGroup(
+        name="ACL_Trusted_Sources",
+        description="Trusted internal source subnets",
+        tenant_id=TESTING_TENANT_ID,
+    )
+    trusted_sources.save()
+    add_addresses_to_group(
+        address_group_id=trusted_sources.id,
+        address_ids=[
+            by_name["ACL_Src_Users"].id,
+            by_name["ACL_Src_Admins"].id,
+        ],
     )
 
-    return policy_rules
+    web_servers = AddressGroup(
+        name="ACL_Web_Servers",
+        description="Web server farm",
+        tenant_id=TESTING_TENANT_ID,
+    )
+    web_servers.save()
+    add_addresses_to_group(
+        address_group_id=web_servers.id,
+        address_ids=[
+            by_name["ACL_Dst_Web_1"].id,
+            by_name["ACL_Dst_Web_2"].id,
+        ],
+    )
+
+    return {
+        "trusted_sources": trusted_sources,
+        "web_servers": web_servers,
+    }
+
+
+@pytest.fixture
+def realistic_acl_service_groups(realistic_acl_services):
+    by_name = {service.name: service for service in realistic_acl_services}
+
+    web_services = ServiceGroup(
+        name="ACL_Web_Services",
+        description="Web services",
+        tenant_id=TESTING_TENANT_ID,
+    )
+    web_services.save()
+    add_services_to_group(
+        service_group_id=web_services.id,
+        service_ids=[
+            by_name["ACL_HTTP"].id,
+            by_name["ACL_HTTPS"].id,
+        ],
+    )
+
+    dns_services = ServiceGroup(
+        name="ACL_DNS_Services",
+        description="DNS services",
+        tenant_id=TESTING_TENANT_ID,
+    )
+    dns_services.save()
+    add_services_to_group(
+        service_group_id=dns_services.id,
+        service_ids=[
+            by_name["ACL_DNS_TCP"].id,
+            by_name["ACL_DNS_UDP"].id,
+        ],
+    )
+
+    return {
+        "web_services": web_services,
+        "dns_services": dns_services,
+    }
+
+
+@pytest.fixture
+def realistic_acl_policy_rules(
+    realistic_acl_addresses,
+    realistic_acl_services,
+    realistic_acl_address_groups,
+    realistic_acl_service_groups,
+):
+    addr = {a.name: a for a in realistic_acl_addresses}
+    svc = {s.name: s for s in realistic_acl_services}
+    ag = realistic_acl_address_groups
+    sg = realistic_acl_service_groups
+
+    return [
+        # Sequence 10 -> 1 tcp term
+        PolicyRule(
+            name="Allow_Trusted_To_Web_Src_Group",
+            obj_type="address_group",
+            action="accept",
+            object=ag["trusted_sources"],
+            direction="source",
+            sequence=10,
+        ),
+        PolicyRule(
+            name="Allow_Trusted_To_Web_Dst_Group",
+            obj_type="address_group",
+            action="accept",
+            object=ag["web_servers"],
+            direction="destination",
+            sequence=10,
+        ),
+        PolicyRule(
+            name="Allow_Trusted_To_Web_Dst_Direct",
+            obj_type="address",
+            action="accept",
+            object=addr["ACL_Dst_Web_1"],
+            direction="destination",
+            sequence=10,
+        ),
+        PolicyRule(
+            name="Allow_Trusted_To_Web_Services",
+            obj_type="service_group",
+            action="accept",
+            object=sg["web_services"],
+            direction="destination",
+            sequence=10,
+        ),
+        # Sequence 20 -> 2 terms (tcp + udp)
+        PolicyRule(
+            name="Allow_Trusted_To_DNS_Src_Group",
+            obj_type="address_group",
+            action="accept",
+            object=ag["trusted_sources"],
+            direction="source",
+            sequence=20,
+        ),
+        PolicyRule(
+            name="Allow_Trusted_To_DNS_Dst",
+            obj_type="address",
+            action="accept",
+            object=addr["ACL_Dst_DNS"],
+            direction="destination",
+            sequence=20,
+        ),
+        PolicyRule(
+            name="Allow_Trusted_To_DNS_Services",
+            obj_type="service_group",
+            action="accept",
+            object=sg["dns_services"],
+            direction="destination",
+            sequence=20,
+        ),
+        # Sequence 30 -> 1 tcp term
+        PolicyRule(
+            name="Deny_Admins_To_Blocked_Src",
+            obj_type="address",
+            action="deny",
+            object=addr["ACL_Src_Admins"],
+            direction="source",
+            sequence=30,
+        ),
+        PolicyRule(
+            name="Deny_Admins_To_Blocked_Dst",
+            obj_type="address",
+            action="deny",
+            object=addr["ACL_Dst_Blocked"],
+            direction="destination",
+            sequence=30,
+        ),
+        PolicyRule(
+            name="Deny_Admins_To_Blocked_Service",
+            obj_type="service",
+            action="deny",
+            object=svc["ACL_HTTPS"],
+            direction="destination",
+            sequence=30,
+        ),
+        # Sequence 40 -> 1 icmp term
+        PolicyRule(
+            name="Allow_Admins_ICMP_Src",
+            obj_type="address",
+            action="accept",
+            object=addr["ACL_Src_Admins"],
+            direction="source",
+            sequence=40,
+        ),
+        PolicyRule(
+            name="Allow_Admins_ICMP_Dst",
+            obj_type="address",
+            action="accept",
+            object=addr["ACL_Any"],
+            direction="destination",
+            sequence=40,
+        ),
+        PolicyRule(
+            name="Allow_Admins_ICMP_Service",
+            obj_type="service",
+            action="accept",
+            object=svc["ACL_ICMP"],
+            direction="destination",
+            sequence=40,
+        ),
+    ]
