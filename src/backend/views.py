@@ -1,6 +1,54 @@
 from django.shortcuts import render
-from .api import get_addresses_and_groups_with_tags_endpoint
+from django.http import HttpResponse
+from .api import get_addresses_and_groups_with_tags_endpoint, list_tenants
 from django.urls import reverse
+
+
+"""
+====================================================================
+Tenant
+====================================================================
+"""
+
+
+# Gets the list of tenants from the backend API function list_tenants()
+def get_tenants_view(request):
+    status, api_tenants = list_tenants(request)
+
+    if status != 200:
+        return []  # If call failed, return an empty list
+
+    return [
+        {
+            "id": item.get("id"),
+            "name": item.get("tenant_name"),
+        }
+        for item in api_tenants
+    ]
+
+
+# Builds the data that the templates need in order to render the tenant dropdown correctly
+def get_tenant_context(request):
+    return {
+        "tenants": get_tenants_view(request),
+        "selected_tenant": request.session.get("tenant_id"),
+    }
+
+
+# Reads the currently selected tenant from the session (temporary solution until set_tenant api endpoint is refactored)
+def set_selected_tenant(request):
+    if request.method == "POST":
+        tenant_id = request.POST.get("tenant")
+
+        if tenant_id:
+            request.session["tenant_id"] = tenant_id
+        else:
+            request.session.pop("tenant_id", None)
+
+        return HttpResponse(status=204)
+
+    return HttpResponse(status=405)
+
 
 """
 ====================================================================
@@ -19,6 +67,7 @@ def get_devices_page(request):
             "page_title": "Devices",
             "object_type": "devices",
             "add_button_label": "Add Device",
+            **get_tenant_context(request),
         },
     )
 
@@ -39,6 +88,7 @@ def get_filters_page(request):
             "page_title": "Filters",
             "object_type": "filters",
             "add_button_label": "Add Filter",
+            **get_tenant_context(request),
         },
     )
 
@@ -60,6 +110,7 @@ def get_objects_page(request):
             "object_type": "addresses",
             **get_objects_toolbar_context("addresses"),  # Render the Objects page with Addresses as the default tab.
             "addresses": get_addresses_view(request),  # Address data for the page
+            **get_tenant_context(request),
         },
     )
 
@@ -182,6 +233,7 @@ def get_tags_page(request):
             "page_title": "Tags",
             "object_type": "tags",
             "add_button_label": "Add Tag",
+            **get_tenant_context(request),
         },
     )
 
