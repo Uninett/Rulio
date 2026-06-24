@@ -11,11 +11,12 @@ Tenant
 """
 
 
+# Gets the list of tenants from the backend API function list_tenants()
 def get_tenants_view(request):
     status, api_tenants = list_tenants(request)
 
     if status != 200:
-        return []
+        return []  # If call failed, return an empty list
 
     return [
         {
@@ -26,6 +27,7 @@ def get_tenants_view(request):
     ]
 
 
+# Builds the data that the templates need in order to render the tenant dropdown correctly
 def get_tenant_context(request):
     return {
         "tenants": get_tenants_view(request),
@@ -33,6 +35,7 @@ def get_tenant_context(request):
     }
 
 
+# Reads the currently selected tenant from the session (temporary solution until set_tenant api endpoint is refactored)
 def set_selected_tenant(request):
     if request.method == "POST":
         tenant_id = request.POST.get("tenant")
