@@ -1,24 +1,37 @@
 <div class="modal-backdrop" onclick="closeModal(event)">
     <div class="modal" onclick="event.stopPropagation()">
-        <form>
-            <div class="modal-header">
-                <h2>{{ modal_title }}</h2>
-            </div>
+        {% if modal_post_url %}
+        {% if modal_submit_handler %}
+        <form hx-post="{{ modal_post_url }}" hx-target="{{ modal_target }}" hx-swap="{{ modal_swap }}"
+            onsubmit="{{ modal_submit_handler }}(event)"
+            hx-on::after-request="if(event.detail.successful) closeModal(event); window.location.reload();">
+            {% else %}
+            <form hx-post="{{ modal_post_url }}" hx-target="{{ modal_target }}" hx-swap="{{ modal_swap }}"
+                hx-on::after-request="if(event.detail.successful) closeModal(event); window.location.reload();">
+                {% endif %}
+                {% else %}
+                <form>
+                    {% endif %}
+                    {% csrf_token %}
 
-            <div class="modal-type-content" id="modal-type-content">
-                {% include "partials/modals/_type_content.html" %}
-            </div>
-            <hr>
+                    <div class="modal-header">
+                        <h2>{{ modal_title }}</h2>
+                    </div>
 
-            <div class="modal-actions">
-                <button class="btn btn-cancel" type="button" onclick="closeModal(event)">
-                    Cancel
-                </button>
+                    <div class="modal-type-content" id="modal-type-content">
+                        {% include "partials/modals/_type_content.html" %}
+                    </div>
+                    <hr>
 
-                <button class="btn btn-save" type="submit">
-                    Save
-                </button>
-            </div>
-        </form>
+                    <div class="modal-actions">
+                        <button class="btn btn-cancel" type="button" onclick="closeModal(event)">
+                            Cancel
+                        </button>
+
+                        <button class="btn btn-save" type="submit">
+                            Save
+                        </button>
+                    </div>
+                </form>
     </div>
 </div>
