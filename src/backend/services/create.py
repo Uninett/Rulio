@@ -20,6 +20,7 @@ from backend.objects.management.device import Device
 from backend.objects.management.device_group import DeviceGroup
 from backend.utils.logger import set_up_logger
 from backend.services.get import get_object_by_type_and_id
+from django.db import transaction
 from backend.services.membership import (
     add_addresses_to_group,
     add_services_to_group,

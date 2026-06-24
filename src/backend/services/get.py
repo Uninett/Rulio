@@ -304,6 +304,42 @@ def get_all_services_and_groups_with_tags(tenant_id: int) -> list[dict]:
     return result
 
 
+def get_all_rules_with_objects_from_tenant(tenant_id: int) -> list[dict]:
+    rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("matches")
+    result = []
+    for rule in rules:
+        rule_dict = {
+            "rule_id": rule.id,
+            "rule_name": rule.name,
+            "rule_description": rule.description,
+            "rule_tenant_id": rule.tenant_id,
+            "rule_action": rule.action,
+            "rule_log_type": rule.log_type,
+            "rule_hit_count": rule.hit_count,
+            "rule_date_created": rule.date_created,
+            "rule_date_changed": rule.date_changed,
+            "rule_created_by": rule.created_by,
+            "rule_changed_by": rule.changed_by,
+            "rule_enable": rule.enable,
+            "objects": [],
+        }
+        for match in rule.matches.all():
+            obj = match.content_object
+            if obj:
+                rule_dict["objects"].append(
+                    {
+                        "object_type": obj.__class__.__name__,
+                        "object_id": obj.id,
+                        "object_name": getattr(obj, "name", None),
+                        "match_type": match.match,
+                    }
+                )
+
+        result.append(rule_dict)
+
+    return result
+
+
 def get_all_address_groups_from_tenant(tenant_id: int) -> list[AddressGroup]:
     requested_address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
     return requested_address_groups

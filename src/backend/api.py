@@ -24,6 +24,7 @@ from backend.services.get import (
     get_all_tags_from_tenant,
     get_all_services_and_groups_with_tags,
     get_all_rules_from_tenant,
+    get_all_rules_with_objects_from_tenant,
 )
 from backend.services.create import (
     create_address,
@@ -681,6 +682,20 @@ Filter Objects
 """
 
 
+@api.get("/list_rules", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_rules(request):
+    rules = get_all_rules_from_tenant(request.session["current_tenant_id"])
+    return 200, list(rules.values())
+
+
+@api.get("/list_rules_with_objects", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_rules_with_objects(request):
+    rules = get_all_rules_with_objects_from_tenant(request.session["current_tenant_id"])
+    return 200, rules
+
+
 @api.post("/create_rule", tags=["Filter - Rule"], response={200: MessageSchema, 403: MessageSchema})
 @require_write_tenant
 def create_rule_endpoint(request, payload: CreateRuleSchema):
@@ -722,13 +737,6 @@ def add_object_to_rule_endpoint(request, rule_id: int, match_type: str, object_t
             "status": "error",
             "message": str(e),
         }
-
-
-@api.get("/list_rules", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
-def list_rules(request):
-    rules = get_all_rules_from_tenant(request.session["current_tenant_id"])
-    return 200, list(rules.values())
 
 
 @api.delete(
