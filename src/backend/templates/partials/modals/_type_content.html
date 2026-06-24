@@ -15,7 +15,7 @@
         </div>
 
         <div class="form-group">
-            <label for="type">Type<span class="required"> *</span></label>
+            <label for="type">Type</label>
 
             {% if modal_type == "item" and item_type_editable %}
             {% if modal_object_type == "addresses" %}
@@ -44,8 +44,8 @@
     {% endif %}
 
     <div class="form-group form-description">
-        <label for="description">Description<span class="required"> *</span></label>
-        <textarea id="description" name="description" required></textarea>
+        <label for="description">Description</label>
+        <textarea id="description" name="description"></textarea>
     </div>
 
     {% include modal_content_partial %}
