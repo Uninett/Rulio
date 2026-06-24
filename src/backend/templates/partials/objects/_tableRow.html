@@ -1,7 +1,29 @@
-<tr>
+<tr class="main-row" onclick="expandRow('{{ row.id }}')">
     {% for cell in row.cells %}
     <td>
         <span class="cell-text" title="{{cell}}">{{cell}}</span>
     </td>
     {% endfor %}
 </tr>
+<tr id="details-{{ row.id }}" class="details-row">
+    <td colspan="{{ row.cells|length }}">
+        <section class="details-content">
+            {% for field in row.expand %}
+            <span> <strong>{{ field.label}}:</strong> {{ field.value }}</span>
+            {% endfor %}
+        </section>
+    </td>
+</tr>
+
+
+<script>
+    function expandRow(rowId) {
+        const detailsRow = document.getElementById(`details-${rowId}`);
+
+        if (detailsRow.style.display === "table-row") {
+            detailsRow.style.display = "none";
+        } else {
+            detailsRow.style.display = "table-row";
+        }
+    }
+</script>

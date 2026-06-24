@@ -135,3 +135,23 @@ td:nth-child(1) {
     position: relative;
     z-index: 1;
 }
+
+
+.details-row {
+    display: none;
+}
+
+.details-row td:first-child {
+    border-left: 4px solid lightgray;
+}
+
+.details-content {
+    text-align: left;
+    padding: 10px;
+    padding-left: 20px;
+}
+
+.details-content span {
+    display: inline-block;
+    margin-right: 16px;
+}
