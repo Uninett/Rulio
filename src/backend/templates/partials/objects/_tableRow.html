@@ -23,7 +23,7 @@
 
                 {% elif field.label == "Tags" %}
                 <div class="detail-block">
-                    <p><strong>{{ field.label }}:</strong>{{field.value|join:","|default:"-"}}</p>
+                    <p><strong>{{ field.label }}:</strong>{{field.value|join:", "|default:"-"}}</p>
                 </div>
                 {% endif %}
                 {% endfor %}

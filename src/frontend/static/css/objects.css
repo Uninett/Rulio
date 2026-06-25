@@ -37,7 +37,7 @@ table {
 
 .table-container {
     margin-top: 1rem;
-    height: auto;
+    height: 75vh;
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #ccc;
@@ -175,9 +175,4 @@ td:nth-child(1) {
 .detail-block {
     display: flex;
     flex-direction: column;
-}
-
-.details-inline {
-    display: inline-block;
-    margin-right: 16px;
 }
