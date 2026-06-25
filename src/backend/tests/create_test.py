@@ -5,19 +5,20 @@ import pytest
 
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
+from backend.objects.filters.rule_match import RuleMatch
 from backend.services.create import (
     add_addresses_to_group,
-    add_rule_to_filter,
     create_address,
     create_address_group,
-    create_config_from_filter,
+    create_policy_from_filter,
     create_filter,
     create_rule,
     create_service,
     create_service_group,
     add_services_to_group,
-    match_rule_to_objects,
 )
+from backend.services.generate_config import generate_config
+from backend.services.membership import add_objects_to_rule, add_rule_to_filter
 from backend.utils.logger import set_up_logger
 from constants import TEST_LOGPATH
 
@@ -215,21 +216,27 @@ class TestCreateFilter:
 
 @pytest.mark.django_db
 class TestMatchRuleToObjects:
-    def test_match_rule_to_objects(
+    def test_add_objects_to_rule(
         self, sample_rules, sample_addresses, sample_services, request_with_session, create_testing_tenant
     ):
         request = request_with_session
         rule_id = sample_rules[0].id
-        match_type = "address"
-        object_type = "address"
 
-        match_rule_to_objects(
+        add_objects_to_rule(
             request=request,
             rule_id=rule_id,
-            match_type=match_type,
-            object_type=object_type,
-            object_ids=[address.id for address in sample_addresses],
+            match_type="source",
+            objects=sample_addresses,
         )
+
+        add_objects_to_rule(
+            request=request,
+            rule_id=rule_id,
+            match_type="destination",
+            objects=sample_services,
+        )
+        assert RuleMatch.objects.filter(rule_id=rule_id, match="source").count() == len(sample_addresses)
+        assert RuleMatch.objects.filter(rule_id=rule_id, match="destination").count() == len(sample_services)
 
 
 @pytest.mark.django_db
@@ -247,22 +254,22 @@ class TestGenerateConfigFromFilterObject:
         )
 
         # Match the rule to the filter
-        response = match_rule_to_objects(
+        response = add_objects_to_rule(
             request=request,
             rule_id=rule_id,
             match_type="source",
-            object_type="address",
-            object_ids=[sample_addresses[0].id],
+            objects=[sample_addresses[0]],
         )
 
         assert response["error_count"] == 0
         assert response["added_count"] > 0
-        logger.info(f"Matched rule {rule_id} to filter {filter_id}, response:\n{match_rule_to_objects.__name__}")
+        logger.info(f"Matched rule {rule_id} to filter {filter_id}, response:\n{response}")
         vendor = "juniper"
-        # Now generate the configuration from the filter object
-        config = create_config_from_filter(request_with_session, sample_filters[0].id, vendor, policy_type="")
-        assert config is not None
-        assert len(config) > 0
+        # Now generate the policy from the filter object
+        policy = create_policy_from_filter(request_with_session, sample_filters[0].id, vendor, policy_type="")
+        assert policy is not None
+
+        config = generate_config(policy)
 
         filepath = TEST_LOGPATH / "from_filter" / f"{vendor.upper()}_simple_generated_config.yaml"
         os.makedirs(TEST_LOGPATH / "from_filter", exist_ok=True)
@@ -305,46 +312,42 @@ class TestGenerateConfigFromFilterObject:
                 f"Added rule {rule_id} to filter {filter_id} with sequence {(i + 1) * 10}, respone:\n{add_rule_to_filter.__name__}"
             )
         responses = [
-            match_rule_to_objects(
+            add_objects_to_rule(
                 request=request,
                 rule_id=rules[0],
                 match_type="source",
-                object_type="address",
-                object_ids=[address.id for address in realistic_acl_addresses],
+                objects=realistic_acl_addresses,
             ),
-            match_rule_to_objects(
+            add_objects_to_rule(
                 request=request,
                 rule_id=rules[1],
                 match_type="destination",
-                object_type="service",
-                object_ids=[service.id for service in realistic_acl_services],
+                objects=realistic_acl_services,
             ),
-            match_rule_to_objects(
+            add_objects_to_rule(
                 request=request,
                 rule_id=rules[2],
                 match_type="source",
-                object_type="address_group",
-                object_ids=[realistic_acl_address_groups["trusted_sources"].id],
+                objects=realistic_acl_address_groups,
             ),
-            match_rule_to_objects(
+            add_objects_to_rule(
                 request=request,
                 rule_id=rules[3],
                 match_type="destination",
-                object_type="service_group",
-                object_ids=[realistic_acl_service_groups["web_services"].id],
+                objects=realistic_acl_service_groups,
             ),
         ]
         assert all(response["error_count"] == 0 for response in responses)
 
         vendor = "juniper"
-        # Now generate the configuration from the filter object
-        config = create_config_from_filter(request_with_session, sample_filters[1].id, vendor, policy_type="")
-        assert config is not None
-        assert len(config) > 0
+        # Now generate the policy from the filter object
+        policy = create_policy_from_filter(request_with_session, sample_filters[1].id, vendor, policy_type="")
+        assert policy is not None
 
         filepath = TEST_LOGPATH / "from_filter" / f"{vendor.upper()}_complex_generated_config.yaml"
         os.makedirs(TEST_LOGPATH / "from_filter", exist_ok=True)
 
+        config = generate_config(policy)
         for filename, content in config.items():
             logger.info(
                 "\n=== Generated config: %s ===\n%s\n=== End config ===",

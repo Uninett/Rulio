@@ -24,7 +24,7 @@ class PolicyRule:
     Args:
         name (str): The name of the rule.
         obj_type (str): The type of the rule, which can be "address",
-            "service", "address_group", or "service_group".
+            "service", "addressgroup", or "servicegroup".
         action (str): The action to be taken for the rule.
         object (Address | Service | AddressGroup | ServiceGroup): The object
             that the rule is joined with.
@@ -176,7 +176,7 @@ class Policy:
                         value=rule.object.name,
                     )
 
-                case "address_group":
+                case "addressgroup":
                     self._add_address_group_translation_to_networks(rule)
                     self._append_by_direction(
                         direction=rule.direction,
@@ -200,7 +200,7 @@ class Policy:
                         append_ports=is_port_based,
                     )
 
-                case "service_group":
+                case "servicegroup":
                     service_entries = self._add_service_group_translation_to_services(rule)
                     for service_name, protocol, is_port_based in service_entries:
                         self._append_ports_by_direction_and_protocol(

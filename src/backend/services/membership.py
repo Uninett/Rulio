@@ -1,10 +1,17 @@
+from django.db import transaction
+from django.contrib.contenttypes.models import ContentType
+
+
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
-from django.db import transaction
+from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
+from backend.objects.filters.rule_filter import RuleFilter
+from backend.objects.filters.rule_match import RuleMatch
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
@@ -108,3 +115,92 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
         "already_present_service_ids": sorted(already_present_ids),
         "not_found_service_ids": sorted(not_found_ids),
     }
+
+
+def add_objects_to_rule(
+    request: object,
+    rule_id: int,
+    match_type: str,
+    objects: list,
+):
+    rule = Rule.objects.get(id=rule_id)
+
+    added = []
+    already_exists = []
+    errors = []
+
+    for obj in objects:
+        try:
+            if obj.tenant_id not in (0, rule.tenant_id):
+                errors.append(
+                    {
+                        "object_id": obj.id,
+                        "reason": f"Object {obj.id}, Name {obj.name} does not belong to tenant {rule.tenant_id} and is not global",
+                    }
+                )
+                continue
+
+            content_type = ContentType.objects.get_for_model(obj)
+
+            rule_match, created = RuleMatch.objects.get_or_create(
+                rule=rule,
+                match=match_type,
+                object_type=content_type,
+                object_id=obj.id,
+            )
+
+            if created:
+                logger.info(f"Created RuleMatch: {rule_match}")
+                rule.increment_hit_count()
+                added.append(
+                    {
+                        "object_id": obj.id,
+                        "name": getattr(obj, "name", str(obj)),
+                        "match": match_type,
+                    }
+                )
+            else:
+                logger.warning(f"RuleMatch already exists: {rule_match}")
+                already_exists.append(
+                    {
+                        "object_id": obj.id,
+                        "name": getattr(obj, "name", str(obj)),
+                        "match": match_type,
+                    }
+                )
+
+        except Exception as e:
+            errors.append(
+                {
+                    "object_id": obj.id,
+                    "reason": str(e),
+                }
+            )
+
+    return {
+        "rule_id": rule_id,
+        "added": added,
+        "already_exists": already_exists,
+        "errors": errors,
+        "added_count": len(added),
+        "already_exists_count": len(already_exists),
+        "error_count": len(errors),
+    }
+
+
+def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: int):
+    rule = Rule.objects.get(id=rule_id)
+    filter = Filter.objects.get(id=filter_id)
+
+    rule_filter, created = RuleFilter.objects.get_or_create(
+        rule=rule,
+        filter=filter,
+        defaults={"sequence": sequence},
+    )
+
+    if not created:
+        rule_filter.sequence = sequence
+        rule_filter.save()
+
+    logger.info(f"Added Rule {rule.id} to Filter {filter.id} with sequence {sequence}")
+    return rule_filter

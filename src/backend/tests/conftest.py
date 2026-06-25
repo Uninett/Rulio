@@ -266,7 +266,7 @@ def address_group_policy_rules(sample_address_group):
     return [
         PolicyRule(
             name="Test_Rule_for_Address_Group_1",
-            obj_type="address_group",
+            obj_type="addressgroup",
             action="accept",
             object=sample_address_group[0],
             direction="destination",
@@ -274,7 +274,7 @@ def address_group_policy_rules(sample_address_group):
         ),
         PolicyRule(
             name="Test_Rule_for_Address_Group_2",
-            obj_type="address_group",
+            obj_type="addressgroup",
             action="deny",
             object=sample_address_group[1],
             direction="source",
@@ -288,7 +288,7 @@ def service_group_policy_rules(sample_service_group):
     return [
         PolicyRule(
             name="Test_Rule_for_Service_Group_1",
-            obj_type="service_group",
+            obj_type="servicegroup",
             action="accept",
             object=sample_service_group,
             direction="destination",
@@ -483,10 +483,7 @@ def realistic_acl_address_groups(realistic_acl_addresses, create_testing_tenant)
         ],
     )
 
-    return {
-        "trusted_sources": trusted_sources,
-        "web_servers": web_servers,
-    }
+    return [trusted_sources, web_servers]
 
 
 @pytest.fixture
@@ -521,10 +518,7 @@ def realistic_acl_service_groups(realistic_acl_services, create_testing_tenant):
         ],
     )
 
-    return {
-        "web_services": web_services,
-        "dns_services": dns_services,
-    }
+    return [web_services, dns_services]
 
 
 @pytest.fixture
@@ -543,17 +537,17 @@ def realistic_acl_policy_rules(
         # Sequence 10 -> 1 tcp term
         PolicyRule(
             name="Allow_Trusted_To_Web_Src_Group",
-            obj_type="address_group",
+            obj_type="addressgroup",
             action="accept",
-            object=ag["trusted_sources"],
+            object=ag[0],  # ACL_Trusted_Sources
             direction="source",
             sequence=10,
         ),
         PolicyRule(
             name="Allow_Trusted_To_Web_Dst_Group",
-            obj_type="address_group",
+            obj_type="addressgroup",
             action="accept",
-            object=ag["web_servers"],
+            object=ag[1],  # ACL_Web_Servers
             direction="destination",
             sequence=10,
         ),
@@ -567,18 +561,18 @@ def realistic_acl_policy_rules(
         ),
         PolicyRule(
             name="Allow_Trusted_To_Web_Services",
-            obj_type="service_group",
+            obj_type="servicegroup",
             action="accept",
-            object=sg["web_services"],
+            object=sg[0],  # ACL_Web_Services
             direction="destination",
             sequence=10,
         ),
         # Sequence 20 -> 2 terms (tcp + udp)
         PolicyRule(
             name="Allow_Trusted_To_DNS_Src_Group",
-            obj_type="address_group",
+            obj_type="addressgroup",
             action="accept",
-            object=ag["trusted_sources"],
+            object=ag[0],  # ACL_Trusted_Sources
             direction="source",
             sequence=20,
         ),
@@ -592,9 +586,9 @@ def realistic_acl_policy_rules(
         ),
         PolicyRule(
             name="Allow_Trusted_To_DNS_Services",
-            obj_type="service_group",
+            obj_type="servicegroup",
             action="accept",
-            object=sg["dns_services"],
+            object=sg[1],  # ACL_DNS_Services
             direction="destination",
             sequence=20,
         ),

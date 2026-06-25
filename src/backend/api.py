@@ -34,7 +34,6 @@ from backend.services.create import (
     create_address_group,
     create_service_group,
     create_rule,
-    match_rule_to_objects,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -48,6 +47,11 @@ from backend.schemas.rule import CreateRuleSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.attributes.tag import Tag
+from backend.objects.attributes.address_group_member import AddressGroupMember
+from backend.objects.attributes.service_group_member import ServiceGroupMember
+from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
 from backend.objects.management.tenant import Tenant
 from backend.services.helper_user_tenant import (
     is_superadmin,
@@ -56,6 +60,7 @@ from backend.services.helper_user_tenant import (
 )
 from backend.services.membership import (
     add_address_to_group,
+    add_objects_to_rule,
     add_service_to_group,
     add_addresses_to_group,
     add_services_to_group,
@@ -70,6 +75,18 @@ logger = set_up_logger(__name__)
 
 
 api = NinjaAPI(auth=None if settings.DEBUG else django_auth)
+
+DJANGO_MODEL_MAPPING = {
+    "address": Address,
+    "addressgroup": AddressGroup,
+    "service": Service,
+    "servicegroup": ServiceGroup,
+    "rule": Rule,
+    "tag": Tag,
+    "addressgroupmember": AddressGroupMember,
+    "servicegroupmember": ServiceGroupMember,
+    "filter": Filter,
+}
 
 
 """
@@ -183,6 +200,7 @@ def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_write_tenant
 def add_address_to_group_endpoint(request, address_id: int, group_id: int):
     if not can_write_tenant(
         request.user,
@@ -208,6 +226,7 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
+@require_write_tenant
 def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: int):
     try:
         address_group = AddressGroup.objects.get(id=group_id)
@@ -303,6 +322,7 @@ def list_services(request):
     tags=["Attributes - Service"],
     response={200: list[dict], 403: MessageSchema},
 )
+@require_read_tenant
 def get_service_group_and_services_endpoint(request, get="all"):
     if not can_read_tenant(request.user, request.session["current_tenant_id"]):
         logger.warning(
@@ -395,6 +415,7 @@ def add_service_to_group_endpoint(request, service_id: int, group_id: int):
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
+@require_write_tenant
 def add_services_to_group_endpoint(request, service_ids: list[int], group_id: int):
     try:
         service_group = ServiceGroup.objects.get(id=group_id)
@@ -581,6 +602,7 @@ Management Objects
 
 
 @api.post("/create_tenant", tags=["Management - Tenant"], response={200: MessageSchema, 403: MessageSchema})
+@require_superadmin
 def create_tenant_endpoint(request, payload: CreateTenantSchema):
     tenant = create_tenant(request, payload.name)
     logger.info(f"create_tenant endpoint succeeded for tenant id={tenant.id}")
@@ -625,15 +647,16 @@ def create_rule_endpoint(request, payload: CreateRuleSchema):
 
 
 @api.post(
-    "/match_rule_to_objects",
+    "/add_object_to_rule",
     tags=["Filter - Rule"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
 @require_write_tenant
-def match_rule_to_objects_endpoint(request, rule_id: int, match_type: str, object_type: str, object_ids: list[int]):
+def add_object_to_rule_endpoint(request, rule_id: int, match_type: str, object_type: str, object_ids: list[int]):
     try:
-        result = match_rule_to_objects(request, rule_id, match_type, object_type, object_ids)
-        logger.info(f"match_rule_to_objects endpoint succeeded for rule id={rule_id}")
+        objects = [DJANGO_MODEL_MAPPING[object_type].objects.get(id=obj_id) for obj_id in object_ids]
+        result = add_objects_to_rule(request, rule_id, match_type, objects)
+        logger.info(f"add_object_to_rule endpoint succeeded for rule id={rule_id}")
         return 200, {
             "status": "success",
             "message": str(result),
@@ -735,12 +758,14 @@ def who_am_i(request):
     }
 
 
-@api.get("/members", tags=["User Management"])
-def members(request):
+@api.get("/get_users", tags=["User Management"])
+@require_superadmin
+def get_users(request):
     return list(User.objects.values())
 
 
 @api.post("/create_user", tags=["User Management"], auth=None)
+@require_superadmin
 def create_user(request, payload: CreateUserSchema):
     if User.objects.filter(username=payload.username).exists():
         return {
@@ -763,6 +788,7 @@ def create_user(request, payload: CreateUserSchema):
 
 
 @api.delete("/delete_user", tags=["User Management"])
+@require_superadmin
 def delete_user(request, user_id: int):
     try:
         user = User.objects.get(id=user_id)
@@ -780,6 +806,7 @@ def delete_user(request, user_id: int):
     tags=["User Management - Tenant"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_superadmin
 def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSchema):
     if not is_superadmin(request.user):
         logger.warning(

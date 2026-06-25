@@ -7,6 +7,7 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
+from backend.objects.management.tenant import Tenant
 from backend.utils.logger import set_up_logger
 
 
@@ -15,15 +16,38 @@ logger = set_up_logger(__name__)
 
 DJANGO_MODEL_MAPPING = {
     "address": Address,
-    "address_group": AddressGroup,
+    "addressgroup": AddressGroup,
     "service": Service,
-    "service_group": ServiceGroup,
+    "servicegroup": ServiceGroup,
     "rule": Rule,
     "tag": Tag,
-    "address_group_member": AddressGroupMember,
-    "service_group_member": ServiceGroupMember,
+    "addressgroupmember": AddressGroupMember,
+    "servicegroupmember": ServiceGroupMember,
     "filter": Filter,
 }
+
+
+# This is a temporary solution for tenant ID management. In a real implementation, this would be handled by an authentication system and middleware that sets the tenant ID in the request context.
+def get_current_tenant_id(request: object) -> int:
+    tenant_id = request.session.get("current_tenant_id")
+    if tenant_id is None:
+        logger.warning("Tenant ID not set in request session.")
+        raise Exception("Tenant ID not set in request. Please call /set_tenant first.")
+    try:
+        return int(tenant_id)
+    except ValueError:
+        logger.warning(f"Invalid tenant ID in session: {tenant_id}")
+        raise Exception(f"Invalid tenant ID in session: {tenant_id}")
+
+
+def get_current_tenant(request: object) -> Tenant:
+    tenant_id = get_current_tenant_id(request)
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+        return tenant
+    except Tenant.DoesNotExist:
+        logger.warning(f"Tenant with ID {tenant_id} does not exist.")
+        raise Exception(f"Tenant with ID {tenant_id} does not exist.")
 
 
 def get_all_service_groups_from_tenant(tenant_id: int) -> list[ServiceGroup]:
