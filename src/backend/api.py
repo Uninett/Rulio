@@ -34,7 +34,7 @@ from backend.services.create import (
     create_address_group,
     create_service_group,
     create_rule,
-    match_rule_to_objects,
+    add_object_to_rule,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -625,15 +625,15 @@ def create_rule_endpoint(request, payload: CreateRuleSchema):
 
 
 @api.post(
-    "/match_rule_to_objects",
+    "/add_object_to_rule",
     tags=["Filter - Rule"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
 @require_write_tenant
-def match_rule_to_objects_endpoint(request, rule_id: int, match_type: str, object_type: str, object_ids: list[int]):
+def add_object_to_rule_endpoint(request, rule_id: int, match_type: str, object_type: str, object_ids: list[int]):
     try:
-        result = match_rule_to_objects(request, rule_id, match_type, object_type, object_ids)
-        logger.info(f"match_rule_to_objects endpoint succeeded for rule id={rule_id}")
+        result = add_object_to_rule(request, rule_id, match_type, object_type, object_ids)
+        logger.info(f"add_object_to_rule endpoint succeeded for rule id={rule_id}")
         return 200, {
             "status": "success",
             "message": str(result),
