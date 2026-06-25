@@ -12,7 +12,6 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.filters.rule_match import RuleMatch
-from backend.services.get import get_object_by_type_and_id
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)

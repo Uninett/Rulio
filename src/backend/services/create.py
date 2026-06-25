@@ -2,13 +2,11 @@ from datetime import datetime, timezone
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
-from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.management.tenant import Tenant
@@ -16,7 +14,7 @@ from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.rule import Rule
-from backend.services.generate_config import Policy, PolicyRule, generate_config
+from backend.services.generate_config import Policy, PolicyRule
 from backend.utils.logger import set_up_logger
 from backend.services.get import get_object_by_type_and_id
 from backend.services.membership import (
