@@ -404,8 +404,52 @@ def create_filter(
     return filter_obj
 
 
+def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> PolicyRule:
+    rule = rule_match.rule
+    obj = rule_match.object
+    if not obj:
+        raise ValueError(f"Object with ID {rule_match.object_id} does not exist for rule with ID {rule.id}.")
+    model_name = rule_match.object_type.model 
+    if model_name == "addressgroup":
+        model_name = "address_group"
+    elif model_name == "servicegroup":
+        model_name = "service_group"
+
+    if model_name not in ["address", "service", "address_group", "service_group"]:
+        raise ValueError(f"Invalid object type {rule_match.object_type} for rule with ID {rule.id}.")
+
+    policy_rule = PolicyRule(
+        name=rule.name,
+        obj_type=model_name,
+        action=rule.action,
+        object=obj,
+        sequence=sequence,
+        direction=rule_match.match,
+    )
+    return policy_rule
 
 
+def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[PolicyRule]:
+    policy_rules = []
+    if not rule_filter.rule.id:
+            raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
+    # Get sequence from RuleFilter
+    sequence = rule_filter.sequence
+    if not sequence:
+        raise ValueError(f"Sequence is not set for rule match with ID {rule_filter.id}.")
+
+    # Get actual rule object from join on RuleFilter
+    rule = Rule.objects.get(id=rule_filter.rule.id)
+    if not rule:
+        raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
+
+    # Join rule with objects using RuleMatch to retrieve the actual rules
+    rule_matches = RuleMatch.objects.filter(rule=rule)
+    if not rule_matches.exists():
+        raise ValueError(f"No rule matches found for rule with ID {rule.id}.")
+    for rule_match in rule_matches:
+        policy_rules.append(create_policy_rule_from_rule_match(rule_match, sequence))
+    return policy_rules
 
 
 
@@ -424,54 +468,7 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
     # Create PolicyRule objects for each rule
     policy_rules = []
     for rule_filter in rule_filter_matches:
-        if not rule_filter.rule.id:
-            raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
-        # Get sequence from RuleFilter
-        sequence = rule_filter.sequence
-        if not sequence:
-            raise ValueError(f"Sequence is not set for rule match with ID {rule_filter.id}.")
-
-        # Get actual rule object from join on RuleFilter
-        rule = Rule.objects.get(id=rule_filter.rule.id)
-        if not rule:
-            raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
-
-        # Join rule with objects using RuleMatch to retrieve the actual rules
-        rule_matches = RuleMatch.objects.filter(rule=rule)
-        if not rule_matches.exists():
-            raise ValueError(f"No rule matches found for rule with ID {rule.id}.")
-        for rule_match in rule_matches:
-            # Get object type and ID from RuleMatch
-            object_type = rule_match.object_type
-            object_id = rule_match.object_id
-
-            if not object_type or not object_id:
-                raise ValueError(f"Object type or object ID is not set for rule with ID {rule.id}.")
-
-            model_name = object_type.model  # e.g. "address", "service", etc.
-            if model_name == "addressgroup":
-                model_name = "address_group"
-            elif model_name == "servicegroup":
-                model_name = "service_group"
-
-            if model_name not in ["address", "service", "address_group", "service_group"]:
-                raise ValueError(f"Invalid object type {object_type} for rule with ID {rule.id}.")
-
-            # Get actual object from object type and ID
-            obj = rule_match.object if rule_match.object else None
-            if not obj:
-                raise ValueError(f"Object with ID {object_id} does not exist for rule with ID {rule.id}.")
-
-            # Create PolicyRule object
-            policy_rule = PolicyRule(
-                name=rule.name,
-                obj_type=model_name,
-                action=rule.action,
-                object=obj,
-                sequence=sequence,
-                direction=rule_match.match,
-            )
-            policy_rules.append(policy_rule)
+        policy_rules.extend(create_policy_rules_from_rule_filter(rule_filter))
 
     policy = Policy(
         name=filter.name,
