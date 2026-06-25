@@ -478,6 +478,8 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
     )
     return policy
 
+
+
 def create_device(
     request: object, name: str, vendor: str, platform: str, model: str, role: str, description: str
 ) -> object:

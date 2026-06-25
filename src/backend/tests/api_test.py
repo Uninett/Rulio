@@ -1,3 +1,4 @@
+from constants import GLOBAL_TENANT_ID
 import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.test import Client
@@ -14,13 +15,12 @@ from django.test import Client
 def authenticated_client_with_tenant():
     User = get_user_model()
     user = User.objects.create_user(username="admin", password="change-me")
-    tenant = Tenant.objects.create(tenant_name="Tenant A")
 
     client = Client()
     client.force_login(user)
 
     session = client.session
-    session["current_tenant_id"] = tenant.id
+    session["current_tenant_id"] = GLOBAL_TENANT_ID
     session.save()
 
     return client
