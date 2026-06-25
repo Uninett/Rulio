@@ -483,10 +483,7 @@ def realistic_acl_address_groups(realistic_acl_addresses, create_testing_tenant)
         ],
     )
 
-    return {
-        "trusted_sources": trusted_sources,
-        "web_servers": web_servers,
-    }
+    return [trusted_sources, web_servers]
 
 
 @pytest.fixture
@@ -521,10 +518,7 @@ def realistic_acl_service_groups(realistic_acl_services, create_testing_tenant):
         ],
     )
 
-    return {
-        "web_services": web_services,
-        "dns_services": dns_services,
-    }
+    return [web_services, dns_services]
 
 
 @pytest.fixture
@@ -545,7 +539,7 @@ def realistic_acl_policy_rules(
             name="Allow_Trusted_To_Web_Src_Group",
             obj_type="addressgroup",
             action="accept",
-            object=ag["trusted_sources"],
+            object=ag[0],  # ACL_Trusted_Sources
             direction="source",
             sequence=10,
         ),
@@ -553,7 +547,7 @@ def realistic_acl_policy_rules(
             name="Allow_Trusted_To_Web_Dst_Group",
             obj_type="addressgroup",
             action="accept",
-            object=ag["web_servers"],
+            object=ag[1],  # ACL_Web_Servers
             direction="destination",
             sequence=10,
         ),
@@ -569,7 +563,7 @@ def realistic_acl_policy_rules(
             name="Allow_Trusted_To_Web_Services",
             obj_type="servicegroup",
             action="accept",
-            object=sg["web_services"],
+            object=sg[0],  # ACL_Web_Services
             direction="destination",
             sequence=10,
         ),
@@ -578,7 +572,7 @@ def realistic_acl_policy_rules(
             name="Allow_Trusted_To_DNS_Src_Group",
             obj_type="addressgroup",
             action="accept",
-            object=ag["trusted_sources"],
+            object=ag[0],  # ACL_Trusted_Sources
             direction="source",
             sequence=20,
         ),
@@ -594,7 +588,7 @@ def realistic_acl_policy_rules(
             name="Allow_Trusted_To_DNS_Services",
             obj_type="servicegroup",
             action="accept",
-            object=sg["dns_services"],
+            object=sg[1],  # ACL_DNS_Services
             direction="destination",
             sequence=20,
         ),

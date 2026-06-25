@@ -5,6 +5,7 @@ import pytest
 
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
+from backend.objects.filters.rule_match import RuleMatch
 from backend.services.create import (
     add_addresses_to_group,
     create_address,
@@ -17,7 +18,7 @@ from backend.services.create import (
     add_services_to_group,
 )
 from backend.services.generate_config import generate_config
-from backend.services.membership import add_object_to_rule, add_rule_to_filter
+from backend.services.membership import add_objects_to_rule, add_rule_to_filter
 from backend.utils.logger import set_up_logger
 from constants import TEST_LOGPATH
 
@@ -215,21 +216,28 @@ class TestCreateFilter:
 
 @pytest.mark.django_db
 class TestMatchRuleToObjects:
-    def test_add_object_to_rule(
+    def test_add_objects_to_rule(
         self, sample_rules, sample_addresses, sample_services, request_with_session, create_testing_tenant
     ):
         request = request_with_session
         rule_id = sample_rules[0].id
-        match_type = "address"
-        object_type = "address"
 
-        add_object_to_rule(
+        add_objects_to_rule(
             request=request,
             rule_id=rule_id,
-            match_type=match_type,
-            object_type=object_type,
-            object_ids=[address.id for address in sample_addresses],
+            match_type="source",
+            objects=sample_addresses,
         )
+
+        add_objects_to_rule(
+            request=request,
+            rule_id=rule_id,
+            match_type="destination",
+            objects=sample_services,
+        )
+        assert RuleMatch.objects.filter(rule_id=rule_id, match="source").count() == len(sample_addresses)
+        assert RuleMatch.objects.filter(rule_id=rule_id, match="destination").count() == len(sample_services)
+        
 
 
 @pytest.mark.django_db
@@ -247,17 +255,16 @@ class TestGenerateConfigFromFilterObject:
         )
 
         # Match the rule to the filter
-        response = add_object_to_rule(
+        response = add_objects_to_rule(
             request=request,
             rule_id=rule_id,
             match_type="source",
-            object_type="address",
-            object_ids=[sample_addresses[0].id],
+            objects=[sample_addresses[0]],
         )
 
         assert response["error_count"] == 0
         assert response["added_count"] > 0
-        logger.info(f"Matched rule {rule_id} to filter {filter_id}, response:\n{add_object_to_rule.__name__}")
+        logger.info(f"Matched rule {rule_id} to filter {filter_id}, response:\n{response}")
         vendor = "juniper"
         # Now generate the policy from the filter object
         policy = create_policy_from_filter(request_with_session, sample_filters[0].id, vendor, policy_type="")
@@ -306,33 +313,29 @@ class TestGenerateConfigFromFilterObject:
                 f"Added rule {rule_id} to filter {filter_id} with sequence {(i + 1) * 10}, respone:\n{add_rule_to_filter.__name__}"
             )
         responses = [
-            add_object_to_rule(
+            add_objects_to_rule(
                 request=request,
                 rule_id=rules[0],
                 match_type="source",
-                object_type="address",
-                object_ids=[address.id for address in realistic_acl_addresses],
+                objects=realistic_acl_addresses,
             ),
-            add_object_to_rule(
+            add_objects_to_rule(
                 request=request,
                 rule_id=rules[1],
                 match_type="destination",
-                object_type="service",
-                object_ids=[service.id for service in realistic_acl_services],
+                objects=realistic_acl_services,
             ),
-            add_object_to_rule(
+            add_objects_to_rule(
                 request=request,
                 rule_id=rules[2],
                 match_type="source",
-                object_type="addressgroup",
-                object_ids=[realistic_acl_address_groups["trusted_sources"].id],
+                objects=realistic_acl_address_groups,
             ),
-            add_object_to_rule(
+            add_objects_to_rule(
                 request=request,
                 rule_id=rules[3],
                 match_type="destination",
-                object_type="servicegroup",
-                object_ids=[realistic_acl_service_groups["web_services"].id],
+                objects=realistic_acl_service_groups,
             ),
         ]
         assert all(response["error_count"] == 0 for response in responses)

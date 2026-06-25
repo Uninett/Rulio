@@ -48,6 +48,11 @@ from backend.schemas.rule import CreateRuleSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.attributes.tag import Tag
+from backend.objects.attributes.address_group_member import AddressGroupMember
+from backend.objects.attributes.service_group_member import ServiceGroupMember
+from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
 from backend.objects.management.tenant import Tenant
 from backend.services.helper_user_tenant import (
     is_superadmin,
@@ -56,6 +61,7 @@ from backend.services.helper_user_tenant import (
 )
 from backend.services.membership import (
     add_address_to_group,
+    add_objects_to_rule,
     add_service_to_group,
     add_addresses_to_group,
     add_services_to_group,
@@ -70,6 +76,18 @@ logger = set_up_logger(__name__)
 
 
 api = NinjaAPI(auth=None if settings.DEBUG else django_auth)
+
+DJANGO_MODEL_MAPPING = {
+    "address": Address,
+    "addressgroup": AddressGroup,
+    "service": Service,
+    "servicegroup": ServiceGroup,
+    "rule": Rule,
+    "tag": Tag,
+    "addressgroupmember": AddressGroupMember,
+    "servicegroupmember": ServiceGroupMember,
+    "filter": Filter,
+}
 
 
 """
@@ -632,7 +650,8 @@ def create_rule_endpoint(request, payload: CreateRuleSchema):
 @require_write_tenant
 def add_object_to_rule_endpoint(request, rule_id: int, match_type: str, object_type: str, object_ids: list[int]):
     try:
-        result = add_object_to_rule(request, rule_id, match_type, object_type, object_ids)
+        objects = [DJANGO_MODEL_MAPPING[object_type].objects.get(id=obj_id) for obj_id in object_ids]
+        result = add_objects_to_rule(request, rule_id, match_type, objects)
         logger.info(f"add_object_to_rule endpoint succeeded for rule id={rule_id}")
         return 200, {
             "status": "success",

@@ -118,12 +118,11 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
         "not_found_service_ids": sorted(not_found_ids),
     }
 
-def add_object_to_rule(
+def add_objects_to_rule(
     request: object,
     rule_id: int,
     match_type: str,
-    object_type: str,
-    object_ids: list[int],
+    objects: list,
 ):
     rule = Rule.objects.get(id=rule_id)
 
@@ -131,14 +130,12 @@ def add_object_to_rule(
     already_exists = []
     errors = []
 
-    for object_id in object_ids:
+    for obj in objects:
         try:
-            obj = get_object_by_type_and_id(object_type, object_id)
-
             if obj.tenant_id not in (0, rule.tenant_id):
                 errors.append(
                     {
-                        "object_id": object_id,
+                        "object_id": obj.id,
                         "reason": f"Object {obj.id}, Name {obj.name} does not belong to tenant {rule.tenant_id} and is not global",
                     }
                 )
@@ -176,7 +173,7 @@ def add_object_to_rule(
         except Exception as e:
             errors.append(
                 {
-                    "object_id": object_id,
+                    "object_id": obj.id,
                     "reason": str(e),
                 }
             )
