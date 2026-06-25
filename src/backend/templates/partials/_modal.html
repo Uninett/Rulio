@@ -1,5 +1,10 @@
 <div class="modal-backdrop" onclick="closeModal(event)">
     <div class="modal" onclick="event.stopPropagation()">
+
+        <div class="modal-header">
+            <h2>{{ modal_title }}</h2>
+        </div>
+
         <div class="modal-type-content" id="modal-type-content">
             {% include "partials/modals/_modal_form.html" %}
         </div>
