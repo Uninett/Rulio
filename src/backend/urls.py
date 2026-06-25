@@ -24,15 +24,24 @@ from .api import (
 )
 
 from .views import (
+    # Tenant
     set_selected_tenant,
+    # Device Page
     get_devices_page,
+    # Filters Page
     get_filters_page,
+    # Objects Page
     get_objects_page,
-    get_tags_page,
+    # Objects Page: Address
     get_objects_addresses,
     post_address_view,
+    post_address_group_view,
+    # Objects Page: Service
     get_objects_services,
     post_service_view,
+    # Tags Page
+    get_tags_page,
+    # Modal Partial
     get_add_modal,
     get_add_modal_form_content,
 )
@@ -50,6 +59,7 @@ urlpatterns = [
     path("objects/", get_objects_page, name="objects"),
     path("objects/addresses/", get_objects_addresses, name="objects-addresses"),
     path("addresses/create/", post_address_view, name="post-address-view"),
+    path("address-groups/create/", post_address_group_view, name="post-address-group-view"),
     # Objects Page: Service
     path("objects/services/", get_objects_services, name="objects-services"),
     path("services/create/", post_service_view, name="post-service-view"),
