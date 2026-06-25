@@ -3,7 +3,7 @@ import os
 import yaml
 import pytest
 
-from backend.services.generate_config import generate_config, Policy
+from backend.services.generate_config import generate_config, Policy, aclcheck
 from backend.utils.logger import clear_logs, set_up_logger
 from constants import TEST_LOGPATH
 
@@ -425,3 +425,125 @@ class TestGenerateConfig:
                         f"# Generated on {datetime.datetime.now()}\n# Test for generating a realistic router ACL policy\n\n"
                     )
                     f.write(content)
+
+    def test_aclcheck_with_expected_packet_matches(self, aclcheck_test_policy_rules, request_with_session):
+        for vendor, policy_type in self.vendor_policy_type_pairs:
+            policy = Policy(
+                name=f"ACLCheck_Function_Test_{vendor}",
+                rules=aclcheck_test_policy_rules,
+                vendor=vendor,
+                request=request_with_session,
+                policy_type=policy_type,
+            )
+
+            assert policy.name == f"ACLCheck_Function_Test_{vendor}"
+            assert policy.YAMLConfig["filename"] == f"ACLCheck_Function_Test_{vendor}"
+
+            terms = policy.YAMLConfig["filters"][0]["terms"]
+            assert len(terms) == 3
+
+            # Verify the generated policy contains the expected HTTPS allow term
+            assert any(
+                term.get("action") == "accept"
+                and term.get("protocol") == "tcp"
+                and term.get("source-address") == ["ACLCheck_Test_Source_Address"]
+                and term.get("destination-address") == ["ACLCheck_Test_Destination_Web_Address"]
+                and term.get("destination-port") == ["ACLCheck_Test_HTTPS_Service"]
+                and term.get("name", "").startswith("seq10-")
+                for term in terms
+            )
+
+            # Verify the generated policy contains the expected DNS allow term
+            assert any(
+                term.get("action") == "accept"
+                and term.get("protocol") == "udp"
+                and term.get("source-address") == ["ACLCheck_Test_Source_Address"]
+                and term.get("destination-address") == ["ACLCheck_Test_Destination_DNS_Address"]
+                and term.get("destination-port") == ["ACLCheck_Test_DNS_UDP_Service"]
+                and term.get("name", "").startswith("seq20-")
+                for term in terms
+            )
+
+            # Verify the generated policy contains the expected ICMP deny term
+            assert any(
+                term.get("action") == "deny"
+                and term.get("protocol") == "icmp"
+                and term.get("source-address") == ["ACLCheck_Test_Source_Address"]
+                and term.get("destination-address") == ["ACLCheck_Test_Any_Destination_Address"]
+                and "destination-port" not in term
+                and term.get("name", "").startswith("seq30-")
+                for term in terms
+            )
+
+            # Check that HTTPS traffic matches the HTTPS allow rule and returns accept
+            https_result = aclcheck(
+                policy=policy,
+                source_ip="10.10.10.5",
+                destination_ip="172.16.1.10",
+                protocol="tcp",
+                source_port="49152",
+                destination_port="443",
+            )
+
+            assert https_result
+            assert isinstance(https_result, dict)
+            assert len(https_result) == 1
+
+            https_filter_name, https_terms = next(iter(https_result.items()))
+            assert isinstance(https_filter_name, str)
+            assert https_filter_name
+            assert isinstance(https_terms, dict)
+            assert len(https_terms) == 1
+
+            https_term_name, https_match_details = next(iter(https_terms.items()))
+            assert https_term_name.startswith("seq10-")
+            assert https_match_details["possibles"] == []
+            assert "accept" in https_match_details["message"]
+
+            # Check that DNS traffic matches the DNS allow rule and returns accept
+            dns_result = aclcheck(
+                policy=policy,
+                source_ip="10.10.10.25",
+                destination_ip="172.16.2.20",
+                protocol="udp",
+                source_port="53000",
+                destination_port="53",
+            )
+
+            assert dns_result
+            assert isinstance(dns_result, dict)
+            assert len(dns_result) == 1
+
+            dns_filter_name, dns_terms = next(iter(dns_result.items()))
+            assert isinstance(dns_filter_name, str)
+            assert dns_filter_name
+            assert isinstance(dns_terms, dict)
+            assert len(dns_terms) == 1
+
+            dns_term_name, dns_match_details = next(iter(dns_terms.items()))
+            assert dns_term_name.startswith("seq20-")
+            assert dns_match_details["possibles"] == []
+            assert "accept" in dns_match_details["message"]
+
+            # Check that ICMP traffic matches the ICMP deny rule and returns deny
+            icmp_result = aclcheck(
+                policy=policy,
+                source_ip="10.10.10.99",
+                destination_ip="8.8.8.8",
+                protocol="icmp",
+            )
+
+            assert icmp_result
+            assert isinstance(icmp_result, dict)
+            assert len(icmp_result) == 1
+
+            icmp_filter_name, icmp_terms = next(iter(icmp_result.items()))
+            assert isinstance(icmp_filter_name, str)
+            assert icmp_filter_name
+            assert isinstance(icmp_terms, dict)
+            assert len(icmp_terms) == 1
+
+            icmp_term_name, icmp_match_details = next(iter(icmp_terms.items()))
+            assert icmp_term_name.startswith("seq30-")
+            assert icmp_match_details["possibles"] == []
+            assert "deny" in icmp_match_details["message"]
