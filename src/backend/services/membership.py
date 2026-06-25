@@ -1,4 +1,3 @@
-
 from django.db import transaction
 from django.contrib.contenttypes.models import ContentType
 
@@ -117,6 +116,7 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
         "already_present_service_ids": sorted(already_present_ids),
         "not_found_service_ids": sorted(not_found_ids),
     }
+
 
 def add_objects_to_rule(
     request: object,

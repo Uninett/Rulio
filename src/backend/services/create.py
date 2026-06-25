@@ -23,35 +23,11 @@ from backend.services.membership import (
     add_addresses_to_group,
     add_services_to_group,
 )
-
-
+from backend.services.get import get_current_tenant, get_current_tenant_id
 
 
 # Setup logger
 logger = set_up_logger(__name__)
-
-
-# This is a temporary solution for tenant ID management. In a real implementation, this would be handled by an authentication system and middleware that sets the tenant ID in the request context.
-def get_current_tenant_id(request: object) -> int:
-    tenant_id = request.session.get("current_tenant_id")
-    if tenant_id is None:
-        logger.warning("Tenant ID not set in request session.")
-        raise Exception("Tenant ID not set in request. Please call /set_tenant first.")
-    try:
-        return int(tenant_id)
-    except ValueError:
-        logger.warning(f"Invalid tenant ID in session: {tenant_id}")
-        raise Exception(f"Invalid tenant ID in session: {tenant_id}")
-
-
-def get_current_tenant(request: object) -> Tenant:
-    tenant_id = get_current_tenant_id(request)
-    try:
-        tenant = Tenant.objects.get(id=tenant_id)
-        return tenant
-    except Tenant.DoesNotExist:
-        logger.warning(f"Tenant with ID {tenant_id} does not exist.")
-        raise Exception(f"Tenant with ID {tenant_id} does not exist.")
 
 
 """"
@@ -301,18 +277,6 @@ def get_or_create_address_group(
     return address_group, address_group.id, created
 
 
-def create_tenant(request: object, name: str):
-    tenant = Tenant.objects.create(tenant_name=name)
-    logger.info(f"Tenant created: {tenant}")
-    return tenant
-
-
-def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str) -> TenantUserMember:
-    tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
-    logger.info(f"TenantUserMember created: {tenant_user}")
-    return tenant_user
-
-
 def create_tag(request: object, name: str, description: str) -> Tag:
     tenant_id = get_current_tenant_id(request)
 
@@ -343,6 +307,32 @@ def create_and_add_tag_to_object(
     else:
         logger.warning(f"Object {obj} is not taggable. Created tag {tag} but did not add it to the object.")
     return tag
+
+
+"""
+====================================================================
+MANAGEMENT
+====================================================================
+"""
+
+
+def create_tenant(request: object, name: str):
+    tenant = Tenant.objects.create(tenant_name=name)
+    logger.info(f"Tenant created: {tenant}")
+    return tenant
+
+
+def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str) -> TenantUserMember:
+    tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
+    logger.info(f"TenantUserMember created: {tenant_user}")
+    return tenant_user
+
+
+"""
+====================================================================
+FILTERS
+====================================================================
+"""
 
 
 def create_rule(
@@ -404,13 +394,19 @@ def create_filter(
     return filter_obj
 
 
+"""
+====================================================================
+POLICY GENERATION
+====================================================================
+"""
+
+
 def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> PolicyRule:
     rule = rule_match.rule
     obj = rule_match.object
     if not obj:
         raise ValueError(f"Object with ID {rule_match.object_id} does not exist for rule with ID {rule.id}.")
-    model_name = rule_match.object_type.model 
-
+    model_name = rule_match.object_type.model
 
     if model_name not in ["address", "service", "addressgroup", "servicegroup"]:
         raise ValueError(f"Invalid object type {rule_match.object_type} for rule with ID {rule.id}.")
@@ -429,7 +425,7 @@ def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> 
 def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[PolicyRule]:
     policy_rules = []
     if not rule_filter.rule.id:
-            raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
+        raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
     # Get sequence from RuleFilter
     sequence = rule_filter.sequence
     if not sequence:
@@ -447,7 +443,6 @@ def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[Policy
     for rule_match in rule_matches:
         policy_rules.append(create_policy_rule_from_rule_match(rule_match, sequence))
     return policy_rules
-
 
 
 def create_policy_from_filter(request, filter_id, vendor, policy_type):
