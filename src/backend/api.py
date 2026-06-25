@@ -34,7 +34,6 @@ from backend.services.create import (
     create_address_group,
     create_service_group,
     create_rule,
-    add_object_to_rule,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -201,6 +200,7 @@ def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_write_tenant
 def add_address_to_group_endpoint(request, address_id: int, group_id: int):
     if not can_write_tenant(
         request.user,
@@ -226,6 +226,7 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
+@require_write_tenant
 def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: int):
     try:
         address_group = AddressGroup.objects.get(id=group_id)
@@ -321,6 +322,7 @@ def list_services(request):
     tags=["Attributes - Service"],
     response={200: list[dict], 403: MessageSchema},
 )
+@require_read_tenant
 def get_service_group_and_services_endpoint(request, get="all"):
     if not can_read_tenant(request.user, request.session["current_tenant_id"]):
         logger.warning(
@@ -413,6 +415,7 @@ def add_service_to_group_endpoint(request, service_id: int, group_id: int):
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
+@require_write_tenant
 def add_services_to_group_endpoint(request, service_ids: list[int], group_id: int):
     try:
         service_group = ServiceGroup.objects.get(id=group_id)
@@ -599,6 +602,7 @@ Management Objects
 
 
 @api.post("/create_tenant", tags=["Management - Tenant"], response={200: MessageSchema, 403: MessageSchema})
+@require_superadmin
 def create_tenant_endpoint(request, payload: CreateTenantSchema):
     tenant = create_tenant(request, payload.name)
     logger.info(f"create_tenant endpoint succeeded for tenant id={tenant.id}")
@@ -754,12 +758,14 @@ def who_am_i(request):
     }
 
 
-@api.get("/members", tags=["User Management"])
-def members(request):
+@api.get("/get_users", tags=["User Management"])
+@require_superadmin
+def get_users(request):
     return list(User.objects.values())
 
 
 @api.post("/create_user", tags=["User Management"], auth=None)
+@require_superadmin
 def create_user(request, payload: CreateUserSchema):
     if User.objects.filter(username=payload.username).exists():
         return {
@@ -782,6 +788,7 @@ def create_user(request, payload: CreateUserSchema):
 
 
 @api.delete("/delete_user", tags=["User Management"])
+@require_superadmin
 def delete_user(request, user_id: int):
     try:
         user = User.objects.get(id=user_id)
@@ -799,6 +806,7 @@ def delete_user(request, user_id: int):
     tags=["User Management - Tenant"],
     response={200: MessageSchema, 403: MessageSchema},
 )
+@require_superadmin
 def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSchema):
     if not is_superadmin(request.user):
         logger.warning(
