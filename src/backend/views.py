@@ -229,7 +229,7 @@ def post_address_view(request):
             "partials/modals/_type_content.html",
             {
                 "modal_object_type": "addresses",
-                "modal_content_partial": "partials/modals/_addresses_form.html",
+                "modal_content_partial": "partials/modals/_address_form.html",
                 "modal_supports_types": True,
                 "modal_type": "item",
                 "item_type_editable": True,
@@ -327,7 +327,7 @@ def get_services_view(request):
 
 
 # Handles creation of a new service from modal form submission.
-def post_services_view(request):
+def post_service_view(request):
     payload = Payload()
     payload.name = request.POST.get("name", "")
     payload.description = request.POST.get("description", "")
@@ -344,7 +344,7 @@ def post_services_view(request):
             "partials/modals/_type_content.html",
             {
                 "modal_object_type": "services",
-                "modal_content_partial": "partials/modals/_services_form.html",
+                "modal_content_partial": "partials/modals/_service_form.html",
                 "modal_supports_types": True,
                 "modal_type": "item",
                 "item_type_editable": False,
@@ -415,14 +415,14 @@ def get_add_modal_config(object_type):
                 "group": "Device Group",
             },
             "types": {
-                "item": "partials/modals/_devices_form.html",
-                "group": "partials/modals/_device_groups_form.html",
+                "item": "partials/modals/_device_form.html",
+                "group": "partials/modals/_device_group_form.html",
             },
         },
         "filters": {
             "title": "Add Filter",
             "supports_types": False,
-            "form_partial": "partials/modals/_filters_form.html",
+            "form_partial": "partials/modals/_filter_form.html",
         },
         "addresses": {
             "title": "Add Address",
@@ -434,8 +434,8 @@ def get_add_modal_config(object_type):
                 "group": "Address Group",
             },
             "types": {
-                "item": "partials/modals/_addresses_form.html",
-                "group": "partials/modals/_address_groups_form.html",
+                "item": "partials/modals/_address_form.html",
+                "group": "partials/modals/_address_group_form.html",
             },
             "post_url": reverse("post-address-view"),
             "target": "#addresses-table",
@@ -453,10 +453,10 @@ def get_add_modal_config(object_type):
                 "group": "Service Group",
             },
             "types": {
-                "item": "partials/modals/_services_form.html",
-                "group": "partials/modals/_service_groups_form.html",
+                "item": "partials/modals/_service_form.html",
+                "group": "partials/modals/_service_group_form.html",
             },
-            "post_url": reverse("post-services-view"),
+            "post_url": reverse("post-service-view"),
             "target": "#services-table",
             "swap": "beforeend",
             "refresh_url": reverse("objects-services"),
@@ -464,7 +464,7 @@ def get_add_modal_config(object_type):
         "tags": {
             "title": "Add Tag",
             "supports_types": False,
-            "form_partial": "partials/modals/_tags_form.html",
+            "form_partial": "partials/modals/_tag_form.html",
         },
     }
     return configs[object_type]  # Return the modal config for the selected object type

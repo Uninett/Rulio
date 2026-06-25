@@ -6,7 +6,7 @@
             onsubmit="{{ modal_submit_handler }}(event)"
             hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}')">
             {% else %}
-            <form hx-post=" {{ modal_post_url }}" hx-target="{{ modal_target }}" hx-swap="{{ modal_swap }}"
+            <form hx-post="{{ modal_post_url }}" hx-target="{{ modal_target }}" hx-swap="{{ modal_swap }}"
                 hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}')">
                 {% endif %}
                 {% else %}

@@ -32,7 +32,7 @@ from .views import (
     get_objects_addresses,
     post_address_view,
     get_objects_services,
-    post_services_view,
+    post_service_view,
     get_add_modal,
     get_add_modal_form_content,
 )
@@ -52,7 +52,7 @@ urlpatterns = [
     path("addresses/create/", post_address_view, name="post-address-view"),
     # Objects Page: Service
     path("objects/services/", get_objects_services, name="objects-services"),
-    path("services/create/", post_services_view, name="post-services-view"),
+    path("services/create/", post_service_view, name="post-service-view"),
     # Tags Page
     path("tags/", get_tags_page, name="tags"),
     # Modal Partial
