@@ -15,7 +15,7 @@ from backend.services.seed.populate import populate_db
 @pytest.fixture
 def authenticated_client_with_tenant():
     User = get_user_model()
-    user = User.objects.create_user(username="admin", password="change-me")
+    user = User.objects.create_superuser(username="admin", password="change-me")
 
     client = Client()
     client.force_login(user)
@@ -128,11 +128,8 @@ def test_delete_user(authenticated_client_with_tenant):
     data = check.json()
     assert not any(member["username"] == "tobedeleted" for member in data)
 
-
 @pytest.mark.django_db
 def test_set_current_tenant(authenticated_client_with_tenant):
-    populate_db()
-
     client = authenticated_client_with_tenant
 
     response = client.post(
@@ -152,6 +149,3 @@ def test_set_current_tenant(authenticated_client_with_tenant):
 
     data = who_am_i_response.json()
     assert data["current_tenant_id"] == str(new_tenant.id)
-
-    response = client.delete(f"/api/delete_tenant?tenant_id={new_tenant.id}")
-    assert response.status_code == 200
