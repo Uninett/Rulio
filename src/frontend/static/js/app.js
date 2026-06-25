@@ -14,11 +14,15 @@ document.addEventListener("click", function (event) {
 
 function closeModal(event = null) {
     if (event && event.target !== event.currentTarget) return;
+
+    const shouldClose = confirm("Are you sure you want to cancel? \n Your changes will be lost.");
+    if (!shouldClose) return;
+
     document.getElementById('modal-container').innerHTML = '';
 }
 
 function closeModalAndRefresh(url) {
-    closeModal();
+    document.getElementById('modal-container').innerHTML = '';
 
     if (!url) return;
 

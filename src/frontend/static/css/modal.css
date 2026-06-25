@@ -71,3 +71,15 @@ textarea {
     padding: 0.75rem;
     min-height: 4rem;
 }
+
+.btn-cancel {
+    background-color: transparent;
+    border-color: transparent;
+    color: #B60203;
+    /* color-interaction-critical-strong-default */
+}
+
+.btn-cancel:hover {
+    background-color: #FFEAE9;
+    /* color-support-critical-subtle */
+}
