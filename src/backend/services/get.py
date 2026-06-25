@@ -15,13 +15,13 @@ logger = set_up_logger(__name__)
 
 DJANGO_MODEL_MAPPING = {
     "address": Address,
-    "address_group": AddressGroup,
+    "addressgroup": AddressGroup,
     "service": Service,
-    "service_group": ServiceGroup,
+    "servicegroup": ServiceGroup,
     "rule": Rule,
     "tag": Tag,
-    "address_group_member": AddressGroupMember,
-    "service_group_member": ServiceGroupMember,
+    "addressgroupmember": AddressGroupMember,
+    "servicegroupmember": ServiceGroupMember,
     "filter": Filter,
 }
 

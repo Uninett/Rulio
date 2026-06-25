@@ -410,12 +410,9 @@ def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> 
     if not obj:
         raise ValueError(f"Object with ID {rule_match.object_id} does not exist for rule with ID {rule.id}.")
     model_name = rule_match.object_type.model 
-    if model_name == "addressgroup":
-        model_name = "address_group"
-    elif model_name == "servicegroup":
-        model_name = "service_group"
 
-    if model_name not in ["address", "service", "address_group", "service_group"]:
+
+    if model_name not in ["address", "service", "addressgroup", "servicegroup"]:
         raise ValueError(f"Invalid object type {rule_match.object_type} for rule with ID {rule.id}.")
 
     policy_rule = PolicyRule(

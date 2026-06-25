@@ -324,14 +324,14 @@ class TestGenerateConfigFromFilterObject:
                 request=request,
                 rule_id=rules[2],
                 match_type="source",
-                object_type="address_group",
+                object_type="addressgroup",
                 object_ids=[realistic_acl_address_groups["trusted_sources"].id],
             ),
             add_object_to_rule(
                 request=request,
                 rule_id=rules[3],
                 match_type="destination",
-                object_type="service_group",
+                object_type="servicegroup",
                 object_ids=[realistic_acl_service_groups["web_services"].id],
             ),
         ]
