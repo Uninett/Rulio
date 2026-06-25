@@ -8,9 +8,31 @@
 <tr id="details-{{ row.id }}" class="details-row">
     <td colspan="{{ row.cells|length }}">
         <section class="details-content">
+            {% if row.is_group %}
+            <div class="group-detail-columns">
+                {% for field in row.expand %}
+                {% if field.label == "Addresses" or field.label == "Services" %}
+                <div class="detail-block">
+                    <p> <strong>{{ field.label}}:</strong></p>
+                    {% for value in field.value %}
+                    <div> {{ value }}</div>
+                    {% empty %}
+                    <div>-</div>
+                    {% endfor %}
+                </div>
+
+                {% elif field.label == "Tags" %}
+                <div class="detail-block">
+                    <p><strong>{{ field.label }}:</strong>{{field.value|join:","|default:"-"}}</p>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
             {% for field in row.expand %}
-            <span> <strong>{{ field.label}}:</strong> {{ field.value }}</span>
+            <p> <strong>{{ field.label}}:</strong> {{ field.value }}</p>
             {% endfor %}
+            {% endif %}
         </section>
     </td>
 </tr>
