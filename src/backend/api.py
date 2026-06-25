@@ -675,23 +675,6 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
             "message": "Device creation failed",
             "status": str(e),
         }
-@api.post("/create_device", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
-def create_device_endpoint(request, name: str, vendor: str, platform: str, model: str, role: str, description: str):
-    device = create_device(
-        request=request,
-        name=name,
-        vendor=vendor,
-        platform=platform,
-        model=model,
-        role=role,
-        description=description,
-    )
-    logger.info(f"create_device endpoint succeeded for device id={device.id}")
-    return 200, {
-        "message": "Device created",
-        "status": f"Device created with id {device.id}",
-    }
 
 
 @api.post("/create_device_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
