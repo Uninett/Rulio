@@ -15,6 +15,7 @@ from backend.services.delete import (
     delete_tag_from_tenant,
     remove_tag_from_object,
     delete_rule,
+    delete_tenant,
 )
 from backend.services.get import (
     get_all_addresses_and_groups_with_tags,
@@ -619,6 +620,21 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
 def list_tenants(request):
     tenants = Tenant.objects.all()
     return 200, list(tenants.values())
+
+
+@api.delete(
+    "/delete_tenant",
+    tags=["Management - Tenant"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_superadmin
+def delete_tenant_endpoint(request, tenant_id: int):
+    delete_tenant(tenant_id)
+    logger.info(f"delete_tenant endpoint succeeded for tenant id={tenant_id}")
+    return 200, {
+        "status": "success",
+        "message": f"Tenant with id {tenant_id}, name:  deleted.",
+    }
 
 
 @api.post("/create_device", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})

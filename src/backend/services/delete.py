@@ -3,6 +3,8 @@ from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.services.get import get_object_by_type_and_id
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule import Rule
+from backend.objects.management.tenant import Tenant
+
 
 
 logger = set_up_logger(__name__)
@@ -58,3 +60,12 @@ def delete_rule(rule_id: int, tenant_id: int) -> None:
 
     rule.delete()
     logger.info(f"Deleted rule id={rule_id} from tenant={tenant_id}.")
+
+def delete_tenant(tenant_id: int) -> None:
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+    except Tenant.DoesNotExist:
+        raise ValueError(f"Tenant with id={tenant_id} does not exist.")
+
+    tenant.delete()
+    logger.info(f"Deleted tenant id={tenant_id}.")
