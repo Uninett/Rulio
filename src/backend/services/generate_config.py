@@ -513,3 +513,90 @@ def generate_multi_policy_config(policies: list[Policy], name: str = None) -> st
 
     configs = aerleon_api.Generate([merged_policy.YAMLConfig], definitions)
     return configs
+
+
+def aclcheck(
+    policy: Policy,
+    source_ip: str,
+    destination_ip: str,
+    protocol: str,
+    source_port: str | int | None = None,
+    destination_port: str | int | None = None,
+) -> dict:
+    """
+    Evaluate a specific traffic flow against a generated Aerleon policy.
+
+    This function builds Aerleon naming definitions from the ``Policy`` object's
+    collected network and service definitions, then calls Aerleon's
+    ``api.AclCheck`` API to determine which term or terms match the provided
+    traffic parameters and what action would be taken.
+
+    Args:
+        policy (Policy): The policy containing the generated Aerleon-compatible
+            policy structure in ``policy.YAMLConfig`` and the associated
+            definitions in ``policy.networks`` and ``policy.services``.
+        source_ip (str): Source IP address or network for the traffic being
+            checked.
+        destination_ip (str): Destination IP address or network for the traffic
+            being checked.
+        protocol (str): IP protocol for the traffic, for example ``"tcp"``,
+            ``"udp"``, or ``"icmp"``.
+        source_port (str | int | None, optional): Source port for the traffic.
+            This is typically required for port-based protocols such as TCP and
+            UDP.
+        destination_port (str | int | None, optional): Destination port for the
+            traffic. This is typically required for port-based protocols such as
+            TCP and UDP.
+
+    Returns:
+        dict: A summary dictionary returned by Aerleon ``api.AclCheck``. Its
+        structure is expected to be:
+
+        {
+            "filter_name": {
+                "term_name": {
+                    "possibles": [...],
+                    "message": "..."
+                }
+            }
+        }
+
+        Where:
+        - the top-level keys are filter names
+        - the nested keys are matched term names
+        - ``possibles`` contains conditional match reasons, if any
+        - ``message`` contains the human-readable match and action summary
+
+    Raises:
+        Any exception raised by Aerleon's definition parsing or ``api.AclCheck``
+        call will propagate to the caller.
+
+    Notes:
+        - This function assumes the Aerleon API version where ``api.AclCheck``
+          accepts ``input_policy``, ``definitions``, ``src``, ``dst``, ``sport``,
+          ``dport``, and ``proto`` as documented.
+        - If no terms match, Aerleon may return an empty dictionary or other
+          falsey value depending on the API behavior.
+        - For non-port-based protocols such as ICMP, ``source_port`` and
+          ``destination_port`` are usually not meaningful, but may still be
+          passed through if provided.
+    """
+    definitions = naming.Naming()
+
+    definitions_obj = {
+        "networks": policy.networks.get("networks", {}),
+        "services": policy.services.get("services", {}),
+    }
+
+    definitions.ParseDefinitionsObject(definitions_obj, policy.name)
+
+    acl_results = aerleon_api.AclCheck(
+        input_policy=policy.YAMLConfig,
+        definitions=definitions,
+        src=source_ip,
+        dst=destination_ip,
+        sport=None if source_port is None else str(source_port),
+        dport=None if destination_port is None else str(destination_port),
+        proto=protocol,
+    )
+    return acl_results
