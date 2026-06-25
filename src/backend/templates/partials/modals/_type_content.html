@@ -15,19 +15,37 @@
         </div>
 
         <div class="form-group">
-            <label for="type">Type<span class="required"> *</span></label>
-
             {% if modal_type == "item" and item_type_editable %}
+
             {% if modal_object_type == "addresses" %}
+            <label for="type">Address type</label>
             <select id="type" class="type" name="addr_type">
                 <option value="host">Host</option>
                 <option value="network">Network</option>
                 <option value="range">Range</option>
             </select>
+
+            {% elif modal_object_type == "services" %}
+            <label for="type">Protocol</label>
+
+            <select id="type" class="type" name="protocol">
+                <option value="TCP">TCP</option>
+                <option value="UDP">UDP</option>
+                <option value="ICMP">ICMP</option>
+                <option value="ICMPv6">ICMPv6</option>
+                <option value="GRE">GRE</option>
+                <option value="ESP">ESP</option>
+                <option value="AH">AH</option>
+                <option value="IP">IP</option>
+            </select>
+
             {% else %}
+            <label for="type">Type</label>
             <input id="type" class="type" name="type" type="text">
             {% endif %}
+
             {% else %}
+            <label for="type">Type</label>
             <input id="type" class="type" name="type_display" type="text"
                 value="{% if modal_type == 'item' %}{{ modal_type_labels.item }}{% else %}{{ modal_type_labels.group }}{% endif %}"
                 disabled>
@@ -44,8 +62,8 @@
     {% endif %}
 
     <div class="form-group form-description">
-        <label for="description">Description<span class="required"> *</span></label>
-        <textarea id="description" name="description" required></textarea>
+        <label for="description">Description</label>
+        <textarea id="description" name="description"></textarea>
     </div>
 
     {% include modal_content_partial %}

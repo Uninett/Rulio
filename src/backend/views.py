@@ -1,10 +1,16 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from .api import (
-    get_addresses_and_groups_with_tags_endpoint,
+    # Tenant
     list_tenants,
-    get_services_and_groups_with_tags_endpoint,
+    # Object Page: Address
+    get_addresses_and_groups_with_tags_endpoint,
     create_address_endpoint,
+    create_address_group_endpoint,
+    # Object Page: Service
+    get_services_and_groups_with_tags_endpoint,
+    create_service_endpoint,
+    create_service_group_endpoint,
 )
 from django.urls import reverse
 
@@ -225,10 +231,10 @@ def post_address_view(request):
     if status not in [200, 201]:
         return render(
             request,
-            "partials/modals/_type_content.html",
+            "partials/modals/_modal_form.html",
             {
                 "modal_object_type": "addresses",
-                "modal_content_partial": "partials/modals/_addresses_form.html",
+                "modal_content_partial": "partials/modals/_address_form.html",
                 "modal_supports_types": True,
                 "modal_type": "item",
                 "item_type_editable": True,
@@ -261,6 +267,59 @@ def post_address_view(request):
             created_address.get("ipv6Address_end") or "",
             created_address.get("address_groups", []),
             created_address.get("addresses", []),
+        ],
+    }
+
+    return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
+# Handles creation of a new address group from modal form submission.
+def post_address_group_view(request):
+    payload = Payload()
+    payload.name = request.POST.get("name", "")
+    payload.description = request.POST.get("description", "")
+    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+
+    status, created_address_group = create_address_group_endpoint(request, payload)
+
+    if status not in [200, 201]:
+        return render(
+            request,
+            "partials/modals/_modal_form.html",
+            {
+                "modal_object_type": "addresses",
+                "modal_content_partial": "partials/modals/_address_group_form.html",
+                "modal_supports_types": True,
+                "modal_type": "group",
+                "item_type_editable": True,
+                "modal_type_labels": {
+                    "item": "Address",
+                    "group": "Address Group",
+                },
+                "error_message": "Could not create address group.",
+            },
+            status=400,
+        )
+
+    row = {
+        "id": f"{created_address_group.get('type', '').lower()}-{created_address_group.get('id')}",
+        "cells": [
+            created_address_group.get("type", ""),
+            created_address_group.get("name", ""),
+            created_address_group.get("description", ""),
+            "-",
+            "-",
+            created_address_group.get("tags", ""),
+        ],
+        "expand": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            [],
+            created_address_group.get("addresses", []),
         ],
     }
 
@@ -325,6 +384,99 @@ def get_services_view(request):
     }
 
 
+# Handles creation of a new service from modal form submission.
+def post_service_view(request):
+    payload = Payload()
+    payload.name = request.POST.get("name", "")
+    payload.description = request.POST.get("description", "")
+    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+    payload.protocol = request.POST.get("protocol", "")
+    payload.port_start = request.POST.get("port_start") or None
+    payload.port_end = request.POST.get("port_end") or None
+
+    status, created_service = create_service_endpoint(request, payload)
+
+    if status not in [200, 201]:
+        return render(
+            request,
+            "partials/modals/_modal_form.html",
+            {
+                "modal_object_type": "services",
+                "modal_content_partial": "partials/modals/_service_form.html",
+                "modal_supports_types": True,
+                "modal_type": "item",
+                "item_type_editable": False,
+                "modal_type_labels": {
+                    "item": "Service",
+                    "group": "Group",
+                },
+                "error_message": "Could not create service.",
+            },
+            status=400,
+        )
+
+    row = {
+        "id": f"{created_service.get('type', '').lower()}-{created_service.get('id')}",
+        "cells": [
+            created_service.get("type", ""),
+            created_service.get("name", ""),
+            created_service.get("description", ""),
+            created_service.get("protocol", ""),
+            created_service.get("port_start", ""),
+            created_service.get("port_end", ""),
+            created_service.get("tags", ""),
+        ],
+        "raw": created_service,
+    }
+
+    return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
+# Handles creation of a new service group from modal form submission.
+def post_service_group_view(request):
+    payload = Payload()
+    payload.name = request.POST.get("name", "")
+    payload.description = request.POST.get("description", "")
+    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+
+    status, created_service_group = create_service_group_endpoint(request, payload)
+
+    if status not in [200, 201]:
+        return render(
+            request,
+            "partials/modals/_type_content.html",
+            {
+                "modal_object_type": "services",
+                "modal_content_partial": "partials/modals/_service_group_form.html",
+                "modal_supports_types": True,
+                "modal_type": "group",
+                "item_type_editable": True,
+                "modal_type_labels": {
+                    "item": "Service",
+                    "group": "Service Group",
+                },
+                "error_message": "Could not create service group.",
+            },
+            status=400,
+        )
+
+    row = {
+        "id": f"{created_service_group.get('type', '').lower()}-{created_service_group.get('id')}",
+        "cells": [
+            created_service_group.get("type", ""),
+            created_service_group.get("name", ""),
+            created_service_group.get("description", ""),
+            "-",
+            "-",
+            "-",
+            created_service_group.get("tags", ""),
+        ],
+        "raw": created_service_group,
+    }
+
+    return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
 """
 ====================================================================
 Tags Page
@@ -366,14 +518,14 @@ def get_add_modal_config(object_type):
                 "group": "Device Group",
             },
             "types": {
-                "item": "partials/modals/_devices_form.html",
-                "group": "partials/modals/_device_groups_form.html",
+                "item": "partials/modals/_device_form.html",
+                "group": "partials/modals/_device_group_form.html",
             },
         },
         "filters": {
             "title": "Add Filter",
             "supports_types": False,
-            "form_partial": "partials/modals/_filters_form.html",
+            "form_partial": "partials/modals/_filter_form.html",
         },
         "addresses": {
             "title": "Add Address",
@@ -385,32 +537,43 @@ def get_add_modal_config(object_type):
                 "group": "Address Group",
             },
             "types": {
-                "item": "partials/modals/_addresses_form.html",
-                "group": "partials/modals/_address_groups_form.html",
+                "item": "partials/modals/_address_form.html",
+                "group": "partials/modals/_address_group_form.html",
             },
-            "post_url": reverse("post-address-view"),
+            "post_urls": {
+                "item": reverse("post-address-view"),
+                "group": reverse("post-address-group-view"),
+            },
             "target": "#addresses-table",
             "swap": "beforeend",
             "submit_handler": "prepareAddressForm",
+            "refresh_url": reverse("objects-addresses"),
         },
         "services": {
             "title": "Add Service",
             "supports_types": True,
             "default_type": "item",
-            "item_type_editable": False,
+            "item_type_editable": True,
             "type_labels": {
                 "item": "Service",
                 "group": "Service Group",
             },
             "types": {
-                "item": "partials/modals/_services_form.html",
-                "group": "partials/modals/_service_groups_form.html",
+                "item": "partials/modals/_service_form.html",
+                "group": "partials/modals/_service_group_form.html",
             },
+            "post_urls": {
+                "item": reverse("post-service-view"),
+                "group": reverse("post-service-group-view"),
+            },
+            "target": "#services-table",
+            "swap": "beforeend",
+            "refresh_url": reverse("objects-services"),
         },
         "tags": {
             "title": "Add Tag",
             "supports_types": False,
-            "form_partial": "partials/modals/_tags_form.html",
+            "form_partial": "partials/modals/_tag_form.html",
         },
     }
     return configs[object_type]  # Return the modal config for the selected object type
@@ -428,6 +591,10 @@ def get_add_modal(request, object_type):
         selected_type = None
         modal_content_partial = config["form_partial"]
 
+    modal_post_url = config.get("post_url")
+    if config.get("supports_types") and config.get("post_urls"):
+        modal_post_url = config["post_urls"].get(selected_type)
+
     return render(
         request,
         "partials/_modal.html",
@@ -440,21 +607,30 @@ def get_add_modal(request, object_type):
             "item_type_editable": config.get("item_type_editable", False),
             "modal_type_labels": config.get("type_labels", {}),
             "modal_content_partial": modal_content_partial,
-            "modal_post_url": config.get("post_url"),
+            "modal_post_url": modal_post_url,
             "modal_target": config.get("target"),
             "modal_swap": config.get("swap"),
             "modal_submit_handler": config.get("submit_handler"),
+            "modal_refresh_url": config.get("refresh_url"),
         },
     )
 
 
 # Render the modal content when switching between item/group form types.
 def get_add_modal_form_content(request, object_type, type):
-    config = get_add_modal_config(object_type)  # Load modal settings for this object type
+    config = get_add_modal_config(object_type)
+
+    modal_post_url = config.get("post_url")
+    if config.get("supports_types") and config.get("post_urls"):
+        modal_post_url = config["post_urls"].get(type)
+
+    modal_submit_handler = config.get("submit_handler")
+    if object_type == "addresses" and type == "group":
+        modal_submit_handler = None
 
     return render(
         request,
-        "partials/modals/_type_content.html",
+        "partials/modals/_modal_form.html",
         {
             "modal_object_type": object_type,
             "modal_type": type,
@@ -462,5 +638,10 @@ def get_add_modal_form_content(request, object_type, type):
             "item_type_editable": config.get("item_type_editable", False),
             "modal_type_labels": config.get("type_labels", {}),
             "modal_content_partial": config["types"][type],
+            "modal_post_url": modal_post_url,
+            "modal_target": config.get("target"),
+            "modal_swap": config.get("swap"),
+            "modal_submit_handler": modal_submit_handler,
+            "modal_refresh_url": config.get("refresh_url"),
         },
     )

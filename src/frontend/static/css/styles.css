@@ -108,7 +108,8 @@ button {
 }
 
 select[name="addr_type"],
-select[name="tenant"] {
+select[name="tenant"],
+select[name="protocol"] {
     background-color: white;
     border: 1px solid #767676;
 }
