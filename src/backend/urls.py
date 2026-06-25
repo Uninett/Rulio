@@ -39,6 +39,7 @@ from .views import (
     # Objects Page: Service
     get_objects_services,
     post_service_view,
+    post_service_group_view,
     # Tags Page
     get_tags_page,
     # Modal Partial
@@ -63,6 +64,7 @@ urlpatterns = [
     # Objects Page: Service
     path("objects/services/", get_objects_services, name="objects-services"),
     path("services/create/", post_service_view, name="post-service-view"),
+    path("service-groups/create/", post_service_group_view, name="post-service-group-view"),
     # Tags Page
     path("tags/", get_tags_page, name="tags"),
     # Modal Partial

@@ -10,6 +10,7 @@ from .api import (
     # Object Page: Service
     get_services_and_groups_with_tags_endpoint,
     create_service_endpoint,
+    create_service_group_endpoint,
 )
 from django.urls import reverse
 
@@ -431,6 +432,51 @@ def post_service_view(request):
     return render(request, "partials/objects/_tableRow.html", {"row": row})
 
 
+# Handles creation of a new service group from modal form submission.
+def post_service_group_view(request):
+    payload = Payload()
+    payload.name = request.POST.get("name", "")
+    payload.description = request.POST.get("description", "")
+    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+
+    status, created_service_group = create_service_group_endpoint(request, payload)
+
+    if status not in [200, 201]:
+        return render(
+            request,
+            "partials/modals/_type_content.html",
+            {
+                "modal_object_type": "services",
+                "modal_content_partial": "partials/modals/_service_group_form.html",
+                "modal_supports_types": True,
+                "modal_type": "group",
+                "item_type_editable": True,
+                "modal_type_labels": {
+                    "item": "Service",
+                    "group": "Service Group",
+                },
+                "error_message": "Could not create service group.",
+            },
+            status=400,
+        )
+
+    row = {
+        "id": f"{created_service_group.get('type', '').lower()}-{created_service_group.get('id')}",
+        "cells": [
+            created_service_group.get("type", ""),
+            created_service_group.get("name", ""),
+            created_service_group.get("description", ""),
+            "-",
+            "-",
+            "-",
+            created_service_group.get("tags", ""),
+        ],
+        "raw": created_service_group,
+    }
+
+    return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
 """
 ====================================================================
 Tags Page
@@ -516,7 +562,10 @@ def get_add_modal_config(object_type):
                 "item": "partials/modals/_service_form.html",
                 "group": "partials/modals/_service_group_form.html",
             },
-            "post_url": reverse("post-service-view"),
+            "post_urls": {
+                "item": reverse("post-service-view"),
+                "group": reverse("post-service-group-view"),
+            },
             "target": "#services-table",
             "swap": "beforeend",
             "refresh_url": reverse("objects-services"),
