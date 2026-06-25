@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django.http import HttpResponse
 from .api import (
     # Tenant
     list_tenants,
@@ -46,23 +45,8 @@ def get_tenants_view(request):
 def get_tenant_context(request):
     return {
         "tenants": get_tenants_view(request),
-        "selected_tenant": request.session.get("tenant_id"),
+        "selected_tenant": request.session.get("current_tenant_id"),
     }
-
-
-# Reads the currently selected tenant from the session (temporary solution until set_tenant api endpoint is refactored)
-def set_selected_tenant(request):
-    if request.method == "POST":
-        tenant_id = request.POST.get("tenant")
-
-        if tenant_id:
-            request.session["tenant_id"] = tenant_id
-        else:
-            request.session.pop("tenant_id", None)
-
-        return HttpResponse(status=204)
-
-    return HttpResponse(status=405)
 
 
 """
@@ -214,7 +198,9 @@ def post_address_view(request):
     payload = Payload()  # Build a payload object from submitted form data.
     payload.name = request.POST.get("name", "")
     payload.description = request.POST.get("description", "")
-    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+    payload.tenant_id = (
+        int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    )
     payload.addr_type = request.POST.get("addr_type", "host")
     payload.ipv4_type = request.POST.get("ipv4_type") or None
     payload.ipv6_type = request.POST.get("ipv6_type") or None
@@ -278,7 +264,9 @@ def post_address_group_view(request):
     payload = Payload()
     payload.name = request.POST.get("name", "")
     payload.description = request.POST.get("description", "")
-    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+    payload.tenant_id = (
+        int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    )
 
     status, created_address_group = create_address_group_endpoint(request, payload)
 
@@ -389,7 +377,9 @@ def post_service_view(request):
     payload = Payload()
     payload.name = request.POST.get("name", "")
     payload.description = request.POST.get("description", "")
-    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+    payload.tenant_id = (
+        int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    )
     payload.protocol = request.POST.get("protocol", "")
     payload.port_start = request.POST.get("port_start") or None
     payload.port_end = request.POST.get("port_end") or None
@@ -437,7 +427,9 @@ def post_service_group_view(request):
     payload = Payload()
     payload.name = request.POST.get("name", "")
     payload.description = request.POST.get("description", "")
-    payload.tenant_id = int(request.session.get("tenant_id")) if request.session.get("tenant_id") else None
+    payload.tenant_id = (
+        int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    )
 
     status, created_service_group = create_service_group_endpoint(request, payload)
 
