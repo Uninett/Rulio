@@ -24,8 +24,6 @@ from .api import (
 )
 
 from .views import (
-    # Tenant
-    set_selected_tenant,
     # Device Page
     get_devices_page,
     # Filters Page
@@ -50,8 +48,6 @@ from .views import (
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api.urls),
-    # Tenant
-    path("set-tenant/", set_selected_tenant, name="set-tenant"),
     # Device Page
     path("devices/", get_devices_page, name="devices"),
     # Filters Page
