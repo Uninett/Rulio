@@ -17,6 +17,17 @@ function closeModal(event = null) {
     document.getElementById('modal-container').innerHTML = '';
 }
 
+function closeModalAndRefresh(url) {
+    closeModal();
+
+    if (!url) return;
+
+    htmx.ajax('GET', url, {
+        target: '#objects-content',
+        swap: 'innerHTML'
+    });
+}
+
 function prepareAddressForm(event) {
     const form = event.target;
 

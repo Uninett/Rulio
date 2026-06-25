@@ -441,6 +441,7 @@ def get_add_modal_config(object_type):
             "target": "#addresses-table",
             "swap": "beforeend",
             "submit_handler": "prepareAddressForm",
+            "refresh_url": reverse("objects-addresses"),
         },
         "services": {
             "title": "Add Service",
@@ -458,6 +459,7 @@ def get_add_modal_config(object_type):
             "post_url": reverse("post-services-view"),
             "target": "#services-table",
             "swap": "beforeend",
+            "refresh_url": reverse("objects-services"),
         },
         "tags": {
             "title": "Add Tag",
@@ -496,6 +498,7 @@ def get_add_modal(request, object_type):
             "modal_target": config.get("target"),
             "modal_swap": config.get("swap"),
             "modal_submit_handler": config.get("submit_handler"),
+            "modal_refresh_url": config.get("refresh_url"),
         },
     )
 
