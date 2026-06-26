@@ -150,7 +150,7 @@ td:nth-child(1) {
     text-align: left;
     padding-left: 20px;
     line-height: 1.3;
-    background-color: #E8E8E8;
+    background-color: #fffcfc;
 }
 
 .details-content p {
@@ -188,5 +188,5 @@ td:nth-child(1) {
 }
 
 .main-row.expanded-row {
-    background-color: lightgray;
+    background-color: #E0E0E0;
 }
