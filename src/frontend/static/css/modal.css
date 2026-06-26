@@ -90,5 +90,6 @@ textarea {
 
 .btn-cancel:hover {
     background-color: #FFEAE9;
+    border-color: #FFEAE9;
     /* color-support-critical-subtle */
 }
