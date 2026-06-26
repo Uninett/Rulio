@@ -6,7 +6,6 @@ from django.conf import settings
 
 
 from backend.objects.attributes.service import Service
-from backend.objects.management.device_group import DeviceGroup
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateGroupSchema
 from backend.schemas.device import CreateDeviceSchema
