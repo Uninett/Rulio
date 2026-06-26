@@ -12,6 +12,7 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.filters.rule_match import RuleMatch
+from backend.objects.management.interface import Interface
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
@@ -204,3 +205,14 @@ def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: 
 
     logger.info(f"Added Rule {rule.id} to Filter {filter.id} with sequence {sequence}")
     return rule_filter
+
+def add_filter_to_interface(request: object, filter_id: int, interface_id: int):
+    filter = Filter.objects.get(id=filter_id)
+    interface = Interface.objects.get(id=interface_id)
+
+    if filter.tenant_id not in (0, interface.device.tenant_id):
+        raise ValueError(f"Filter {filter.id} does not belong to the same tenant as the interface {interface.id}")
+
+    interface.filters.add(filter)
+    logger.info(f"Added Filter {filter.id} to Interface {interface.id}")
+    return interface, filter

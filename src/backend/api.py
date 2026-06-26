@@ -9,11 +9,13 @@ from backend.objects.attributes.service import Service
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateGroupSchema
 from backend.schemas.device import CreateDeviceSchema
+from backend.schemas.interface import CreateInterfaceSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.authentication import require_read_tenant, require_superadmin, require_write_tenant
 from backend.services.delete import (
     clear_all_tags_from_object,
     delete_device,
+    delete_interface,
     delete_tag_from_tenant,
     remove_tag_from_object,
     delete_rule,
@@ -22,6 +24,7 @@ from backend.services.delete import (
 from backend.services.get import (
     get_all_addresses_and_groups_with_tags,
     get_all_devices_from_tenant,
+    get_all_interfaces_from_device,
     get_all_tags_from_object,
     get_service_groups_with_services_from_tenant,
     get_address_groups_with_addresses_from_tenant,
@@ -35,6 +38,7 @@ from backend.services.create import (
     create_address_group_and_add_addresses,
     create_service_group_and_add_services,
     create_and_add_tag_to_object,
+    create_interface,
     create_service,
     create_tag,
     create_tenant_user_member,
@@ -73,6 +77,7 @@ from backend.services.helper_user_tenant import (
 )
 from backend.services.membership import (
     add_address_to_group,
+    add_filter_to_interface,
     add_objects_to_rule,
     add_service_to_group,
     add_addresses_to_group,
@@ -841,6 +846,75 @@ def list_devices(request):
     return 200, list(devices.values())
 
 
+@api.post("/create_interface", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+@require_write_tenant
+def create_interface_endpoint(request, payload: CreateInterfaceSchema):
+    try:
+        response = create_interface(
+            request=request,
+            name=payload.name,
+            description=payload.description,
+            device_id=payload.device_id,
+            type=payload.type,
+        )
+        logger.info(f"create_interface endpoint succeeded for interface id={response['id']}")
+        return 200, response
+    except Exception as e:
+        logger.error(f"create_interface endpoint failed: {str(e)}")
+        return 403, {
+            "message": "Interface creation failed",
+            "status": str(e),
+        }
+    
+@api.delete("/delete_interface", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+@require_write_tenant
+def delete_interface_endpoint(request, interface_id: int):
+    try:
+        response = delete_interface(interface_id, request.session["current_tenant_id"])
+        logger.info(f"Interface deleted: {response['interface']}")
+        return 200, {
+            "status": "success",
+            "message": f"Interface with id {interface_id} deleted.",
+        }
+    except Exception as e:
+        logger.error(f"Error deleting interface with id {interface_id}: {str(e)}")
+        return 403, {
+            "status": "error",
+            "message": f"Error deleting interface with id {interface_id}: {str(e)}",
+        }
+    
+@api.get("/get_interfaces_for_device", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+@require_read_tenant
+def get_interfaces_for_device_endpoint(request, device_id: int):
+    try:
+        interfaces = get_all_interfaces_from_device(device_id)
+        return 200, list(interfaces.values())
+    except Exception as e:
+        logger.error(f"Error retrieving interfaces for device with id {device_id}: {str(e)}")
+        return 403, {
+            "status": "error",
+            "message": f"Error retrieving interfaces for device with id {device_id}: {str(e)}",
+        }
+    
+@api.post("/add_filter_to_interface", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+@require_write_tenant
+def add_filter_to_interface_endpoint(request, interface_id: int, filter_id: int):
+    try:
+        add_filter_to_interface(request, filter_id, interface_id)
+        logger.info(f"Filter id={filter_id} added to interface id={interface_id}")
+        return 200, {
+            "status": "success",
+            "message": f"Filter id={filter_id} added to interface id={interface_id}",
+        }
+    except Exception as e:
+        logger.error(f"Error adding filter id={filter_id} to interface id={interface_id}: {str(e)}")
+        return 403, {
+            "status": "error",
+            "message": f"Error adding filter id={filter_id} to interface id={interface_id}: {str(e)}",
+        }
+    
+
+
 """
 ====================================================================
 Filter Objects
@@ -923,7 +997,7 @@ def delete_rule_endpoint(request, rule_id: int):
             "status": "error",
             "message": str(e),
         }
-
+    
 
 """
 ====================================================================

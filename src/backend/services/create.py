@@ -12,6 +12,7 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.management.device_group_member import DeviceGroupMember
+from backend.objects.management.interface import Interface
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
@@ -651,3 +652,34 @@ def add_devices_to_group(device_group_id: int, device_ids: list[int]) -> dict:
         "already_present_device_ids": sorted(already_present_ids),
         "not_found_device_ids": sorted(not_found_ids),
     }
+
+def create_interface(request, name: str, description: str, device_id: int, type: str) -> object:
+    tenant_id = get_current_tenant_id(request)
+    # Check if the device exists and belongs to the tenant
+    try:
+        Device.objects.get(id=device_id, tenant_id=tenant_id)
+    except Device.DoesNotExist:
+        raise ValueError(f"Device with id={device_id} does not exist in tenant={tenant_id}.")
+
+    interface = Interface(
+        name=name,
+        description=description,
+        device_id=device_id,
+        type=type,
+    )
+    try:
+        interface.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Interface validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    interface.save()
+    response = {
+        "id": interface.id,
+        "name": interface.name,
+        "description": interface.description,
+        "device_id": interface.device_id,
+        "type": interface.type,
+    }
+    logger.info(f"Created {interface} for device={interface.device_id}")
+    return response

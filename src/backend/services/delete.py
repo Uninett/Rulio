@@ -1,4 +1,5 @@
 from backend.objects.management.device import Device
+from backend.objects.management.interface import Interface
 from backend.utils.logger import set_up_logger
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.services.get import get_object_by_type_and_id
@@ -79,3 +80,13 @@ def delete_device(device_id: int, tenant_id: int) -> None:
     device.delete()
     logger.info(f"Deleted device id={device_id} from tenant={tenant_id}.")
     return {"status": "success", "device": {"id": device_id}}
+
+def delete_interface(interface_id: int, tenant_id: int) -> None:
+    try:
+        interface = Interface.objects.get(id=interface_id, device__tenant_id=tenant_id)
+    except Interface.DoesNotExist:
+        raise ValueError(f"Interface with id={interface_id} does not exist in tenant={tenant_id}.")
+
+    interface.delete()
+    logger.info(f"Deleted interface id={interface_id} from tenant={tenant_id}.")
+    return {"status": "success", "interface": {"id": interface_id}}
