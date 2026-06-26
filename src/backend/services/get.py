@@ -125,6 +125,7 @@ def get_address_groups_with_addresses_from_tenant(tenant_id: int, get="all") -> 
                 {
                     "address_id": membership.address.id,
                     "address_name": membership.address.name,
+                    "addr_type": membership.address.addr_type,
                     "ipv4_type": membership.address.ipv4_type,
                     "ipv6_type": membership.address.ipv6_type,
                     "ipv4Network": membership.address.ipv4Network,
@@ -202,6 +203,7 @@ def get_all_addresses_and_groups_with_tags(tenant_id: int) -> list[dict]:
                 "id": address.id,
                 "name": address.name,
                 "description": address.description,
+                "addr_type": address.addr_type,
                 "ipv4_type": address.ipv4_type,
                 "ipv6_type": address.ipv6_type,
                 "ipv4Network": address.ipv4Network,
@@ -297,6 +299,42 @@ def get_all_services_and_groups_with_tags(tenant_id: int) -> list[dict]:
                 "service_groups": groups_by_service.get(service.id, []),
             }
         )
+
+    return result
+
+
+def get_all_rules_with_objects_from_tenant(tenant_id: int) -> list[dict]:
+    rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("matches")
+    result = []
+    for rule in rules:
+        rule_dict = {
+            "rule_id": rule.id,
+            "rule_name": rule.name,
+            "rule_description": rule.description,
+            "rule_tenant_id": rule.tenant_id,
+            "rule_action": rule.action,
+            "rule_log_type": rule.log_type,
+            "rule_hit_count": rule.hit_count,
+            "rule_date_created": rule.date_created,
+            "rule_date_changed": rule.date_changed,
+            "rule_created_by": rule.created_by,
+            "rule_changed_by": rule.changed_by,
+            "rule_enable": rule.enable,
+            "objects": [],
+        }
+        for match in rule.matches.all():
+            obj = match.content_object
+            if obj:
+                rule_dict["objects"].append(
+                    {
+                        "object_type": obj.__class__.__name__,
+                        "object_id": obj.id,
+                        "object_name": getattr(obj, "name", None),
+                        "match_type": match.match,
+                    }
+                )
+
+        result.append(rule_dict)
 
     return result
 
