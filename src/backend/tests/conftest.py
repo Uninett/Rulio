@@ -704,3 +704,162 @@ def sample_rules(request_with_session, create_testing_tenant):
         ),
     ]
     return sample_rules
+
+
+@pytest.fixture
+def aclcheck_test_addresses(create_testing_tenant):
+    addresses = [
+        Address(
+            name="ACLCheck_Test_Source_Address",
+            description="Source subnet for ACLCheck function test",
+            tenant_id=create_testing_tenant.id,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="10.10.10.0/24",
+        ),
+        Address(
+            name="ACLCheck_Test_Destination_Web_Address",
+            description="Web destination host for ACLCheck function test",
+            tenant_id=create_testing_tenant.id,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="172.16.1.10/32",
+        ),
+        Address(
+            name="ACLCheck_Test_Destination_DNS_Address",
+            description="DNS destination host for ACLCheck function test",
+            tenant_id=create_testing_tenant.id,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="172.16.2.20/32",
+        ),
+        Address(
+            name="ACLCheck_Test_Any_Destination_Address",
+            description="Any destination for ACLCheck function test",
+            tenant_id=create_testing_tenant.id,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="0.0.0.0/0",
+            ipv6_type="standard",
+            ipv6Network="::/0",
+        ),
+    ]
+
+    for address in addresses:
+        address.save()
+
+    return addresses
+
+
+@pytest.fixture
+def aclcheck_test_services(create_testing_tenant):
+    services = [
+        Service(
+            name="ACLCheck_Test_HTTPS_Service",
+            description="HTTPS service for ACLCheck function test",
+            tenant_id=create_testing_tenant.id,
+            protocol="tcp",
+            port_start=443,
+            port_end=443,
+        ),
+        Service(
+            name="ACLCheck_Test_DNS_UDP_Service",
+            description="DNS UDP service for ACLCheck function test",
+            tenant_id=create_testing_tenant.id,
+            protocol="udp",
+            port_start=53,
+            port_end=53,
+        ),
+        Service(
+            name="ACLCheck_Test_ICMP_Service",
+            description="ICMP service for ACLCheck function test",
+            tenant_id=create_testing_tenant.id,
+            protocol="icmp",
+        ),
+    ]
+
+    for service in services:
+        service.save()
+
+    return services
+
+
+@pytest.fixture
+def aclcheck_test_policy_rules(aclcheck_test_addresses, aclcheck_test_services):
+    address_by_name = {address.name: address for address in aclcheck_test_addresses}
+    service_by_name = {service.name: service for service in aclcheck_test_services}
+
+    return [
+        PolicyRule(
+            name="Allow_HTTPS_Source",
+            obj_type="address",
+            action="accept",
+            object=address_by_name["ACLCheck_Test_Source_Address"],
+            direction="source",
+            sequence=10,
+        ),
+        PolicyRule(
+            name="Allow_HTTPS_Destination",
+            obj_type="address",
+            action="accept",
+            object=address_by_name["ACLCheck_Test_Destination_Web_Address"],
+            direction="destination",
+            sequence=10,
+        ),
+        PolicyRule(
+            name="Allow_HTTPS_Service",
+            obj_type="service",
+            action="accept",
+            object=service_by_name["ACLCheck_Test_HTTPS_Service"],
+            direction="destination",
+            sequence=10,
+        ),
+        PolicyRule(
+            name="Allow_DNS_Source",
+            obj_type="address",
+            action="accept",
+            object=address_by_name["ACLCheck_Test_Source_Address"],
+            direction="source",
+            sequence=20,
+        ),
+        PolicyRule(
+            name="Allow_DNS_Destination",
+            obj_type="address",
+            action="accept",
+            object=address_by_name["ACLCheck_Test_Destination_DNS_Address"],
+            direction="destination",
+            sequence=20,
+        ),
+        PolicyRule(
+            name="Allow_DNS_Service",
+            obj_type="service",
+            action="accept",
+            object=service_by_name["ACLCheck_Test_DNS_UDP_Service"],
+            direction="destination",
+            sequence=20,
+        ),
+        PolicyRule(
+            name="Deny_ICMP_Source",
+            obj_type="address",
+            action="deny",
+            object=address_by_name["ACLCheck_Test_Source_Address"],
+            direction="source",
+            sequence=30,
+        ),
+        PolicyRule(
+            name="Deny_ICMP_Destination",
+            obj_type="address",
+            action="deny",
+            object=address_by_name["ACLCheck_Test_Any_Destination_Address"],
+            direction="destination",
+            sequence=30,
+        ),
+        PolicyRule(
+            name="Deny_ICMP_Service",
+            obj_type="service",
+            action="deny",
+            object=service_by_name["ACLCheck_Test_ICMP_Service"],
+            direction="destination",
+            sequence=30,
+        ),
+    ]
