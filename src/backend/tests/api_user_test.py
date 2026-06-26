@@ -176,7 +176,7 @@ def test_add_tenant_privileges_to_user(authenticated_client_with_tenant):
     )
     assert response.status_code == 200
 
-    new_request = client.post(
+    client.post(
         "/api/add_tenant_privileges_to_user",
         {"tenant_id": "1", "user_id": response.json()["user_id"], "role": "member"},
         content_type="application/json",
