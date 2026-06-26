@@ -475,16 +475,14 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
 
 
 def create_device(
-    request: object, name: str, vendor: str, platform: str, model: str, role: str, description: str
+    request: object, name: str, platform: str, description: str, type: str
 ) -> object:
     tenant_id = get_current_tenant_id(request)
 
     device = Device(
         name=name,
-        vendor=vendor,
         platform=platform,
-        model=model,
-        role=role,
+        type = type,
         description=description,
         tenant_id=tenant_id,
     )
@@ -505,7 +503,7 @@ def create_device_group(request: object, name: str, description: str) -> object:
     device_group = DeviceGroup(
         name=name,
         description=description,
-        tenant_id_id=tenant_id,
+        tenant_id=tenant_id,
     )
     try:
         device_group.full_clean()

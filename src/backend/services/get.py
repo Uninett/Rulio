@@ -7,6 +7,7 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
+from backend.objects.management.device import Device
 from backend.objects.management.tenant import Tenant
 from backend.utils.logger import set_up_logger
 
@@ -404,3 +405,7 @@ def get_object_by_type_and_id(object_type: str, object_id: int):
 def get_all_rules_from_tenant(tenant_id: int) -> list[Rule]:
     requested_rules = Rule.objects.filter(tenant_id=tenant_id)
     return requested_rules
+
+def get_all_devices_from_tenant(tenant_id: int) -> list[Device]:
+    requested_devices = Device.objects.filter(tenant_id=tenant_id)
+    return requested_devices

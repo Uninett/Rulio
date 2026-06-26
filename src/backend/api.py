@@ -7,11 +7,13 @@ from django.conf import settings
 
 from backend.objects.attributes.service import Service
 from backend.objects.management.tenant_user_member import TenantUserMember
-from backend.schemas.address_group import CreateAddressGroupSchema
+from backend.schemas.address_group import CreateGroupSchema
+from backend.schemas.device import CreateDeviceSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.authentication import require_read_tenant, require_superadmin, require_write_tenant
 from backend.services.delete import (
     clear_all_tags_from_object,
+    delete_device,
     delete_tag_from_tenant,
     remove_tag_from_object,
     delete_rule,
@@ -19,6 +21,7 @@ from backend.services.delete import (
 )
 from backend.services.get import (
     get_all_addresses_and_groups_with_tags,
+    get_all_devices_from_tenant,
     get_all_tags_from_object,
     get_service_groups_with_services_from_tenant,
     get_address_groups_with_addresses_from_tenant,
@@ -201,7 +204,7 @@ def create_address_endpoint(
     response={200: MessageSchema, 403: MessageSchema},
 )
 @require_write_tenant
-def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
+def create_address_group_endpoint(request, payload: CreateGroupSchema):
     address_group = create_address_group(request, payload.name, payload.description)
     logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
     return 200, {
@@ -393,7 +396,7 @@ def create_service_endpoint(
 
 @api.post("/create_service_group", tags=["Attributes - Service"])
 @require_write_tenant
-def create_service_group_endpoint(request, payload: CreateAddressGroupSchema):
+def create_service_group_endpoint(request, payload: CreateGroupSchema):
 
     service_group = create_service_group(request, payload.name, payload.description)
     logger.info(f"Service Group created: {service_group}")
@@ -651,26 +654,31 @@ def delete_tenant_endpoint(request, tenant_id: int):
 
 @api.post("/create_device", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
 @require_write_tenant
-def create_device_endpoint(request, name: str, vendor: str, platform: str, model: str, role: str, description: str):
-    device = create_device(
-        request=request,
-        name=name,
-        vendor=vendor,
-        platform=platform,
-        model=model,
-        role=role,
-        description=description,
-    )
-    logger.info(f"create_device endpoint succeeded for device id={device.id}")
-    return 200, {
-        "message": "Device created",
-        "status": f"Device created with id {device.id}",
-    }
+def create_device_endpoint(request, payload: CreateDeviceSchema):
+    try:
+        device = create_device(
+            request=request,
+            name=payload.name,
+            platform=payload.platform,
+            description=payload.description,
+            type=payload.type
+        )
+        logger.info(f"create_device endpoint succeeded for device id={device.id}")
+        return 200, {
+            "message": "Device created",
+            "status": f"Device created with id {device.id}",
+        }
+    except Exception as e:
+        logger.error(f"create_device endpoint failed: {str(e)}")
+        return 403, {
+            "message": "Device creation failed",
+            "status": str(e),
+        }
 
 
 @api.post("/create_device_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
 @require_write_tenant
-def create_device_group_endpoint(request, payload: CreateAddressGroupSchema):
+def create_device_group_endpoint(request, payload: CreateGroupSchema):
     device_group = create_device_group(
         request=request,
         name=payload.name,
@@ -683,7 +691,7 @@ def create_device_group_endpoint(request, payload: CreateAddressGroupSchema):
     }
 
 
-@api.post("/add_devices_to_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
+@api.post("/add_devices_to_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
 @require_write_tenant
 def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int):
     response = add_devices_to_group(group_id, device_ids)
@@ -691,7 +699,19 @@ def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int)
     logger.info(
         f"add_devices_to_group endpoint succeeded for device ids={response['added_device_ids']} and group id={group_id}"
     )
-
+    if response["not_found_device_ids"]:
+        logger.warning(
+            f"Some device ids were not found when adding to group id={group_id}: {response['not_found_device_ids']}"
+        )
+        return 404, {
+            "status": "error",
+            "message": (
+                f"Processed device ids for group id={group_id}. "
+                f"Added={response['added_device_ids']}, "
+                f"already_present={response['already_present_device_ids']}, "
+                f"not_found={response['not_found_device_ids']}"
+            ),
+        }
     return 200, {
         "status": "success",
         "message": (
@@ -701,6 +721,35 @@ def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int)
             f"not_found={response['not_found_device_ids']}"
         ),
     }
+
+@api.delete(
+    "/delete_device",
+    tags=["Management - Device"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_device_endpoint(request, device_id: int):
+    try:
+        response = delete_device(device_id, request.session["current_tenant_id"])
+    except Exception as e:
+        logger.error(f"Error deleting device with id {device_id}: {str(e)}")
+        return 403, {
+            "status": "error",
+            "message": f"Error deleting device with id {device_id}: {str(e)}",
+        }
+    logger.info(f"Device deleted: {response['device']}")
+    return 200, {
+        "status": "success",
+        "message": f"Device with id {device_id} deleted.",
+    }
+
+
+@api.get("/list_devices", tags=["Management - Device"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_devices(request):
+    devices = get_all_devices_from_tenant(request.session["current_tenant_id"])
+    return 200, list(devices.values())
+
 
 
 """
