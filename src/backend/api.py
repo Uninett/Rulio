@@ -4,8 +4,8 @@ from ninja import NinjaAPI
 from ninja.security import django_auth
 from django.conf import settings
 
+
 from backend.objects.attributes.service import Service
-from backend.objects.management.device_group import DeviceGroup
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateAddressGroupSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
@@ -37,6 +37,9 @@ from backend.services.create import (
     create_address_group,
     create_service_group,
     create_rule,
+    create_device,
+    create_device_group,
+    add_devices_to_group,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -105,12 +108,21 @@ def hello(request):
 
 
 # This is a temporary endpoint to set the tenant ID in the session for testing purposes. In a real implementation, this would be handled by an authentication system and middleware.
-@api.get("/set_tenant", tags=["Debugging"])
+@api.get(
+    "/set_tenant",
+    tags=["Debugging"],
+    response={200: dict, 404: MessageSchema},
+)
 def set_tenant(request, tenant_id: str):
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+    except Tenant.DoesNotExist:
+        logger.warning(f"Tried to set tenant_id={tenant_id}, but it does not exist.")
+        return 404, {"status": "error", "message": f"Tenant with id {tenant_id} does not exist."}
     request.session["current_tenant_id"] = tenant_id
     request.session.modified = True
     logger.info(f"Tenant ID set to {tenant_id} in session")
-    return {"message": f"Tenant set to {tenant_id}"}
+    return 200, {"message": f"Tenant set to {tenant_id}"}
 
 
 """
@@ -827,6 +839,10 @@ def who_am_i(request):
             "email": request.user.email,
             "id": request.user.id,
             "current_tenant_id": request.session.get("current_tenant_id"),
+            "is_superuser": request.user.is_superuser,
+            "permissions": TenantUserMember.objects.filter(user_id=request.user.id).values_list("role", flat=True)
+            if not request.user.is_superuser
+            else ["superadmin"],
         }
 
     return {
@@ -840,7 +856,17 @@ def who_am_i(request):
 @api.get("/get_users", tags=["User Management"])
 @require_superadmin
 def get_users(request):
-    return list(User.objects.values())
+    users = []
+
+    for user in User.objects.all():
+        user_data = {
+            **user.__dict__,
+            "permissions": list(TenantUserMember.objects.filter(user_id=user.id).values_list("role", flat=True)),
+        }
+        user_data.pop("_state", None)
+        users.append(user_data)
+
+    return users
 
 
 @api.post("/create_user", tags=["User Management"], auth=None)
@@ -857,6 +883,9 @@ def create_user(request, payload: CreateUserSchema):
         email=payload.email,
         password=payload.password,
     )
+
+    for permission in payload.permissions:
+        TenantUserMember.objects.create(user=user, tenant_id=payload.tenant_id, role=permission)
 
     logger.info(f"User created: {user.username}")
     return {

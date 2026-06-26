@@ -1,15 +1,9 @@
 from constants import GLOBAL_TENANT_ID
 import pytest
-from django.contrib.contenttypes.models import ContentType
 from django.test import Client
 
 from backend.objects.management.tenant import Tenant
-from backend.objects.filters.rule import Rule
-from backend.objects.filters.rule_match import RuleMatch
-from backend.objects.attributes.address import Address
 from django.contrib.auth import get_user_model
-from django.test import Client
-from backend.services.seed.populate import populate_db
 
 
 @pytest.fixture
@@ -67,10 +61,10 @@ def test_logout(authenticated_client_with_tenant):
 
 
 @pytest.mark.django_db
-def test_members(authenticated_client_with_tenant):
+def test__api_get_users(authenticated_client_with_tenant):
     client = authenticated_client_with_tenant
 
-    response = client.get("/api/members")
+    response = client.get("/api/get_users")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
@@ -87,13 +81,15 @@ def test_create_user(authenticated_client_with_tenant):
         "/api/create_user",
         {
             "username": "newuser",
-            "password": "newpassword",
-            "email": "email@example.com",
+            "email": "newuser@example.com",
+            "password": "password123",
+            "permissions": [],
+            "tenant_id": 1,
         },
         content_type="application/json",
     )
     assert response.status_code == 200
-    check = client.get("/api/members")
+    check = client.get("/api/get_users")
     assert check.status_code == 200
     data = check.json()
     assert any(member["username"] == "newuser" for member in data)
@@ -108,8 +104,10 @@ def test_delete_user(authenticated_client_with_tenant):
         "/api/create_user",
         {
             "username": "tobedeleted",
-            "password": "deletepassword",
-            "email": "example@gmail.com",
+            "email": "tobedeleted@example.com",
+            "password": "password123",
+            "permissions": [],
+            "tenant_id": 1,
         },
         content_type="application/json",
     )
@@ -123,10 +121,11 @@ def test_delete_user(authenticated_client_with_tenant):
     assert response.status_code == 200
 
     # Verify the user is deleted
-    check = client.get("/api/members")
+    check = client.get("/api/get_users")
     assert check.status_code == 200
     data = check.json()
     assert not any(member["username"] == "tobedeleted" for member in data)
+
 
 @pytest.mark.django_db
 def test_set_current_tenant(authenticated_client_with_tenant):
@@ -149,3 +148,36 @@ def test_set_current_tenant(authenticated_client_with_tenant):
 
     data = who_am_i_response.json()
     assert data["current_tenant_id"] == str(new_tenant.id)
+
+
+@pytest.mark.django_db
+def test_set_current_tenant_invalid(authenticated_client_with_tenant):
+    client = authenticated_client_with_tenant
+
+    response = client.get("/api/set_tenant?tenant_id=9999")
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_add_tenant_privileges_to_user(authenticated_client_with_tenant):
+    client = authenticated_client_with_tenant
+
+    # Create a new user
+    response = client.post(
+        "/api/create_user",
+        {
+            "username": "privilegeduser",
+            "email": "example@example.com",
+            "password": "password123",
+            "permissions": [],
+            "tenant_id": 1,
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+
+    new_request = client.post(
+        "/api/add_tenant_privileges_to_user",
+        {"tenant_id": "1", "user_id": response.json()["user_id"], "role": "member"},
+        content_type="application/json",
+    )

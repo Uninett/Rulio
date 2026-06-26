@@ -15,7 +15,7 @@ from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.rule import Rule
-from backend.services.generate_config import Policy, PolicyRule, generate_config
+from backend.services.generate_config import Policy, PolicyRule
 from backend.objects.management.device import Device
 from backend.objects.management.device_group import DeviceGroup
 from backend.utils.logger import set_up_logger
@@ -325,7 +325,7 @@ def create_tenant(request: object, name: str):
 
 
 def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str) -> TenantUserMember:
-    tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id)
+    tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id, role=role)
     logger.info(f"TenantUserMember created: {tenant_user}")
     return tenant_user
 
@@ -410,11 +410,6 @@ def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> 
         raise ValueError(f"Object with ID {rule_match.object_id} does not exist for rule with ID {rule.id}.")
     model_name = rule_match.object_type.model
 
-
-def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: int):
-    rule = Rule.objects.get(id=rule_id)
-    filter = Filter.objects.get(id=filter_id)
-
     if model_name not in ["address", "service", "addressgroup", "servicegroup"]:
         raise ValueError(f"Invalid object type {rule_match.object_type} for rule with ID {rule.id}.")
 
@@ -477,7 +472,6 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
         request=request,
     )
     return policy
-
 
 
 def create_device(
