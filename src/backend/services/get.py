@@ -406,6 +406,7 @@ def get_all_rules_from_tenant(tenant_id: int) -> list[Rule]:
     requested_rules = Rule.objects.filter(tenant_id=tenant_id)
     return requested_rules
 
+
 def get_all_devices_from_tenant(tenant_id: int) -> list[Device]:
     requested_devices = Device.objects.filter(tenant_id=tenant_id)
     return requested_devices

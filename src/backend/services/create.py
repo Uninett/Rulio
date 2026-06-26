@@ -474,15 +474,13 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
     return policy
 
 
-def create_device(
-    request: object, name: str, platform: str, description: str, type: str
-) -> object:
+def create_device(request: object, name: str, platform: str, description: str, type: str) -> object:
     tenant_id = get_current_tenant_id(request)
 
     device = Device(
         name=name,
         platform=platform,
-        type = type,
+        type=type,
         description=description,
         tenant_id=tenant_id,
     )

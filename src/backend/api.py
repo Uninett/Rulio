@@ -661,7 +661,7 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
             name=payload.name,
             platform=payload.platform,
             description=payload.description,
-            type=payload.type
+            type=payload.type,
         )
         logger.info(f"create_device endpoint succeeded for device id={device.id}")
         return 200, {
@@ -691,7 +691,11 @@ def create_device_group_endpoint(request, payload: CreateGroupSchema):
     }
 
 
-@api.post("/add_devices_to_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+@api.post(
+    "/add_devices_to_group",
+    tags=["Management - Device"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
 @require_write_tenant
 def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int):
     response = add_devices_to_group(group_id, device_ids)
@@ -722,6 +726,7 @@ def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int)
         ),
     }
 
+
 @api.delete(
     "/delete_device",
     tags=["Management - Device"],
@@ -749,7 +754,6 @@ def delete_device_endpoint(request, device_id: int):
 def list_devices(request):
     devices = get_all_devices_from_tenant(request.session["current_tenant_id"])
     return 200, list(devices.values())
-
 
 
 """

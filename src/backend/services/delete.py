@@ -69,12 +69,12 @@ def delete_tenant(tenant_id: int) -> None:
     tenant.delete()
     logger.info(f"Deleted tenant id={tenant_id}.")
 
+
 def delete_device(device_id: int, tenant_id: int) -> None:
     try:
         device = Device.objects.get(id=device_id, tenant_id=tenant_id)
     except Device.DoesNotExist:
         raise ValueError(f"Device with id={device_id} does not exist in tenant={tenant_id}.")
-        
 
     device.delete()
     logger.info(f"Deleted device id={device_id} from tenant={tenant_id}.")
