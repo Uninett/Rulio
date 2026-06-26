@@ -32,6 +32,8 @@ from backend.services.get import (
 )
 from backend.services.create import (
     create_address,
+    create_address_group_and_add_addresses,
+    create_service_group_and_add_services,
     create_and_add_tag_to_object,
     create_service,
     create_tag,
@@ -43,6 +45,8 @@ from backend.services.create import (
     create_device,
     create_device_group,
     add_devices_to_group,
+    create_and_add_address_to_groups,
+    create_and_add_service_to_groups,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -282,6 +286,55 @@ def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: i
     }
 
 
+@api.post(
+    "/create_and_add_address_to_groups",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+@require_write_tenant
+def create_and_add_address_to_groups_endpoint(request, payload: CreateAddressSchema, group_ids: list[int]):
+    address = create_and_add_address_to_groups(
+        request=request,
+        name=payload.name,
+        description=payload.description,
+        addr_type=payload.addr_type,
+        ipv4_type=payload.ipv4_type,
+        ipv6_type=payload.ipv6_type,
+        ipv4Network=payload.ipv4Network,
+        ipv6Network=payload.ipv6Network,
+        ipv4Address_start=payload.ipv4Address_start,
+        ipv4Address_end=payload.ipv4Address_end,
+        ipv6Address_start=payload.ipv6Address_start,
+        ipv6Address_end=payload.ipv6Address_end,
+        group_ids=group_ids,
+    )
+    logger.info(f"create_and_add_address_to_groups endpoint succeeded for address id={address.id}")
+    return 200, {
+        "message": "Address created and added to groups",
+        "status": f"Address created with id {address.id} and added to groups {group_ids}",
+    }
+
+
+@api.post(
+    "/create_address_group_and_add_addresses",
+    tags=["Attributes - Address"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+@require_write_tenant
+def create_address_group_and_add_addresses_endpoint(request, payload: CreateAddressGroupSchema, address_ids: list[int]):
+    address_group = create_address_group_and_add_addresses(
+        request=request,
+        name=payload.name,
+        description=payload.description,
+        members=address_ids,
+    )
+    logger.info(f"create_address_group_and_add_addresses endpoint succeeded for address group id={address_group.id}")
+    return 200, {
+        "message": "Address group created and addresses added",
+        "status": f"Address group created with id {address_group.id} and addresses added {address_ids}",
+    }
+
+
 @api.delete(
     "/delete_address",
     tags=["Attributes - Address"],
@@ -468,6 +521,38 @@ def add_services_to_group_endpoint(request, service_ids: list[int], group_id: in
             f"already_present={response['already_present_service_ids']}, "
             f"not_found={response['not_found_service_ids']}"
         ),
+    }
+
+
+@api.post(
+    "/create_and_add_service_to_groups",
+    tags=["Attributes - Service"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+@require_write_tenant
+def create_and_add_service_to_groups_endpoint(request, payload: CreateServiceSchema, group_ids: list[int]):
+    service = create_and_add_service_to_groups(
+        request, payload.name, payload.description, payload.protocol, payload.port_start, payload.port_end, group_ids
+    )
+    return 200, {
+        "message": "Service created and added to groups",
+        "status": f"Service created with id {service.id} and added to groups {group_ids}",
+    }
+
+
+@api.post(
+    "/create_service_group_and_add_services",
+    tags=["Attributes - Service"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
+@require_write_tenant
+def create_service_group_and_add_services_endpoint(request, payload: CreateAddressGroupSchema, service_ids: list[int]):
+    create_service_group_and_add_services(
+        request=request, name=payload.name, description=payload.description, members=service_ids
+    )
+    return 200, {
+        "message": "Service group created and services added",
+        "status": f"Service group created with name {payload.name} and services {service_ids} added",
     }
 
 
