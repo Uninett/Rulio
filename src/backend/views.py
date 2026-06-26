@@ -169,6 +169,7 @@ def get_addresses_view(request):
         is_group = item_type == "AddressGroup"
 
         tags_value = [tag.get("name", "") for tag in item.get("tags", [])]
+        tags_display = ", ".join(tags_value) or ""
         addresses_value = [address.get("name", "") for address in item.get("addresses", [])]
 
         if is_group:
@@ -186,7 +187,7 @@ def get_addresses_view(request):
                 {"label": "IPv6 End", "value": item.get("ipv6Address_end", "")},
                 {
                     "label": "Tags",
-                    "value": ", ".join(tag.get("name", "") for tag in item.get("tags", [])) or "-",
+                    "value": tags_value,
                 },
             ]
 
@@ -198,9 +199,9 @@ def get_addresses_view(request):
                     "Group" if item.get("type") == "AddressGroup" else item.get("type", ""),
                     item.get("name", ""),
                     item.get("description", ""),
-                    item.get("ipv4Network") or "-",
-                    item.get("ipv6Network") or "-",
-                    ", ".join(tag.get("name", "") for tag in item.get("tags", [])) or "-",
+                    item.get("ipv4Network") or "",
+                    item.get("ipv6Network") or "",
+                    tags_display,
                 ],
                 "expand": expand,
             }
@@ -386,7 +387,7 @@ def get_services_view(request):
             expand = [
                 {
                     "label": "Tags",
-                    "value": ", ".join(tag.get("name", "") for tag in item.get("tags", [])) or "-",
+                    "value": tags_value,
                 },
             ]
 
@@ -398,10 +399,10 @@ def get_services_view(request):
                     "Group" if item.get("type") == "ServiceGroup" else item.get("type", ""),
                     item.get("name", ""),
                     item.get("description", ""),
-                    item.get("protocol") or "-",
-                    item.get("port_start") or "-",
-                    item.get("port_end") or "-",
-                    ", ".join(tag.get("name", "") for tag in item.get("tags", [])) or "-",
+                    item.get("protocol") or "",
+                    item.get("port_start") or "",
+                    item.get("port_end") or "",
+                    ", ".join(tags_value) or "",
                 ],
                 "expand": expand,
             }
