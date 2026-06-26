@@ -1,8 +1,10 @@
+from backend.objects.management.device import Device
 from backend.utils.logger import set_up_logger
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.services.get import get_object_by_type_and_id
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule import Rule
+from backend.objects.management.tenant import Tenant
 
 
 logger = set_up_logger(__name__)
@@ -24,8 +26,6 @@ def remove_tag_from_object(object_id: int, object_type: str, tag_id: int) -> int
     obj = get_object_by_type_and_id(object_type, object_id)
     if not isinstance(obj, TaggableMixin):
         raise ValueError(f"Object of type {object_type} does not support tagging.")
-
-    from backend.objects.attributes.tag import Tag
 
     try:
         tag = Tag.objects.get(id=tag_id)
@@ -58,3 +58,24 @@ def delete_rule(rule_id: int, tenant_id: int) -> None:
 
     rule.delete()
     logger.info(f"Deleted rule id={rule_id} from tenant={tenant_id}.")
+
+
+def delete_tenant(tenant_id: int) -> None:
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+    except Tenant.DoesNotExist:
+        raise ValueError(f"Tenant with id={tenant_id} does not exist.")
+
+    tenant.delete()
+    logger.info(f"Deleted tenant id={tenant_id}.")
+
+
+def delete_device(device_id: int, tenant_id: int) -> None:
+    try:
+        device = Device.objects.get(id=device_id, tenant_id=tenant_id)
+    except Device.DoesNotExist:
+        raise ValueError(f"Device with id={device_id} does not exist in tenant={tenant_id}.")
+
+    device.delete()
+    logger.info(f"Deleted device id={device_id} from tenant={tenant_id}.")
+    return {"status": "success", "device": {"id": device_id}}

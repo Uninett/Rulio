@@ -4,25 +4,31 @@ from ninja import NinjaAPI
 from ninja.security import django_auth
 from django.conf import settings
 
+
 from backend.objects.attributes.service import Service
 from backend.objects.management.tenant_user_member import TenantUserMember
-from backend.schemas.address_group import CreateAddressGroupSchema
+from backend.schemas.address_group import CreateGroupSchema
+from backend.schemas.device import CreateDeviceSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.authentication import require_read_tenant, require_superadmin, require_write_tenant
 from backend.services.delete import (
     clear_all_tags_from_object,
+    delete_device,
     delete_tag_from_tenant,
     remove_tag_from_object,
     delete_rule,
+    delete_tenant,
 )
 from backend.services.get import (
     get_all_addresses_and_groups_with_tags,
+    get_all_devices_from_tenant,
     get_all_tags_from_object,
     get_service_groups_with_services_from_tenant,
     get_address_groups_with_addresses_from_tenant,
     get_all_tags_from_tenant,
     get_all_services_and_groups_with_tags,
     get_all_rules_from_tenant,
+    get_all_rules_with_objects_from_tenant,
 )
 from backend.services.create import (
     create_address,
@@ -34,6 +40,9 @@ from backend.services.create import (
     create_address_group,
     create_service_group,
     create_rule,
+    create_device,
+    create_device_group,
+    add_devices_to_group,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -102,12 +111,21 @@ def hello(request):
 
 
 # This is a temporary endpoint to set the tenant ID in the session for testing purposes. In a real implementation, this would be handled by an authentication system and middleware.
-@api.get("/set_tenant", tags=["Debugging"])
+@api.get(
+    "/set_tenant",
+    tags=["Debugging"],
+    response={200: dict, 404: MessageSchema},
+)
 def set_tenant(request, tenant_id: str):
+    try:
+        Tenant.objects.get(id=tenant_id)
+    except Tenant.DoesNotExist:
+        logger.warning(f"Tried to set tenant_id={tenant_id}, but it does not exist.")
+        return 404, {"status": "error", "message": f"Tenant with id {tenant_id} does not exist."}
     request.session["current_tenant_id"] = tenant_id
     request.session.modified = True
     logger.info(f"Tenant ID set to {tenant_id} in session")
-    return {"message": f"Tenant set to {tenant_id}"}
+    return 200, {"message": f"Tenant set to {tenant_id}"}
 
 
 """
@@ -186,7 +204,7 @@ def create_address_endpoint(
     response={200: MessageSchema, 403: MessageSchema},
 )
 @require_write_tenant
-def create_address_group_endpoint(request, payload: CreateAddressGroupSchema):
+def create_address_group_endpoint(request, payload: CreateGroupSchema):
     address_group = create_address_group(request, payload.name, payload.description)
     logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
     return 200, {
@@ -378,7 +396,7 @@ def create_service_endpoint(
 
 @api.post("/create_service_group", tags=["Attributes - Service"])
 @require_write_tenant
-def create_service_group_endpoint(request, payload: CreateAddressGroupSchema):
+def create_service_group_endpoint(request, payload: CreateGroupSchema):
 
     service_group = create_service_group(request, payload.name, payload.description)
     logger.info(f"Service Group created: {service_group}")
@@ -619,11 +637,144 @@ def list_tenants(request):
     return 200, list(tenants.values())
 
 
+@api.delete(
+    "/delete_tenant",
+    tags=["Management - Tenant"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_superadmin
+def delete_tenant_endpoint(request, tenant_id: int):
+    delete_tenant(tenant_id)
+    logger.info(f"delete_tenant endpoint succeeded for tenant id={tenant_id}")
+    return 200, {
+        "status": "success",
+        "message": f"Tenant with id {tenant_id}, name:  deleted.",
+    }
+
+
+@api.post("/create_device", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_device_endpoint(request, payload: CreateDeviceSchema):
+    try:
+        device = create_device(
+            request=request,
+            name=payload.name,
+            platform=payload.platform,
+            description=payload.description,
+            type=payload.type,
+        )
+        logger.info(f"create_device endpoint succeeded for device id={device.id}")
+        return 200, {
+            "message": "Device created",
+            "status": f"Device created with id {device.id}",
+        }
+    except Exception as e:
+        logger.error(f"create_device endpoint failed: {str(e)}")
+        return 403, {
+            "message": "Device creation failed",
+            "status": str(e),
+        }
+
+
+@api.post("/create_device_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_device_group_endpoint(request, payload: CreateGroupSchema):
+    device_group = create_device_group(
+        request=request,
+        name=payload.name,
+        description=payload.description,
+    )
+    logger.info(f"create_device_group endpoint succeeded for device group id={device_group.id}")
+    return 200, {
+        "message": "Device Group created",
+        "status": f"Device Group created with id {device_group.id}",
+    }
+
+
+@api.post(
+    "/add_devices_to_group",
+    tags=["Management - Device"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int):
+    response = add_devices_to_group(group_id, device_ids)
+
+    logger.info(
+        f"add_devices_to_group endpoint succeeded for device ids={response['added_device_ids']} and group id={group_id}"
+    )
+    if response["not_found_device_ids"]:
+        logger.warning(
+            f"Some device ids were not found when adding to group id={group_id}: {response['not_found_device_ids']}"
+        )
+        return 404, {
+            "status": "error",
+            "message": (
+                f"Processed device ids for group id={group_id}. "
+                f"Added={response['added_device_ids']}, "
+                f"already_present={response['already_present_device_ids']}, "
+                f"not_found={response['not_found_device_ids']}"
+            ),
+        }
+    return 200, {
+        "status": "success",
+        "message": (
+            f"Processed device ids for group id={group_id}. "
+            f"Added={response['added_device_ids']}, "
+            f"already_present={response['already_present_device_ids']}, "
+            f"not_found={response['not_found_device_ids']}"
+        ),
+    }
+
+
+@api.delete(
+    "/delete_device",
+    tags=["Management - Device"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
+@require_write_tenant
+def delete_device_endpoint(request, device_id: int):
+    try:
+        response = delete_device(device_id, request.session["current_tenant_id"])
+    except Exception as e:
+        logger.error(f"Error deleting device with id {device_id}: {str(e)}")
+        return 403, {
+            "status": "error",
+            "message": f"Error deleting device with id {device_id}: {str(e)}",
+        }
+    logger.info(f"Device deleted: {response['device']}")
+    return 200, {
+        "status": "success",
+        "message": f"Device with id {device_id} deleted.",
+    }
+
+
+@api.get("/list_devices", tags=["Management - Device"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_devices(request):
+    devices = get_all_devices_from_tenant(request.session["current_tenant_id"])
+    return 200, list(devices.values())
+
+
 """
 ====================================================================
 Filter Objects
 ====================================================================
 """
+
+
+@api.get("/list_rules", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_rules(request):
+    rules = get_all_rules_from_tenant(request.session["current_tenant_id"])
+    return 200, list(rules.values())
+
+
+@api.get("/list_rules_with_objects", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
+@require_read_tenant
+def list_rules_with_objects(request):
+    rules = get_all_rules_with_objects_from_tenant(request.session["current_tenant_id"])
+    return 200, rules
 
 
 @api.post("/create_rule", tags=["Filter - Rule"], response={200: MessageSchema, 403: MessageSchema})
@@ -667,13 +818,6 @@ def add_object_to_rule_endpoint(request, rule_id: int, match_type: str, object_t
             "status": "error",
             "message": str(e),
         }
-
-
-@api.get("/list_rules", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
-def list_rules(request):
-    rules = get_all_rules_from_tenant(request.session["current_tenant_id"])
-    return 200, list(rules.values())
 
 
 @api.delete(
@@ -748,6 +892,10 @@ def who_am_i(request):
             "email": request.user.email,
             "id": request.user.id,
             "current_tenant_id": request.session.get("current_tenant_id"),
+            "is_superuser": request.user.is_superuser,
+            "permissions": TenantUserMember.objects.filter(user_id=request.user.id).values_list("role", flat=True)
+            if not request.user.is_superuser
+            else ["superadmin"],
         }
 
     return {
@@ -761,7 +909,17 @@ def who_am_i(request):
 @api.get("/get_users", tags=["User Management"])
 @require_superadmin
 def get_users(request):
-    return list(User.objects.values())
+    users = []
+
+    for user in User.objects.all():
+        user_data = {
+            **user.__dict__,
+            "permissions": list(TenantUserMember.objects.filter(user_id=user.id).values_list("role", flat=True)),
+        }
+        user_data.pop("_state", None)
+        users.append(user_data)
+
+    return users
 
 
 @api.post("/create_user", tags=["User Management"], auth=None)
@@ -778,6 +936,9 @@ def create_user(request, payload: CreateUserSchema):
         email=payload.email,
         password=payload.password,
     )
+
+    for permission in payload.permissions:
+        TenantUserMember.objects.create(user=user, tenant_id=payload.tenant_id, role=permission)
 
     logger.info(f"User created: {user.username}")
     return {
