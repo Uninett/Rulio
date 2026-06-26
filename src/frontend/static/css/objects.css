@@ -163,7 +163,8 @@ td:nth-child(1) {
 }
 
 .details-content p {
-    margin: 0;
+    display: inline-block;
+    margin: 0 40px 0 0;
 }
 
 .group-detail-columns {
