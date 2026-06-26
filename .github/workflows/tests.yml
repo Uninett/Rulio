@@ -23,6 +23,10 @@ jobs:
           echo "DATABASE_NAME=test_db" > src/.env
           echo "DATABASE_USER=test_user" >> src/.env
           echo "DATABASE_PASS=test_password" >> src/.env
+          echo "SECRET_KEY=your_secret_key" >> src/.env
+          echo "DJANGO_SUPERUSER_USERNAME=admin" >> src/.env
+          echo "DJANGO_SUPERUSER_PASSWORD=adminpassword" >> src/.env
+          echo "DJANGO_SUPERUSER_EMAIL=admin@example.com" >> src/.env
 
       - name: Build and start containers
         run: docker compose -f src/docker-compose.yml up -d --build
