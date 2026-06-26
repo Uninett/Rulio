@@ -321,7 +321,7 @@ def create_and_add_address_to_groups_endpoint(request, payload: CreateAddressSch
     response={200: MessageSchema, 403: MessageSchema},
 )
 @require_write_tenant
-def create_address_group_and_add_addresses_endpoint(request, payload: CreateAddressGroupSchema, address_ids: list[int]):
+def create_address_group_and_add_addresses_endpoint(request, payload: CreateGroupSchema, address_ids: list[int]):
     address_group = create_address_group_and_add_addresses(
         request=request,
         name=payload.name,
@@ -546,7 +546,7 @@ def create_and_add_service_to_groups_endpoint(request, payload: CreateServiceSch
     response={200: MessageSchema, 403: MessageSchema},
 )
 @require_write_tenant
-def create_service_group_and_add_services_endpoint(request, payload: CreateAddressGroupSchema, service_ids: list[int]):
+def create_service_group_and_add_services_endpoint(request, payload: CreateGroupSchema, service_ids: list[int]):
     create_service_group_and_add_services(
         request=request, name=payload.name, description=payload.description, members=service_ids
     )
