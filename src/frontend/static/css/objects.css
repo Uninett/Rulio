@@ -190,3 +190,20 @@ td:nth-child(1) {
 .main-row.expanded-row {
     background-color: #E0E0E0;
 }
+
+/*This is temprary to have all the tags on one line. This needs to be changes to having ... to indicate that there are more that should be shown*/
+.tag-list-container {
+    overflow: hidden;
+    max-height: 18px;
+    line-height: 15px;
+}
+
+.tag-item {
+    border: 1px solid #7351FB;
+    border-radius: 20px;
+    display: inline-block;
+    font-size: smaller;
+    width: auto;
+    padding-left: 4px;
+    padding-right: 4px;
+}

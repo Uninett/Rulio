@@ -201,7 +201,7 @@ def get_addresses_view(request):
                     item.get("description", ""),
                     item.get("ipv4Network") or "",
                     item.get("ipv6Network") or "",
-                    tags_display,
+                    tags_value,
                 ],
                 "expand": expand,
             }
@@ -402,7 +402,7 @@ def get_services_view(request):
                     item.get("protocol") or "",
                     item.get("port_start") or "",
                     item.get("port_end") or "",
-                    ", ".join(tags_value) or "",
+                    tags_value,
                 ],
                 "expand": expand,
             }
