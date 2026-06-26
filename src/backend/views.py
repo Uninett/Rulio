@@ -134,6 +134,43 @@ def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
     }
 
 
+# Fetch all groups of given object_type, by calling all items with "type"=AddressGroup/ServiceGroup
+def get_group_options_view(request, object_type):
+    if object_type == "addresses":
+        status, api_objects = get_addresses_and_groups_with_tags_endpoint(request)
+
+        if status != 200:
+            return []
+
+        return [
+            {
+                "id": item.get("id"),
+                "name": item.get("name", ""),
+            }
+            for item in api_objects
+            if item.get("type") == "AddressGroup"
+        ]
+
+    if object_type == "services":
+        status, api_objects = get_services_and_groups_with_tags_endpoint(request)
+
+        if status != 200:
+            return []
+
+        return [
+            {
+                "id": item.get("id"),
+                "name": item.get("name", ""),
+            }
+            for item in api_objects
+            if item.get("type") == "ServiceGroup"
+        ]
+
+    # TODO: Add for device when endpoints are ready
+
+    return []
+
+
 """
 ====================================================================
 Objects Page: Address
@@ -655,25 +692,27 @@ def get_add_modal(request, object_type):
     if config.get("supports_types") and config.get("post_urls"):
         modal_post_url = config["post_urls"].get(selected_type)
 
-    return render(
-        request,
-        "partials/_modal.html",
-        {
-            "modal_title": config["title"],
-            "modal_mode": "add",
-            "modal_object_type": object_type,
-            "modal_type": selected_type,
-            "modal_supports_types": config.get("supports_types", False),
-            "item_type_editable": config.get("item_type_editable", False),
-            "modal_type_labels": config.get("type_labels", {}),
-            "modal_content_partial": modal_content_partial,
-            "modal_post_url": modal_post_url,
-            "modal_target": config.get("target"),
-            "modal_swap": config.get("swap"),
-            "modal_submit_handler": config.get("submit_handler"),
-            "modal_refresh_url": config.get("refresh_url"),
-        },
-    )
+    context = {
+        "modal_title": config["title"],
+        "modal_mode": "add",
+        "modal_object_type": object_type,
+        "modal_type": selected_type,
+        "modal_supports_types": config.get("supports_types", False),
+        "item_type_editable": config.get("item_type_editable", False),
+        "modal_type_labels": config.get("type_labels", {}),
+        "modal_content_partial": modal_content_partial,
+        "modal_post_url": modal_post_url,
+        "modal_target": config.get("target"),
+        "modal_swap": config.get("swap"),
+        "modal_submit_handler": config.get("submit_handler"),
+        "modal_refresh_url": config.get("refresh_url"),
+    }
+
+    # If object_type is address, service or device, then show all groups
+    if object_type in ["addresses", "services"]:
+        context["group_options"] = get_group_options_view(request, object_type)
+
+    return render(request, "partials/_modal.html", context)
 
 
 # Render the modal content when switching between item/group form types.
@@ -688,20 +727,22 @@ def get_add_modal_form_content(request, object_type, type):
     if object_type == "addresses" and type == "group":
         modal_submit_handler = None
 
-    return render(
-        request,
-        "partials/modals/_modal_form.html",
-        {
-            "modal_object_type": object_type,
-            "modal_type": type,
-            "modal_supports_types": config.get("supports_types", False),
-            "item_type_editable": config.get("item_type_editable", False),
-            "modal_type_labels": config.get("type_labels", {}),
-            "modal_content_partial": config["types"][type],
-            "modal_post_url": modal_post_url,
-            "modal_target": config.get("target"),
-            "modal_swap": config.get("swap"),
-            "modal_submit_handler": modal_submit_handler,
-            "modal_refresh_url": config.get("refresh_url"),
-        },
-    )
+    context = {
+        "modal_object_type": object_type,
+        "modal_type": type,
+        "modal_supports_types": config.get("supports_types", False),
+        "item_type_editable": config.get("item_type_editable", False),
+        "modal_type_labels": config.get("type_labels", {}),
+        "modal_content_partial": config["types"][type],
+        "modal_post_url": modal_post_url,
+        "modal_target": config.get("target"),
+        "modal_swap": config.get("swap"),
+        "modal_submit_handler": modal_submit_handler,
+        "modal_refresh_url": config.get("refresh_url"),
+    }
+
+    # If object_type is address, service or device, then show all groups
+    if object_type in ["addresses", "services"]:
+        context["group_options"] = get_group_options_view(request, object_type)
+
+    return render(request, "partials/modals/_modal_form.html", context)

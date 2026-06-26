@@ -72,4 +72,16 @@
 
 <p class="form-help">Add address to address group.</p>
 
-<!-- TODO: Add a selection where the user can add an address to an address group using api/add_address_to_group -->
+<!-- List all address groups as a checkbox dropdown -->
+<div class="form-group">
+    <div class="group-checkbox-list">
+        {% for group in group_options %}
+        <label class="checkbox-label">
+            <input type="checkbox" name="group_ids" value="{{ group.id }}">
+            <span>{{ group.name }}</span>
+        </label>
+        {% empty %}
+        <p>No address groups available.</p>
+        {% endfor %}
+    </div>
+</div>

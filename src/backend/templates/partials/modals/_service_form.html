@@ -9,3 +9,17 @@
         <input id="port_end" name="port_end" type="number">
     </div>
 </div>
+
+<!-- List all services groups as a checkbox dropdown -->
+<div class="form-group">
+    <div class="group-checkbox-list">
+        {% for group in group_options %}
+        <label class="checkbox-label">
+            <input type="checkbox" name="group_ids" value="{{ group.id }}">
+            <span>{{ group.name }}</span>
+        </label>
+        {% empty %}
+        <p>No service groups available.</p>
+        {% endfor %}
+    </div>
+</div>
