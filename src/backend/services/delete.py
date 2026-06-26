@@ -6,7 +6,6 @@ from backend.objects.filters.rule import Rule
 from backend.objects.management.tenant import Tenant
 
 
-
 logger = set_up_logger(__name__)
 
 
@@ -60,6 +59,7 @@ def delete_rule(rule_id: int, tenant_id: int) -> None:
 
     rule.delete()
     logger.info(f"Deleted rule id={rule_id} from tenant={tenant_id}.")
+
 
 def delete_tenant(tenant_id: int) -> None:
     try:

@@ -115,7 +115,7 @@ def hello(request):
 )
 def set_tenant(request, tenant_id: str):
     try:
-        tenant = Tenant.objects.get(id=tenant_id)
+        Tenant.objects.get(id=tenant_id)
     except Tenant.DoesNotExist:
         logger.warning(f"Tried to set tenant_id={tenant_id}, but it does not exist.")
         return 404, {"status": "error", "message": f"Tenant with id {tenant_id} does not exist."}
