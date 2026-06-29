@@ -1,4 +1,4 @@
-from urllib import response
+
 
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
@@ -25,7 +25,7 @@ from backend.services.delete import (
     delete_rule,
     delete_tenant,
 )
-from backend.services.generate_config import generate_config, generate_multi_policy_config
+from backend.services.generate_config import generate_multi_policy_config
 from backend.services.get import (
     get_all_addresses_and_groups_with_tags,
     get_all_devices_from_tenant,
@@ -765,8 +765,8 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
         )
         logger.info(f"create_device endpoint succeeded for device id={device.id}")
         return 200, {
-            "message": "Device created",
-            "status": f"Device created with id {device.id}",
+            "message": f"Device created with id {device.id}",
+            "status": "success",
         }
     except Exception as e:
         logger.error(f"create_device endpoint failed: {str(e)}")
@@ -774,6 +774,23 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
             "message": "Device creation failed",
             "status": str(e),
         }
+    
+@api.post("/create_device_and_add_it_to_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
+@require_write_tenant
+def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, group_id: int):
+    device = create_device(
+        request=request,
+        name=payload.name,
+        platform=payload.platform,
+        description=payload.description,
+        type=payload.type,
+    )
+    add_devices_to_group(group_id, [device.id])
+    logger.info(f"create_device_and_add_it_to_group endpoint succeeded for device id={device.id} and group id={group_id}")
+    return 200, {
+        "message": f"Device created with id {device.id} and added to group with id {group_id}",
+        "status": "success",
+    }
 
 
 @api.post("/create_device_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
@@ -920,23 +937,7 @@ def get_interfaces_for_device_endpoint(request, device_id: int):
             "message": f"Error retrieving interfaces for device with id {device_id}: {str(e)}",
         }
     
-@api.post("/add_filter_to_interface", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
-@require_write_tenant
-def add_filter_to_interface_endpoint(request, interface_id: int, filter_id: int, policy_sequence: int, enable: bool):
-    try:
-        add_filter_to_interface(request, filter_id, interface_id, policy_sequence, enable)
-        logger.info(f"Filter id={filter_id} added to interface id={interface_id}")
-        return 200, {
-            "status": "success",
-            "message": f"Filter id={filter_id} added to interface id={interface_id}",
-        }
-    except Exception as e:
-        logger.error(f"Error adding filter id={filter_id} to interface id={interface_id}: {str(e)}")
-        return 403, {
-            "status": "error",
-            "message": f"Error adding filter id={filter_id} to interface id={interface_id}: {str(e)}",
-        }
-    
+
 
 
 """
