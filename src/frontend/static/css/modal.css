@@ -63,7 +63,7 @@ Modal Form Content
 }
 
 .modal-form-content {
-    padding: 1.5rem 0;
+    padding: 1.5rem 1rem;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -172,6 +172,7 @@ Modal Actions
     gap: 0.75rem;
     margin-top: 1rem;
     flex-shrink: 0;
+    border-top: 1px solid #E0E0E0;
 }
 
 .btn-cancel {
