@@ -12,6 +12,7 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.management.device_group_member import DeviceGroupMember
+from backend.objects.management.filter_interface import FilterInterface
 from backend.objects.management.interface import Interface
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
@@ -589,7 +590,7 @@ def create_policies_for_interface(request, interface_id, policy_type = ""):
     vendor = get_platform_from_device(interface.device_id)
 
     # Join interface on filters using FilterInterface, then sort filters by policy_sequence
-    filter_interfaces = interface.filters.through.objects.filter(interface_id=interface).order_by("policy_sequence")
+    filter_interfaces = FilterInterface.objects.filter(interface_id=interface).order_by('policy_sequence')
     if not filter_interfaces.exists():
         raise ValueError(f"No filters found for interface with ID {interface_id}.")
     
@@ -601,6 +602,8 @@ def create_policies_for_interface(request, interface_id, policy_type = ""):
             raise ValueError(f"Filter with ID {filter_interface.filter_id} does not exist.")
         policy = create_policy_from_filter(request, filter_obj.id, filter_interface.policy_sequence, vendor, policy_type)
         policies.append(policy)
+    logger.info(f"Created {len(policies)} policies for interface id={interface_id}")
+    logger.info(f"Policies: {[policy.YAMLConfig for policy in policies]}")
     
     return policies
 

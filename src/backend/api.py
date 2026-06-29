@@ -25,7 +25,7 @@ from backend.services.delete import (
     delete_rule,
     delete_tenant,
 )
-from backend.services.generate_config import generate_config
+from backend.services.generate_config import generate_config, generate_multi_policy_config
 from backend.services.get import (
     get_all_addresses_and_groups_with_tags,
     get_all_devices_from_tenant,
@@ -922,9 +922,9 @@ def get_interfaces_for_device_endpoint(request, device_id: int):
     
 @api.post("/add_filter_to_interface", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
 @require_write_tenant
-def add_filter_to_interface_endpoint(request, interface_id: int, filter_id: int):
+def add_filter_to_interface_endpoint(request, interface_id: int, filter_id: int, policy_sequence: int, enable: bool):
     try:
-        add_filter_to_interface(request, filter_id, interface_id)
+        add_filter_to_interface(request, filter_id, interface_id, policy_sequence, enable)
         logger.info(f"Filter id={filter_id} added to interface id={interface_id}")
         return 200, {
             "status": "success",
@@ -1025,7 +1025,7 @@ def delete_rule_endpoint(request, rule_id: int):
 @require_write_tenant 
 def add_rule_to_filter_endpoint(request, filter_id: int, rule_id: int, rule_sequence: int):
     try:
-        add_rule_to_filter(request, filter_id, rule_id, rule_sequence)
+        add_rule_to_filter(request, rule_id, filter_id, rule_sequence)
         logger.info(f"Rule id={rule_id} added to filter id={filter_id} with rule_sequence={rule_sequence}")
         return 200, {
             "status": "success",
@@ -1109,16 +1109,19 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
         }
 @api.get("/generate_config_for_interface", tags=["Configuration"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
 @require_write_tenant
-def generate_config_for_interface(request, filter_id: int):
+def generate_config_for_interface(request, interface_id: int):
     try:
-        policies = create_policies_for_interface(filter_id)
-        config = generate_config(policies)
-        logger.info(f"Created policies for filter id={filter_id}")
-        logger.info(f"Generated configuration for filter id={filter_id}: {config}")
+        policies = create_policies_for_interface(request, interface_id)
+        logger.info(f"Created policies for interface id={interface_id}")
+        logger.info(f"Policies for interface id={interface_id}: {[policy.YAMLConfig for policy in policies]}")
+        logger.info(f"Networks for interface id={interface_id}: {[policy.networks for policy in policies]}")
+        logger.info(f"Services for interface id={interface_id}: {[policy.services for policy in policies]}")
+        config = generate_multi_policy_config(policies)
+        logger.info(f"Generated configuration for interface id={interface_id}: {config}")
         return 200, {
             "status": "success",
-            "message": f"Configuration generated for filter id={filter_id}",
-            "policies": [policy.YAMLconfig for policy in policies],
+            "message": f"Configuration generated for interface id={interface_id}",
+            "policies": [policy.YAMLConfig for policy in policies],
             "config": config,
         }
     except ValueError as e:

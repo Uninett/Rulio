@@ -210,13 +210,18 @@ def add_filter_to_interface(request: object, filter_id: int, interface_id: int, 
     filter = Filter.objects.get(id=filter_id)
     interface = Interface.objects.get(id=interface_id)
 
-    if filter.tenant_id not in (0, interface.device.tenant_id):
-        raise ValueError(f"Filter {filter.id} does not belong to the same tenant as the interface {interface.id}")
+    filter_interface, created = interface.filterinterface_set.get_or_create(
+        interface=interface,
+        filter=filter,
+        defaults={"policy_sequence": policy_sequence, "enable": enable},
+    )
 
-    interface.filters.add(filter)
-    interface_filter = interface.filterinterface_set.get(filter=filter)
-    interface_filter.policy_sequence = policy_sequence
-    interface_filter.enable = enable
-    interface_filter.save()
-    logger.info(f"Added Filter {filter.id} to Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}")
+    if not created:
+        filter_interface.policy_sequence = policy_sequence
+        filter_interface.enable = enable
+        filter_interface.save()
+        logger.warning(f"Updated Filter {filter.id} on Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}")
+    else:
+        logger.info(f"Added Filter {filter.id} to Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}")
+
     return interface, filter
