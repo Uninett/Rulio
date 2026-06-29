@@ -153,7 +153,7 @@ Forms
 }
 
 select[name="addr_type"],
-select[name="tenant"],
+select[name="tenant_id"],
 select[name="protocol"],
 select[name="ipv4_type"],
 select[name="ipv6_type"] {
@@ -161,6 +161,26 @@ select[name="ipv6_type"] {
     border: 1px solid #767676;
 }
 
+input,
+textarea {
+    padding: 0 0.75rem;
+    border: 1px solid #767676;
+    /* color-layut-border-strong */
+    border-radius: 10px;
+}
+
+input {
+    min-height: 2rem;
+}
+
+textarea {
+    padding: 0.75rem;
+    min-height: 4rem;
+}
+
+.required {
+    color: #7351FB;
+}
 
 /*
 ====================================================================
