@@ -1,3 +1,4 @@
+from backend.objects import models
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
@@ -8,6 +9,7 @@ from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.management.device import Device
+from backend.objects.management.interface import Interface
 from backend.objects.management.tenant import Tenant
 from backend.utils.logger import set_up_logger
 
@@ -410,3 +412,27 @@ def get_all_rules_from_tenant(tenant_id: int) -> list[Rule]:
 def get_all_devices_from_tenant(tenant_id: int) -> list[Device]:
     requested_devices = Device.objects.filter(tenant_id=tenant_id)
     return requested_devices
+
+
+def get_all_interfaces_from_device(device_id: int) -> list[Interface]:
+    requested_interfaces = Interface.objects.filter(device_id=device_id)
+    return requested_interfaces
+
+
+def get_all_filters_from_interface(interface_id: int) -> list[Filter]:
+    requested_filters = Filter.objects.filter(interfaces__id=interface_id)
+    requested_filters = requested_filters.annotate(
+        policy_sequence=models.F("filterinterface__policy_sequence"),
+        enable=models.F("filterinterface__enable"),
+    ).order_by("policy_sequence")
+    return requested_filters
+
+
+def get_all_filters_from_tenant(tenant_id: int) -> list[Filter]:
+    requested_filters = Filter.objects.filter(tenant_id=tenant_id)
+    return requested_filters
+
+
+def get_platform_from_device(device_id: int) -> str:
+    device = Device.objects.get(id=device_id)
+    return device.platform

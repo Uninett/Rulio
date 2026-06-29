@@ -47,7 +47,7 @@ class TestGenerateConfig:
             assert policy.YAMLConfig["filename"] == "Address_Test_Policy"
 
             terms = policy.YAMLConfig["filters"][0]["terms"]
-            assert len(terms) == len({rule.sequence for rule in address_policy_rules})
+            assert len(terms) == len({rule.rule_sequence for rule in address_policy_rules})
 
             assert terms[0]["action"] == "accept"
             assert terms[0]["destination-address"] == ["Test_Address_1"]
@@ -98,7 +98,7 @@ class TestGenerateConfig:
             assert policy.YAMLConfig["filename"] == "Address_Group_Test_Policy"
 
             terms = policy.YAMLConfig["filters"][0]["terms"]
-            assert len(terms) == len({rule.sequence for rule in address_group_policy_rules})
+            assert len(terms) == len({rule.rule_sequence for rule in address_group_policy_rules})
 
             assert terms[0]["action"] == "accept"
             assert terms[0]["destination-address"] == ["Test_Address_Group_1"]
@@ -150,7 +150,7 @@ class TestGenerateConfig:
             assert policy.YAMLConfig["filename"] == "Service_Test_Policy"
 
             terms = policy.YAMLConfig["filters"][0]["terms"]
-            assert len(terms) == len({rule.sequence for rule in service_policy_rules})
+            assert len(terms) == len({rule.rule_sequence for rule in service_policy_rules})
 
             assert terms[0]["protocol"] == "tcp"
             assert terms[0]["destination-port"] == ["Test_Service1"]
@@ -280,7 +280,7 @@ class TestGenerateConfig:
             assert policy.YAMLConfig["filename"] == "Combined_Test_Policy"
 
             terms = policy.YAMLConfig["filters"][0]["terms"]
-            assert len(terms) == len({rule.sequence for rule in combined_policy_rules})
+            assert len(terms) == len({rule.rule_sequence for rule in combined_policy_rules})
 
             assert terms[0]["action"] == "accept"
             assert terms[0]["protocol"] == "tcp"
@@ -364,7 +364,7 @@ class TestGenerateConfig:
                 term.get("action") == "accept"
                 and term.get("protocol") == "tcp"
                 and term.get("source-address") == ["ACL_Trusted_Sources"]
-                and term.get("destination-address") == ["ACL_Web_Servers", "ACL_Dst_Web_1"]
+                and term.get("destination-address") == ["ACL_Dst_Web_1", "ACL_Web_Servers"]
                 and term.get("destination-port") == ["ACL_HTTP", "ACL_HTTPS"]
                 for term in terms
             )

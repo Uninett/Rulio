@@ -12,6 +12,8 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.management.device_group_member import DeviceGroupMember
+from backend.objects.management.filter_interface import FilterInterface
+from backend.objects.management.interface import Interface
 from backend.objects.management.tenant import Tenant
 from backend.objects.management.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
@@ -21,7 +23,7 @@ from backend.services.generate_config import Policy, PolicyRule
 from backend.objects.management.device import Device
 from backend.objects.management.device_group import DeviceGroup
 from backend.utils.logger import set_up_logger
-from backend.services.get import get_object_by_type_and_id
+from backend.services.get import get_object_by_type_and_id, get_platform_from_device
 from django.db import transaction
 from backend.services.membership import (
     add_addresses_to_group,
@@ -482,14 +484,12 @@ def create_filter(
     request: object,
     name: str,
     description: str,
-    enable: bool = False,
 ) -> Filter:
     tenant_id = get_current_tenant_id(request)
     filter_obj = Filter(
         name=name,
         description=description,
         tenant_id=tenant_id,
-        enable=enable,
     )
     try:
         filter_obj.full_clean()
@@ -509,7 +509,7 @@ POLICY GENERATION
 """
 
 
-def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> PolicyRule:
+def create_policy_rule_from_rule_match(rule_match: RuleMatch, rule_sequence: int) -> PolicyRule:
     rule = rule_match.rule
     obj = rule_match.object
     if not obj:
@@ -524,7 +524,7 @@ def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> 
         obj_type=model_name,
         action=rule.action,
         object=obj,
-        sequence=sequence,
+        rule_sequence=rule_sequence,
         direction=rule_match.match,
     )
     return policy_rule
@@ -534,10 +534,10 @@ def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[Policy
     policy_rules = []
     if not rule_filter.rule.id:
         raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
-    # Get sequence from RuleFilter
-    sequence = rule_filter.sequence
-    if not sequence:
-        raise ValueError(f"Sequence is not set for rule match with ID {rule_filter.id}.")
+    # Get rule_sequence from RuleFilter
+    rule_sequence = rule_filter.rule_sequence
+    if not rule_sequence:
+        raise ValueError(f"Rule sequence is not set for rule match with ID {rule_filter.id}.")
 
     # Get actual rule object from join on RuleFilter
     rule = Rule.objects.get(id=rule_filter.rule.id)
@@ -549,11 +549,11 @@ def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[Policy
     if not rule_matches.exists():
         raise ValueError(f"No rule matches found for rule with ID {rule.id}.")
     for rule_match in rule_matches:
-        policy_rules.append(create_policy_rule_from_rule_match(rule_match, sequence))
+        policy_rules.append(create_policy_rule_from_rule_match(rule_match, rule_sequence))
     return policy_rules
 
 
-def create_policy_from_filter(request, filter_id, vendor, policy_type):
+def create_policy_from_filter(request, filter_id, policy_sequence, vendor, policy_type):
 
     # Get filter object by ID
     filter = Filter.objects.get(id=filter_id)
@@ -576,8 +576,39 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
         vendor=vendor,
         policy_type=policy_type,
         request=request,
+        policy_sequence=policy_sequence,
     )
     return policy
+
+
+def create_policies_for_interface(request, interface_id, policy_type=""):
+    # Get interface object by ID
+    interface = Interface.objects.get(id=interface_id)
+    if not interface:
+        raise ValueError(f"Interface with ID {interface_id} does not exist.")
+
+    # Get the vendor/platform from the device associated with the interface
+    vendor = get_platform_from_device(interface.device_id)
+
+    # Join interface on filters using FilterInterface, then sort filters by policy_sequence
+    filter_interfaces = FilterInterface.objects.filter(interface_id=interface).order_by("policy_sequence")
+    if not filter_interfaces.exists():
+        raise ValueError(f"No filters found for interface with ID {interface_id}.")
+
+    # Create Policy objects for each filter
+    policies = []
+    for filter_interface in filter_interfaces:
+        filter_obj = Filter.objects.get(id=filter_interface.filter_id)
+        if not filter_obj:
+            raise ValueError(f"Filter with ID {filter_interface.filter_id} does not exist.")
+        policy = create_policy_from_filter(
+            request, filter_obj.id, filter_interface.policy_sequence, vendor, policy_type
+        )
+        policies.append(policy)
+    logger.info(f"Created {len(policies)} policies for interface id={interface_id}")
+    logger.info(f"Policies: {[policy.YAMLConfig for policy in policies]}")
+
+    return policies
 
 
 def create_device(request: object, name: str, platform: str, description: str, type: str) -> object:
@@ -651,3 +682,29 @@ def add_devices_to_group(device_group_id: int, device_ids: list[int]) -> dict:
         "already_present_device_ids": sorted(already_present_ids),
         "not_found_device_ids": sorted(not_found_ids),
     }
+
+
+def create_interface(request, name: str, description: str, device_id: int, type: str, VRF: str = None) -> object:
+    tenant_id = get_current_tenant_id(request)
+    # Check if the device exists and belongs to the tenant
+    try:
+        Device.objects.get(id=device_id, tenant_id=tenant_id)
+    except Device.DoesNotExist:
+        raise ValueError(f"Device with id={device_id} does not exist in tenant={tenant_id}.")
+
+    interface = Interface(
+        name=name,
+        description=description,
+        device_id=device_id,
+        type=type,
+        VRF=VRF,
+    )
+    try:
+        interface.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Interface validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    interface.save()
+    logger.info(f"Created {interface} for device={interface.device_id}")
+    return interface

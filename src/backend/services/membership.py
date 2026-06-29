@@ -12,6 +12,7 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.filters.rule_match import RuleMatch
+from backend.objects.management.interface import Interface
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
@@ -188,19 +189,44 @@ def add_objects_to_rule(
     }
 
 
-def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: int):
+def add_rule_to_filter(request: object, rule_id: int, filter_id: int, rule_sequence: int):
     rule = Rule.objects.get(id=rule_id)
     filter = Filter.objects.get(id=filter_id)
 
     rule_filter, created = RuleFilter.objects.get_or_create(
         rule=rule,
         filter=filter,
-        defaults={"sequence": sequence},
+        defaults={"rule_sequence": rule_sequence},
     )
 
     if not created:
-        rule_filter.sequence = sequence
+        rule_filter.rule_sequence = rule_sequence
         rule_filter.save()
 
-    logger.info(f"Added Rule {rule.id} to Filter {filter.id} with sequence {sequence}")
+    logger.info(f"Added Rule {rule.id} to Filter {filter.id} with rule_sequence {rule_sequence}")
     return rule_filter
+
+
+def add_filter_to_interface(request: object, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
+    filter = Filter.objects.get(id=filter_id)
+    interface = Interface.objects.get(id=interface_id)
+
+    filter_interface, created = interface.filterinterface_set.get_or_create(
+        interface=interface,
+        filter=filter,
+        defaults={"policy_sequence": policy_sequence, "enable": enable},
+    )
+
+    if not created:
+        filter_interface.policy_sequence = policy_sequence
+        filter_interface.enable = enable
+        filter_interface.save()
+        logger.warning(
+            f"Updated Filter {filter.id} on Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}"
+        )
+    else:
+        logger.info(
+            f"Added Filter {filter.id} to Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}"
+        )
+
+    return interface, filter

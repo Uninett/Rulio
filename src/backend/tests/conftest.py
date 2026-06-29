@@ -108,7 +108,7 @@ def address_policy_rules(sample_addresses):
             action="accept" if i % 2 == 0 else "deny",
             object=address,
             direction="destination" if i % 2 == 0 else "source",
-            sequence=i,
+            rule_sequence=i,
         )
         policy_rules.append(rule)
 
@@ -181,7 +181,7 @@ def service_policy_rules(sample_services):
             action="accept" if i % 2 == 0 else "deny",
             object=service,
             direction="destination",
-            sequence=i,
+            rule_sequence=i,
         )
         policy_rules.append(rule)
 
@@ -270,7 +270,7 @@ def address_group_policy_rules(sample_address_group):
             action="accept",
             object=sample_address_group[0],
             direction="destination",
-            sequence=0,
+            rule_sequence=0,
         ),
         PolicyRule(
             name="Test_Rule_for_Address_Group_2",
@@ -278,7 +278,7 @@ def address_group_policy_rules(sample_address_group):
             action="deny",
             object=sample_address_group[1],
             direction="source",
-            sequence=1,
+            rule_sequence=1,
         ),
     ]
 
@@ -292,7 +292,7 @@ def service_group_policy_rules(sample_service_group):
             action="accept",
             object=sample_service_group,
             direction="destination",
-            sequence=0,
+            rule_sequence=0,
         )
     ]
 
@@ -306,7 +306,7 @@ def combined_policy_rules(sample_addresses, sample_services):
             action="accept",
             object=sample_addresses[0],
             direction="destination",
-            sequence=0,
+            rule_sequence=0,
         ),
         PolicyRule(
             name="Combined_Rule_1_Service",
@@ -314,7 +314,7 @@ def combined_policy_rules(sample_addresses, sample_services):
             action="accept",
             object=sample_services[0],
             direction="destination",
-            sequence=0,
+            rule_sequence=0,
         ),
         PolicyRule(
             name="Combined_Rule_2_Address",
@@ -322,7 +322,7 @@ def combined_policy_rules(sample_addresses, sample_services):
             action="deny",
             object=sample_addresses[1],
             direction="source",
-            sequence=1,
+            rule_sequence=1,
         ),
         PolicyRule(
             name="Combined_Rule_2_Service",
@@ -330,7 +330,7 @@ def combined_policy_rules(sample_addresses, sample_services):
             action="deny",
             object=sample_services[1],
             direction="destination",
-            sequence=1,
+            rule_sequence=1,
         ),
     ]
 
@@ -534,14 +534,14 @@ def realistic_acl_policy_rules(
     sg = realistic_acl_service_groups
 
     return [
-        # Sequence 10 -> 1 tcp term
+        # rule_sequence 10 -> 1 tcp term
         PolicyRule(
             name="Allow_Trusted_To_Web_Src_Group",
             obj_type="addressgroup",
             action="accept",
             object=ag[0],  # ACL_Trusted_Sources
             direction="source",
-            sequence=10,
+            rule_sequence=10,
         ),
         PolicyRule(
             name="Allow_Trusted_To_Web_Dst_Group",
@@ -549,7 +549,7 @@ def realistic_acl_policy_rules(
             action="accept",
             object=ag[1],  # ACL_Web_Servers
             direction="destination",
-            sequence=10,
+            rule_sequence=10,
         ),
         PolicyRule(
             name="Allow_Trusted_To_Web_Dst_Direct",
@@ -557,7 +557,7 @@ def realistic_acl_policy_rules(
             action="accept",
             object=addr["ACL_Dst_Web_1"],
             direction="destination",
-            sequence=10,
+            rule_sequence=10,
         ),
         PolicyRule(
             name="Allow_Trusted_To_Web_Services",
@@ -565,16 +565,16 @@ def realistic_acl_policy_rules(
             action="accept",
             object=sg[0],  # ACL_Web_Services
             direction="destination",
-            sequence=10,
+            rule_sequence=10,
         ),
-        # Sequence 20 -> 2 terms (tcp + udp)
+        # rule_sequence 20 -> 2 terms (tcp + udp)
         PolicyRule(
             name="Allow_Trusted_To_DNS_Src_Group",
             obj_type="addressgroup",
             action="accept",
             object=ag[0],  # ACL_Trusted_Sources
             direction="source",
-            sequence=20,
+            rule_sequence=20,
         ),
         PolicyRule(
             name="Allow_Trusted_To_DNS_Dst",
@@ -582,7 +582,7 @@ def realistic_acl_policy_rules(
             action="accept",
             object=addr["ACL_Dst_DNS"],
             direction="destination",
-            sequence=20,
+            rule_sequence=20,
         ),
         PolicyRule(
             name="Allow_Trusted_To_DNS_Services",
@@ -590,16 +590,16 @@ def realistic_acl_policy_rules(
             action="accept",
             object=sg[1],  # ACL_DNS_Services
             direction="destination",
-            sequence=20,
+            rule_sequence=20,
         ),
-        # Sequence 30 -> 1 tcp term
+        # rule_sequence 30 -> 1 tcp term
         PolicyRule(
             name="Deny_Admins_To_Blocked_Src",
             obj_type="address",
             action="deny",
             object=addr["ACL_Src_Admins"],
             direction="source",
-            sequence=30,
+            rule_sequence=30,
         ),
         PolicyRule(
             name="Deny_Admins_To_Blocked_Dst",
@@ -607,7 +607,7 @@ def realistic_acl_policy_rules(
             action="deny",
             object=addr["ACL_Dst_Blocked"],
             direction="destination",
-            sequence=30,
+            rule_sequence=30,
         ),
         PolicyRule(
             name="Deny_Admins_To_Blocked_Service",
@@ -615,16 +615,16 @@ def realistic_acl_policy_rules(
             action="deny",
             object=svc["ACL_HTTPS"],
             direction="destination",
-            sequence=30,
+            rule_sequence=30,
         ),
-        # Sequence 40 -> 1 icmp term
+        # rule_sequence 40 -> 1 icmp term
         PolicyRule(
             name="Allow_Admins_ICMP_Src",
             obj_type="address",
             action="accept",
             object=addr["ACL_Src_Admins"],
             direction="source",
-            sequence=40,
+            rule_sequence=40,
         ),
         PolicyRule(
             name="Allow_Admins_ICMP_Dst",
@@ -632,7 +632,7 @@ def realistic_acl_policy_rules(
             action="accept",
             object=addr["ACL_Any"],
             direction="destination",
-            sequence=40,
+            rule_sequence=40,
         ),
         PolicyRule(
             name="Allow_Admins_ICMP_Service",
@@ -640,7 +640,7 @@ def realistic_acl_policy_rules(
             action="accept",
             object=svc["ACL_ICMP"],
             direction="destination",
-            sequence=40,
+            rule_sequence=40,
         ),
     ]
 
@@ -652,13 +652,11 @@ def sample_filters(request_with_session, create_testing_tenant):
             request=request_with_session,
             name="Sample_Filter",
             description="This is a sample filter for testing.",
-            enable=True,
         ),
         create_filter(
             request=request_with_session,
             name="Sample_Filter_2",
             description="This is another sample filter for testing.",
-            enable=True,
         ),
     ]
 
