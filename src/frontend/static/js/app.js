@@ -35,16 +35,38 @@ function closeModalAndRefresh(url) {
 function prepareAddressForm(event) {
     const form = event.target;
 
-    const ipv4Network = form.querySelector('#ipv4Network')?.value.trim();
-    const ipv6Network = form.querySelector('#ipv6Network')?.value.trim();
-    const ipv4Type = form.querySelector('#ipv4_type');
-    const ipv6Type = form.querySelector('#ipv6_type');
+    const ipv4Type = form.querySelector('#ipv4_type')?.value || '';
+    const ipv6Type = form.querySelector('#ipv6_type')?.value || '';
 
-    if (ipv4Type) {
-        ipv4Type.value = ipv4Network ? 'standard' : '';
+    if (!ipv4Type && !ipv6Type) {
+        event.preventDefault();
+        alert('At least one of IPv4 or IPv6 must be selected.');
+        return;
+    }
+}
+
+function toggleAddressFields(form) {
+    const ipv4Type = form.querySelector('#ipv4_type')?.value || '';
+    const ipv6Type = form.querySelector('#ipv6_type')?.value || '';
+
+    const ipv4StandardFields = form.querySelector('#ipv4-standard-fields');
+    const ipv4CustomFields = form.querySelector('#ipv4-custom-fields');
+    const ipv6StandardFields = form.querySelector('#ipv6-standard-fields');
+    const ipv6CustomFields = form.querySelector('#ipv6-custom-fields');
+
+    if (ipv4StandardFields) {
+        ipv4StandardFields.style.display = ipv4Type === 'standard' ? 'block' : 'none';
     }
 
-    if (ipv6Type) {
-        ipv6Type.value = ipv6Network ? 'standard' : '';
+    if (ipv4CustomFields) {
+        ipv4CustomFields.style.display = ipv4Type === 'custom' ? 'flex' : 'none';
+    }
+
+    if (ipv6StandardFields) {
+        ipv6StandardFields.style.display = ipv6Type === 'standard' ? 'block' : 'none';
+    }
+
+    if (ipv6CustomFields) {
+        ipv6CustomFields.style.display = ipv6Type === 'custom' ? 'flex' : 'none';
     }
 }

@@ -1,22 +1,67 @@
 <p class="form-help">At least one of IPv4 or IPv6 is required.<span class="required"> *</span></p>
 
-<input type="hidden" name="ipv4_type" id="ipv4_type">
-<input type="hidden" name="ipv6_type" id="ipv6_type">
+<div class="address-version-row form-row">
+    <div class="address-version-column">
+        <div class="form-group">
+            <label for="ipv4_type">IPv4 address</label>
+            <select id="ipv4_type" name="ipv4_type" onchange="toggleAddressFields(this.form)">
+                <option value="">Not selected</option>
+                <option value="standard">Standard</option>
+                <option value="custom">Custom range</option>
+            </select>
+        </div>
 
-<!-- TODO: Add fields for ipv4/ipv6 type, as well as range. Then prepareAddressForm() in app.js can be refactored.  -->
-<!-- TODO: Create exception when neither is selected, maybe disable submit button? -->
+        <div id="ipv4-standard-fields" style="display: none;">
+            <div class="form-group">
+                <label for="ipv4Network">IPv4</label>
+                <input id="ipv4Network" name="ipv4Network" type="text" placeholder="x.x.x.x/y">
+            </div>
+        </div>
 
-<div class="form-row">
-    <div class="form-group">
-        <label for="ipv4Network">Ipv4</label>
-        <input id="ipv4Network" name="ipv4Network" type="text">
+        <div id="ipv4-custom-fields" class="custom-fields-row form-row" style="display: none;">
+            <div class="form-group">
+                <label for="ipv4Address_start">IPv4 start</label>
+                <input id="ipv4Address_start" name="ipv4Address_start" type="text" placeholder="x.x.x.x">
+            </div>
+
+            <div class="form-group">
+                <label for="ipv4Address_end">IPv4 end</label>
+                <input id="ipv4Address_end" name="ipv4Address_end" type="text" placeholder="x.x.x.x">
+            </div>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label for="ipv6Network">Ipv6</label>
-        <input id="ipv6Network" name="ipv6Network" type="text">
+    <div class="address-version-column">
+        <div class="form-group">
+            <label for="ipv6_type">IPv6 address</label>
+            <select id="ipv6_type" name="ipv6_type" onchange="toggleAddressFields(this.form)">
+                <option value="">Not selected</option>
+                <option value="standard">Standard</option>
+                <option value="custom">Custom range</option>
+            </select>
+        </div>
+
+        <div id="ipv6-standard-fields" style="display: none;">
+            <div class="form-group">
+                <label for="ipv6Network">IPv6</label>
+                <input id="ipv6Network" name="ipv6Network" type="text" placeholder="x:x:x:x:x:x:x:x/y">
+            </div>
+        </div>
+
+        <div id="ipv6-custom-fields" class="custom-fields-row form-row" style="display: none;">
+            <div class="form-group">
+                <label for="ipv6Address_start">IPv6 start</label>
+                <input id="ipv6Address_start" name="ipv6Address_start" type="text" placeholder="x:x:x:x:x:x:x:x">
+            </div>
+
+            <div class="form-group">
+                <label for="ipv6Address_end">IPv6 end</label>
+                <input id="ipv6Address_end" name="ipv6Address_end" type="text" placeholder="x:x:x:x:x:x:x:x">
+            </div>
+        </div>
     </div>
 </div>
+
 
 <p class="form-help">Add address to address group.</p>
 
