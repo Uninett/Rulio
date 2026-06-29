@@ -11,8 +11,9 @@ from .api import (
     # Object Page: Service
     get_services_and_groups_with_tags_endpoint,
     create_service_endpoint,
-    create_service_group_endpoint,
     create_and_add_service_to_groups_endpoint,
+    create_service_group_endpoint,
+    create_service_group_and_add_services_endpoint,
 )
 from django.urls import reverse
 
@@ -589,8 +590,12 @@ def post_service_group_view(request):
     payload.tenant_id = (
         int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     )
+    service_ids = [int(service_ids) for service_ids in request.POST.getlist("service_ids") if service_ids]
 
-    status, created_service_group = create_service_group_endpoint(request, payload)
+    if service_ids:
+        status, created_service_group = create_service_group_and_add_services_endpoint(request, payload, service_ids)
+    else:
+        status, created_service_group = create_service_group_endpoint(request, payload)
 
     if status not in [200, 201]:
         return render(
@@ -607,6 +612,7 @@ def post_service_group_view(request):
                     "group": "Service Group",
                 },
                 "error_message": "Could not create service group.",
+                "item_options": get_item_options_view(request, "services"),
             },
             status=400,
         )
