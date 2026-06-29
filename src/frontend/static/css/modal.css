@@ -110,3 +110,7 @@ textarea {
     padding: 0.35rem 0;
     cursor: pointer;
 }
+
+.checkbox-header {
+    margin-bottom: 0;
+}

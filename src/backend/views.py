@@ -6,6 +6,7 @@ from .api import (
     get_addresses_and_groups_with_tags_endpoint,
     create_address_endpoint,
     create_address_group_endpoint,
+    create_and_add_address_to_groups_endpoint,
     # Object Page: Service
     get_services_and_groups_with_tags_endpoint,
     create_service_endpoint,
@@ -273,6 +274,7 @@ def post_address_view(request):
     payload.ipv4Address_end = request.POST.get("ipv4Address_end") or None
     payload.ipv6Address_start = request.POST.get("ipv6Address_start") or None
     payload.ipv6Address_end = request.POST.get("ipv6Address_end") or None
+    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
     # Require at least one address version to be selected.
     if not payload.ipv4_type and not payload.ipv6_type:
@@ -290,11 +292,15 @@ def post_address_view(request):
                     "group": "Group",
                 },
                 "error_message": "At least one of IPv4 or IPv6 must be selected.",
+                "group_options": get_group_options_view(request, "addresses"),
             },
             status=400,
         )
 
-    status, created_address = create_address_endpoint(request, payload)
+    if group_ids:
+        status, created_address = create_and_add_address_to_groups_endpoint(request, payload, group_ids)
+    else:
+        status, created_address = create_address_endpoint(request, payload)
 
     # If creation failed, re-render the modal form content with an error message.
     if status not in [200, 201]:
@@ -312,6 +318,7 @@ def post_address_view(request):
                     "group": "Group",
                 },
                 "error_message": "Could not create address.",
+                "group_options": get_group_options_view(request, "addresses"),
             },
             status=400,
         )
