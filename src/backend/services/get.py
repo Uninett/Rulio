@@ -1,3 +1,4 @@
+from backend.objects import models
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
@@ -415,3 +416,15 @@ def get_all_devices_from_tenant(tenant_id: int) -> list[Device]:
 def get_all_interfaces_from_device(device_id: int) -> list[Interface]:
     requested_interfaces = Interface.objects.filter(device_id=device_id)
     return requested_interfaces
+
+def get_all_filters_from_interface(interface_id: int) -> list[Filter]:
+    requested_filters = Filter.objects.filter(interfaces__id=interface_id)
+    requested_filters = requested_filters.annotate(
+        policy_sequence=models.F("filterinterface__policy_sequence"),
+        enable=models.F("filterinterface__enable"),
+    ).order_by("policy_sequence")
+    return requested_filters
+
+def get_all_filters_from_tenant(tenant_id: int) -> list[Filter]:
+    requested_filters = Filter.objects.filter(tenant_id=tenant_id)
+    return requested_filters

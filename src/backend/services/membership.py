@@ -189,24 +189,24 @@ def add_objects_to_rule(
     }
 
 
-def add_rule_to_filter(request: object, rule_id: int, filter_id: int, sequence: int):
+def add_rule_to_filter(request: object, rule_id: int, filter_id: int, rule_sequence: int):
     rule = Rule.objects.get(id=rule_id)
     filter = Filter.objects.get(id=filter_id)
 
     rule_filter, created = RuleFilter.objects.get_or_create(
         rule=rule,
         filter=filter,
-        defaults={"sequence": sequence},
+        defaults={"rule_sequence": rule_sequence},
     )
 
     if not created:
-        rule_filter.sequence = sequence
+        rule_filter.rule_sequence = rule_sequence
         rule_filter.save()
 
-    logger.info(f"Added Rule {rule.id} to Filter {filter.id} with sequence {sequence}")
+    logger.info(f"Added Rule {rule.id} to Filter {filter.id} with rule_sequence {rule_sequence}")
     return rule_filter
 
-def add_filter_to_interface(request: object, filter_id: int, interface_id: int):
+def add_filter_to_interface(request: object, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
     filter = Filter.objects.get(id=filter_id)
     interface = Interface.objects.get(id=interface_id)
 
@@ -214,5 +214,9 @@ def add_filter_to_interface(request: object, filter_id: int, interface_id: int):
         raise ValueError(f"Filter {filter.id} does not belong to the same tenant as the interface {interface.id}")
 
     interface.filters.add(filter)
-    logger.info(f"Added Filter {filter.id} to Interface {interface.id}")
+    interface_filter = interface.filterinterface_set.get(filter=filter)
+    interface_filter.policy_sequence = policy_sequence
+    interface_filter.enable = enable
+    interface_filter.save()
+    logger.info(f"Added Filter {filter.id} to Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}")
     return interface, filter

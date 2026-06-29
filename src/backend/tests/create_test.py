@@ -205,7 +205,6 @@ class TestCreateFilter:
             request=request,
             name="Test Filter",
             description="This is a test filter",
-            enable=True,
         )
         assert filter_obj is not None
         assert filter_obj.name == "Test Filter"
@@ -248,9 +247,9 @@ class TestGenerateConfigFromFilterObject:
         filter_id = sample_filters[0].id
         rule_id = sample_rules[0].id
 
-        add_rule_to_filter(request=request, rule_id=rule_id, filter_id=filter_id, sequence=10)
+        add_rule_to_filter(request=request, rule_id=rule_id, filter_id=filter_id, rule_sequence=10)
         logger.info(
-            f"Added rule {rule_id} to filter {filter_id} with sequence 10, respone:\n{add_rule_to_filter.__name__}"
+            f"Added rule {rule_id} to filter {filter_id} with rule_sequence 10, respone:\n{add_rule_to_filter.__name__}"
         )
 
         # Match the rule to the filter
@@ -307,9 +306,9 @@ class TestGenerateConfigFromFilterObject:
         ]
 
         for i, rule_id in enumerate(rules):
-            add_rule_to_filter(request=request, rule_id=rule_id, filter_id=filter_id, sequence=(i + 1) * 10)
+            add_rule_to_filter(request=request, rule_id=rule_id, filter_id=filter_id, rule_sequence=(i + 1) * 10)
             logger.info(
-                f"Added rule {rule_id} to filter {filter_id} with sequence {(i + 1) * 10}, respone:\n{add_rule_to_filter.__name__}"
+                f"Added rule {rule_id} to filter {filter_id} with rule_sequence {(i + 1) * 10}, respone:\n{add_rule_to_filter.__name__}"
             )
         responses = [
             add_objects_to_rule(

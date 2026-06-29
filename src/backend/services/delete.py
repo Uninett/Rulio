@@ -1,3 +1,4 @@
+from backend.objects.filters.filter import Filter
 from backend.objects.management.device import Device
 from backend.objects.management.interface import Interface
 from backend.utils.logger import set_up_logger
@@ -90,3 +91,13 @@ def delete_interface(interface_id: int, tenant_id: int) -> None:
     interface.delete()
     logger.info(f"Deleted interface id={interface_id} from tenant={tenant_id}.")
     return {"status": "success", "interface": {"id": interface_id}}
+
+def delete_filter(filter_id: int, tenant_id: int) -> None:
+    try:
+        filter_obj = Filter.objects.get(id=filter_id, tenant_id=tenant_id)
+    except Filter.DoesNotExist:
+        raise ValueError(f"Filter with id={filter_id} does not exist in tenant={tenant_id}.")
+
+    filter_obj.delete()
+    logger.info(f"Deleted filter id={filter_id} from tenant={tenant_id}.")
+    return {"status": "success", "filter": {"id": filter_id}}

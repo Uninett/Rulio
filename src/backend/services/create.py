@@ -483,14 +483,12 @@ def create_filter(
     request: object,
     name: str,
     description: str,
-    enable: bool = False,
 ) -> Filter:
     tenant_id = get_current_tenant_id(request)
     filter_obj = Filter(
         name=name,
         description=description,
         tenant_id=tenant_id,
-        enable=enable,
     )
     try:
         filter_obj.full_clean()
@@ -510,7 +508,7 @@ POLICY GENERATION
 """
 
 
-def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> PolicyRule:
+def create_policy_rule_from_rule_match(rule_match: RuleMatch, rule_sequence: int) -> PolicyRule:
     rule = rule_match.rule
     obj = rule_match.object
     if not obj:
@@ -525,7 +523,7 @@ def create_policy_rule_from_rule_match(rule_match: RuleMatch, sequence: int) -> 
         obj_type=model_name,
         action=rule.action,
         object=obj,
-        sequence=sequence,
+        rule_sequence=rule_sequence,
         direction=rule_match.match,
     )
     return policy_rule
@@ -535,10 +533,10 @@ def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[Policy
     policy_rules = []
     if not rule_filter.rule.id:
         raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
-    # Get sequence from RuleFilter
-    sequence = rule_filter.sequence
-    if not sequence:
-        raise ValueError(f"Sequence is not set for rule match with ID {rule_filter.id}.")
+    # Get rule_sequence from RuleFilter
+    rule_sequence = rule_filter.rule_sequence
+    if not rule_sequence:
+        raise ValueError(f"Rule sequence is not set for rule match with ID {rule_filter.id}.")
 
     # Get actual rule object from join on RuleFilter
     rule = Rule.objects.get(id=rule_filter.rule.id)
@@ -550,7 +548,7 @@ def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[Policy
     if not rule_matches.exists():
         raise ValueError(f"No rule matches found for rule with ID {rule.id}.")
     for rule_match in rule_matches:
-        policy_rules.append(create_policy_rule_from_rule_match(rule_match, sequence))
+        policy_rules.append(create_policy_rule_from_rule_match(rule_match, rule_sequence))
     return policy_rules
 
 
@@ -573,6 +571,36 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
 
     policy = Policy(
         name=filter.name,
+        rules=policy_rules,
+        vendor=vendor,
+        policy_type=policy_type,
+        request=request,
+    )
+    return policy
+
+def create_policy_for_interface(request, interface_id, vendor, policy_type):
+    # Get interface object by ID
+    interface = Interface.objects.get(id=interface_id)
+    if not interface:
+        raise ValueError(f"Interface with ID {interface_id} does not exist.")
+
+    # Join interface on filters using FilterInterface, then sort filters by policy_sequence
+    filter_interface = interface.filters.through.objects.filter(interface_id=interface).order_by("policy_sequence")
+    if not filter_interface.exists():
+        raise ValueError(f"No filters found for interface with ID {interface_id}.")
+    
+    # Join filter with rules using RuleFilter
+    rule_filter_matches = RuleFilter.objects.filter(filter__in=filter_interface)
+    if not rule_filter_matches.exists():
+        raise ValueError(f"No rule matches found for filters associated with interface with ID {interface_id}.")
+
+    # Create PolicyRule objects for each rule
+    policy_rules = []
+    for rule_filter in rule_filter_matches:
+        policy_rules.extend(create_policy_rules_from_rule_filter(rule_filter))
+
+    policy = Policy(
+        name=f"{filter.first().name}_policy",
         rules=policy_rules,
         vendor=vendor,
         policy_type=policy_type,
@@ -653,7 +681,7 @@ def add_devices_to_group(device_group_id: int, device_ids: list[int]) -> dict:
         "not_found_device_ids": sorted(not_found_ids),
     }
 
-def create_interface(request, name: str, description: str, device_id: int, type: str) -> object:
+def create_interface(request, name: str, description: str, device_id: int, type: str, VRF: str = None) -> object:
     tenant_id = get_current_tenant_id(request)
     # Check if the device exists and belongs to the tenant
     try:
@@ -666,6 +694,7 @@ def create_interface(request, name: str, description: str, device_id: int, type:
         description=description,
         device_id=device_id,
         type=type,
+        VRF=VRF,
     )
     try:
         interface.full_clean()
@@ -682,4 +711,5 @@ def create_interface(request, name: str, description: str, device_id: int, type:
         "type": interface.type,
     }
     logger.info(f"Created {interface} for device={interface.device_id}")
-    return response
+    return interface
+
