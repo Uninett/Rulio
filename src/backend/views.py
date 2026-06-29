@@ -664,7 +664,10 @@ def post_service_view(request):
     payload.tenant_id = (
         int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     )
-    payload.protocol = request.POST.get("protocol", "")
+    protocol = request.POST.get("protocol", "")
+    custom_protocol = request.POST.get("custom_protocol", "").strip()
+    payload.protocol = custom_protocol if protocol == "OTHER" else protocol
+
     payload.port_start = request.POST.get("port_start") or None
     payload.port_end = request.POST.get("port_end") or None
     group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
