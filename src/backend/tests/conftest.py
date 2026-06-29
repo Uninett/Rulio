@@ -6,7 +6,7 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
-from backend.objects.management.tenant import Tenant
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.create import (
     add_addresses_to_group,
     add_services_to_group,

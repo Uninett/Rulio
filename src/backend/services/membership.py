@@ -12,7 +12,10 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.filters.rule_match import RuleMatch
-from backend.objects.management.interface import Interface
+from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.device_group import DeviceGroup
+from backend.objects.tenant_objects.device_group_member import DeviceGroupMember
+from backend.objects.tenant_objects.interface import Interface
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
@@ -230,3 +233,36 @@ def add_filter_to_interface(request: object, filter_id: int, interface_id: int, 
         )
 
     return interface, filter
+
+
+def add_devices_to_group(device_group_id: int, device_ids: list[int]) -> dict:
+    device_group = DeviceGroup.objects.get(id=device_group_id)
+
+    requested_ids = set(device_ids)
+
+    existing_devices = Device.objects.filter(id__in=requested_ids)
+    found_ids = set(existing_devices.values_list("id", flat=True))
+    not_found_ids = requested_ids - found_ids
+
+    already_present_ids = set(
+        DeviceGroupMember.objects.filter(
+            device_group=device_group,
+            device__id__in=found_ids,
+        ).values_list("device__id", flat=True)
+    )
+
+    new_ids = found_ids - already_present_ids
+
+    new_members = [DeviceGroupMember(device_group=device_group, device_id=device_id) for device_id in new_ids]
+
+    with transaction.atomic():
+        DeviceGroupMember.objects.bulk_create(new_members)
+
+    added_ids = sorted(new_ids)
+
+    return {
+        "device_group_id": device_group.id,
+        "added_device_ids": added_ids,
+        "already_present_device_ids": sorted(already_present_ids),
+        "not_found_device_ids": sorted(not_found_ids),
+    }

@@ -1,12 +1,12 @@
 from backend.objects.filters.filter import Filter
-from backend.objects.management.device import Device
-from backend.objects.management.interface import Interface
+from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.interface import Interface
 from backend.utils.logger import set_up_logger
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.services.get import get_object_by_type_and_id
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.rule import Rule
-from backend.objects.management.tenant import Tenant
+from backend.objects.tenant_objects.tenant import Tenant
 
 
 logger = set_up_logger(__name__)

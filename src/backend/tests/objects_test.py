@@ -11,12 +11,12 @@ from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.versionControl import VersionControl
-from backend.objects.management.device import Device
-from backend.objects.management.device_group import DeviceGroup
-from backend.objects.management.device_group_member import DeviceGroupMember
-from backend.objects.management.interface import Interface
-from backend.objects.management.tenant import Tenant
-from backend.objects.management.filter_interface import FilterInterface
+from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.device_group import DeviceGroup
+from backend.objects.tenant_objects.device_group_member import DeviceGroupMember
+from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.tenant import Tenant
+from backend.objects.tenant_objects.filter_interface import FilterInterface
 
 
 class TestObjects:

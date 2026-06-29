@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from backend.objects.management.tenant import Tenant
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.seed.seed_address_groups import seed_addressgroups
 from backend.services.seed.seed_addresses import seed_addresses
 from backend.services.seed.seed_service_groups import seed_servicegroups

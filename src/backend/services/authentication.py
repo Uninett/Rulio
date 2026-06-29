@@ -1,5 +1,5 @@
 from functools import wraps
-from backend.objects.management.tenant import Tenant
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.helper_user_tenant import (
     is_superadmin,
     can_write_tenant,
