@@ -11,6 +11,7 @@ from .api import (
     get_services_and_groups_with_tags_endpoint,
     create_service_endpoint,
     create_service_group_endpoint,
+    create_and_add_service_to_groups_endpoint,
 )
 from django.urls import reverse
 
@@ -495,8 +496,12 @@ def post_service_view(request):
     payload.protocol = request.POST.get("protocol", "")
     payload.port_start = request.POST.get("port_start") or None
     payload.port_end = request.POST.get("port_end") or None
+    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
-    status, created_service = create_service_endpoint(request, payload)
+    if group_ids:
+        status, created_service = create_and_add_service_to_groups_endpoint(request, payload, group_ids)
+    else:
+        status, created_service = create_service_endpoint(request, payload)
 
     if status not in [200, 201]:
         return render(
@@ -513,6 +518,7 @@ def post_service_view(request):
                     "group": "Group",
                 },
                 "error_message": "Could not create service.",
+                "group_options": get_group_options_view(request, "services"),
             },
             status=400,
         )
