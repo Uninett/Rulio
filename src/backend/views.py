@@ -729,7 +729,7 @@ def post_service_group_view(request):
     if status not in [200, 201]:
         return render(
             request,
-            "partials/modals/_type_content.html",
+            "partials/modals/_modal_form.html",
             {
                 "modal_object_type": "services",
                 "modal_content_partial": "partials/modals/_service_group_form.html",
