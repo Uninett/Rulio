@@ -1,0 +1,21 @@
+<hr>
+
+<!-- List all services  as a checkbox dropdown -->
+<div class="modal-header">
+    <h2 class="checkbox-header">Services</h2>
+</div>
+
+<div class="form-group">
+    <p class="form-help">Choose any services you want to add to this service group.</p>
+
+    <div class="group-checkbox-list">
+        {% for service in item_options %}
+        <label class="checkbox-label">
+            <input type="checkbox" name="service_ids" value="{{ service.id }}">
+            <span>{{ service.name }}</span>
+        </label>
+        {% empty %}
+        <p>No services available.</p>
+        {% endfor %}
+    </div>
+</div>
