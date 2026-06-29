@@ -74,6 +74,13 @@ function toggleAddressFields(form) {
     const ipv6StandardFields = form.querySelector('#ipv6-standard-fields');
     const ipv6CustomFields = form.querySelector('#ipv6-custom-fields');
 
+    const ipv4Network = form.querySelector('#ipv4Network');
+    const ipv4AddressStart = form.querySelector('#ipv4Address_start');
+    const ipv4AddressEnd = form.querySelector('#ipv4Address_end');
+    const ipv6Network = form.querySelector('#ipv6Network');
+    const ipv6AddressStart = form.querySelector('#ipv6Address_start');
+    const ipv6AddressEnd = form.querySelector('#ipv6Address_end');
+
     if (ipv4StandardFields) {
         ipv4StandardFields.style.display = ipv4Type === 'standard' ? 'block' : 'none';
     }
@@ -89,11 +96,39 @@ function toggleAddressFields(form) {
     if (ipv6CustomFields) {
         ipv6CustomFields.style.display = ipv6Type === 'custom' ? 'flex' : 'none';
     }
+
+    if (ipv4Network) {
+        ipv4Network.required = ipv4Type === 'standard';
+    }
+
+    if (ipv4AddressStart) {
+        ipv4AddressStart.required = ipv4Type === 'custom';
+    }
+
+    if (ipv4AddressEnd) {
+        ipv4AddressEnd.required = ipv4Type === 'custom';
+    }
+
+    if (ipv6Network) {
+        ipv6Network.required = ipv6Type === 'standard';
+    }
+
+    if (ipv6AddressStart) {
+        ipv6AddressStart.required = ipv6Type === 'custom';
+    }
+
+    if (ipv6AddressEnd) {
+        ipv6AddressEnd.required = ipv6Type === 'custom';
+    }
 }
 
+// Listen for the HTMX event that fires after new HTML has been swapped into the page.
 document.body.addEventListener("htmx:afterSwap", function (event) {
+
     event.target.querySelectorAll("form").forEach((form) => {
+        // Only run the address field toggle logic for forms that contain either the IPv4 type select or the IPv6 type select.
         if (form.querySelector("#ipv4_type") || form.querySelector("#ipv6_type")) {
+            // Show or hide the correct address input fields based on the currently selected IPv4/IPv6 type values.
             toggleAddressFields(form);
         }
     });
