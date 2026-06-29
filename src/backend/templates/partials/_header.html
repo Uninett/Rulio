@@ -34,13 +34,13 @@
         <div class="header-actions">
             <input class="form-control" type="search" name="search" placeholder="Search...">
 
-            <div class="form-group">
-                <label for="tenant">Tenant</label>
+            <div class="form-group tenant-form-group">
+                <label for="tenant" class="tenant-label">Tenant</label>
 
                 <!-- When this form is triggered, send a POST request to the Django URL named set-tenant. After the HTMX request finishes, reload the page. -->
                 <form hx-get="/api/set_tenant" hx-trigger="change from:#tenant" hx-swap="none"
                     hx-on::after-request="window.location.reload()">
-                    <select name="tenant_id" id="tenant">
+                    <select name="tenant_id" id="tenant" class="tenant-select">
                         {% for tenant in tenants %}
                         {% if selected_tenant|stringformat:'s' == tenant.id|stringformat:'s' %}
                         <option value="{{ tenant.id }}" selected>{{ tenant.name }}</option>

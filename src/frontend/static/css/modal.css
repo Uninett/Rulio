@@ -77,7 +77,7 @@ Form Layout
 
 .form-row {
     display: flex;
-    gap: 3rem;
+    gap: 2rem;
     align-items: flex-start;
     width: 100%;
 }
@@ -90,6 +90,27 @@ Form Layout
 -form-row,
 .form-description {
     padding-bottom: 1rem;
+}
+
+
+.modal .form-group {
+    gap: 0.35rem;
+}
+
+.modal .form-group label {
+    font-size: 0.95rem;
+}
+
+.modal input,
+.modal select {
+    height: 2.2rem;
+    padding: 0 0.65rem;
+    box-sizing: border-box;
+}
+
+.modal textarea {
+    min-height: 3.5rem;
+    padding: 0.65rem;
 }
 
 
@@ -125,8 +146,8 @@ Checkbox Lists
 .checkbox-label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.35rem 0;
+    gap: 0.2rem;
+    padding: 0.1rem 0;
     cursor: pointer;
 }
 

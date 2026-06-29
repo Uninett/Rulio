@@ -123,15 +123,6 @@ Forms
 ====================================================================
 */
 
-.form-control {
-    min-height: 2.5rem;
-    min-width: 14rem;
-    padding: 0 0.75rem;
-    border: 1px solid #767676;
-    /* color-layut-border-strong */
-    border-radius: 10px;
-}
-
 .form-group {
     display: flex;
     flex-direction: column;
@@ -181,6 +172,22 @@ textarea {
 .required {
     color: #7351FB;
 }
+
+/*
+====================================================================
+Search bar
+====================================================================
+*/
+
+.form-control {
+    min-height: 2.5rem;
+    min-width: 14rem;
+    padding: 0 0.75rem;
+    border: 1px solid #767676;
+    /* color-layut-border-strong */
+    border-radius: 10px;
+}
+
 
 /*
 ====================================================================
