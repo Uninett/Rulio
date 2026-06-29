@@ -470,8 +470,14 @@ def generate_multi_policy_config(policies: list[Policy]) -> str:
 
     policies = sorted(policies, key=lambda p: p.policy_sequence)
     for policy in policies:
-        merged_networks.update(policy.networks.get("networks", {}))
-        merged_services.update(policy.services.get("services", {}))
+        for name, value in policy.networks.get("networks", {}).items():
+            if name in merged_networks and merged_networks[name] != value:
+                raise ValueError(f"Duplicate network definition with different values: {name}")
+            merged_networks[name] = value
+        for name, value in policy.services.get("services", {}).items():
+            if name in merged_services and merged_services[name] != value:
+                raise ValueError(f"Duplicate service definition with different values: {name}")
+            merged_services[name] = value
 
     definitions_obj = {
         "networks": merged_networks,
