@@ -6,19 +6,7 @@ from backend.objects.tenant_objects.tenant import Tenant
 from django.contrib.auth import get_user_model
 
 
-@pytest.fixture
-def authenticated_client_with_tenant():
-    User = get_user_model()
-    user = User.objects.create_superuser(username="admin", password="change-me")
 
-    client = Client()
-    client.force_login(user)
-
-    session = client.session
-    session["current_tenant_id"] = GLOBAL_TENANT_ID
-    session.save()
-
-    return client
 
 
 @pytest.mark.django_db
