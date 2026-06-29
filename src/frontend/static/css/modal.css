@@ -13,8 +13,8 @@
     border-radius: 1rem;
     padding: 1.5rem;
     width: 100%;
-    max-width: 60rem;
-    max-height: 45rem;
+    max-width: 60vw;
+    max-height: 90vh;
 }
 
 .modal-header {
@@ -38,6 +38,7 @@
     display: flex;
     gap: 3rem;
     align-items: flex-start;
+    width: 100%;
 }
 
 .form-row .form-group {
@@ -48,6 +49,14 @@
 -form-row,
 .form-description {
     padding-bottom: 1rem;
+}
+
+.address-version-column {
+    flex: 1;
+}
+
+.custom-fields-row {
+    gap: 1rem;
 }
 
 input,

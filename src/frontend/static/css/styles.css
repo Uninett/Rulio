@@ -109,7 +109,9 @@ button {
 
 select[name="addr_type"],
 select[name="tenant"],
-select[name="protocol"] {
+select[name="protocol"],
+select[name="ipv4_type"],
+select[name="ipv6_type"] {
     background-color: white;
     border: 1px solid #767676;
 }
