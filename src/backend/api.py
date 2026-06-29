@@ -47,7 +47,7 @@ from backend.services.create import (
     create_and_add_tag_to_object,
     create_filter,
     create_interface,
-    create_policy_from_filter,
+    create_policies_for_interface,
     create_service,
     create_tag,
     create_tenant_user_member,
@@ -1107,18 +1107,18 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
             "status": "error",
             "message": str(e),
         }
-@api.get("/generate_config_for_filter", tags=["Configuration"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+@api.get("/generate_config_for_interface", tags=["Configuration"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
 @require_write_tenant
-def generate_config_for_filter(request, filter_id: int):
+def generate_config_for_interface(request, filter_id: int):
     try:
-        policy = create_policy_from_filter(filter_id)
-        config = generate_config(policy)
-        logger.info(f"Created policy {policy.name} for filter id={filter_id}")
+        policies = create_policies_for_interface(filter_id)
+        config = generate_config(policies)
+        logger.info(f"Created policies for filter id={filter_id}")
         logger.info(f"Generated configuration for filter id={filter_id}: {config}")
         return 200, {
             "status": "success",
             "message": f"Configuration generated for filter id={filter_id}",
-            "policy": policy.YAMLconfig,
+            "policies": [policy.YAMLconfig for policy in policies],
             "config": config,
         }
     except ValueError as e:

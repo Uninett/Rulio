@@ -265,7 +265,7 @@ class TestGenerateConfigFromFilterObject:
         logger.info(f"Matched rule {rule_id} to filter {filter_id}, response:\n{response}")
         vendor = "juniper"
         # Now generate the policy from the filter object
-        policy = create_policy_from_filter(request_with_session, sample_filters[0].id, vendor, policy_type="")
+        policy = create_policy_from_filter(request_with_session, sample_filters[0].id, policy_sequence=10, vendor=vendor, policy_type="")
         assert policy is not None
 
         config = generate_config(policy)
@@ -340,7 +340,7 @@ class TestGenerateConfigFromFilterObject:
 
         vendor = "juniper"
         # Now generate the policy from the filter object
-        policy = create_policy_from_filter(request_with_session, sample_filters[1].id, vendor, policy_type="")
+        policy = create_policy_from_filter(request_with_session, sample_filters[1].id, policy_sequence=10, vendor=vendor, policy_type="")
         assert policy is not None
 
         filepath = TEST_LOGPATH / "from_filter" / f"{vendor.upper()}_complex_generated_config.yaml"

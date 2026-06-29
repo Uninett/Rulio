@@ -364,7 +364,7 @@ class TestGenerateConfig:
                 term.get("action") == "accept"
                 and term.get("protocol") == "tcp"
                 and term.get("source-address") == ["ACL_Trusted_Sources"]
-                and term.get("destination-address") == ["ACL_Web_Servers", "ACL_Dst_Web_1"]
+                and term.get("destination-address") == ["ACL_Dst_Web_1", "ACL_Web_Servers"]
                 and term.get("destination-port") == ["ACL_HTTP", "ACL_HTTPS"]
                 for term in terms
             )

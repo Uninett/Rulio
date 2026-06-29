@@ -428,3 +428,7 @@ def get_all_filters_from_interface(interface_id: int) -> list[Filter]:
 def get_all_filters_from_tenant(tenant_id: int) -> list[Filter]:
     requested_filters = Filter.objects.filter(tenant_id=tenant_id)
     return requested_filters
+
+def get_platform_from_device(device_id: int) -> str:
+    device = Device.objects.get(id=device_id)
+    return device.platform

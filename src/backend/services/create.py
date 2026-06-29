@@ -22,7 +22,7 @@ from backend.services.generate_config import Policy, PolicyRule
 from backend.objects.management.device import Device
 from backend.objects.management.device_group import DeviceGroup
 from backend.utils.logger import set_up_logger
-from backend.services.get import get_object_by_type_and_id
+from backend.services.get import get_object_by_type_and_id, get_platform_from_device
 from django.db import transaction
 from backend.services.membership import (
     add_addresses_to_group,
@@ -552,7 +552,7 @@ def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[Policy
     return policy_rules
 
 
-def create_policy_from_filter(request, filter_id, vendor, policy_type):
+def create_policy_from_filter(request, filter_id, policy_sequence, vendor, policy_type):
 
     # Get filter object by ID
     filter = Filter.objects.get(id=filter_id)
@@ -575,38 +575,34 @@ def create_policy_from_filter(request, filter_id, vendor, policy_type):
         vendor=vendor,
         policy_type=policy_type,
         request=request,
+        policy_sequence=policy_sequence,
     )
     return policy
 
-def create_policy_for_interface(request, interface_id, vendor, policy_type):
+def create_policies_for_interface(request, interface_id, policy_type = ""):
     # Get interface object by ID
     interface = Interface.objects.get(id=interface_id)
     if not interface:
         raise ValueError(f"Interface with ID {interface_id} does not exist.")
+    
+    # Get the vendor/platform from the device associated with the interface
+    vendor = get_platform_from_device(interface.device_id)
 
     # Join interface on filters using FilterInterface, then sort filters by policy_sequence
-    filter_interface = interface.filters.through.objects.filter(interface_id=interface).order_by("policy_sequence")
-    if not filter_interface.exists():
+    filter_interfaces = interface.filters.through.objects.filter(interface_id=interface).order_by("policy_sequence")
+    if not filter_interfaces.exists():
         raise ValueError(f"No filters found for interface with ID {interface_id}.")
     
-    # Join filter with rules using RuleFilter
-    rule_filter_matches = RuleFilter.objects.filter(filter__in=filter_interface)
-    if not rule_filter_matches.exists():
-        raise ValueError(f"No rule matches found for filters associated with interface with ID {interface_id}.")
-
-    # Create PolicyRule objects for each rule
-    policy_rules = []
-    for rule_filter in rule_filter_matches:
-        policy_rules.extend(create_policy_rules_from_rule_filter(rule_filter))
-
-    policy = Policy(
-        name=f"{filter.first().name}_policy",
-        rules=policy_rules,
-        vendor=vendor,
-        policy_type=policy_type,
-        request=request,
-    )
-    return policy
+    # Create Policy objects for each filter
+    policies = []
+    for filter_interface in filter_interfaces:
+        filter_obj = Filter.objects.get(id=filter_interface.filter_id)
+        if not filter_obj:
+            raise ValueError(f"Filter with ID {filter_interface.filter_id} does not exist.")
+        policy = create_policy_from_filter(request, filter_obj.id, filter_interface.policy_sequence, vendor, policy_type)
+        policies.append(policy)
+    
+    return policies
 
 
 def create_device(request: object, name: str, platform: str, description: str, type: str) -> object:
