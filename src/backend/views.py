@@ -169,7 +169,6 @@ def get_addresses_view(request):
         is_group = item_type == "AddressGroup"
 
         tags_value = [tag.get("name", "") for tag in item.get("tags", [])]
-        tags_display = ", ".join(tags_value) or ""
         addresses_value = [address.get("name", "") for address in item.get("addresses", [])]
 
         if is_group:
