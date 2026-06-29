@@ -38,18 +38,17 @@ function closeModalAndRefresh(url) {
 // Validate the address form before submit. At least one of IPv4 or IPv6 must be selected, if neither dropdown has a value, prevent form submission.
 function prepareAddressForm(event) {
     const form = event.target;
-    const ipv4Type = form.querySelector('#ipv4_type');
-    const ipv6Type = form.querySelector('#ipv6_type');
+    const ipv4Type = form.querySelector('#ipv4_type')?.value || '';
+    const ipv6Type = form.querySelector('#ipv6_type')?.value || '';
 
-    if (!ipv4Type || !ipv6Type) return;
+    form.querySelector('#ipv4_type')?.setCustomValidity('');
+    form.querySelector('#ipv6_type')?.setCustomValidity('');
 
-    ipv4Type.setCustomValidity('');
-    ipv6Type.setCustomValidity('');
-
-    if (!ipv4Type.value && !ipv6Type.value) {
+    // If neither dropdown has a selected value, prevent the form from submitting
+    if (!ipv4Type && !ipv6Type) {
         event.preventDefault();
-        ipv4Type.setCustomValidity('Please select at least one of IPv4 or IPv6.');
-        ipv4Type.reportValidity();
+        form.querySelector('#ipv4_type')?.setCustomValidity('Please select at least one of IPv4 or IPv6.'); // Show the browser validation message on the IPv4 dropdown.
+        form.querySelector('#ipv4_type')?.reportValidity();
     }
 }
 
@@ -63,63 +62,24 @@ function toggleAddressFields(form) {
     const ipv4Type = form.querySelector('#ipv4_type')?.value || '';
     const ipv6Type = form.querySelector('#ipv6_type')?.value || '';
 
-    const ipv4Select = form.querySelector('#ipv4_type');
-    const ipv6Select = form.querySelector('#ipv6_type');
+    // Clear any previous custom validation message when the selection changes.
+    form.querySelector('#ipv4_type')?.setCustomValidity('');
+    form.querySelector('#ipv6_type')?.setCustomValidity('');
 
-    if (ipv4Select) ipv4Select.setCustomValidity('');
-    if (ipv6Select) ipv6Select.setCustomValidity('');
+    // Toggle visible field groups based on the selected address type.
+    form.querySelector('#ipv4-standard-fields').style.display = ipv4Type === 'standard' ? 'block' : 'none';
+    form.querySelector('#ipv4-custom-fields').style.display = ipv4Type === 'custom' ? 'flex' : 'none';
+    form.querySelector('#ipv6-standard-fields').style.display = ipv6Type === 'standard' ? 'block' : 'none';
+    form.querySelector('#ipv6-custom-fields').style.display = ipv6Type === 'custom' ? 'flex' : 'none';
 
-    const ipv4StandardFields = form.querySelector('#ipv4-standard-fields');
-    const ipv4CustomFields = form.querySelector('#ipv4-custom-fields');
-    const ipv6StandardFields = form.querySelector('#ipv6-standard-fields');
-    const ipv6CustomFields = form.querySelector('#ipv6-custom-fields');
+    // Update required validation so only the visible, relevant fields are required.
+    form.querySelector('#ipv4Network').required = ipv4Type === 'standard';
+    form.querySelector('#ipv4Address_start').required = ipv4Type === 'custom';
+    form.querySelector('#ipv4Address_end').required = ipv4Type === 'custom';
 
-    const ipv4Network = form.querySelector('#ipv4Network');
-    const ipv4AddressStart = form.querySelector('#ipv4Address_start');
-    const ipv4AddressEnd = form.querySelector('#ipv4Address_end');
-    const ipv6Network = form.querySelector('#ipv6Network');
-    const ipv6AddressStart = form.querySelector('#ipv6Address_start');
-    const ipv6AddressEnd = form.querySelector('#ipv6Address_end');
-
-    if (ipv4StandardFields) {
-        ipv4StandardFields.style.display = ipv4Type === 'standard' ? 'block' : 'none';
-    }
-
-    if (ipv4CustomFields) {
-        ipv4CustomFields.style.display = ipv4Type === 'custom' ? 'flex' : 'none';
-    }
-
-    if (ipv6StandardFields) {
-        ipv6StandardFields.style.display = ipv6Type === 'standard' ? 'block' : 'none';
-    }
-
-    if (ipv6CustomFields) {
-        ipv6CustomFields.style.display = ipv6Type === 'custom' ? 'flex' : 'none';
-    }
-
-    if (ipv4Network) {
-        ipv4Network.required = ipv4Type === 'standard';
-    }
-
-    if (ipv4AddressStart) {
-        ipv4AddressStart.required = ipv4Type === 'custom';
-    }
-
-    if (ipv4AddressEnd) {
-        ipv4AddressEnd.required = ipv4Type === 'custom';
-    }
-
-    if (ipv6Network) {
-        ipv6Network.required = ipv6Type === 'standard';
-    }
-
-    if (ipv6AddressStart) {
-        ipv6AddressStart.required = ipv6Type === 'custom';
-    }
-
-    if (ipv6AddressEnd) {
-        ipv6AddressEnd.required = ipv6Type === 'custom';
-    }
+    form.querySelector('#ipv6Network').required = ipv6Type === 'standard';
+    form.querySelector('#ipv6Address_start').required = ipv6Type === 'custom';
+    form.querySelector('#ipv6Address_end').required = ipv6Type === 'custom';
 }
 
 // Listen for the HTMX event that fires after new HTML has been swapped into the page.
