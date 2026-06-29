@@ -90,5 +90,27 @@ textarea {
 
 .btn-cancel:hover {
     background-color: #FFEAE9;
+    border-color: #FFEAE9;
     /* color-support-critical-subtle */
+}
+
+.group-checkbox-list {
+    max-height: 20vh;
+    overflow-y: auto;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    padding: 0.5rem;
+    background: white;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    cursor: pointer;
+}
+
+.checkbox-header {
+    margin-bottom: 0;
 }

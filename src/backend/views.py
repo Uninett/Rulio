@@ -6,10 +6,12 @@ from .api import (
     get_addresses_and_groups_with_tags_endpoint,
     create_address_endpoint,
     create_address_group_endpoint,
+    create_and_add_address_to_groups_endpoint,
     # Object Page: Service
     get_services_and_groups_with_tags_endpoint,
     create_service_endpoint,
     create_service_group_endpoint,
+    create_and_add_service_to_groups_endpoint,
 )
 from django.urls import reverse
 
@@ -134,6 +136,43 @@ def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
     }
 
 
+# Fetch all groups of given object_type, by calling all items with "type"=AddressGroup/ServiceGroup
+def get_group_options_view(request, object_type):
+    if object_type == "addresses":
+        status, api_objects = get_addresses_and_groups_with_tags_endpoint(request)
+
+        if status != 200:
+            return []
+
+        return [
+            {
+                "id": item.get("id"),
+                "name": item.get("name", ""),
+            }
+            for item in api_objects
+            if item.get("type") == "AddressGroup"
+        ]
+
+    if object_type == "services":
+        status, api_objects = get_services_and_groups_with_tags_endpoint(request)
+
+        if status != 200:
+            return []
+
+        return [
+            {
+                "id": item.get("id"),
+                "name": item.get("name", ""),
+            }
+            for item in api_objects
+            if item.get("type") == "ServiceGroup"
+        ]
+
+    # TODO: Add for device when endpoints are ready
+
+    return []
+
+
 """
 ====================================================================
 Objects Page: Address
@@ -236,6 +275,7 @@ def post_address_view(request):
     payload.ipv4Address_end = request.POST.get("ipv4Address_end") or None
     payload.ipv6Address_start = request.POST.get("ipv6Address_start") or None
     payload.ipv6Address_end = request.POST.get("ipv6Address_end") or None
+    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
     # Require at least one address version to be selected.
     if not payload.ipv4_type and not payload.ipv6_type:
@@ -253,11 +293,15 @@ def post_address_view(request):
                     "group": "Group",
                 },
                 "error_message": "At least one of IPv4 or IPv6 must be selected.",
+                "group_options": get_group_options_view(request, "addresses"),
             },
             status=400,
         )
 
-    status, created_address = create_address_endpoint(request, payload)
+    if group_ids:
+        status, created_address = create_and_add_address_to_groups_endpoint(request, payload, group_ids)
+    else:
+        status, created_address = create_address_endpoint(request, payload)
 
     # If creation failed, re-render the modal form content with an error message.
     if status not in [200, 201]:
@@ -275,6 +319,7 @@ def post_address_view(request):
                     "group": "Group",
                 },
                 "error_message": "Could not create address.",
+                "group_options": get_group_options_view(request, "addresses"),
             },
             status=400,
         )
@@ -451,8 +496,12 @@ def post_service_view(request):
     payload.protocol = request.POST.get("protocol", "")
     payload.port_start = request.POST.get("port_start") or None
     payload.port_end = request.POST.get("port_end") or None
+    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
-    status, created_service = create_service_endpoint(request, payload)
+    if group_ids:
+        status, created_service = create_and_add_service_to_groups_endpoint(request, payload, group_ids)
+    else:
+        status, created_service = create_service_endpoint(request, payload)
 
     if status not in [200, 201]:
         return render(
@@ -469,6 +518,7 @@ def post_service_view(request):
                     "group": "Group",
                 },
                 "error_message": "Could not create service.",
+                "group_options": get_group_options_view(request, "services"),
             },
             status=400,
         )
@@ -655,25 +705,27 @@ def get_add_modal(request, object_type):
     if config.get("supports_types") and config.get("post_urls"):
         modal_post_url = config["post_urls"].get(selected_type)
 
-    return render(
-        request,
-        "partials/_modal.html",
-        {
-            "modal_title": config["title"],
-            "modal_mode": "add",
-            "modal_object_type": object_type,
-            "modal_type": selected_type,
-            "modal_supports_types": config.get("supports_types", False),
-            "item_type_editable": config.get("item_type_editable", False),
-            "modal_type_labels": config.get("type_labels", {}),
-            "modal_content_partial": modal_content_partial,
-            "modal_post_url": modal_post_url,
-            "modal_target": config.get("target"),
-            "modal_swap": config.get("swap"),
-            "modal_submit_handler": config.get("submit_handler"),
-            "modal_refresh_url": config.get("refresh_url"),
-        },
-    )
+    context = {
+        "modal_title": config["title"],
+        "modal_mode": "add",
+        "modal_object_type": object_type,
+        "modal_type": selected_type,
+        "modal_supports_types": config.get("supports_types", False),
+        "item_type_editable": config.get("item_type_editable", False),
+        "modal_type_labels": config.get("type_labels", {}),
+        "modal_content_partial": modal_content_partial,
+        "modal_post_url": modal_post_url,
+        "modal_target": config.get("target"),
+        "modal_swap": config.get("swap"),
+        "modal_submit_handler": config.get("submit_handler"),
+        "modal_refresh_url": config.get("refresh_url"),
+    }
+
+    # If object_type is address, service or device, then show all groups
+    if object_type in ["addresses", "services"]:
+        context["group_options"] = get_group_options_view(request, object_type)
+
+    return render(request, "partials/_modal.html", context)
 
 
 # Render the modal content when switching between item/group form types.
@@ -688,20 +740,22 @@ def get_add_modal_form_content(request, object_type, type):
     if object_type == "addresses" and type == "group":
         modal_submit_handler = None
 
-    return render(
-        request,
-        "partials/modals/_modal_form.html",
-        {
-            "modal_object_type": object_type,
-            "modal_type": type,
-            "modal_supports_types": config.get("supports_types", False),
-            "item_type_editable": config.get("item_type_editable", False),
-            "modal_type_labels": config.get("type_labels", {}),
-            "modal_content_partial": config["types"][type],
-            "modal_post_url": modal_post_url,
-            "modal_target": config.get("target"),
-            "modal_swap": config.get("swap"),
-            "modal_submit_handler": modal_submit_handler,
-            "modal_refresh_url": config.get("refresh_url"),
-        },
-    )
+    context = {
+        "modal_object_type": object_type,
+        "modal_type": type,
+        "modal_supports_types": config.get("supports_types", False),
+        "item_type_editable": config.get("item_type_editable", False),
+        "modal_type_labels": config.get("type_labels", {}),
+        "modal_content_partial": config["types"][type],
+        "modal_post_url": modal_post_url,
+        "modal_target": config.get("target"),
+        "modal_swap": config.get("swap"),
+        "modal_submit_handler": modal_submit_handler,
+        "modal_refresh_url": config.get("refresh_url"),
+    }
+
+    # If object_type is address, service or device, then show all groups
+    if object_type in ["addresses", "services"]:
+        context["group_options"] = get_group_options_view(request, object_type)
+
+    return render(request, "partials/modals/_modal_form.html", context)
