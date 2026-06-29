@@ -152,7 +152,7 @@ def get_objects_addresses(request):
 
 # Fetch addresses from the API and map them to data.
 def get_addresses_view(request):
-    status, api_objects = get_addresses_and_groups_with_tags_endpoint(request)
+    status, api_addresses = get_addresses_and_groups_with_tags_endpoint(request)
 
     if status != 200:
         return {
@@ -162,30 +162,49 @@ def get_addresses_view(request):
 
     headers = ["Type", "Name", "Description", "IPv4", "IPv6", "Tags"]
 
-    rows = [
-        {
-            "id": f"{item.get('type', '').lower()}-{item.get('id')}",
-            "cells": [
-                item.get("type", ""),
-                item.get("name", ""),
-                item.get("description", ""),
-                item.get("ipv4Network") or "-",
-                item.get("ipv6Network") or "-",
-                item.get("tags", ""),
-            ],
-            "expand": [
-                item.get("ipv4_type", ""),
-                item.get("ipv6_type", ""),
-                item.get("ipv4Address_start") or "",
-                item.get("ipv4Address_end") or "",
-                item.get("ipv6Address_start") or "",
-                item.get("ipv6Address_end") or "",
-                item.get("address_groups", []),
-                item.get("addresses", []),
-            ],
-        }
-        for item in api_objects
-    ]
+    rows = []
+
+    for item in api_addresses:
+        item_type = item.get("type", "")
+        is_group = item_type == "AddressGroup"
+
+        tags_value = [tag.get("name", "") for tag in item.get("tags", [])]
+        addresses_value = [address.get("name", "") for address in item.get("addresses", [])]
+
+        if is_group:
+            expand = [
+                {"label": "Addresses", "value": addresses_value},
+                {"label": "Tags", "value": tags_value},
+            ]
+        else:
+            expand = [
+                {"label": "IPv4 Type", "value": item.get("ipv4_type", "")},
+                {"label": "IPv6 Type", "value": item.get("ipv6_type", "")},
+                {"label": "IPv4 Start", "value": item.get("ipv4Address_start", "")},
+                {"label": "IPv4 End", "value": item.get("ipv4Address_end", "")},
+                {"label": "IPv6 Start", "value": item.get("ipv6Address_start", "")},
+                {"label": "IPv6 End", "value": item.get("ipv6Address_end", "")},
+                {
+                    "label": "Tags",
+                    "value": tags_value,
+                },
+            ]
+
+        rows.append(
+            {
+                "id": f"{item.get('type', '').lower()}-{item.get('id')}",
+                "is_group": is_group,
+                "cells": [
+                    "Group" if item.get("type") == "AddressGroup" else item.get("type", ""),
+                    item.get("name", ""),
+                    item.get("description", ""),
+                    item.get("ipv4Network") or "",
+                    item.get("ipv6Network") or "",
+                    tags_value,
+                ],
+                "expand": expand,
+            }
+        )
 
     return {
         "headers": headers,
@@ -349,22 +368,44 @@ def get_services_view(request):
 
     headers = ["Type", "Name", "Description", "Protocol", "Port Start", "Port End", "Tags"]
 
-    rows = [
-        {
-            "id": item.get("id", ""),
-            "cells": [
-                item.get("type", ""),
-                item.get("name", ""),
-                item.get("description", ""),
-                item.get("protocol", ""),
-                item.get("port_start", ""),
-                item.get("port_end", ""),
-                item.get("tags", ""),
-            ],
-            "raw": item,
-        }
-        for item in api_services
-    ]
+    rows = []
+
+    for item in api_services:
+        item_type = item.get("type", "")
+        is_group = item_type == "ServiceGroup"
+
+        tags_value = [tag.get("name", "") for tag in item.get("tags", [])]
+        services_value = [service.get("name", "") for service in item.get("services", [])]
+
+        if is_group:
+            expand = [
+                {"label": "Services", "value": services_value},
+                {"label": "Tags", "value": tags_value},
+            ]
+        else:
+            expand = [
+                {
+                    "label": "Tags",
+                    "value": tags_value,
+                },
+            ]
+
+        rows.append(
+            {
+                "id": f"{item.get('type', '').lower()}-{item.get('id')}",
+                "is_group": is_group,
+                "cells": [
+                    "Group" if item.get("type") == "ServiceGroup" else item.get("type", ""),
+                    item.get("name", ""),
+                    item.get("description", ""),
+                    item.get("protocol") or "",
+                    item.get("port_start") or "",
+                    item.get("port_end") or "",
+                    tags_value,
+                ],
+                "expand": expand,
+            }
+        )
 
     return {
         "headers": headers,

@@ -1,7 +1,81 @@
-<tr>
+<tr id="row-{{ row.id }}" class="main-row" onclick="expandRow('{{ row.id }}')">
     {% for cell in row.cells %}
     <td>
+        {% if forloop.last %}
+        <div class="tag-list-container">
+            {% for item in cell %}
+            <span class="cell-text tag-item">{{ item }}</span>
+            {% endfor %}
+        </div>
+        {% else %}
         <span class="cell-text" title="{{cell}}">{{cell}}</span>
+        {% endif %}
     </td>
     {% endfor %}
 </tr>
+<tr id="details-{{ row.id }}" class="details-row">
+    <td colspan="{{ row.cells|length }}">
+        <section class="details-content">
+            {% if row.is_group %}
+            <div class="group-detail-columns">
+                {% for field in row.expand %}
+                {% if field.label == "Addresses" or field.label == "Services" %}
+                <div class="detail-block">
+                    <p> <strong>{{ field.label}}:</strong></p>
+                    {% for value in field.value %}
+                    <div> {{ value }}</div>
+
+                    {% endfor %}
+                </div>
+
+                {% elif field.label == "Tags" %}
+                <div class="detail-block">
+                    <p><strong>{{ field.label }}:</strong>
+                        {% for tag in field.value %}
+                        <span class="tags-styling">{{ tag }}</span>
+
+
+                        {% endfor %}
+                    </p>
+
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            {% for field in row.expand %}
+            {% if field.label == "Tags" %}
+            <div class="detail-block">
+                <p><strong>{{ field.label }}:</strong>
+                    {% for tag in field.value %}
+                    <span class="tags-styling">{{ tag }}</span>
+
+                    {% endfor %}
+                </p>
+
+            </div>
+            {%else%}
+            <p> <strong>{{ field.label}}:</strong> {{ field.value }}</p>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+        </section>
+    </td>
+</tr>
+
+
+<script>
+    function expandRow(rowId) {
+        const detailsRow = document.getElementById(`details-${rowId}`);
+        const openedRow = document.getElementById(`row-${rowId}`);
+
+
+        if (detailsRow.style.display === "table-row") {
+            detailsRow.style.display = "none";
+            openedRow.classList.remove("expanded-row");
+        } else {
+            detailsRow.style.display = "table-row";
+            openedRow.classList.add("expanded-row");
+        }
+    }
+</script>
