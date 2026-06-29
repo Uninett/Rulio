@@ -127,10 +127,7 @@ class Policy:
     # Generate a dict of rule_sequence nr -> list of rules with that rule_sequence nr
     def _group_rules_by_rule_sequence(self, rules: list[PolicyRule]) -> dict[int, list[PolicyRule]]:
         grouped = defaultdict(list)
-        sorted_rules = sorted(
-            rules,
-            key=lambda r: (r.rule_sequence, r.direction, r.type, r.object.name)
-        )
+        sorted_rules = sorted(rules, key=lambda r: (r.rule_sequence, r.direction, r.type, r.object.name))
         for rule in sorted_rules:
             grouped[rule.rule_sequence].append(rule)
         return dict(grouped)
@@ -153,7 +150,9 @@ class Policy:
         # Check that all rules in the same rule_sequence have the same action,
         actions = {rule.action for rule in rules}
         if len(actions) != 1:
-            logger.error(f"All rules in rule_sequence {rule_sequence} must have the same action. Found actions: {actions}")
+            logger.error(
+                f"All rules in rule_sequence {rule_sequence} must have the same action. Found actions: {actions}"
+            )
             raise ValueError(f"All rules in rule_sequence {rule_sequence} must have the same action")
 
         action = rules[0].action
@@ -457,6 +456,7 @@ def generate_config(policy: Policy) -> str:
     configs = aerleon_api.Generate([policy.YAMLConfig], definitions)
     return configs
 
+
 def generate_multi_policy_config(policies: list[Policy]) -> str:
     """
     Generates a configuration for the specified vendor based on the provided list of Policy objects.
@@ -491,7 +491,6 @@ def generate_multi_policy_config(policies: list[Policy]) -> str:
 
     definitions.ParseDefinitionsObject(definitions_obj, "merged_policy")
 
-    
     yaml_configs = [policy.YAMLConfig for policy in policies]
     configs = aerleon_api.Generate(yaml_configs, definitions)
     return configs

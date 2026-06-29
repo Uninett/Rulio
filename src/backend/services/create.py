@@ -580,31 +580,34 @@ def create_policy_from_filter(request, filter_id, policy_sequence, vendor, polic
     )
     return policy
 
-def create_policies_for_interface(request, interface_id, policy_type = ""):
+
+def create_policies_for_interface(request, interface_id, policy_type=""):
     # Get interface object by ID
     interface = Interface.objects.get(id=interface_id)
     if not interface:
         raise ValueError(f"Interface with ID {interface_id} does not exist.")
-    
+
     # Get the vendor/platform from the device associated with the interface
     vendor = get_platform_from_device(interface.device_id)
 
     # Join interface on filters using FilterInterface, then sort filters by policy_sequence
-    filter_interfaces = FilterInterface.objects.filter(interface_id=interface).order_by('policy_sequence')
+    filter_interfaces = FilterInterface.objects.filter(interface_id=interface).order_by("policy_sequence")
     if not filter_interfaces.exists():
         raise ValueError(f"No filters found for interface with ID {interface_id}.")
-    
+
     # Create Policy objects for each filter
     policies = []
     for filter_interface in filter_interfaces:
         filter_obj = Filter.objects.get(id=filter_interface.filter_id)
         if not filter_obj:
             raise ValueError(f"Filter with ID {filter_interface.filter_id} does not exist.")
-        policy = create_policy_from_filter(request, filter_obj.id, filter_interface.policy_sequence, vendor, policy_type)
+        policy = create_policy_from_filter(
+            request, filter_obj.id, filter_interface.policy_sequence, vendor, policy_type
+        )
         policies.append(policy)
     logger.info(f"Created {len(policies)} policies for interface id={interface_id}")
     logger.info(f"Policies: {[policy.YAMLConfig for policy in policies]}")
-    
+
     return policies
 
 
@@ -680,6 +683,7 @@ def add_devices_to_group(device_group_id: int, device_ids: list[int]) -> dict:
         "not_found_device_ids": sorted(not_found_ids),
     }
 
+
 def create_interface(request, name: str, description: str, device_id: int, type: str, VRF: str = None) -> object:
     tenant_id = get_current_tenant_id(request)
     # Check if the device exists and belongs to the tenant
@@ -702,13 +706,5 @@ def create_interface(request, name: str, description: str, device_id: int, type:
         raise ValueError(e.message_dict) from e
 
     interface.save()
-    response = {
-        "id": interface.id,
-        "name": interface.name,
-        "description": interface.description,
-        "device_id": interface.device_id,
-        "type": interface.type,
-    }
     logger.info(f"Created {interface} for device={interface.device_id}")
     return interface
-

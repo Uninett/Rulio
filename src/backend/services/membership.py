@@ -206,6 +206,7 @@ def add_rule_to_filter(request: object, rule_id: int, filter_id: int, rule_seque
     logger.info(f"Added Rule {rule.id} to Filter {filter.id} with rule_sequence {rule_sequence}")
     return rule_filter
 
+
 def add_filter_to_interface(request: object, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
     filter = Filter.objects.get(id=filter_id)
     interface = Interface.objects.get(id=interface_id)
@@ -220,8 +221,12 @@ def add_filter_to_interface(request: object, filter_id: int, interface_id: int, 
         filter_interface.policy_sequence = policy_sequence
         filter_interface.enable = enable
         filter_interface.save()
-        logger.warning(f"Updated Filter {filter.id} on Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}")
+        logger.warning(
+            f"Updated Filter {filter.id} on Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}"
+        )
     else:
-        logger.info(f"Added Filter {filter.id} to Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}")
+        logger.info(
+            f"Added Filter {filter.id} to Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}"
+        )
 
     return interface, filter

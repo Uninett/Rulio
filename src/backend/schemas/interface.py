@@ -1,4 +1,3 @@
-
 from typing import Optional
 
 from ninja import Schema
@@ -11,4 +10,3 @@ class CreateInterfaceSchema(Schema):
     device_id: int = Field(..., example=1)
     type: Optional[str] = Field(None, max_length=255, example="ethernet")
     VRF: Optional[str] = Field(None, max_length=255, example="VRF1")
-

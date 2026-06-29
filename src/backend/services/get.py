@@ -413,9 +413,11 @@ def get_all_devices_from_tenant(tenant_id: int) -> list[Device]:
     requested_devices = Device.objects.filter(tenant_id=tenant_id)
     return requested_devices
 
+
 def get_all_interfaces_from_device(device_id: int) -> list[Interface]:
     requested_interfaces = Interface.objects.filter(device_id=device_id)
     return requested_interfaces
+
 
 def get_all_filters_from_interface(interface_id: int) -> list[Filter]:
     requested_filters = Filter.objects.filter(interfaces__id=interface_id)
@@ -425,9 +427,11 @@ def get_all_filters_from_interface(interface_id: int) -> list[Filter]:
     ).order_by("policy_sequence")
     return requested_filters
 
+
 def get_all_filters_from_tenant(tenant_id: int) -> list[Filter]:
     requested_filters = Filter.objects.filter(tenant_id=tenant_id)
     return requested_filters
+
 
 def get_platform_from_device(device_id: int) -> str:
     device = Device.objects.get(id=device_id)

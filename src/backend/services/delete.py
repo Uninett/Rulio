@@ -82,6 +82,7 @@ def delete_device(device_id: int, tenant_id: int) -> None:
     logger.info(f"Deleted device id={device_id} from tenant={tenant_id}.")
     return {"status": "success", "device": {"id": device_id}}
 
+
 def delete_interface(interface_id: int, tenant_id: int) -> None:
     try:
         interface = Interface.objects.get(id=interface_id, device__tenant_id=tenant_id)
@@ -91,6 +92,7 @@ def delete_interface(interface_id: int, tenant_id: int) -> None:
     interface.delete()
     logger.info(f"Deleted interface id={interface_id} from tenant={tenant_id}.")
     return {"status": "success", "interface": {"id": interface_id}}
+
 
 def delete_filter(filter_id: int, tenant_id: int) -> None:
     try:

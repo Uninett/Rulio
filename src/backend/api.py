@@ -1,5 +1,3 @@
-
-
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from ninja import NinjaAPI
@@ -774,8 +772,13 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
             "message": "Device creation failed",
             "status": str(e),
         }
-    
-@api.post("/create_device_and_add_it_to_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
+
+
+@api.post(
+    "/create_device_and_add_it_to_group",
+    tags=["Management - Device"],
+    response={200: MessageSchema, 403: MessageSchema},
+)
 @require_write_tenant
 def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, group_id: int):
     device = create_device(
@@ -786,7 +789,9 @@ def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, grou
         type=payload.type,
     )
     add_devices_to_group(group_id, [device.id])
-    logger.info(f"create_device_and_add_it_to_group endpoint succeeded for device id={device.id} and group id={group_id}")
+    logger.info(
+        f"create_device_and_add_it_to_group endpoint succeeded for device id={device.id} and group id={group_id}"
+    )
     return 200, {
         "message": f"Device created with id {device.id} and added to group with id {group_id}",
         "status": "success",
@@ -873,7 +878,11 @@ def list_devices(request):
     return 200, list(devices.values())
 
 
-@api.post("/create_interface", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+@api.post(
+    "/create_interface",
+    tags=["Management - Device"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
 @require_write_tenant
 def create_interface_endpoint(request, payload: CreateInterfaceSchema):
     try:
@@ -896,8 +905,13 @@ def create_interface_endpoint(request, payload: CreateInterfaceSchema):
             "message": "Interface creation failed",
             "status": str(e),
         }
-    
-@api.delete("/delete_interface", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+
+
+@api.delete(
+    "/delete_interface",
+    tags=["Management - Device"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
 @require_write_tenant
 def delete_interface_endpoint(request, interface_id: int):
     try:
@@ -913,8 +927,13 @@ def delete_interface_endpoint(request, interface_id: int):
             "status": "error",
             "message": f"Error deleting interface with id {interface_id}: {str(e)}",
         }
-    
-@api.get("/get_interfaces_for_device", tags=["Management - Device"], response={200: list[dict], 403: MessageSchema, 404: MessageSchema})
+
+
+@api.get(
+    "/get_interfaces_for_device",
+    tags=["Management - Device"],
+    response={200: list[dict], 403: MessageSchema, 404: MessageSchema},
+)
 @require_read_tenant
 def get_interfaces_for_device_endpoint(request, device_id: int):
     try:
@@ -936,8 +955,6 @@ def get_interfaces_for_device_endpoint(request, device_id: int):
             "status": "error",
             "message": f"Error retrieving interfaces for device with id {device_id}: {str(e)}",
         }
-    
-
 
 
 """
@@ -1022,8 +1039,11 @@ def delete_rule_endpoint(request, rule_id: int):
             "message": str(e),
         }
 
-@api.post("/add_rule_to_filter", tags=["Configuration"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
-@require_write_tenant 
+
+@api.post(
+    "/add_rule_to_filter", tags=["Configuration"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
+)
+@require_write_tenant
 def add_rule_to_filter_endpoint(request, filter_id: int, rule_id: int, rule_sequence: int):
     try:
         add_rule_to_filter(request, rule_id, filter_id, rule_sequence)
@@ -1038,8 +1058,11 @@ def add_rule_to_filter_endpoint(request, filter_id: int, rule_id: int, rule_sequ
             "status": "error",
             "message": str(e),
         }
-    
-@api.post("/create_filter", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+
+
+@api.post(
+    "/create_filter", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
+)
 @require_write_tenant
 def create_filter_endpoint(request, payload: CreateFilterSchema):
     filter_obj = create_filter(
@@ -1054,7 +1077,9 @@ def create_filter_endpoint(request, payload: CreateFilterSchema):
     }
 
 
-@api.delete("/delete_filter", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+@api.delete(
+    "/delete_filter", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
+)
 @require_write_tenant
 def delete_filter_endpoint(request, filter_id: int):
     try:
@@ -1070,8 +1095,13 @@ def delete_filter_endpoint(request, filter_id: int):
             "status": "error",
             "message": str(e),
         }
-    
-@api.get("/get_filters_from_device", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+
+
+@api.get(
+    "/get_filters_from_device",
+    tags=["Filter - Filter"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
 @require_read_tenant
 def get_filters_from_interface_endpoint(request, interface_id: int):
     try:
@@ -1083,13 +1113,20 @@ def get_filters_from_interface_endpoint(request, interface_id: int):
             "status": "error",
             "message": str(e),
         }
+
+
 @api.get("/get_all_filters_from_tenant", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema})
 @require_read_tenant
 def get_all_filters_from_tenant_endpoint(request):
     filters = get_all_filters_from_tenant(request.session["current_tenant_id"])
     return 200, list(filters.values())
 
-@api.post("/add_filter_to_interface", tags=["Configuration"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+
+@api.post(
+    "/add_filter_to_interface",
+    tags=["Configuration"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
 @require_write_tenant
 def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
     """
@@ -1097,7 +1134,9 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
     """
     try:
         add_filter_to_interface(request, filter_id, interface_id, policy_sequence, enable)
-        logger.info(f"Filter id={filter_id} added to interface id={interface_id} with policy_sequence={policy_sequence} and enable={enable}")
+        logger.info(
+            f"Filter id={filter_id} added to interface id={interface_id} with policy_sequence={policy_sequence} and enable={enable}"
+        )
         return 200, {
             "status": "success",
             "message": f"Filter id={filter_id} added to interface id={interface_id} with policy_sequence={policy_sequence} and enable={enable}",
@@ -1108,7 +1147,13 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
             "status": "error",
             "message": str(e),
         }
-@api.get("/generate_config_for_interface", tags=["Configuration"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema})
+
+
+@api.get(
+    "/generate_config_for_interface",
+    tags=["Configuration"],
+    response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
+)
 @require_write_tenant
 def generate_config_for_interface(request, interface_id: int):
     try:
@@ -1131,6 +1176,7 @@ def generate_config_for_interface(request, interface_id: int):
             "status": "error",
             "message": str(e),
         }
+
 
 """
 ====================================================================
