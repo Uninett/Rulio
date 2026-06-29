@@ -212,10 +212,10 @@ def create_address_endpoint(
         ipv6Address_start=payload.ipv6Address_start,
         ipv6Address_end=payload.ipv6Address_end,
     )
-    logger.info(f"create_service endpoint succeeded for service id={address.id}")
+    logger.info(f"create_address endpoint succeeded for address id={address.id}")
     return 200, {
-        "message": "Service created",
-        "status": f"Service created with id {address.id}",
+        "message": "Address created",
+        "status": f"Address created with id {address.id}",
     }
 
 
