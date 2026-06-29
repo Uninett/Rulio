@@ -179,7 +179,8 @@ td:nth-child(1) {
 }
 
 .tags-styling {
-    border: 1px solid #7351FB;
+    border: 1px solid lightgray;
+    background-color: lightgray;
     border-radius: 20px;
     display: inline-block;
     padding-right: 10px;
@@ -199,7 +200,9 @@ td:nth-child(1) {
 }
 
 .tag-item {
-    border: 1px solid #7351FB;
+    border: 1px solid lightgray;
+    background-color: lightgray;
+    color: black;
     border-radius: 20px;
     display: inline-block;
     font-size: smaller;
