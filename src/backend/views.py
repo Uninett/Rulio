@@ -5,8 +5,9 @@ from .api import (
     # Object Page: Address
     get_addresses_and_groups_with_tags_endpoint,
     create_address_endpoint,
-    create_address_group_endpoint,
     create_and_add_address_to_groups_endpoint,
+    create_address_group_endpoint,
+    create_address_group_and_add_addresses_endpoint,
     # Object Page: Service
     get_services_and_groups_with_tags_endpoint,
     create_service_endpoint,
@@ -169,6 +170,41 @@ def get_group_options_view(request, object_type):
         ]
 
     # TODO: Add for device when endpoints are ready
+
+    return []
+
+
+# Fetch all item options of given object_type, excluding groups.
+def get_item_options_view(request, object_type):
+    if object_type == "addresses":
+        status, api_objects = get_addresses_and_groups_with_tags_endpoint(request)
+
+        if status != 200:
+            return []
+
+        return [
+            {
+                "id": item.get("id"),
+                "name": item.get("name", ""),
+            }
+            for item in api_objects
+            if item.get("type") != "AddressGroup"
+        ]
+
+    if object_type == "services":
+        status, api_objects = get_services_and_groups_with_tags_endpoint(request)
+
+        if status != 200:
+            return []
+
+        return [
+            {
+                "id": item.get("id"),
+                "name": item.get("name", ""),
+            }
+            for item in api_objects
+            if item.get("type") != "ServiceGroup"
+        ]
 
     return []
 
@@ -358,8 +394,12 @@ def post_address_group_view(request):
     payload.tenant_id = (
         int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     )
+    address_ids = [int(address_id) for address_id in request.POST.getlist("address_ids") if address_id]
 
-    status, created_address_group = create_address_group_endpoint(request, payload)
+    if address_ids:
+        status, created_address_group = create_address_group_and_add_addresses_endpoint(request, payload, address_ids)
+    else:
+        status, created_address_group = create_address_group_endpoint(request, payload)
 
     if status not in [200, 201]:
         return render(
@@ -376,6 +416,7 @@ def post_address_group_view(request):
                     "group": "Address Group",
                 },
                 "error_message": "Could not create address group.",
+                "item_options": get_item_options_view(request, "addresses"),
             },
             status=400,
         )
@@ -724,6 +765,7 @@ def get_add_modal(request, object_type):
     # If object_type is address, service or device, then show all groups
     if object_type in ["addresses", "services"]:
         context["group_options"] = get_group_options_view(request, object_type)
+        context["item_options"] = get_item_options_view(request, object_type)
 
     return render(request, "partials/_modal.html", context)
 
@@ -757,5 +799,6 @@ def get_add_modal_form_content(request, object_type, type):
     # If object_type is address, service or device, then show all groups
     if object_type in ["addresses", "services"]:
         context["group_options"] = get_group_options_view(request, object_type)
+        context["item_options"] = get_item_options_view(request, object_type)
 
     return render(request, "partials/modals/_modal_form.html", context)

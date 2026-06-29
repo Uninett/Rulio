@@ -1,3 +1,19 @@
-<p class="form-help">Add addresses to address group.</p>
+<!-- List all addresses  as a checkbox dropdown -->
+<div class="modal-header">
+    <h2 class="checkbox-header">Addresses</h2>
+</div>
 
-<!-- TODO: Add a selection where the user can add an addresses to the address group using api/add_addresses_to_group -->
+<div class="form-group">
+    <p class="form-help">Choose any addresses you want to add to this address group.</p>
+
+    <div class="group-checkbox-list">
+        {% for address in item_options %}
+        <label class="checkbox-label">
+            <input type="checkbox" name="address_ids" value="{{ address.id }}">
+            <span>{{ address.name }}</span>
+        </label>
+        {% empty %}
+        <p>No addresses available.</p>
+        {% endfor %}
+    </div>
+</div>
