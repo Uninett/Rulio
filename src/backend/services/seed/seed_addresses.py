@@ -1,6 +1,6 @@
 from django.test import RequestFactory
 
-from backend.services.create import get_or_create_address
+from backend.services.attribute_objects.create_attribute_objects import get_or_create_address
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
 

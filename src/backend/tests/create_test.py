@@ -6,19 +6,17 @@ import pytest
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.rule_match import RuleMatch
-from backend.services.create import (
+from backend.services.attribute_objects.create_attribute_objects import create_address, create_service
+from backend.services.attribute_objects.create_attribute_objects import create_address_group, create_service_group
+from backend.services.create import create_policy_from_filter
+from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
+from backend.services.membership import (
     add_addresses_to_group,
-    create_address,
-    create_address_group,
-    create_policy_from_filter,
-    create_filter,
-    create_rule,
-    create_service,
-    create_service_group,
     add_services_to_group,
+    add_objects_to_rule,
+    add_rule_to_filter,
 )
 from backend.services.generate_config import generate_config
-from backend.services.membership import add_objects_to_rule, add_rule_to_filter
 from backend.utils.logger import set_up_logger
 from constants import TEST_LOGPATH
 

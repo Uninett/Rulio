@@ -62,7 +62,7 @@ EOF
 
 echo "Creating default tenant if needed..."
 python manage.py shell << EOF
-from backend.objects.management.tenant import Tenant
+from backend.objects.tenant_objects.tenant import Tenant
 
 tenant, created = Tenant.objects.get_or_create(
     tenant_name="Global Tenant",

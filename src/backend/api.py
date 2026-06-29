@@ -100,8 +100,6 @@ from backend.services.membership import (
 from backend.utils.logger import set_up_logger
 
 
-api = NinjaAPI()
-
 # Logger setup
 logger = set_up_logger(__name__)
 

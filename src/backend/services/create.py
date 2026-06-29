@@ -1,4 +1,3 @@
-
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.tenant_objects.filter_interface import FilterInterface
