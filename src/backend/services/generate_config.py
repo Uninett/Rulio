@@ -126,9 +126,13 @@ class Policy:
     # Generate a dict of rule_sequence nr -> list of rules with that rule_sequence nr
     def _group_rules_by_rule_sequence(self, rules: list[PolicyRule]) -> dict[int, list[PolicyRule]]:
         grouped = defaultdict(list)
-        for rule in rules:
+        sorted_rules = sorted(
+            rules,
+            key=lambda r: (r.rule_sequence, r.direction, r.type, r.object.name)
+        )
+        for rule in sorted_rules:
             grouped[rule.rule_sequence].append(rule)
-        return dict(sorted(grouped.items()))
+        return dict(grouped)
 
     # Build the base name for generated terms
     def _base_term_name(self, rules: list[PolicyRule], rule_sequence: int) -> str:
