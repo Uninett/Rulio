@@ -1,7 +1,8 @@
-<p class="form-help">At least one of IPv4 or IPv6 is required.<span class="required"> *</span></p>
+<p class="form-help">
+    At least one of IPv4 or IPv6 is required.<span class="required"> *</span>
+</p>
 
 <div class="address-version-row form-row">
-
     <div class="address-version-column">
         <!-- The dropdown decides whether to show a standard single input or a custom range with start/end fields for IPv4. -->
         <div class="form-group">
@@ -16,7 +17,7 @@
         <!-- IPv4 standard input hidden by default and shown only when IPv4 type = standard. -->
         <div id="ipv4-standard-fields" style="display: none;">
             <div class="form-group">
-                <label for="ipv4Network">IPv4</label>
+                <label for="ipv4Network">IPv4<span class="required"> *</span></label>
                 <input id="ipv4Network" name="ipv4Network" type="text" placeholder="x.x.x.x/y">
             </div>
         </div>
@@ -24,12 +25,12 @@
         <!-- IPv4 custom range inputs, hidden by default and shown only when IPv4 type = custom. -->
         <div id="ipv4-custom-fields" class="custom-fields-row form-row" style="display: none;">
             <div class="form-group">
-                <label for="ipv4Address_start">IPv4 start</label>
+                <label for="ipv4Address_start">IPv4 start<span class="required"> *</span></label>
                 <input id="ipv4Address_start" name="ipv4Address_start" type="text" placeholder="x.x.x.x">
             </div>
 
             <div class="form-group">
-                <label for="ipv4Address_end">IPv4 end</label>
+                <label for="ipv4Address_end">IPv4 end<span class="required"> *</span></label>
                 <input id="ipv4Address_end" name="ipv4Address_end" type="text" placeholder="x.x.x.x">
             </div>
         </div>
@@ -49,7 +50,7 @@
         <!-- IPv6 standard input hidden by default and shown only when IPv6 type = standard. -->
         <div id="ipv6-standard-fields" style="display: none;">
             <div class="form-group">
-                <label for="ipv6Network">IPv6</label>
+                <label for="ipv6Network">IPv6<span class="required"> *</span></label>
                 <input id="ipv6Network" name="ipv6Network" type="text" placeholder="x:x:x:x:x:x:x:x/y">
             </div>
         </div>
@@ -57,18 +58,17 @@
         <!-- IPv6 custom range inputs, hidden by default and shown only when IPv6 type = custom. -->
         <div id="ipv6-custom-fields" class="custom-fields-row form-row" style="display: none;">
             <div class="form-group">
-                <label for="ipv6Address_start">IPv6 start</label>
+                <label for="ipv6Address_start">IPv6 start<span class="required"> *</span></label>
                 <input id="ipv6Address_start" name="ipv6Address_start" type="text" placeholder="x:x:x:x:x:x:x:x">
             </div>
 
             <div class="form-group">
-                <label for="ipv6Address_end">IPv6 end</label>
+                <label for="ipv6Address_end">IPv6 end<span class="required"> *</span></label>
                 <input id="ipv6Address_end" name="ipv6Address_end" type="text" placeholder="x:x:x:x:x:x:x:x">
             </div>
         </div>
     </div>
 </div>
-
 
 <p class="form-help">Add address to address group.</p>
 

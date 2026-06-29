@@ -35,21 +35,25 @@ function closeModalAndRefresh(url) {
     });
 }
 
-// Validate the address form before submit. At least one of IPv4 or IPv6 must be selected, if neither dropdown has a value, prevent form submission and show an alert
+// Validate the address form before submit. At least one of IPv4 or IPv6 must be selected, if neither dropdown has a value, prevent form submission.
 function prepareAddressForm(event) {
     const form = event.target;
+    const ipv4Type = form.querySelector('#ipv4_type');
+    const ipv6Type = form.querySelector('#ipv6_type');
 
-    const ipv4Type = form.querySelector('#ipv4_type')?.value || '';
-    const ipv6Type = form.querySelector('#ipv6_type')?.value || '';
+    if (!ipv4Type || !ipv6Type) return;
 
-    if (!ipv4Type && !ipv6Type) {
+    ipv4Type.setCustomValidity('');
+    ipv6Type.setCustomValidity('');
+
+    if (!ipv4Type.value && !ipv6Type.value) {
         event.preventDefault();
-        alert('At least one of IPv4 or IPv6 must be selected.');
-        return;
+        ipv4Type.setCustomValidity('Please select at least one of IPv4 or IPv6.');
+        ipv4Type.reportValidity();
     }
 }
 
-/* 
+/*
 Show or hide IPv4/IPv6 input fields based on the selected dropdown value.
 - "standard" shows the single network input
 - "custom" shows the start/end range inputs
@@ -58,6 +62,12 @@ Show or hide IPv4/IPv6 input fields based on the selected dropdown value.
 function toggleAddressFields(form) {
     const ipv4Type = form.querySelector('#ipv4_type')?.value || '';
     const ipv6Type = form.querySelector('#ipv6_type')?.value || '';
+
+    const ipv4Select = form.querySelector('#ipv4_type');
+    const ipv6Select = form.querySelector('#ipv6_type');
+
+    if (ipv4Select) ipv4Select.setCustomValidity('');
+    if (ipv6Select) ipv6Select.setCustomValidity('');
 
     const ipv4StandardFields = form.querySelector('#ipv4-standard-fields');
     const ipv4CustomFields = form.querySelector('#ipv4-custom-fields');
@@ -80,3 +90,11 @@ function toggleAddressFields(form) {
         ipv6CustomFields.style.display = ipv6Type === 'custom' ? 'flex' : 'none';
     }
 }
+
+document.body.addEventListener("htmx:afterSwap", function (event) {
+    event.target.querySelectorAll("form").forEach((form) => {
+        if (form.querySelector("#ipv4_type") || form.querySelector("#ipv6_type")) {
+            toggleAddressFields(form);
+        }
+    });
+});
