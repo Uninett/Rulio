@@ -74,13 +74,12 @@ class TestGenerateConfig:
                     )
                     f.write(content)
 
-    def test_generate_address_group_config(self, address_group_policy_rules, request_with_session):
+    def test_generate_address_group_config(self, address_group_policy_rules):
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(
                 name="Address_Group_Test_Policy",
                 rules=address_group_policy_rules,
                 vendor=vendor,
-                request=request_with_session,
                 policy_type=policy_type,
             )
 
@@ -126,13 +125,12 @@ class TestGenerateConfig:
                     )
                     f.write(content)
 
-    def test_generate_service_config(self, service_policy_rules, request_with_session):
+    def test_generate_service_config(self, service_policy_rules):
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(
                 name="Service_Test_Policy",
                 rules=service_policy_rules,
                 vendor=vendor,
-                request=request_with_session,
                 policy_type=policy_type,
             )
 
@@ -187,13 +185,12 @@ class TestGenerateConfig:
                     )
                     f.write(content)
 
-    def test_generate_service_group_config(self, service_group_policy_rules, request_with_session):
+    def test_generate_service_group_config(self, service_group_policy_rules):
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(
                 name="Service_Group_Test_Policy",
                 rules=service_group_policy_rules,
                 vendor=vendor,
-                request=request_with_session,
                 policy_type=policy_type,
             )
 
@@ -252,13 +249,12 @@ class TestGenerateConfig:
                     )
                     f.write(content)
 
-    def test_generate_config_with_address_and_service(self, combined_policy_rules, request_with_session):
+    def test_generate_config_with_address_and_service(self, combined_policy_rules):
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(
                 name="Combined_Test_Policy",
                 rules=combined_policy_rules,
                 vendor=vendor,
-                request=request_with_session,
                 policy_type=policy_type,
             )
 
@@ -310,14 +306,13 @@ class TestGenerateConfig:
                     f.write(content)
 
     def test_generate_realistic_router_policy(
-        self, realistic_acl_policy_rules, request_with_session, create_testing_tenant
+        self, realistic_acl_policy_rules, create_testing_tenant
     ):
         for vendor, policy_type in self.vendor_policy_type_pairs:
             policy = Policy(
                 name="Realistic_Router_Policy",
                 rules=realistic_acl_policy_rules,
                 vendor=vendor,
-                request=request_with_session,
                 policy_type=policy_type,
             )
 

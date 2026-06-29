@@ -70,13 +70,11 @@ class Policy:
         name: str,
         rules: list[PolicyRule],
         vendor: str,
-        request=None,
         policy_type: str = "",
         policy_sequence: int = 0,
     ):
         self.name = name.strip()
         self.name = self.name.replace(" ", "_")
-        self.request = request
         self.vendor = vendor.lower()
         self.policy_type = policy_type
         self.policy_sequence = policy_sequence
@@ -376,11 +374,8 @@ class Policy:
 
     # Add networks definitions for an AddressGroup object
     def _add_address_group_translation_to_networks(self, rule: PolicyRule) -> None:
-        if self.request is None:
-            raise ValueError("Request object is required to fetch address group members.")
-
         values = []
-        for address in get_address_group_members(request=self.request, address_group_id=rule.object.id):
+        for address in get_address_group_members(address_group_id=rule.object.id):
             ipv4_addrs, ipv6_addrs = address.get_address()
 
             for addr in ipv4_addrs:
@@ -408,12 +403,9 @@ class Policy:
 
     # Add service definitions for a ServiceGroup object
     def _add_service_group_translation_to_services(self, rule: PolicyRule) -> list[tuple[str, str, bool]]:
-        if self.request is None:
-            raise ValueError("Request object is required to fetch service group members.")
-
         service_entries = []
 
-        for service in get_service_group_members(request=self.request, service_group_id=rule.object.id):
+        for service in get_service_group_members(service_group_id=rule.object.id):
             service_name = service.name
             protocol = service.get_protocol()
             port_value = service.get_ports()

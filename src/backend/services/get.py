@@ -362,7 +362,7 @@ def get_all_addresses_from_tenant_by_names(tenant_id: int, names: list[str]) -> 
     return requested_addresses
 
 
-def get_address_group_members(request: object, address_group_id: int) -> list[Address]:
+def get_address_group_members(address_group_id: int) -> list[Address]:
     return Address.objects.filter(addressgroupmember__group_id=address_group_id)
     # return AddressGroupMember.objects.filter(group_id=address_group_id)
 
@@ -382,7 +382,7 @@ def get_all_services_from_tenant_by_names(tenant_id: int, names: list[str]) -> l
     return requested_services
 
 
-def get_service_group_members(request: object, service_group_id: int) -> list[Address]:
+def get_service_group_members(service_group_id: int) -> list[Address]:
     return Service.objects.filter(servicegroupmember__group_id=service_group_id)
     # return ServiceGroupMember.objects.filter(group_id=service_group_id)
 

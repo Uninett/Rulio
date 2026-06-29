@@ -1,3 +1,6 @@
+from django.core.exceptions import PermissionDenied
+from django.contrib.auth.models import User
+
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.tenant_objects.filter_interface import FilterInterface
@@ -8,15 +11,33 @@ from backend.objects.filters.rule import Rule
 from backend.services.generate_config import Policy, PolicyRule
 from backend.utils.logger import set_up_logger
 from backend.services.get import get_platform_from_device
+from backend.services.helper_user_tenant import is_superadmin
+
 
 
 # Setup logger
 logger = set_up_logger(__name__)
 
 
-def create_tenant_user_member(request: object, tenant_id: int, user_id: int, role: str) -> TenantUserMember:
-    tenant_user = TenantUserMember.objects.create(tenant_id=tenant_id, user_id=user_id, role=role)
-    logger.info(f"TenantUserMember created: {tenant_user}")
+def create_tenant_user_member(
+    *,
+    actor: User,
+    tenant_id: int,
+    user_id: int,
+    role: str,
+) -> TenantUserMember:
+    if not actor.is_authenticated:
+        raise PermissionDenied("Authentication required.")
+
+    if not is_superadmin(actor):
+        raise PermissionDenied("Only superadmins can add tenant privileges to users.")
+
+    tenant_user = TenantUserMember.objects.create(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        role=role,
+    )
+    logger.info(f"TenantUserMember created by {actor.username}: {tenant_user}")
     return tenant_user
 
 
@@ -71,7 +92,7 @@ def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[Policy
     return policy_rules
 
 
-def create_policy_from_filter(request, filter_id, policy_sequence, vendor, policy_type):
+def create_policy_from_filter(filter_id, policy_sequence, vendor, policy_type):
 
     # Get filter object by ID
     filter = Filter.objects.get(id=filter_id)
@@ -93,13 +114,12 @@ def create_policy_from_filter(request, filter_id, policy_sequence, vendor, polic
         rules=policy_rules,
         vendor=vendor,
         policy_type=policy_type,
-        request=request,
         policy_sequence=policy_sequence,
     )
     return policy
 
 
-def create_policies_for_interface(request, interface_id, policy_type=""):
+def create_policies_for_interface(interface_id, policy_type=""):
     # Get interface object by ID
     interface = Interface.objects.get(id=interface_id)
     if not interface:
@@ -120,7 +140,7 @@ def create_policies_for_interface(request, interface_id, policy_type=""):
         if not filter_obj:
             raise ValueError(f"Filter with ID {filter_interface.filter_id} does not exist.")
         policy = create_policy_from_filter(
-            request, filter_obj.id, filter_interface.policy_sequence, vendor, policy_type
+            filter_obj.id, filter_interface.policy_sequence, vendor, policy_type
         )
         policies.append(policy)
     logger.info(f"Created {len(policies)} policies for interface id={interface_id}")
