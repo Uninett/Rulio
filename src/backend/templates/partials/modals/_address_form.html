@@ -1,7 +1,9 @@
 <p class="form-help">At least one of IPv4 or IPv6 is required.<span class="required"> *</span></p>
 
 <div class="address-version-row form-row">
+
     <div class="address-version-column">
+        <!-- The dropdown decides whether to show a standard single input or a custom range with start/end fields for IPv4. -->
         <div class="form-group">
             <label for="ipv4_type">IPv4 address</label>
             <select id="ipv4_type" name="ipv4_type" onchange="toggleAddressFields(this.form)">
@@ -11,6 +13,7 @@
             </select>
         </div>
 
+        <!-- IPv4 standard input hidden by default and shown only when IPv4 type = standard. -->
         <div id="ipv4-standard-fields" style="display: none;">
             <div class="form-group">
                 <label for="ipv4Network">IPv4</label>
@@ -18,6 +21,7 @@
             </div>
         </div>
 
+        <!-- IPv4 custom range inputs, hidden by default and shown only when IPv4 type = custom. -->
         <div id="ipv4-custom-fields" class="custom-fields-row form-row" style="display: none;">
             <div class="form-group">
                 <label for="ipv4Address_start">IPv4 start</label>
@@ -32,6 +36,7 @@
     </div>
 
     <div class="address-version-column">
+        <!-- The dropdown decides whether to show a standard single input or a custom range with start/end fields for IPv6. -->
         <div class="form-group">
             <label for="ipv6_type">IPv6 address</label>
             <select id="ipv6_type" name="ipv6_type" onchange="toggleAddressFields(this.form)">
@@ -41,6 +46,7 @@
             </select>
         </div>
 
+        <!-- IPv6 standard input hidden by default and shown only when IPv6 type = standard. -->
         <div id="ipv6-standard-fields" style="display: none;">
             <div class="form-group">
                 <label for="ipv6Network">IPv6</label>
@@ -48,6 +54,7 @@
             </div>
         </div>
 
+        <!-- IPv6 custom range inputs, hidden by default and shown only when IPv6 type = custom. -->
         <div id="ipv6-custom-fields" class="custom-fields-row form-row" style="display: none;">
             <div class="form-group">
                 <label for="ipv6Address_start">IPv6 start</label>

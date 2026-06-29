@@ -1,3 +1,4 @@
+// Handle clicks on toggle buttons.
 document.addEventListener("click", function (event) {
     const button = event.target.closest(".btn-toggle");
     if (!button) return;
@@ -6,12 +7,13 @@ document.addEventListener("click", function (event) {
     if (!container) return;
 
     container.querySelectorAll(".btn-toggle").forEach((btn) => {
-        btn.classList.remove("active");
+        btn.classList.remove("active"); // Removes the active state from sibling buttons
     });
 
-    button.classList.add("active");
+    button.classList.add("active"); // Marks the clicked button as active.
 });
 
+// Close the modal, and ask for confirmation before clearing the modal content.
 function closeModal(event = null) {
     if (event && event.target !== event.currentTarget) return;
 
@@ -21,6 +23,7 @@ function closeModal(event = null) {
     document.getElementById('modal-container').innerHTML = '';
 }
 
+// Close the modal and refresh the objects content area. If a refresh URL is provided, reload the relevant page content with HTMX.
 function closeModalAndRefresh(url) {
     document.getElementById('modal-container').innerHTML = '';
 
@@ -32,6 +35,7 @@ function closeModalAndRefresh(url) {
     });
 }
 
+// Validate the address form before submit. At least one of IPv4 or IPv6 must be selected, if neither dropdown has a value, prevent form submission and show an alert
 function prepareAddressForm(event) {
     const form = event.target;
 
@@ -45,6 +49,12 @@ function prepareAddressForm(event) {
     }
 }
 
+/* 
+Show or hide IPv4/IPv6 input fields based on the selected dropdown value.
+- "standard" shows the single network input
+- "custom" shows the start/end range inputs
+- empty selection hides both field groups
+*/
 function toggleAddressFields(form) {
     const ipv4Type = form.querySelector('#ipv4_type')?.value || '';
     const ipv6Type = form.querySelector('#ipv6_type')?.value || '';

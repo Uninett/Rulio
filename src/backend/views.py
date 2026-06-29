@@ -94,7 +94,7 @@ def get_filters_page(request):
 
 """
 ====================================================================
-Objects Page: Address
+Objects Page
 ====================================================================
 """
 
@@ -132,6 +132,13 @@ def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
         ],
         "add_button_label": add_button_label,
     }
+
+
+"""
+====================================================================
+Objects Page: Address
+====================================================================
+"""
 
 
 # Render the Addresses tab content for the Objects page.
@@ -230,6 +237,7 @@ def post_address_view(request):
     payload.ipv6Address_start = request.POST.get("ipv6Address_start") or None
     payload.ipv6Address_end = request.POST.get("ipv6Address_end") or None
 
+    # Require at least one address version to be selected.
     if not payload.ipv4_type and not payload.ipv6_type:
         return render(
             request,
