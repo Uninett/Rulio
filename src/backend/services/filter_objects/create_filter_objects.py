@@ -1,17 +1,20 @@
 from datetime import datetime, timezone
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.models import User
 
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.utils.logger import set_up_logger
-from backend.services.get import get_current_tenant, get_current_tenant_id
+from backend.services.helper_user_tenant import get_tenant_by_id, require_write_tenant
 
 
 logger = set_up_logger(__name__)
 
 
 def create_rule(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     action: str,
@@ -19,7 +22,8 @@ def create_rule(
     hit_count: int,
     enable: bool = True,
 ) -> Rule:
-    tenant = get_current_tenant(request)
+    require_write_tenant(actor, tenant_id)
+    tenant = get_tenant_by_id(tenant_id)
     now = datetime.now(timezone.utc)
     rule = Rule(
         name=name,
@@ -30,8 +34,8 @@ def create_rule(
         hit_count=hit_count,
         date_created=now,
         date_changed=now,
-        created_by=request.user.id if hasattr(request, "user") else None,
-        changed_by=request.user.id if hasattr(request, "user") else None,
+        created_by=actor.id,
+        changed_by=actor.id,
         enable=enable,
     )
     try:
@@ -46,15 +50,18 @@ def create_rule(
 
 
 def create_filter(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
 ) -> Filter:
-    tenant_id = get_current_tenant_id(request)
+    require_write_tenant(actor, tenant_id)
+    tenant = get_tenant_by_id(tenant_id)
     filter_obj = Filter(
         name=name,
         description=description,
-        tenant_id=tenant_id,
+        tenant=tenant,
     )
     try:
         filter_obj.full_clean()

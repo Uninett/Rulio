@@ -1,6 +1,9 @@
+from django.contrib.auth.models import User
+
 from backend.objects.filters.filter import Filter
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
+from backend.services.helper_user_tenant import require_superadmin, require_write_tenant
 from backend.utils.logger import set_up_logger
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.services.get import get_object_by_type_and_id
@@ -12,9 +15,10 @@ from backend.objects.tenant_objects.tenant import Tenant
 logger = set_up_logger(__name__)
 
 
-def clear_all_tags_from_object(object_id: int, object_type: str) -> int:
+def clear_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object_type: str) -> int:
+    require_write_tenant(actor, tenant_id)
 
-    obj = get_object_by_type_and_id(object_type, object_id)
+    obj = get_object_by_type_and_id(actor, tenant_id, object_type, object_id)
     if not isinstance(obj, TaggableMixin):
         raise ValueError(f"Object of type {object_type} does not support tagging.")
 
@@ -23,9 +27,10 @@ def clear_all_tags_from_object(object_id: int, object_type: str) -> int:
     return deleted_count
 
 
-def remove_tag_from_object(object_id: int, object_type: str, tag_id: int) -> int:
+def remove_tag_from_object(actor: User, tenant_id: int, object_id: int, object_type: str, tag_id: int) -> int:
+    require_write_tenant(actor, tenant_id)
 
-    obj = get_object_by_type_and_id(object_type, object_id)
+    obj = get_object_by_type_and_id(actor, tenant_id, object_type, object_id)
     if not isinstance(obj, TaggableMixin):
         raise ValueError(f"Object of type {object_type} does not support tagging.")
 
@@ -41,7 +46,13 @@ def remove_tag_from_object(object_id: int, object_type: str, tag_id: int) -> int
     return deleted_count
 
 
-def delete_tag_from_tenant(tag_id: int, tenant_id: int) -> int:
+def delete_tag_from_tenant(
+    actor: User,
+    tenant_id: int,
+    tag_id: int,
+) -> int:
+    require_write_tenant(actor, tenant_id)
+
     try:
         tag = Tag.objects.get(id=tag_id, tenant_id=tenant_id)
     except Tag.DoesNotExist:
@@ -52,7 +63,8 @@ def delete_tag_from_tenant(tag_id: int, tenant_id: int) -> int:
     return deleted_count
 
 
-def delete_rule(rule_id: int, tenant_id: int) -> None:
+def delete_rule(actor: User, tenant_id: int, rule_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
     try:
         rule = Rule.objects.get(id=rule_id, tenant_id=tenant_id)
     except Rule.DoesNotExist:
@@ -62,7 +74,8 @@ def delete_rule(rule_id: int, tenant_id: int) -> None:
     logger.info(f"Deleted rule id={rule_id} from tenant={tenant_id}.")
 
 
-def delete_tenant(tenant_id: int) -> None:
+def delete_tenant(actor: User, tenant_id: int) -> None:
+    require_superadmin(actor)
     try:
         tenant = Tenant.objects.get(id=tenant_id)
     except Tenant.DoesNotExist:
@@ -72,7 +85,8 @@ def delete_tenant(tenant_id: int) -> None:
     logger.info(f"Deleted tenant id={tenant_id}.")
 
 
-def delete_device(device_id: int, tenant_id: int) -> None:
+def delete_device(actor: User, tenant_id: int, device_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
     try:
         device = Device.objects.get(id=device_id, tenant_id=tenant_id)
     except Device.DoesNotExist:
@@ -83,7 +97,8 @@ def delete_device(device_id: int, tenant_id: int) -> None:
     return {"status": "success", "device": {"id": device_id}}
 
 
-def delete_interface(interface_id: int, tenant_id: int) -> None:
+def delete_interface(actor: User, tenant_id: int, interface_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
     try:
         interface = Interface.objects.get(id=interface_id, device__tenant_id=tenant_id)
     except Interface.DoesNotExist:
@@ -94,7 +109,8 @@ def delete_interface(interface_id: int, tenant_id: int) -> None:
     return {"status": "success", "interface": {"id": interface_id}}
 
 
-def delete_filter(filter_id: int, tenant_id: int) -> None:
+def delete_filter(actor: User, tenant_id: int, filter_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
     try:
         filter_obj = Filter.objects.get(id=filter_id, tenant_id=tenant_id)
     except Filter.DoesNotExist:

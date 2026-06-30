@@ -1,54 +1,54 @@
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_service
 from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
 
 
 logger = set_up_logger(__name__)
 
 
-class MockRequest:
-    session = {"current_tenant_id": GLOBAL_TENANT_ID}
-
-
-def seed_services():
-    mock_request = MockRequest()
+def seed_services(actor, tenant_id: int):
 
     default_services = [
         # ---------------------------------------------------------------------
         # IP Protocol Objects
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="ICMP_RFC792",
             description="Internet Control Message Protocol for IPv4 diagnostic and error reporting messages, as defined by RFC792.",
             protocol="icmp",
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="ICMPv6_RFC4443",
             description="Internet Control Message Protocol for IPv6 diagnostic and error reporting messages, as defined by RFC4443.",
             protocol="icmpv6",
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="GRE_RFC2784",
             description="Generic Routing Encapsulation used for tunneling packets across IP networks, as defined by RFC2784.",
             protocol="gre",
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="ESP_RFC4303",
             description="Encapsulating Security Payload used by IPsec to provide confidentiality, integrity, and authentication, as defined by RFC4303.",
             protocol="esp",
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="AH_RFC4302",
             description="Authentication Header used by IPsec to provide packet integrity and authentication, as defined by RFC4302.",
             protocol="ah",
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="IP_RFC791",
             description="Internet Protocol service object that matches any IP protocol, based on IPv4 as defined by RFC791.",
             protocol="ip",
@@ -57,7 +57,8 @@ def seed_services():
         # Web Services
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="HTTP_TCP_RFC2616_RFC9110",
             description="Hypertext Transfer Protocol over TCP, as defined by RFC2616 and updated by RFC9110.",
             protocol="tcp",
@@ -65,7 +66,8 @@ def seed_services():
             port_end=80,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="HTTPS_TCP_RFC2818_RFC9110",
             description="Hypertext Transfer Protocol Secure over TCP using TLS for encrypted web traffic, as defined by RFC2818 and updated by RFC9110.",
             protocol="tcp",
@@ -73,7 +75,8 @@ def seed_services():
             port_end=443,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="HTTP_Alternate_TCP",
             description="Alternate HTTP service commonly used for web proxies and alternate web applications.",
             protocol="tcp",
@@ -81,7 +84,8 @@ def seed_services():
             port_end=8080,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="HTTPS_Alternate_TCP",
             description="Alternate HTTPS service commonly used for secure web applications and management interfaces.",
             protocol="tcp",
@@ -92,7 +96,8 @@ def seed_services():
         # Name Resolution
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="DNS_UDP_RFC1034_RFC1035",
             description="Domain Name System over UDP, as defined by RFC1034 and RFC1035.",
             protocol="udp",
@@ -100,7 +105,8 @@ def seed_services():
             port_end=53,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="DNS_TCP_RFC1034_RFC1035",
             description="Domain Name System over TCP, as defined by RFC1034 and RFC1035.",
             protocol="tcp",
@@ -108,7 +114,8 @@ def seed_services():
             port_end=53,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="MDNS_UDP_RFC6762",
             description="Multicast DNS used for local network name resolution, as defined by RFC6762.",
             protocol="udp",
@@ -119,7 +126,8 @@ def seed_services():
         # Remote Access and Management
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SSH_TCP_RFC4251",
             description="Secure Shell for encrypted remote login and command execution, as defined by RFC4251.",
             protocol="tcp",
@@ -127,7 +135,8 @@ def seed_services():
             port_end=22,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Telnet_TCP_RFC854",
             description="Telnet for unencrypted remote terminal access, as defined by RFC854.",
             protocol="tcp",
@@ -135,7 +144,8 @@ def seed_services():
             port_end=23,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="RDP_TCP",
             description="Remote Desktop Protocol for graphical remote access to systems.",
             protocol="tcp",
@@ -143,7 +153,8 @@ def seed_services():
             port_end=3389,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="WinRM_HTTP_TCP",
             description="Windows Remote Management over HTTP for remote administration.",
             protocol="tcp",
@@ -151,7 +162,8 @@ def seed_services():
             port_end=5985,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="WinRM_HTTPS_TCP",
             description="Windows Remote Management over HTTPS for encrypted remote administration.",
             protocol="tcp",
@@ -162,7 +174,8 @@ def seed_services():
         # File Transfer
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="FTP_Control_TCP_RFC959",
             description="File Transfer Protocol control channel, as defined by RFC959.",
             protocol="tcp",
@@ -170,7 +183,8 @@ def seed_services():
             port_end=21,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="FTP_Data_TCP_RFC959",
             description="File Transfer Protocol data channel, as defined by RFC959.",
             protocol="tcp",
@@ -178,7 +192,8 @@ def seed_services():
             port_end=20,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SFTP_TCP",
             description="SSH File Transfer Protocol transported over SSH, commonly used for secure file transfer.",
             protocol="tcp",
@@ -186,7 +201,8 @@ def seed_services():
             port_end=22,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="TFTP_UDP_RFC1350",
             description="Trivial File Transfer Protocol, as defined by RFC1350.",
             protocol="udp",
@@ -197,7 +213,8 @@ def seed_services():
         # Email Services
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SMTP_TCP_RFC5321",
             description="Simple Mail Transfer Protocol for email transport, as defined by RFC5321.",
             protocol="tcp",
@@ -205,7 +222,8 @@ def seed_services():
             port_end=25,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SMTP_Submission_TCP_RFC6409",
             description="Mail submission service for client message submission, as defined by RFC6409.",
             protocol="tcp",
@@ -213,7 +231,8 @@ def seed_services():
             port_end=587,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SMTPS_TCP",
             description="Implicit TLS mail submission service for secure email transport.",
             protocol="tcp",
@@ -221,7 +240,8 @@ def seed_services():
             port_end=465,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="POP3_TCP_RFC1939",
             description="Post Office Protocol version 3 for email retrieval, as defined by RFC1939.",
             protocol="tcp",
@@ -229,7 +249,8 @@ def seed_services():
             port_end=110,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="POP3S_TCP",
             description="Secure Post Office Protocol version 3 for encrypted email retrieval.",
             protocol="tcp",
@@ -237,7 +258,8 @@ def seed_services():
             port_end=995,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="IMAP_TCP_RFC3501",
             description="Internet Message Access Protocol for email retrieval and mailbox access, as defined by RFC3501.",
             protocol="tcp",
@@ -245,7 +267,8 @@ def seed_services():
             port_end=143,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="IMAPS_TCP",
             description="Secure Internet Message Access Protocol for encrypted mailbox access.",
             protocol="tcp",
@@ -256,7 +279,8 @@ def seed_services():
         # Directory and Authentication
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="LDAP_TCP_RFC4511",
             description="Lightweight Directory Access Protocol, as defined by RFC4511.",
             protocol="tcp",
@@ -264,7 +288,8 @@ def seed_services():
             port_end=389,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="LDAPS_TCP",
             description="Lightweight Directory Access Protocol over TLS for secure directory access.",
             protocol="tcp",
@@ -272,7 +297,8 @@ def seed_services():
             port_end=636,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Kerberos_TCP_RFC4120",
             description="Kerberos authentication service over TCP, as defined by RFC4120.",
             protocol="tcp",
@@ -280,7 +306,8 @@ def seed_services():
             port_end=88,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Kerberos_UDP_RFC4120",
             description="Kerberos authentication service over UDP, as defined by RFC4120.",
             protocol="udp",
@@ -288,7 +315,8 @@ def seed_services():
             port_end=88,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="RADIUS_Auth_UDP_RFC2865",
             description="Remote Authentication Dial-In User Service for authentication, as defined by RFC2865.",
             protocol="udp",
@@ -296,7 +324,8 @@ def seed_services():
             port_end=1812,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="RADIUS_Acct_UDP_RFC2866",
             description="Remote Authentication Dial-In User Service for accounting, as defined by RFC2866.",
             protocol="udp",
@@ -307,7 +336,8 @@ def seed_services():
         # Network Infrastructure
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="DHCP_Server_UDP_RFC2131",
             description="Dynamic Host Configuration Protocol server service, as defined by RFC2131.",
             protocol="udp",
@@ -315,7 +345,8 @@ def seed_services():
             port_end=67,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="DHCP_Client_UDP_RFC2131",
             description="Dynamic Host Configuration Protocol client service, as defined by RFC2131.",
             protocol="udp",
@@ -323,7 +354,8 @@ def seed_services():
             port_end=68,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="NTP_UDP_RFC5905",
             description="Network Time Protocol for time synchronization, as defined by RFC5905.",
             protocol="udp",
@@ -331,7 +363,8 @@ def seed_services():
             port_end=123,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SNMP_UDP_RFC3411",
             description="Simple Network Management Protocol for device monitoring and management, as defined by RFC3411.",
             protocol="udp",
@@ -339,7 +372,8 @@ def seed_services():
             port_end=161,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SNMP_Trap_UDP_RFC3411",
             description="Simple Network Management Protocol trap service for asynchronous event notifications, as defined by RFC3411.",
             protocol="udp",
@@ -347,7 +381,8 @@ def seed_services():
             port_end=162,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Syslog_UDP_RFC5424",
             description="Syslog service for log message transport, as defined by RFC5424.",
             protocol="udp",
@@ -355,7 +390,8 @@ def seed_services():
             port_end=514,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Syslog_TCP_RFC6587",
             description="Syslog over TCP for reliable log message transport, as defined by RFC6587.",
             protocol="tcp",
@@ -366,7 +402,8 @@ def seed_services():
         # File Sharing and Directory Services
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SMB_TCP",
             description="Server Message Block for file and printer sharing in Microsoft networks.",
             protocol="tcp",
@@ -374,7 +411,8 @@ def seed_services():
             port_end=445,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="NetBIOS_NS_UDP",
             description="NetBIOS Name Service used for name registration and resolution in legacy Microsoft networks.",
             protocol="udp",
@@ -382,7 +420,8 @@ def seed_services():
             port_end=137,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="NetBIOS_DGM_UDP",
             description="NetBIOS Datagram Service used for connectionless communication in legacy Microsoft networks.",
             protocol="udp",
@@ -390,7 +429,8 @@ def seed_services():
             port_end=138,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="NetBIOS_SSN_TCP",
             description="NetBIOS Session Service used for session-based communication in legacy Microsoft networks.",
             protocol="tcp",
@@ -398,7 +438,8 @@ def seed_services():
             port_end=139,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="NFS_TCP_RFC7530",
             description="Network File System for remote file access, as defined by RFC7530.",
             protocol="tcp",
@@ -406,7 +447,8 @@ def seed_services():
             port_end=2049,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="NFS_UDP",
             description="Network File System over UDP for remote file access, historically used in some deployments.",
             protocol="udp",
@@ -417,7 +459,8 @@ def seed_services():
         # Databases
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="MySQL_TCP",
             description="MySQL database service for client-server database communication.",
             protocol="tcp",
@@ -425,7 +468,8 @@ def seed_services():
             port_end=3306,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="PostgreSQL_TCP",
             description="PostgreSQL database service for client-server database communication.",
             protocol="tcp",
@@ -433,7 +477,8 @@ def seed_services():
             port_end=5432,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="MSSQL_TCP",
             description="Microsoft SQL Server database service for client-server database communication.",
             protocol="tcp",
@@ -444,7 +489,8 @@ def seed_services():
         # VPN and Secure Tunneling
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="IKE_UDP_RFC7296",
             description="Internet Key Exchange used for negotiating IPsec security associations, as defined by RFC7296.",
             protocol="udp",
@@ -452,7 +498,8 @@ def seed_services():
             port_end=500,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="IPsec_NAT_T_UDP_RFC3948",
             description="IPsec NAT Traversal service used to carry IPsec traffic through NAT devices, as defined by RFC3948.",
             protocol="udp",
@@ -460,7 +507,8 @@ def seed_services():
             port_end=4500,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="L2TP_UDP_RFC2661",
             description="Layer Two Tunneling Protocol used for VPN tunneling, as defined by RFC2661.",
             protocol="udp",
@@ -468,7 +516,8 @@ def seed_services():
             port_end=1701,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="OpenVPN_TCP",
             description="OpenVPN service over TCP for secure remote connectivity.",
             protocol="tcp",
@@ -476,7 +525,8 @@ def seed_services():
             port_end=1194,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="OpenVPN_UDP",
             description="OpenVPN service over UDP for secure remote connectivity.",
             protocol="udp",
@@ -484,7 +534,8 @@ def seed_services():
             port_end=1194,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="WireGuard_UDP",
             description="WireGuard VPN service for secure modern tunneling.",
             protocol="udp",
@@ -495,7 +546,8 @@ def seed_services():
         # Voice and Real-Time Communication
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SIP_TCP_RFC3261",
             description="Session Initiation Protocol over TCP for signaling in voice and multimedia sessions, as defined by RFC3261.",
             protocol="tcp",
@@ -503,7 +555,8 @@ def seed_services():
             port_end=5060,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SIP_UDP_RFC3261",
             description="Session Initiation Protocol over UDP for signaling in voice and multimedia sessions, as defined by RFC3261.",
             protocol="udp",
@@ -511,7 +564,8 @@ def seed_services():
             port_end=5060,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="SIPS_TCP_RFC3261",
             description="Secure Session Initiation Protocol over TLS for encrypted signaling, as defined by RFC3261.",
             protocol="tcp",
@@ -522,7 +576,8 @@ def seed_services():
         # Monitoring and Observability
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Prometheus_TCP",
             description="Prometheus metrics service commonly used for monitoring and observability.",
             protocol="tcp",
@@ -530,7 +585,8 @@ def seed_services():
             port_end=9090,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Grafana_TCP",
             description="Grafana web service commonly used for dashboards and observability.",
             protocol="tcp",
@@ -541,7 +597,8 @@ def seed_services():
         # Catch-All Service Objects
         # ---------------------------------------------------------------------
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Any_TCP",
             description="Matches any TCP port.",
             protocol="tcp",
@@ -549,7 +606,8 @@ def seed_services():
             port_end=65535,
         ),
         get_or_create_service(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Any_UDP",
             description="Matches any UDP port.",
             protocol="udp",

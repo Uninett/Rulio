@@ -75,6 +75,23 @@ print(f"Tenant ready: id={tenant.id}, name={tenant.tenant_name}, created={create
 EOF
 
 echo "Seeding database..."
-python manage.py shell -c "from backend.services.seed.populate import populate_db; populate_db()"
+python manage.py shell << EOF
+import os
+from django.contrib.auth import get_user_model
+from backend.objects.tenant_objects.tenant import Tenant
+from backend.services.seed.populate import populate_db
+
+User = get_user_model()
+
+username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
+if not username:
+    raise RuntimeError("DJANGO_SUPERUSER_USERNAME is not set.")
+
+user = User.objects.get(username=username)
+tenant = Tenant.objects.get(tenant_name="Global Tenant")
+
+populate_db(actor=user, tenant_id=tenant.id)
+print(f"Database seeded with actor={user.username}, tenant_id={tenant.id}, tenant_name={tenant.tenant_name}")
+EOF
 echo "Starting Django..."
 exec python manage.py runserver 0.0.0.0:8000

@@ -1,24 +1,28 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.models import User
 
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
+
+from backend.services.helper_user_tenant import require_superadmin, require_write_tenant
 from backend.utils.logger import set_up_logger
-from backend.services.get import get_current_tenant_id
 
 
 logger = set_up_logger(__name__)
 
 
-def create_tenant(request: object, name: str):
+def create_tenant(actor: User, name: str):
+    require_superadmin(actor)
     tenant = Tenant.objects.create(tenant_name=name)
     logger.info(f"Tenant created: {tenant}")
     return tenant
 
 
-def create_device(request: object, name: str, platform: str, description: str, type: str) -> object:
-    tenant_id = get_current_tenant_id(request)
+def create_device(*, actor: User, tenant_id: int, name: str, platform: str, description: str, type: str) -> object:
+
+    require_write_tenant(actor, tenant_id)
 
     device = Device(
         name=name,
@@ -38,8 +42,8 @@ def create_device(request: object, name: str, platform: str, description: str, t
     return device
 
 
-def create_device_group(request: object, name: str, description: str) -> object:
-    tenant_id = get_current_tenant_id(request)
+def create_device_group(*, actor: User, tenant_id: int, name: str, description: str) -> object:
+    require_write_tenant(actor, tenant_id)
 
     device_group = DeviceGroup(
         name=name,
@@ -57,8 +61,10 @@ def create_device_group(request: object, name: str, description: str) -> object:
     return device_group
 
 
-def create_interface(request, name: str, description: str, device_id: int, type: str, VRF: str = None) -> object:
-    tenant_id = get_current_tenant_id(request)
+def create_interface(
+    *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
+) -> object:
+    require_write_tenant(actor, tenant_id)
     # Check if the device exists and belongs to the tenant
     try:
         Device.objects.get(id=device_id, tenant_id=tenant_id)

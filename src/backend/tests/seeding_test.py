@@ -19,7 +19,7 @@ class TestPopulateDB:
         ]
 
     @pytest.mark.django_db
-    def test_populate_db_creates_seed_data(self):
+    def test_populate_db_creates_seed_data(self, authenticated_client, request_with_session):
         [
             address_count_before_seeding,
             service_count_before_seeding,
@@ -28,7 +28,7 @@ class TestPopulateDB:
         ] = self.seed_counts()
 
         default_address_count, default_service_count, default_address_group_count, default_service_group_count = (
-            populate_db()
+            populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
         )
 
         [
@@ -60,8 +60,8 @@ class TestPopulateDB:
             assert service_group_count_after_seeding >= service_group_count_before_seeding
 
     @pytest.mark.django_db
-    def test_populate_db_does_not_create_duplicate_seed_data(self):
-        populate_db()
+    def test_populate_db_does_not_create_duplicate_seed_data(self, request_with_session):
+        populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
         [
             address_count_after_first_seeding,
@@ -70,7 +70,7 @@ class TestPopulateDB:
             service_group_count_after_first_seeding,
         ] = self.seed_counts()
 
-        populate_db()
+        populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
         [
             address_count_after_second_seeding,
@@ -85,9 +85,9 @@ class TestPopulateDB:
         assert service_group_count_after_second_seeding == service_group_count_after_first_seeding
 
     @pytest.mark.django_db
-    def test_populate_db_recreates_missing_seed_data(self):
+    def test_populate_db_recreates_missing_seed_data(self, request_with_session):
         default_address_count, default_service_count, default_address_group_count, default_service_group_count = (
-            populate_db()
+            populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
         )
 
         AddressGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
@@ -95,7 +95,7 @@ class TestPopulateDB:
         Address.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
         Service.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
 
-        populate_db()
+        populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
         [
             address_count_after_reseeding,

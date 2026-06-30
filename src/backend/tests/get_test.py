@@ -12,16 +12,31 @@ class TestGetObjectByTypeAndId:
         assert address is not None
         assert isinstance(address, Address)
 
-    def test_get_object_by_type_and_id_valid(self, sample_addresses):
-        address = get_object_by_type_and_id("address", sample_addresses[0].id)
+    def test_get_object_by_type_and_id_valid(self, sample_addresses, request_with_session):
+        address = get_object_by_type_and_id(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            object_type="address",
+            object_id=sample_addresses[0].id,
+        )
         assert address is not None
         assert isinstance(address, Address)
 
-    def test_get_object_by_type_and_id_invalid_type(self):
+    def test_get_object_by_type_and_id_invalid_type(self, request_with_session):
         with pytest.raises(ValueError) as excinfo:
-            get_object_by_type_and_id("invalidType", 1)
+            get_object_by_type_and_id(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                object_type="invalidType",
+                object_id=1,
+            )
         assert "Unsupported object type" in str(excinfo.value)
 
-    def test_get_object_by_type_and_id_nonexistent_id(self):
+    def test_get_object_by_type_and_id_nonexistent_id(self, request_with_session):
         with pytest.raises(ObjectDoesNotExist, match="does not exist"):
-            get_object_by_type_and_id("address", 9999)  # Assuming ID 9999 does not exist
+            get_object_by_type_and_id(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                object_type="address",
+                object_id=9999,
+            )  # Assuming ID 9999 does not exist

@@ -1,3 +1,6 @@
+from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
+
 from backend.objects import models
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
@@ -10,7 +13,8 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
-from backend.objects.tenant_objects.tenant import Tenant
+
+from backend.services.helper_user_tenant import require_read_tenant
 from backend.utils.logger import set_up_logger
 
 
@@ -30,35 +34,14 @@ DJANGO_MODEL_MAPPING = {
 }
 
 
-# This is a temporary solution for tenant ID management. In a real implementation, this would be handled by an authentication system and middleware that sets the tenant ID in the request context.
-def get_current_tenant_id(request: object) -> int:
-    tenant_id = request.session.get("current_tenant_id")
-    if tenant_id is None:
-        logger.warning("Tenant ID not set in request session.")
-        raise Exception("Tenant ID not set in request. Please call /set_tenant first.")
-    try:
-        return int(tenant_id)
-    except ValueError:
-        logger.warning(f"Invalid tenant ID in session: {tenant_id}")
-        raise Exception(f"Invalid tenant ID in session: {tenant_id}")
-
-
-def get_current_tenant(request: object) -> Tenant:
-    tenant_id = get_current_tenant_id(request)
-    try:
-        tenant = Tenant.objects.get(id=tenant_id)
-        return tenant
-    except Tenant.DoesNotExist:
-        logger.warning(f"Tenant with ID {tenant_id} does not exist.")
-        raise Exception(f"Tenant with ID {tenant_id} does not exist.")
-
-
-def get_all_service_groups_from_tenant(tenant_id: int) -> list[ServiceGroup]:
+def get_all_service_groups_from_tenant(actor: User, tenant_id: int) -> list[ServiceGroup]:
+    require_read_tenant(actor, tenant_id)
     requested_service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
     return requested_service_groups
 
 
-def get_service_groups_with_services_from_tenant(tenant_id: int, get="all") -> list[dict]:
+def get_service_groups_with_services_from_tenant(actor: User, tenant_id: int, get="all") -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
 
     result = []
@@ -100,7 +83,8 @@ def get_service_groups_with_services_from_tenant(tenant_id: int, get="all") -> l
         return [{"service_group_name": group["service_group_name"]} for group in result]
 
 
-def get_address_groups_with_addresses_from_tenant(tenant_id: int, get="all") -> list[dict]:
+def get_address_groups_with_addresses_from_tenant(actor: User, tenant_id: int, get="all") -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
 
     result = []
@@ -148,7 +132,8 @@ def get_address_groups_with_addresses_from_tenant(tenant_id: int, get="all") -> 
         return [{"address_group_name": group["address_group_name"]} for group in result]
 
 
-def get_all_addresses_and_groups_with_tags(tenant_id: int) -> list[dict]:
+def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
     addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
@@ -230,7 +215,8 @@ def get_all_addresses_and_groups_with_tags(tenant_id: int) -> list[dict]:
     return result
 
 
-def get_all_services_and_groups_with_tags(tenant_id: int) -> list[dict]:
+def get_all_services_and_groups_with_tags(actor: User, tenant_id: int) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
     services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
@@ -306,7 +292,8 @@ def get_all_services_and_groups_with_tags(tenant_id: int) -> list[dict]:
     return result
 
 
-def get_all_rules_with_objects_from_tenant(tenant_id: int) -> list[dict]:
+def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("matches")
     result = []
     for rule in rules:
@@ -342,12 +329,14 @@ def get_all_rules_with_objects_from_tenant(tenant_id: int) -> list[dict]:
     return result
 
 
-def get_all_address_groups_from_tenant(tenant_id: int) -> list[AddressGroup]:
+def get_all_address_groups_from_tenant(actor: User, tenant_id: int) -> list[AddressGroup]:
+    require_read_tenant(actor, tenant_id)
     requested_address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
     return requested_address_groups
 
 
-def get_all_addresses_from_tenant(tenant_id: int, get="all") -> list:
+def get_all_addresses_from_tenant(actor: User, tenant_id: int, get="all") -> list:
+    require_read_tenant(actor, tenant_id)
     requested_addresses = Address.objects.filter(tenant_id=tenant_id)
     if get == "all":
         return requested_addresses
@@ -357,17 +346,22 @@ def get_all_addresses_from_tenant(tenant_id: int, get="all") -> list:
         return [{"address_name": address.name} for address in requested_addresses]
 
 
-def get_all_addresses_from_tenant_by_names(tenant_id: int, names: list[str]) -> list[Address]:
+def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> list[Address]:
+    require_read_tenant(actor, tenant_id)
     requested_addresses = Address.objects.filter(tenant_id=tenant_id, name__in=names)
     return requested_addresses
 
 
-def get_address_group_members(request: object, address_group_id: int) -> list[Address]:
+def get_address_group_members(actor: User, tenant_id: int, address_group_id: int) -> list[Address]:
+    require_read_tenant(actor, tenant_id)
+    if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
     return Address.objects.filter(addressgroupmember__group_id=address_group_id)
     # return AddressGroupMember.objects.filter(group_id=address_group_id)
 
 
-def get_all_services_from_tenant(tenant_id: int, get="all") -> list[Service]:
+def get_all_services_from_tenant(actor: User, tenant_id: int, get="all") -> list[Service]:
+    require_read_tenant(actor, tenant_id)
     requested_services = Service.objects.filter(tenant_id=tenant_id)
     if get == "all":
         return requested_services
@@ -377,49 +371,67 @@ def get_all_services_from_tenant(tenant_id: int, get="all") -> list[Service]:
         return [{"service_name": service.name} for service in requested_services]
 
 
-def get_all_services_from_tenant_by_names(tenant_id: int, names: list[str]) -> list[Service]:
+def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> list[Service]:
+    require_read_tenant(actor, tenant_id)
     requested_services = Service.objects.filter(tenant_id=tenant_id, name__in=names)
     return requested_services
 
 
-def get_service_group_members(request: object, service_group_id: int) -> list[Address]:
+def get_service_group_members(actor: User, tenant_id: int, service_group_id: int) -> list[Address]:
+    require_read_tenant(actor, tenant_id)
+    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
     return Service.objects.filter(servicegroupmember__group_id=service_group_id)
     # return ServiceGroupMember.objects.filter(group_id=service_group_id)
 
 
-def get_all_tags_from_object(object_id: int, object_type: str) -> list[Tag]:
-    obj = get_object_by_type_and_id(object_type, object_id)
+def get_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object_type: str) -> list[Tag]:
+    require_read_tenant(actor, tenant_id)
+    obj = get_object_by_type_and_id(actor, tenant_id, object_id, object_type)
     return list(obj.get_tags())
 
 
-def get_all_tags_from_tenant(tenant_id: int) -> list[Tag]:
+def get_all_tags_from_tenant(actor: User, tenant_id: int) -> list[Tag]:
+    require_read_tenant(actor, tenant_id)
     return Tag.objects.filter(tenant_id=tenant_id)
 
 
-def get_object_by_type_and_id(object_type: str, object_id: int):
+def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, object_id: int):
+    require_read_tenant(actor, tenant_id)
     object_type = object_type.lower()
     model = DJANGO_MODEL_MAPPING.get(object_type)
     if not model:
         raise ValueError(f"Unsupported object type: {object_type}")
-    return model.objects.get(id=object_id)
+    obj = model.objects.get(id=object_id)
+    if obj.tenant_id != tenant_id:
+        raise PermissionDenied(f"Object with ID {object_id} does not belong to tenant {tenant_id}.")
+    return obj
 
 
-def get_all_rules_from_tenant(tenant_id: int) -> list[Rule]:
+def get_all_rules_from_tenant(actor: User, tenant_id: int) -> list[Rule]:
+    require_read_tenant(actor, tenant_id)
     requested_rules = Rule.objects.filter(tenant_id=tenant_id)
     return requested_rules
 
 
-def get_all_devices_from_tenant(tenant_id: int) -> list[Device]:
+def get_all_devices_from_tenant(actor: User, tenant_id: int) -> list[Device]:
+    require_read_tenant(actor, tenant_id)
     requested_devices = Device.objects.filter(tenant_id=tenant_id)
     return requested_devices
 
 
-def get_all_interfaces_from_device(device_id: int) -> list[Interface]:
+def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) -> list[Interface]:
+    require_read_tenant(actor, tenant_id)
+    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
     requested_interfaces = Interface.objects.filter(device_id=device_id)
     return requested_interfaces
 
 
-def get_all_filters_from_interface(interface_id: int) -> list[Filter]:
+def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> list[Filter]:
+    require_read_tenant(actor, tenant_id)
+    if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
     requested_filters = Filter.objects.filter(interfaces__id=interface_id)
     requested_filters = requested_filters.annotate(
         policy_sequence=models.F("filterinterface__policy_sequence"),
@@ -428,11 +440,15 @@ def get_all_filters_from_interface(interface_id: int) -> list[Filter]:
     return requested_filters
 
 
-def get_all_filters_from_tenant(tenant_id: int) -> list[Filter]:
+def get_all_filters_from_tenant(actor: User, tenant_id: int) -> list[Filter]:
+    require_read_tenant(actor, tenant_id)
     requested_filters = Filter.objects.filter(tenant_id=tenant_id)
     return requested_filters
 
 
-def get_platform_from_device(device_id: int) -> str:
+def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:
+    require_read_tenant(actor, tenant_id)
+    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
     device = Device.objects.get(id=device_id)
     return device.platform

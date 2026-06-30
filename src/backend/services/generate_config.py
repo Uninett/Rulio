@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from aerleon.lib import naming
 from aerleon import api as aerleon_api
+from django.contrib.auth.models import User
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
@@ -36,6 +37,8 @@ class PolicyRule:
 
     def __init__(
         self,
+        actor: User,
+        tenant_id: int,
         name: str,
         obj_type: str,
         action: str,
@@ -48,6 +51,8 @@ class PolicyRule:
         self.action = action.lower()
         self.object = object
         self.rule_sequence = rule_sequence
+        self.actor = actor
+        self.tenant_id = tenant_id
 
         if direction.lower() not in DIRECTION_CHOICES:
             raise ValueError(f"Invalid direction: {direction}. Must be one of {DIRECTION_CHOICES}")
@@ -67,16 +72,18 @@ class Policy:
 
     def __init__(
         self,
+        actor: User,
+        tenant_id: int,
         name: str,
         rules: list[PolicyRule],
         vendor: str,
-        request=None,
         policy_type: str = "",
         policy_sequence: int = 0,
     ):
+        self.actor = actor
+        self.tenant_id = tenant_id
         self.name = name.strip()
         self.name = self.name.replace(" ", "_")
-        self.request = request
         self.vendor = vendor.lower()
         self.policy_type = policy_type
         self.policy_sequence = policy_sequence
@@ -376,11 +383,10 @@ class Policy:
 
     # Add networks definitions for an AddressGroup object
     def _add_address_group_translation_to_networks(self, rule: PolicyRule) -> None:
-        if self.request is None:
-            raise ValueError("Request object is required to fetch address group members.")
-
         values = []
-        for address in get_address_group_members(request=self.request, address_group_id=rule.object.id):
+        for address in get_address_group_members(
+            address_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id
+        ):
             ipv4_addrs, ipv6_addrs = address.get_address()
 
             for addr in ipv4_addrs:
@@ -408,12 +414,11 @@ class Policy:
 
     # Add service definitions for a ServiceGroup object
     def _add_service_group_translation_to_services(self, rule: PolicyRule) -> list[tuple[str, str, bool]]:
-        if self.request is None:
-            raise ValueError("Request object is required to fetch service group members.")
-
         service_entries = []
 
-        for service in get_service_group_members(request=self.request, service_group_id=rule.object.id):
+        for service in get_service_group_members(
+            service_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id
+        ):
             service_name = service.name
             protocol = service.get_protocol()
             port_value = service.get_ports()

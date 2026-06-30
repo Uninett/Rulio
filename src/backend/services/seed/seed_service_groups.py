@@ -1,19 +1,12 @@
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_service_group
 from backend.services.get import get_all_services_from_tenant_by_names
 from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
 
 
 logger = set_up_logger(__name__)
 
 
-class MockRequest:
-    session = {"current_tenant_id": GLOBAL_TENANT_ID}
-
-
-def seed_servicegroups():
-    mock_request = MockRequest()
-    tenant_id = mock_request.session["current_tenant_id"]
+def seed_servicegroups(actor, tenant_id: int) -> int:
 
     required_service_names = [
         "ICMP_RFC792",
@@ -74,6 +67,7 @@ def seed_servicegroups():
     ]
 
     services = get_all_services_from_tenant_by_names(
+        actor=actor,
         tenant_id=tenant_id,
         names=required_service_names,
     )
@@ -91,7 +85,8 @@ def seed_servicegroups():
         # Usually permitted from clients to infrastructure for basic operation.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Common_Infrastructure_Client_Services",
             description="Infrastructure services commonly permitted from clients for basic network operation.",
             members=[
@@ -109,7 +104,8 @@ def seed_servicegroups():
         # Usually permitted outbound and often inbound to published services.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Common_Web_Access_Services",
             description="Web services commonly permitted outbound and often inbound to published applications.",
             members=[
@@ -125,7 +121,8 @@ def seed_servicegroups():
         # management systems.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Restricted_Administrative_Access_Services",
             description="Administrative access services usually allowed only from trusted management sources.",
             members=[
@@ -141,7 +138,8 @@ def seed_servicegroups():
         # infrastructure.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Restricted_Internal_Identity_Services",
             description="Identity and authentication services usually allowed only to directory and authentication infrastructure.",
             members=[
@@ -158,7 +156,8 @@ def seed_servicegroups():
         # Usually allowed only on internal segments and between approved systems.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Restricted_Internal_File_Sharing_Services",
             description="File sharing services usually allowed only on internal segments and between approved systems.",
             members=[
@@ -173,7 +172,8 @@ def seed_servicegroups():
         # and administrative systems.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Restricted_Database_Services",
             description="Database services usually allowed only between approved applications, database servers, and administrative systems.",
             members=[
@@ -188,7 +188,8 @@ def seed_servicegroups():
         # systems.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Restricted_Monitoring_And_Logging_Services",
             description="Monitoring and logging services usually allowed only to observability platforms, collectors, and management systems.",
             members=[
@@ -206,7 +207,8 @@ def seed_servicegroups():
         # unnecessary in modern environments.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Deny_Legacy_Insecure_Services",
             description="Legacy or plaintext services commonly denied by default in modern environments.",
             members=[
@@ -227,7 +229,8 @@ def seed_servicegroups():
         # networks or encrypted tunnels outside normal policy paths.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Deny_Tunneling_And_VPN_Services",
             description="Tunneling and VPN services commonly denied unless explicitly required.",
             members=[
@@ -248,7 +251,8 @@ def seed_servicegroups():
         # multimedia signaling platforms.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Deny_Voice_And_Signaling_Services",
             description="Voice and multimedia signaling services commonly denied unless intentionally in use.",
             members=[
@@ -263,7 +267,8 @@ def seed_servicegroups():
         # across routed or security boundaries.
         # ---------------------------------------------------------------------
         get_or_create_service_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Deny_Local_Link_Resolution_Services",
             description="Local-link discovery and multicast name resolution services commonly denied across routed or security boundaries.",
             members=[

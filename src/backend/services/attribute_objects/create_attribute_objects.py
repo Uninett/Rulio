@@ -1,5 +1,6 @@
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.models import User
 
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.objects.attributes.address import Address
@@ -9,20 +10,22 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.tag import Tag
+from backend.services.helper_user_tenant import require_write_tenant
 from backend.utils.logger import set_up_logger
 from backend.services.get import get_object_by_type_and_id
 from backend.services.membership import (
     add_addresses_to_group,
     add_services_to_group,
 )
-from backend.services.get import get_current_tenant_id
 
 
 logger = set_up_logger(__name__)
 
 
 def create_address(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     addr_type: str | None = "host",
@@ -35,7 +38,8 @@ def create_address(
     ipv6Address_start: IPv6Address | None = None,
     ipv6Address_end: IPv6Address | None = None,
 ) -> Address:
-    tenant_id = get_current_tenant_id(request)
+
+    require_write_tenant(actor, tenant_id)
 
     address = Address(
         name=name,
@@ -64,7 +68,9 @@ def create_address(
 
 
 def create_and_add_address_to_groups(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     addr_type: str | None = "host",
@@ -78,8 +84,12 @@ def create_and_add_address_to_groups(
     ipv6Address_end: IPv6Address | None = None,
     group_ids: list[int] | None = None,
 ) -> Address:
+
+    require_write_tenant(actor, tenant_id)
+
     address = create_address(
-        request=request,
+        actor=actor,
+        tenant_id=tenant_id,
         name=name,
         description=description,
         addr_type=addr_type,
@@ -103,7 +113,9 @@ def create_and_add_address_to_groups(
 
 
 def get_or_create_address(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     addr_type: str | None = "host",
@@ -116,7 +128,8 @@ def get_or_create_address(
     ipv6Address_start: IPv6Address | None = None,
     ipv6Address_end: IPv6Address | None = None,
 ) -> tuple[Address, int, bool]:
-    tenant_id = get_current_tenant_id(request)
+
+    require_write_tenant(actor, tenant_id)
 
     address, created = Address.objects.get_or_create(
         name=name,
@@ -140,7 +153,9 @@ def get_or_create_address(
 
 
 def create_service(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     protocol: str,
@@ -148,7 +163,7 @@ def create_service(
     port_end: int | None = None,
 ) -> Service:
 
-    tenant_id = get_current_tenant_id(request)
+    require_write_tenant(actor, tenant_id)
 
     service = Service(
         name=name,
@@ -170,7 +185,9 @@ def create_service(
 
 
 def create_and_add_service_to_groups(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     protocol: str,
@@ -178,8 +195,12 @@ def create_and_add_service_to_groups(
     port_end: int | None = None,
     group_ids: list[int] | None = None,
 ) -> Service:
+
+    require_write_tenant(actor, tenant_id)
+
     service = create_service(
-        request=request,
+        actor=actor,
+        tenant_id=tenant_id,
         name=name,
         description=description,
         protocol=protocol,
@@ -197,7 +218,9 @@ def create_and_add_service_to_groups(
 
 
 def get_or_create_service(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     protocol: str,
@@ -205,7 +228,7 @@ def get_or_create_service(
     port_end: int | None = None,
 ) -> tuple[Service, int, bool]:
 
-    tenant_id = get_current_tenant_id(request)
+    require_write_tenant(actor, tenant_id)
 
     service, created = Service.objects.get_or_create(
         name=name,
@@ -223,12 +246,14 @@ def get_or_create_service(
 
 
 def create_service_group(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
 ) -> ServiceGroup:
 
-    tenant_id = get_current_tenant_id(request)
+    require_write_tenant(actor, tenant_id)
 
     service_group = ServiceGroup(
         name=name,
@@ -247,32 +272,40 @@ def create_service_group(
 
 
 def create_service_group_and_add_services(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     members: list[int] | None = None,
 ) -> ServiceGroup:
+
+    require_write_tenant(actor, tenant_id)
+
     service_group = create_service_group(
-        request=request,
+        actor=actor,
+        tenant_id=tenant_id,
         name=name,
         description=description,
     )
 
     if members:
-        add_services_to_group(service_group_id=service_group.id, service_ids=members)
+        add_services_to_group(actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members)
         logger.info(f"Added members to {service_group}: {members}")
 
     return service_group
 
 
 def get_or_create_service_group(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     members: list[int] | None = None,
 ) -> tuple[ServiceGroup, int, bool]:
 
-    tenant_id = get_current_tenant_id(request)
+    require_write_tenant(actor, tenant_id)
 
     service_group, created = ServiceGroup.objects.get_or_create(
         name=name,
@@ -282,23 +315,29 @@ def get_or_create_service_group(
     if created:
         logger.info(f"Created {service_group} for tenant={service_group.tenant_id}")
         if members:
-            add_services_to_group(service_group_id=service_group.id, service_ids=members)
+            add_services_to_group(
+                actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members
+            )
             logger.info(f"Added members to {service_group}: {members}")
     else:
         logger.warning(f"Service Group already exists: {service_group} for tenant={service_group.tenant_id}")
         if members:
-            add_services_to_group(service_group_id=service_group.id, service_ids=members)
+            add_services_to_group(
+                actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members
+            )
             logger.info(f"Added members to existing {service_group}: {members}")
     return service_group, service_group.id, created
 
 
 def create_address_group(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
 ) -> AddressGroup:
 
-    tenant_id = get_current_tenant_id(request)
+    require_write_tenant(actor, tenant_id)
 
     address_group = AddressGroup(
         name=name,
@@ -318,32 +357,40 @@ def create_address_group(
 
 
 def create_address_group_and_add_addresses(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     members: list[int] | None = None,
 ) -> AddressGroup:
+
+    require_write_tenant(actor, tenant_id)
+
     address_group = create_address_group(
-        request=request,
+        actor=actor,
+        tenant_id=tenant_id,
         name=name,
         description=description,
     )
 
     if members:
-        add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
+        add_addresses_to_group(actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members)
         logger.info(f"Added members to {address_group}: {members}")
 
     return address_group
 
 
 def get_or_create_address_group(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     name: str,
     description: str,
     members: list[int] | None = None,
 ) -> tuple[AddressGroup, int, bool]:
 
-    tenant_id = get_current_tenant_id(request)
+    require_write_tenant(actor, tenant_id)
 
     address_group, created = AddressGroup.objects.get_or_create(
         name=name,
@@ -354,19 +401,24 @@ def get_or_create_address_group(
     if created:
         logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
         if members:
-            add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
+            add_addresses_to_group(
+                actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members
+            )
             logger.info(f"Added members to {address_group}: {members}")
     else:
         logger.warning(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
         if members:
-            add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
+            add_addresses_to_group(
+                actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members
+            )
             logger.info(f"Added members to existing {address_group}: {members}")
 
     return address_group, address_group.id, created
 
 
-def create_tag(request: object, name: str, description: str) -> Tag:
-    tenant_id = get_current_tenant_id(request)
+def create_tag(*, actor: User, tenant_id: int, name: str, description: str) -> Tag:
+
+    require_write_tenant(actor, tenant_id)
 
     tag = Tag(
         name=name,
@@ -385,9 +437,12 @@ def create_tag(request: object, name: str, description: str) -> Tag:
 
 
 def create_and_add_tag_to_object(
-    request: object, tag_name: str, tag_description: str, object_type: str, object_id: int
+    *, actor: User, tenant_id: int, tag_name: str, tag_description: str, object_type: str, object_id: int
 ) -> Tag:
-    tag = create_tag(request, tag_name, tag_description)
+
+    require_write_tenant(actor, tenant_id)
+
+    tag = create_tag(actor=actor, tenant_id=tenant_id, name=tag_name, description=tag_description)
     obj = get_object_by_type_and_id(object_type, object_id)
     if isinstance(obj, TaggableMixin):
         obj.add_tag(tag)
