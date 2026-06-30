@@ -12,7 +12,7 @@ from backend.schemas.device import CreateDeviceSchema
 from backend.schemas.filter import CreateFilterSchema
 from backend.schemas.interface import CreateInterfaceSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
-from backend.services.authentication import require_read_tenant, require_superadmin, require_write_tenant
+from backend.services.authentication import require_read_tenantd, require_superadmind, require_write_tenantd
 from backend.services.delete import (
     clear_all_tags_from_object,
     delete_device,
@@ -161,7 +161,7 @@ Attributes
     tags=["Attributes - Address"],
     response={200: list[dict], 403: MessageSchema},
 )
-@require_read_tenant
+@require_read_tenantd
 def get_address_group_and_addresses_endpoint(request, get="all"):
     response = get_address_groups_with_addresses_from_tenant(
         request.session["current_tenant_id"],
@@ -175,14 +175,14 @@ def get_address_group_and_addresses_endpoint(request, get="all"):
     tags=["Attributes - Address"],
     response={200: list[dict], 403: MessageSchema},
 )
-@require_read_tenant
+@require_read_tenantd
 def get_addresses_and_groups_with_tags_endpoint(request):
     response = get_all_addresses_and_groups_with_tags(request.session["current_tenant_id"])
     return 200, response
 
 
 @api.get("/list_addresses", tags=["Attributes - Address"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
+@require_read_tenantd
 def list_addresses(request):
     addresses = Address.objects.filter(tenant_id=request.session["current_tenant_id"])
     return 200, list(addresses.values())
@@ -193,7 +193,7 @@ def list_addresses(request):
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_address_endpoint(
     request,
     payload: CreateAddressSchema,
@@ -224,7 +224,7 @@ def create_address_endpoint(
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_address_group_endpoint(request, payload: CreateGroupSchema):
     address_group = create_address_group(request, payload.name, payload.description)
     logger.info(f"create_address_group endpoint succeeded for group id={address_group.id}")
@@ -239,7 +239,7 @@ def create_address_group_endpoint(request, payload: CreateGroupSchema):
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def add_address_to_group_endpoint(request, address_id: int, group_id: int):
     if not can_write_tenant(
         request.user,
@@ -265,7 +265,7 @@ def add_address_to_group_endpoint(request, address_id: int, group_id: int):
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: int):
     try:
         address_group = AddressGroup.objects.get(id=group_id)
@@ -308,7 +308,7 @@ def add_addresses_to_group_endpoint(request, address_ids: list[int], group_id: i
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_and_add_address_to_groups_endpoint(request, payload: CreateAddressSchema, group_ids: list[int]):
     address = create_and_add_address_to_groups(
         request=request,
@@ -337,7 +337,7 @@ def create_and_add_address_to_groups_endpoint(request, payload: CreateAddressSch
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_address_group_and_add_addresses_endpoint(request, payload: CreateGroupSchema, address_ids: list[int]):
     address_group = create_address_group_and_add_addresses(
         request=request,
@@ -357,7 +357,7 @@ def create_address_group_and_add_addresses_endpoint(request, payload: CreateGrou
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def delete_address_endpoint(request, address_id: int):
     try:
         address = Address.objects.get(id=address_id, tenant_id=request.session["current_tenant_id"])
@@ -380,7 +380,7 @@ def delete_address_endpoint(request, address_id: int):
     tags=["Attributes - Address"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def delete_address_group_endpoint(request, group_id: int):
     try:
         address_group = AddressGroup.objects.get(id=group_id, tenant_id=request.session["current_tenant_id"])
@@ -399,7 +399,7 @@ def delete_address_group_endpoint(request, group_id: int):
 
 
 @api.get("/list_services", tags=["Attributes - Service"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
+@require_read_tenantd
 def list_services(request):
     services = Service.objects.filter(tenant_id=request.session["current_tenant_id"])
     return 200, list(services.values())
@@ -410,7 +410,7 @@ def list_services(request):
     tags=["Attributes - Service"],
     response={200: list[dict], 403: MessageSchema},
 )
-@require_read_tenant
+@require_read_tenantd
 def get_service_group_and_services_endpoint(request, get="all"):
     if not can_read_tenant(request.user, request.session["current_tenant_id"]):
         logger.warning(
@@ -433,7 +433,7 @@ def get_service_group_and_services_endpoint(request, get="all"):
     tags=["Attributes - Service"],
     response={200: list[dict], 403: MessageSchema},
 )
-@require_read_tenant
+@require_read_tenantd
 def get_services_and_groups_with_tags_endpoint(request):
     response = get_all_services_and_groups_with_tags(request.session["current_tenant_id"])
     return 200, response
@@ -444,7 +444,7 @@ def get_services_and_groups_with_tags_endpoint(request):
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_service_endpoint(
     request,
     payload: CreateServiceSchema,
@@ -465,7 +465,7 @@ def create_service_endpoint(
 
 
 @api.post("/create_service_group", tags=["Attributes - Service"])
-@require_write_tenant
+@require_write_tenantd
 def create_service_group_endpoint(request, payload: CreateGroupSchema):
 
     service_group = create_service_group(request, payload.name, payload.description)
@@ -503,7 +503,7 @@ def add_service_to_group_endpoint(request, service_id: int, group_id: int):
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def add_services_to_group_endpoint(request, service_ids: list[int], group_id: int):
     try:
         service_group = ServiceGroup.objects.get(id=group_id)
@@ -546,7 +546,7 @@ def add_services_to_group_endpoint(request, service_ids: list[int], group_id: in
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_and_add_service_to_groups_endpoint(request, payload: CreateServiceSchema, group_ids: list[int]):
     service = create_and_add_service_to_groups(
         request, payload.name, payload.description, payload.protocol, payload.port_start, payload.port_end, group_ids
@@ -562,7 +562,7 @@ def create_and_add_service_to_groups_endpoint(request, payload: CreateServiceSch
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_service_group_and_add_services_endpoint(request, payload: CreateGroupSchema, service_ids: list[int]):
     create_service_group_and_add_services(
         request=request, name=payload.name, description=payload.description, members=service_ids
@@ -578,7 +578,7 @@ def create_service_group_and_add_services_endpoint(request, payload: CreateGroup
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def delete_service_endpoint(request, service_id: int):
     try:
         service = Service.objects.get(id=service_id, tenant_id=request.session["current_tenant_id"])
@@ -601,7 +601,7 @@ def delete_service_endpoint(request, service_id: int):
     tags=["Attributes - Service"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def delete_service_group_endpoint(request, group_id: int):
     try:
         service_group = ServiceGroup.objects.get(id=group_id, tenant_id=request.session["current_tenant_id"])
@@ -620,7 +620,7 @@ def delete_service_group_endpoint(request, group_id: int):
 
 
 @api.get("/get_all_tags_from_object", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
+@require_read_tenantd
 def get_all_tags_from_object_endpoint(request, object_id: int, object_type: str):
     tags = get_all_tags_from_object(object_id, object_type)
     return 200, [
@@ -635,7 +635,7 @@ def get_all_tags_from_object_endpoint(request, object_id: int, object_type: str)
 
 
 @api.get("/get_all_tags_from_tenant", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
+@require_read_tenantd
 def get_all_tags_from_tenant_endpoint(request):
     tags = get_all_tags_from_tenant(request.session["current_tenant_id"])
     return 200, [
@@ -650,7 +650,7 @@ def get_all_tags_from_tenant_endpoint(request):
 
 
 @api.post("/create_tag", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
+@require_write_tenantd
 def create_tag_endpoint(request, payload: CreateTagSchema):
     tag = create_tag(request, payload.name, payload.description)
     logger.info(f"create_tag endpoint succeeded for tag id={tag.id}")
@@ -661,7 +661,7 @@ def create_tag_endpoint(request, payload: CreateTagSchema):
 
 
 @api.post("/create_and_add_tag_to_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
+@require_write_tenantd
 def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchema):
     tag = create_and_add_tag_to_object(
         request, payload.name, payload.description, payload.object_type, payload.object_id
@@ -676,7 +676,7 @@ def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchem
 
 
 @api.delete("/clear_all_tags_from_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
+@require_write_tenantd
 def clear_all_tags_from_object_endpoint(request, object_id: int, object_type: str):
     deleted_count = clear_all_tags_from_object(object_id, object_type)
     logger.info(
@@ -689,7 +689,7 @@ def clear_all_tags_from_object_endpoint(request, object_id: int, object_type: st
 
 
 @api.delete("/remove_tag_from_object", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
+@require_write_tenantd
 def remove_tag_from_object_endpoint(request, object_id: int, object_type: str, tag_id: int):
     deleted_count = remove_tag_from_object(object_id, object_type, tag_id)
     logger.info(
@@ -702,7 +702,7 @@ def remove_tag_from_object_endpoint(request, object_id: int, object_type: str, t
 
 
 @api.delete("/delete_tag_from_tenant", tags=["Attributes - Tag"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
+@require_write_tenantd
 def delete_tag_from_tenant_endpoint(request, tag_id: int):
     deleted_count = delete_tag_from_tenant(tag_id, request.session["current_tenant_id"])
     logger.info(
@@ -722,7 +722,7 @@ Management Objects
 
 
 @api.post("/create_tenant", tags=["Management - Tenant"], response={200: MessageSchema, 403: MessageSchema})
-@require_superadmin
+@require_superadmind
 def create_tenant_endpoint(request, payload: CreateTenantSchema):
     tenant = create_tenant(request, payload.name)
     logger.info(f"create_tenant endpoint succeeded for tenant id={tenant.id}")
@@ -733,7 +733,7 @@ def create_tenant_endpoint(request, payload: CreateTenantSchema):
 
 
 @api.get("/list_tenants", tags=["Management - Tenant"], response={200: list[dict], 403: MessageSchema})
-@require_superadmin
+@require_superadmind
 def list_tenants(request):
     tenants = Tenant.objects.all()
     return 200, list(tenants.values())
@@ -744,7 +744,7 @@ def list_tenants(request):
     tags=["Management - Tenant"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_superadmin
+@require_superadmind
 def delete_tenant_endpoint(request, tenant_id: int):
     delete_tenant(tenant_id)
     logger.info(f"delete_tenant endpoint succeeded for tenant id={tenant_id}")
@@ -755,7 +755,7 @@ def delete_tenant_endpoint(request, tenant_id: int):
 
 
 @api.post("/create_device", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
+@require_write_tenantd
 def create_device_endpoint(request, payload: CreateDeviceSchema):
     try:
         device = create_device(
@@ -783,7 +783,7 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
     tags=["Management - Device"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, group_id: int):
     device = create_device(
         request=request,
@@ -803,7 +803,7 @@ def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, grou
 
 
 @api.post("/create_device_group", tags=["Management - Device"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
+@require_write_tenantd
 def create_device_group_endpoint(request, payload: CreateGroupSchema):
     device_group = create_device_group(
         request=request,
@@ -822,7 +822,7 @@ def create_device_group_endpoint(request, payload: CreateGroupSchema):
     tags=["Management - Device"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int):
     response = add_devices_to_group(group_id, device_ids)
 
@@ -858,7 +858,7 @@ def add_devices_to_group_endpoint(request, device_ids: list[int], group_id: int)
     tags=["Management - Device"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def delete_device_endpoint(request, device_id: int):
     try:
         response = delete_device(device_id, request.session["current_tenant_id"])
@@ -876,7 +876,7 @@ def delete_device_endpoint(request, device_id: int):
 
 
 @api.get("/list_devices", tags=["Management - Device"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
+@require_read_tenantd
 def list_devices(request):
     devices = get_all_devices_from_tenant(request.session["current_tenant_id"])
     return 200, list(devices.values())
@@ -887,7 +887,7 @@ def list_devices(request):
     tags=["Management - Device"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def create_interface_endpoint(request, payload: CreateInterfaceSchema):
     try:
         interface = create_interface(
@@ -916,7 +916,7 @@ def create_interface_endpoint(request, payload: CreateInterfaceSchema):
     tags=["Management - Device"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def delete_interface_endpoint(request, interface_id: int):
     try:
         response = delete_interface(interface_id, request.session["current_tenant_id"])
@@ -938,7 +938,7 @@ def delete_interface_endpoint(request, interface_id: int):
     tags=["Management - Device"],
     response={200: list[dict], 403: MessageSchema, 404: MessageSchema},
 )
-@require_read_tenant
+@require_read_tenantd
 def get_interfaces_for_device_endpoint(request, device_id: int):
     try:
         interfaces = get_all_interfaces_from_device(device_id)
@@ -969,21 +969,21 @@ Filter Objects
 
 
 @api.get("/list_rules", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
+@require_read_tenantd
 def list_rules(request):
     rules = get_all_rules_from_tenant(request.session["current_tenant_id"])
     return 200, list(rules.values())
 
 
 @api.get("/list_rules_with_objects", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
-@require_read_tenant
+@require_read_tenantd
 def list_rules_with_objects(request):
     rules = get_all_rules_with_objects_from_tenant(request.session["current_tenant_id"])
     return 200, rules
 
 
 @api.post("/create_rule", tags=["Filter - Rule"], response={200: MessageSchema, 403: MessageSchema})
-@require_write_tenant
+@require_write_tenantd
 def create_rule_endpoint(request, payload: CreateRuleSchema):
     rule = create_rule(
         request=request,
@@ -1006,7 +1006,7 @@ def create_rule_endpoint(request, payload: CreateRuleSchema):
     tags=["Configuration"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def add_object_to_rule_endpoint(request, rule_id: int, match_type: str, object_type: str, object_ids: list[int]):
     try:
         objects = [DJANGO_MODEL_MAPPING[object_type.lower()].objects.get(id=obj_id) for obj_id in object_ids]
@@ -1027,7 +1027,7 @@ def add_object_to_rule_endpoint(request, rule_id: int, match_type: str, object_t
 @api.delete(
     "/delete_rule", tags=["Filter - Rule"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
 )
-@require_write_tenant
+@require_write_tenantd
 def delete_rule_endpoint(request, rule_id: int):
     try:
         delete_rule(rule_id, request.session["current_tenant_id"])
@@ -1047,7 +1047,7 @@ def delete_rule_endpoint(request, rule_id: int):
 @api.post(
     "/add_rule_to_filter", tags=["Configuration"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
 )
-@require_write_tenant
+@require_write_tenantd
 def add_rule_to_filter_endpoint(request, filter_id: int, rule_id: int, rule_sequence: int):
     try:
         add_rule_to_filter(request, rule_id, filter_id, rule_sequence)
@@ -1067,7 +1067,7 @@ def add_rule_to_filter_endpoint(request, filter_id: int, rule_id: int, rule_sequ
 @api.post(
     "/create_filter", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
 )
-@require_write_tenant
+@require_write_tenantd
 def create_filter_endpoint(request, payload: CreateFilterSchema):
     filter_obj = create_filter(
         request=request,
@@ -1084,7 +1084,7 @@ def create_filter_endpoint(request, payload: CreateFilterSchema):
 @api.delete(
     "/delete_filter", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema}
 )
-@require_write_tenant
+@require_write_tenantd
 def delete_filter_endpoint(request, filter_id: int):
     try:
         delete_filter(filter_id, request.session["current_tenant_id"])
@@ -1106,7 +1106,7 @@ def delete_filter_endpoint(request, filter_id: int):
     tags=["Filter - Filter"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_read_tenant
+@require_read_tenantd
 def get_filters_from_interface_endpoint(request, interface_id: int):
     try:
         filters = get_all_filters_from_interface(interface_id)
@@ -1120,7 +1120,7 @@ def get_filters_from_interface_endpoint(request, interface_id: int):
 
 
 @api.get("/get_all_filters_from_tenant", tags=["Filter - Filter"], response={200: MessageSchema, 403: MessageSchema})
-@require_read_tenant
+@require_read_tenantd
 def get_all_filters_from_tenant_endpoint(request):
     filters = get_all_filters_from_tenant(request.session["current_tenant_id"])
     return 200, list(filters.values())
@@ -1131,7 +1131,7 @@ def get_all_filters_from_tenant_endpoint(request):
     tags=["Configuration"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
     """
     Adds a filter object to the interface object. Importantly this does not generate or apply a configuration to the interface.
@@ -1158,7 +1158,7 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
     tags=["Configuration"],
     response={200: MessageSchema, 403: MessageSchema, 404: MessageSchema},
 )
-@require_write_tenant
+@require_write_tenantd
 def generate_config_for_interface(request, interface_id: int):
     try:
         policies = create_policies_for_interface(request, interface_id)
@@ -1249,7 +1249,7 @@ def who_am_i(request):
 
 
 @api.get("/get_users", tags=["User Management"])
-@require_superadmin
+@require_superadmind
 def get_users(request):
     users = []
 
@@ -1265,7 +1265,7 @@ def get_users(request):
 
 
 @api.post("/create_user", tags=["User Management"], auth=None)
-@require_superadmin
+@require_superadmind
 def create_user(request, payload: CreateUserSchema):
     if User.objects.filter(username=payload.username).exists():
         return {
@@ -1291,7 +1291,7 @@ def create_user(request, payload: CreateUserSchema):
 
 
 @api.delete("/delete_user", tags=["User Management"])
-@require_superadmin
+@require_superadmind
 def delete_user(request, user_id: int):
     try:
         user = User.objects.get(id=user_id)
@@ -1309,7 +1309,7 @@ def delete_user(request, user_id: int):
     tags=["User Management - Tenant"],
     response={200: MessageSchema, 403: MessageSchema},
 )
-@require_superadmin
+@require_superadmind
 def add_tenant_privileges_to_user_endpoint(request, payload: CreateTenantUserSchema):
     if not is_superadmin(request.user):
         logger.warning(
