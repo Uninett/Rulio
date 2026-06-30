@@ -1,5 +1,7 @@
 from django.db import transaction
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 
 
 from backend.objects.attributes.address_group import AddressGroup
@@ -16,12 +18,22 @@ from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.device_group_member import DeviceGroupMember
 from backend.objects.tenant_objects.interface import Interface
+from backend.services.helper_user_tenant import require_write_tenant
 from backend.utils.logger import set_up_logger
+from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 
 
-def add_address_to_group(request: object, address_group_id: int, address_id: int):
+def add_address_to_group(actor: User, tenant_id: int, address_group_id: int, address_id: int):
+    require_write_tenant(actor, tenant_id)
+    if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
+    if not (
+        Address.objects.filter(id=address_id, tenant_id=tenant_id).exists()
+        or Address.objects.filter(id=address_id, tenant_id=GLOBAL_TENANT_ID).exists()
+    ):
+        raise PermissionDenied(f"Address with ID {address_id} does not exist in tenant {tenant_id}.")
     _address_group = AddressGroup.objects.get(id=address_group_id)
     _address = Address.objects.get(id=address_id)
     _address_group_member = AddressGroupMember.objects.create(
@@ -30,7 +42,15 @@ def add_address_to_group(request: object, address_group_id: int, address_id: int
     )
 
 
-def add_service_to_group(request: object, service_group_id: int, service_id: int) -> ServiceGroup:
+def add_service_to_group(actor: User, tenant_id: int, service_group_id: int, service_id: int) -> ServiceGroup:
+    require_write_tenant(actor, tenant_id)
+    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
+    if not (
+        Service.objects.filter(id=service_id, tenant_id=tenant_id).exists()
+        or Service.objects.filter(id=service_id, tenant_id=GLOBAL_TENANT_ID).exists()
+    ):
+        raise PermissionDenied(f"Service with ID {service_id} does not exist in tenant {tenant_id}.")
     _service_group = ServiceGroup.objects.get(id=service_group_id)
     _service = Service.objects.get(id=service_id)
     _service_group_member = ServiceGroupMember.objects.create(
@@ -39,7 +59,15 @@ def add_service_to_group(request: object, service_group_id: int, service_id: int
     )
 
 
-def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dict:
+def add_addresses_to_group(actor: User, tenant_id: int, address_group_id: int, address_ids: list[int]) -> dict:
+    require_write_tenant(actor, tenant_id)
+    if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
+    if not (
+        Address.objects.filter(id__in=address_ids, tenant_id=tenant_id).exists()
+        or Address.objects.filter(id__in=address_ids, tenant_id=GLOBAL_TENANT_ID).exists()
+    ):
+        raise PermissionDenied(f"One or more addresses do not exist in tenant {tenant_id}.")
     address_group = AddressGroup.objects.get(id=address_group_id)
 
     request_ids = set(address_ids)
@@ -76,13 +104,21 @@ def add_addresses_to_group(address_group_id: int, address_ids: list[int]) -> dic
     }
 
 
-def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict:
+def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, service_ids: list[int]) -> dict:
     """
     Adds a list of services to a service group
     Args:
     - service_group_id: ID of the service group to add services to
     - service_ids: List of service IDs to add to the group
     """
+    require_write_tenant(actor, tenant_id)
+    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
+    if not (
+        Service.objects.filter(id__in=service_ids, tenant_id=tenant_id).exists()
+        or Service.objects.filter(id__in=service_ids, tenant_id=GLOBAL_TENANT_ID).exists()
+    ):
+        raise PermissionDenied(f"One or more services do not exist in tenant {tenant_id}.")
     service_group = ServiceGroup.objects.get(id=service_group_id)
 
     requested_ids = set(service_ids)
@@ -122,11 +158,16 @@ def add_services_to_group(service_group_id: int, service_ids: list[int]) -> dict
 
 
 def add_objects_to_rule(
-    request: object,
+    *,
+    actor: User,
+    tenant_id: int,
     rule_id: int,
     match_type: str,
     objects: list,
 ):
+    require_write_tenant(actor, tenant_id)
+    if not Rule.objects.filter(id=rule_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Rule with ID {rule_id} does not exist in tenant {tenant_id}.")
     rule = Rule.objects.get(id=rule_id)
 
     added = []
@@ -192,7 +233,10 @@ def add_objects_to_rule(
     }
 
 
-def add_rule_to_filter(request: object, rule_id: int, filter_id: int, rule_sequence: int):
+def add_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int):
+    require_write_tenant(actor, tenant_id)
+    if not Rule.objects.filter(id=rule_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Rule with ID {rule_id} does not exist in tenant {tenant_id}.")
     rule = Rule.objects.get(id=rule_id)
     filter = Filter.objects.get(id=filter_id)
 
@@ -210,7 +254,12 @@ def add_rule_to_filter(request: object, rule_id: int, filter_id: int, rule_seque
     return rule_filter
 
 
-def add_filter_to_interface(request: object, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
+def add_filter_to_interface(*, actor: User, tenant_id: int, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
+    require_write_tenant(actor, tenant_id)
+    if not (Filter.objects.filter(id=filter_id, tenant_id=tenant_id).exists() or Filter.objects.filter(id=filter_id, tenant_id=GLOBAL_TENANT_ID).exists()):
+        raise PermissionDenied(f"Filter with ID {filter_id} does not exist in tenant {tenant_id}.")
+    if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
     filter = Filter.objects.get(id=filter_id)
     interface = Interface.objects.get(id=interface_id)
 
@@ -235,7 +284,12 @@ def add_filter_to_interface(request: object, filter_id: int, interface_id: int, 
     return interface, filter
 
 
-def add_devices_to_group(device_group_id: int, device_ids: list[int]) -> dict:
+def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, device_ids: list[int]) -> dict:
+    require_write_tenant(actor, tenant_id)
+    if not DeviceGroup.objects.filter(id=device_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Device group with ID {device_group_id} does not exist in tenant {tenant_id}.")
+    if not Device.objects.filter(id__in=device_ids, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"One or more devices do not exist in tenant {tenant_id}.")
     device_group = DeviceGroup.objects.get(id=device_group_id)
 
     requested_ids = set(device_ids)
