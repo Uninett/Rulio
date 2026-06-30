@@ -43,7 +43,12 @@ def get_all_service_groups_from_tenant(actor: User, tenant_id: int) -> list[Serv
 def get_service_groups_with_services_from_tenant(actor: User, tenant_id: int, get="all") -> list[dict]:
     require_read_tenant(actor, tenant_id)
     service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
-
+    if get == "objects":
+        service_groups_with_services = []
+        for service_group in service_groups:
+            if service_group.services.exists():
+                service_groups_with_services.append(service_group)
+        return service_groups_with_services
     result = []
     group_map = {}
 
@@ -131,11 +136,41 @@ def get_address_groups_with_addresses_from_tenant(actor: User, tenant_id: int, g
     elif get == "names":
         return [{"address_group_name": group["address_group_name"]} for group in result]
 
-
-def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int) -> list[dict]:
+def get_all_addresss_groups_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> list[dict]:
     require_read_tenant(actor, tenant_id)
-    address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
-    addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+    if include_global_tenant:
+        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+    else:
+        address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+
+    result = []
+    for group in address_groups:
+        result.append(
+            {
+                "address_group_id": group.id,
+                "address_group_name": group.name,
+                "address_group_description": group.description,
+                "address_group_tags": [
+                    {
+                        "tag_id": tc.tag.id,
+                        "tag_name": tc.tag.name,
+                        "tag_description": tc.tag.description,
+                    }
+                    for tc in group.tag_objects.all()
+                ],
+            }
+        )
+
+    return result, address_groups
+
+def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int, include_global_tenant=True) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
+    if include_global_tenant:
+        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+        addresses = Address.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+    else:
+        address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+        addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     memberships = AddressGroupMember.objects.filter(
         group__tenant_id=tenant_id,
@@ -212,13 +247,17 @@ def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int) -> list[
             }
         )
 
-    return result
+    return result, addresses, address_groups
 
 
-def get_all_services_and_groups_with_tags(actor: User, tenant_id: int) -> list[dict]:
+def get_all_services_and_groups_with_tags(actor: User, tenant_id: int, include_global_tenant=True):
     require_read_tenant(actor, tenant_id)
-    service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
-    services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+    if include_global_tenant:
+        service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+        services = Service.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+    else:
+        service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+        services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     memberships = ServiceGroupMember.objects.filter(
         group__tenant_id=tenant_id,
@@ -289,7 +328,7 @@ def get_all_services_and_groups_with_tags(actor: User, tenant_id: int) -> list[d
             }
         )
 
-    return result
+    return result, services, service_groups
 
 
 def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[dict]:
@@ -327,6 +366,41 @@ def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[
         result.append(rule_dict)
 
     return result
+
+def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
+    require_read_tenant(actor, tenant_id)
+    if include_global_tenant:
+        rules = Rule.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+    else:
+        rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+
+    result = []
+    for rule in rules:
+        rule_dict = {
+            "rule_id": rule.id,
+            "rule_name": rule.name,
+            "rule_description": rule.description,
+            "rule_tenant_id": rule.tenant_id,
+            "rule_action": rule.action,
+            "rule_log_type": rule.log_type,
+            "rule_hit_count": rule.hit_count,
+            "rule_date_created": rule.date_created,
+            "rule_date_changed": rule.date_changed,
+            "rule_created_by": rule.created_by,
+            "rule_changed_by": rule.changed_by,
+            "rule_enable": rule.enable,
+            "tags": [
+                {
+                    "tag_id": tc.tag.id,
+                    "tag_name": tc.tag.name,
+                    "tag_description": tc.tag.description,
+                }
+                for tc in rule.tag_objects.all()
+            ],
+        }
+        result.append(rule_dict)
+
+    return result, rules
 
 
 def get_all_address_groups_from_tenant(actor: User, tenant_id: int) -> list[AddressGroup]:
@@ -419,6 +493,30 @@ def get_all_devices_from_tenant(actor: User, tenant_id: int) -> list[Device]:
     requested_devices = Device.objects.filter(tenant_id=tenant_id)
     return requested_devices
 
+def get_all_devices_from_tenant_with_tags(actor: User, tenant_id: int):
+    require_read_tenant(actor, tenant_id)
+    requested_devices = Device.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+
+    result = []
+    for device in requested_devices:
+        result.append(
+            {
+                "device_id": device.id,
+                "device_name": device.name,
+                "device_platform": device.platform,
+                "device_description": device.description,
+                "device_tags": [
+                    {
+                        "tag_id": tc.tag.id,
+                        "tag_name": tc.tag.name,
+                        "tag_description": tc.tag.description,
+                    }
+                    for tc in device.tag_objects.all()
+                ],
+            }
+        )
+
+    return result, requested_devices
 
 def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) -> list[Interface]:
     require_read_tenant(actor, tenant_id)
@@ -445,6 +543,35 @@ def get_all_filters_from_tenant(actor: User, tenant_id: int) -> list[Filter]:
     requested_filters = Filter.objects.filter(tenant_id=tenant_id)
     return requested_filters
 
+def get_all_filters_from_tenant_with_tags(actor: User, tenant_id: int, include_global_tenant=True):
+    require_read_tenant(actor, tenant_id)
+    if include_global_tenant:
+        requested_filters = Filter.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+    else:
+        requested_filters = Filter.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+
+    result = []
+    for filter in requested_filters:
+        result.append(
+            {
+                "filter_id": filter.id,
+                "filter_name": filter.name,
+                "filter_description": filter.description,
+                "filter_enable": filter.enable,
+                "filter_policy_sequence": filter.policy_sequence,
+                "filter_tenant_id": filter.tenant_id,
+                "filter_tags": [
+                    {
+                        "tag_id": tc.tag.id,
+                        "tag_name": tc.tag.name,
+                        "tag_description": tc.tag.description,
+                    }
+                    for tc in filter.tag_objects.all()
+                ],
+            }
+        )
+
+    return result, requested_filters
 
 def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:
     require_read_tenant(actor, tenant_id)
@@ -452,3 +579,27 @@ def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str
         raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
     device = Device.objects.get(id=device_id)
     return device.platform
+
+def get_all_objects_with_certain_tag(actor: User, tenant_id: int, tag_id: int, include_global_tenant=True) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
+    if include_global_tenant:
+        tag = Tag.objects.filter(id=tag_id, tenant_id__in=[tenant_id, 1]).first()
+    else:
+        tag = Tag.objects.filter(id=tag_id, tenant_id=tenant_id).first()
+
+    if tag.tenant_id != tenant_id and tag.tenant_id != 1:
+        raise PermissionDenied(f"Tag with ID {tag_id} does not belong to tenant {tenant_id}.")
+    tagged_objects = tag.tagged_objects.all()
+    result = []
+    for tagged_object in tagged_objects:
+        obj = tagged_object.content_object
+        if obj and hasattr(obj, "tenant_id") and (obj.tenant_id == tenant_id or (include_global_tenant and obj.tenant_id == 1)):
+            result.append(
+                {
+                    "object_type": obj.__class__.__name__,
+                    "object_id": obj.id,
+                    "object_name": getattr(obj, "name", None),
+                }
+            )
+    return result
+
