@@ -1,19 +1,14 @@
+from django.contrib.auth.models import User
+
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address_group
 from backend.services.get import get_all_addresses_from_tenant_by_names
 from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
 
 
 logger = set_up_logger(__name__)
 
 
-class MockRequest:
-    session = {"current_tenant_id": GLOBAL_TENANT_ID}
-
-
-def seed_addressgroups():
-    mock_request = MockRequest()
-    tenant_id = mock_request.session["current_tenant_id"]
+def seed_addressgroups(actor: User, tenant_id: int) -> int:
 
     required_address_names = [
         "Private_Class_A_IPv4_RFC1918",
@@ -46,6 +41,7 @@ def seed_addressgroups():
     ]
 
     addresses = get_all_addresses_from_tenant_by_names(
+        actor=actor,
         tenant_id=tenant_id,
         names=required_address_names,
     )
@@ -64,7 +60,8 @@ def seed_addressgroups():
         # spoofed or non-public space on external/WAN interfaces.
         # ---------------------------------------------------------------------
         get_or_create_address_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Private_And_Local_Use_Addresses",
             description="Private, shared, unique-local, and link-local address ranges commonly used internally and typically denied on external interfaces.",
             members=[
@@ -84,7 +81,8 @@ def seed_addressgroups():
         # traffic and are commonly blocked in anti-spoofing and sanity ACLs.
         # ---------------------------------------------------------------------
         get_or_create_address_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Invalid_Transit_Addresses",
             description="Addresses that are generally invalid for normal routed transit traffic and are commonly blocked by anti-spoofing and sanity ACLs.",
             members=[
@@ -102,7 +100,8 @@ def seed_addressgroups():
         # Usually blocked in production traffic flows.
         # ---------------------------------------------------------------------
         get_or_create_address_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Documentation_And_Test_Addresses",
             description="Addresses reserved for documentation, examples, and benchmarking or lab use, typically blocked in production traffic.",
             members=[
@@ -118,7 +117,8 @@ def seed_addressgroups():
         # usually blocked unless explicitly required for the environment.
         # ---------------------------------------------------------------------
         get_or_create_address_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="Multicast_Addresses",
             description="IPv4 and IPv6 multicast ranges and well-known multicast destinations typically blocked unless explicitly required.",
             members=[
@@ -135,7 +135,8 @@ def seed_addressgroups():
         # Often explicitly allowed only when intentionally in use.
         # ---------------------------------------------------------------------
         get_or_create_address_group(
-            request=mock_request,
+            actor=actor,
+            tenant_id=tenant_id,
             name="IPv6_Transition_And_Translation_Addresses",
             description="IPv6 prefixes used for transition and translation mechanisms, often explicitly blocked unless intentionally in use.",
             members=[
