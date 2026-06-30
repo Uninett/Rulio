@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 
 from backend.objects import models
 from backend.objects.attributes.address import Address
@@ -353,6 +354,8 @@ def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: l
 
 def get_address_group_members(actor: User, tenant_id: int, address_group_id: int) -> list[Address]:
     require_read_tenant(actor, tenant_id)
+    if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
     return Address.objects.filter(addressgroupmember__group_id=address_group_id)
     # return AddressGroupMember.objects.filter(group_id=address_group_id)
 
@@ -376,6 +379,8 @@ def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: li
 
 def get_service_group_members(actor: User, tenant_id: int, service_group_id: int) -> list[Address]:
     require_read_tenant(actor, tenant_id)
+    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
     return Service.objects.filter(servicegroupmember__group_id=service_group_id)
     # return ServiceGroupMember.objects.filter(group_id=service_group_id)
 
@@ -397,7 +402,10 @@ def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, obj
     model = DJANGO_MODEL_MAPPING.get(object_type)
     if not model:
         raise ValueError(f"Unsupported object type: {object_type}")
-    return model.objects.get(id=object_id)
+    obj = model.objects.get(id=object_id)
+    if obj.tenant_id != tenant_id:
+        raise PermissionDenied(f"Object with ID {object_id} does not belong to tenant {tenant_id}.")
+    return obj
 
 
 def get_all_rules_from_tenant(actor: User, tenant_id: int) -> list[Rule]:
@@ -414,12 +422,16 @@ def get_all_devices_from_tenant(actor: User, tenant_id: int) -> list[Device]:
 
 def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) -> list[Interface]:
     require_read_tenant(actor, tenant_id)
+    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
     requested_interfaces = Interface.objects.filter(device_id=device_id)
     return requested_interfaces
 
 
 def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> list[Filter]:
     require_read_tenant(actor, tenant_id)
+    if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
     requested_filters = Filter.objects.filter(interfaces__id=interface_id)
     requested_filters = requested_filters.annotate(
         policy_sequence=models.F("filterinterface__policy_sequence"),
@@ -436,5 +448,7 @@ def get_all_filters_from_tenant(actor: User, tenant_id: int) -> list[Filter]:
 
 def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:
     require_read_tenant(actor, tenant_id)
+    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
     device = Device.objects.get(id=device_id)
     return device.platform
