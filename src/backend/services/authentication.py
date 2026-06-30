@@ -7,7 +7,7 @@ from backend.services.helper_user_tenant import (
 )
 
 
-def require_write_tenant(view_func):
+def require_write_tenantd(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         tenant_id = request.session.get("current_tenant_id")
@@ -35,7 +35,7 @@ def require_write_tenant(view_func):
     return wrapper
 
 
-def require_read_tenant(view_func):
+def require_read_tenantd(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         tenant_id = request.session.get("current_tenant_id")
@@ -63,7 +63,7 @@ def require_read_tenant(view_func):
     return wrapper
 
 
-def require_superadmin(view_func):
+def require_superadmind(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not is_superadmin(request.user):

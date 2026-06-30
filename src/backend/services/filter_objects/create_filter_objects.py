@@ -4,9 +4,8 @@ from django.contrib.auth.models import User
 
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
-from backend.services.authentication import require_write_tenant
 from backend.utils.logger import set_up_logger
-from backend.services.helper_user_tenant import get_tenant_by_id
+from backend.services.helper_user_tenant import get_tenant_by_id, require_write_tenant
 
 
 logger = set_up_logger(__name__)
