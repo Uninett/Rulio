@@ -290,7 +290,7 @@ def create_service_group_and_add_services(
     )
 
     if members:
-        add_services_to_group(service_group_id=service_group.id, service_ids=members)
+        add_services_to_group(actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members)
         logger.info(f"Added members to {service_group}: {members}")
 
     return service_group
@@ -315,12 +315,12 @@ def get_or_create_service_group(
     if created:
         logger.info(f"Created {service_group} for tenant={service_group.tenant_id}")
         if members:
-            add_services_to_group(service_group_id=service_group.id, service_ids=members)
+            add_services_to_group(actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members)
             logger.info(f"Added members to {service_group}: {members}")
     else:
         logger.warning(f"Service Group already exists: {service_group} for tenant={service_group.tenant_id}")
         if members:
-            add_services_to_group(service_group_id=service_group.id, service_ids=members)
+            add_services_to_group(actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members)
             logger.info(f"Added members to existing {service_group}: {members}")
     return service_group, service_group.id, created
 
@@ -371,7 +371,7 @@ def create_address_group_and_add_addresses(
     )
 
     if members:
-        add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
+        add_addresses_to_group(actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members)
         logger.info(f"Added members to {address_group}: {members}")
 
     return address_group
@@ -397,12 +397,12 @@ def get_or_create_address_group(
     if created:
         logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
         if members:
-            add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
+            add_addresses_to_group(actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members)
             logger.info(f"Added members to {address_group}: {members}")
     else:
         logger.warning(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
         if members:
-            add_addresses_to_group(address_group_id=address_group.id, address_ids=members)
+            add_addresses_to_group(actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members)
             logger.info(f"Added members to existing {address_group}: {members}")
 
     return address_group, address_group.id, created
