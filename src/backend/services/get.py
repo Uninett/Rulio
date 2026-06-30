@@ -163,7 +163,7 @@ def get_all_addresss_groups_with_tags_from_tenant(actor: User, tenant_id: int, i
 
     return result, address_groups
 
-def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int, include_global_tenant=True) -> list[dict]:
+def get_all_addresses_and_groups_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> list[dict]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
         address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
@@ -173,8 +173,8 @@ def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int, include_
         addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     memberships = AddressGroupMember.objects.filter(
-        group__tenant_id=tenant_id,
-        address__tenant_id=tenant_id,
+        group__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
+        address__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
     ).select_related("group", "address")
 
     addresses_by_group = {}
@@ -250,7 +250,7 @@ def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int, include_
     return result, addresses, address_groups
 
 
-def get_all_services_and_groups_with_tags(actor: User, tenant_id: int, include_global_tenant=True):
+def get_all_services_and_groups_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
         service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
@@ -260,8 +260,8 @@ def get_all_services_and_groups_with_tags(actor: User, tenant_id: int, include_g
         services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     memberships = ServiceGroupMember.objects.filter(
-        group__tenant_id=tenant_id,
-        service__tenant_id=tenant_id,
+        group__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
+        service__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
     ).select_related("group", "service")
 
     services_by_group = {}
@@ -493,9 +493,12 @@ def get_all_devices_from_tenant(actor: User, tenant_id: int) -> list[Device]:
     requested_devices = Device.objects.filter(tenant_id=tenant_id)
     return requested_devices
 
-def get_all_devices_from_tenant_with_tags(actor: User, tenant_id: int):
+def get_all_devices_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
     require_read_tenant(actor, tenant_id)
-    requested_devices = Device.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
+    if include_global_tenant:
+        requested_devices = Device.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+    else:
+        requested_devices = Device.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     result = []
     for device in requested_devices:
@@ -543,7 +546,7 @@ def get_all_filters_from_tenant(actor: User, tenant_id: int) -> list[Filter]:
     requested_filters = Filter.objects.filter(tenant_id=tenant_id)
     return requested_filters
 
-def get_all_filters_from_tenant_with_tags(actor: User, tenant_id: int, include_global_tenant=True):
+def get_all_filters_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
         requested_filters = Filter.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
