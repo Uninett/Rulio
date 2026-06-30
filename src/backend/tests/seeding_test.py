@@ -19,7 +19,7 @@ class TestPopulateDB:
         ]
 
     @pytest.mark.django_db
-    def test_populate_db_creates_seed_data(self):
+    def test_populate_db_creates_seed_data(self, authenticated_client):
         [
             address_count_before_seeding,
             service_count_before_seeding,

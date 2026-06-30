@@ -15,8 +15,8 @@ def populate_db(actor: User, tenant_id: int) -> tuple[int, int]:
         id=GLOBAL_TENANT_ID,
         defaults={"tenant_name": "Global Tenant"},
     )
-    default_address_count = seed_addresses(actor, tenant_id)
-    default_service_count = seed_services(actor, tenant_id)
-    default_address_group_count = seed_addressgroups(actor, tenant_id)
-    default_service_group_count = seed_servicegroups(actor, tenant_id)
+    default_address_count = seed_addresses(actor=actor, tenant_id=tenant_id)
+    default_service_count = seed_services(actor=actor, tenant_id=tenant_id)
+    default_address_group_count = seed_addressgroups(actor=actor, tenant_id=tenant_id)
+    default_service_group_count = seed_servicegroups(actor=actor, tenant_id=tenant_id)
     return default_address_count, default_service_count, default_address_group_count, default_service_group_count
