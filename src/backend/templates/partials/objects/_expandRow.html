@@ -1,0 +1,31 @@
+<td colspan="{{ row.cells|length }}">
+    <section class="details-content">
+        {% if row.is_group %}
+        <div class="group-detail-columns">
+            {% for field in row.expand %}
+            {% if field.label == "Addresses" or field.label == "Services" %}
+            <div class="detail-block">
+                <p> <strong>{{ field.label}}:</strong></p>
+                {% for value in field.value %}
+                <div> {{ value }}</div>
+
+                {% endfor %}
+            </div>
+
+            {% elif field.label == "Tags" %}
+            {% include "partials/objects/_stylingTags.html" with row=row field=field %}
+
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        {% for field in row.expand %}
+        {% if field.label == "Tags" %}
+        {% include "partials/objects/_stylingTags.html" with row=row field=field %}
+        {%else%}
+        <p> <strong>{{ field.label}}:</strong> {{ field.value }}</p>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+    </section>
+</td>
