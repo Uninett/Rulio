@@ -14,7 +14,6 @@ from backend.services.filter_objects.create_filter_objects import create_filter,
 
 from backend.services.generate_config import PolicyRule
 from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 

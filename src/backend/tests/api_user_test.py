@@ -1,4 +1,3 @@
-from constants import GLOBAL_TENANT_ID
 import pytest
 from django.test import Client
 
