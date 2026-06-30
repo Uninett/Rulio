@@ -6,6 +6,7 @@ import json
 
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.attributes.tag import Tag
 
 
 @pytest.mark.django_db
@@ -27,7 +28,6 @@ def test_api_create_address(authenticated_client_with_tenant):
     }
 
     response = client.post("/api/create_address", data=payload, content_type="application/json")
-    print(response.json())
 
     assert response.status_code == 200
 
@@ -42,7 +42,6 @@ def test_api_create_address_group(authenticated_client_with_tenant):
     }
 
     response = client.post("/api/create_address_group", data=payload, content_type="application/json")
-    print(response.json())
 
     assert response.status_code == 200
 
@@ -591,3 +590,59 @@ def test_api_delete_service_group(authenticated_client_with_tenant):
 
     with pytest.raises(ServiceGroup.DoesNotExist):
         ServiceGroup.objects.get(id=group_id)
+
+
+@pytest.mark.django_db
+def test_api_create_tag(authenticated_client_with_tenant):
+    client = authenticated_client_with_tenant
+
+    payload = {
+        "name": "test_tag",
+        "description": "This is a test tag",
+    }
+
+    response = client.post("/api/create_tag", data=json.dumps(payload), content_type="application/json")
+    assert response.status_code == 200
+
+    tag_id = Tag.objects.filter(name="test_tag").first().id
+    assert tag_id is not None
+
+
+@pytest.mark.django_db
+def test_api_create_and_add_tag_to_object(authenticated_client_with_tenant):
+    client = authenticated_client_with_tenant
+
+    payload = {
+        "name": "string",
+        "description": "",
+        "ipv4Network": "192.168.0.0/24",
+        "ipv4Address_start": None,
+        "ipv4Address_end": None,
+        "ipv6Network": "2001:db8::/32",
+        "ipv6Address_start": None,
+        "ipv6Address_end": None,
+        "addr_type": "network",
+        "ipv4_type": "standard",
+        "ipv6_type": "standard",
+    }
+
+    response = client.post("/api/create_address", data=json.dumps(payload), content_type="application/json")
+    device_response = client.post("/api/create_address", data=json.dumps(payload), content_type="application/json")
+    assert device_response.status_code == 200
+    address_id = Address.objects.filter(name="string").first().id
+    assert address_id is not None
+
+    # Create and add tag to the address
+    tag_payload = {"object_type": "address", "object_id": address_id, "name": "test_tag", "description": ""}
+    response = client.post(
+        "/api/create_and_add_tag_to_object", data=json.dumps(tag_payload), content_type="application/json"
+    )
+    assert response.status_code == 200
+
+    tag_id = Tag.objects.filter(name="test_tag").first().id
+    assert tag_id is not None
+
+    response = client.get(f"/api/get_all_tags_from_object?object_id={address_id}&object_type=address")
+    assert response.status_code == 200
+    data = response.json()
+    assert any(tag["id"] == tag_id for tag in data)
