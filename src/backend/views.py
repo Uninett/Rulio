@@ -19,6 +19,10 @@ from backend.services.membership import (
     add_services_to_group,
 )
 
+from backend.services.get import (
+    get_all_tags_from_tenant,
+)
+
 from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
@@ -242,12 +246,13 @@ Objects Page: Address
 @login_required(login_url="login")
 def get_objects_addresses(request):
     request.session["active_page"] = "objects"
+    object_type = "addresses"
     return render(
         request,
         "partials/_page_content.html",
         {
             "title": "Addresses",
-            "object_type": "addresses",
+            "object_type": object_type,
             "addresses": get_addresses_view(request),  # Address data for the page
             **get_objects_toolbar_context(
                 "addresses", add_button_label="Add Address"
@@ -739,9 +744,44 @@ def get_tags_page(request):
             "page_title": "Tags",
             "object_type": "tags",
             "add_button_label": "Add Tag",
+            "tags": get_tags_view(request),
             **get_tenant_context(request),
         },
     )
+
+
+# Fetch services from the API and map them to data.
+def get_tags_view(request):
+    status, api_services = get_all_tags_from_tenant(request)
+
+    if status != 200:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    headers = ["Name", "Description"]
+
+    rows = []
+
+    for item in api_services:
+        rows.append(
+            {
+                "id": item.get("id", ""),
+                "cells": [
+                    item.get("name", ""),
+                    item.get("description", ""),
+                ],
+                "expand": [
+                    {"label": "ID", "value": item.get("id", "")},
+                ],
+            }
+        )
+
+    return {
+        "headers": headers,
+        "rows": rows,
+    }
 
 
 """
