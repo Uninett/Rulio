@@ -2,7 +2,7 @@ from constants import GLOBAL_TENANT_ID
 import pytest
 from django.test import Client
 
-from backend.objects.management.tenant import Tenant
+from backend.objects.tenant_objects.tenant import Tenant
 from django.contrib.auth import get_user_model
 
 

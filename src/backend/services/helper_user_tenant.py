@@ -1,5 +1,5 @@
 from backend.utils.logger import set_up_logger
-from backend.objects.management.tenant_user_member import TenantUserMember
+from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 
 
 logger = set_up_logger(__name__)

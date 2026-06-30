@@ -8,9 +8,9 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
-from backend.objects.management.device import Device
-from backend.objects.management.interface import Interface
-from backend.objects.management.tenant import Tenant
+from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.utils.logger import set_up_logger
 
 

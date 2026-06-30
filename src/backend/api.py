@@ -6,7 +6,7 @@ from django.conf import settings
 
 
 from backend.objects.attributes.service import Service
-from backend.objects.management.tenant_user_member import TenantUserMember
+from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateGroupSchema
 from backend.schemas.device import CreateDeviceSchema
 from backend.schemas.filter import CreateFilterSchema
@@ -38,26 +38,31 @@ from backend.services.get import (
     get_all_rules_from_tenant,
     get_all_rules_with_objects_from_tenant,
 )
-from backend.services.create import (
+from backend.services.attribute_objects.create_attribute_objects import (
     create_address,
     create_address_group_and_add_addresses,
-    create_service_group_and_add_services,
-    create_and_add_tag_to_object,
-    create_filter,
-    create_interface,
-    create_policies_for_interface,
     create_service,
-    create_tag,
-    create_tenant_user_member,
-    create_tenant,
-    create_address_group,
-    create_service_group,
-    create_rule,
-    create_device,
-    create_device_group,
-    add_devices_to_group,
+    create_service_group_and_add_services,
     create_and_add_address_to_groups,
     create_and_add_service_to_groups,
+    create_address_group,
+    create_service_group,
+    create_tag,
+    create_and_add_tag_to_object,
+)
+
+from backend.services.tenant_objects.create_tenant_objects import (
+    create_device,
+    create_device_group,
+    create_interface,
+    create_tenant,
+)
+
+from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
+
+from backend.services.create import (
+    create_policies_for_interface,
+    create_tenant_user_member,
 )
 from backend.schemas.address import CreateAddressSchema
 from backend.schemas.tag import CreateTagSchema
@@ -76,7 +81,7 @@ from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
-from backend.objects.management.tenant import Tenant
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.helper_user_tenant import (
     is_superadmin,
     can_write_tenant,
@@ -90,11 +95,10 @@ from backend.services.membership import (
     add_service_to_group,
     add_addresses_to_group,
     add_services_to_group,
+    add_devices_to_group,
 )
 from backend.utils.logger import set_up_logger
 
-
-api = NinjaAPI()
 
 # Logger setup
 logger = set_up_logger(__name__)
