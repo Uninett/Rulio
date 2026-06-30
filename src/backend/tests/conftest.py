@@ -1,6 +1,7 @@
 import pytest
 
-from django.test import RequestFactory
+from django.test import Client, RequestFactory
+from django.contrib.auth import get_user_model
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
@@ -20,6 +21,31 @@ logger = set_up_logger(__name__)
 class MockUser:
     def __init__(self, user_id):
         self.id = user_id
+
+
+@pytest.fixture
+def superuser(db):
+    User = get_user_model()
+    return User.objects.create_superuser(username="admin", password="change-me")
+
+
+@pytest.fixture
+def authenticated_client(superuser):
+    client = Client()
+    client.force_login(superuser)
+    return client
+
+
+@pytest.fixture
+def tenant(db):
+    return Tenant.objects.create(tenant_name="Test Tenant")
+
+
+@pytest.fixture
+def authenticated_client_with_tenant(authenticated_client, tenant):
+    response = authenticated_client.get(f"/api/set_tenant?tenant_id={tenant.id}")
+    assert response.status_code == 200
+    return authenticated_client
 
 
 @pytest.fixture(scope="session")

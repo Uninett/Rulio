@@ -8,15 +8,15 @@ class CreateAddressSchema(Schema):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(..., min_length=1, max_length=255)
     description: str = ""
-    ipv4Network: Optional[IPv4Network] = Field(None, example="192.168.0.0/24")
-    ipv4Address_start: Optional[IPv4Address] = Field(None, example=None)
-    ipv4Address_end: Optional[IPv4Address] = Field(None, example=None)
+    ipv4Network: Optional[IPv4Network] = Field(None, json_schema_extra={"example": "192.168.0.0/24"})
+    ipv4Address_start: Optional[IPv4Address] = Field(None, json_schema_extra={"example": None})
+    ipv4Address_end: Optional[IPv4Address] = Field(None, json_schema_extra={"example": None})
 
-    ipv6Network: Optional[IPv6Network] = Field(None, example="2001:db8::/32")
-    ipv6Address_start: Optional[IPv6Address] = Field(None, example=None)
-    ipv6Address_end: Optional[IPv6Address] = Field(None, example=None)
+    ipv6Network: Optional[IPv6Network] = Field(None, json_schema_extra={"example": "2001:db8::/32"})
+    ipv6Address_start: Optional[IPv6Address] = Field(None, json_schema_extra={"example": None})
+    ipv6Address_end: Optional[IPv6Address] = Field(None, json_schema_extra={"example": None})
 
-    addr_type: Literal["host", "network", "range"] = Field(..., example="network")
+    addr_type: Literal["host", "network", "range"] = Field(..., json_schema_extra={"example": "network"})
     ipv4_type: Optional[Literal["standard", "custom_range"]] = None
     ipv6_type: Optional[Literal["standard", "custom_range"]] = None
 
