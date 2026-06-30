@@ -23,7 +23,6 @@ class MockUser:
         self.id = user_id
 
 
-
 @pytest.fixture
 def superuser(db):
     User = get_user_model()
@@ -35,6 +34,7 @@ def authenticated_client(superuser):
     client = Client()
     client.force_login(superuser)
     return client
+
 
 @pytest.fixture
 def tenant(db):

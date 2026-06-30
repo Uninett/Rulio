@@ -5,9 +5,6 @@ from backend.objects.tenant_objects.tenant import Tenant
 from django.contrib.auth import get_user_model
 
 
-
-
-
 @pytest.mark.django_db
 def test_login():
     User = get_user_model()
