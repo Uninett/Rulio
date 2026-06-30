@@ -13,6 +13,7 @@ from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
 
+from backend.services.helper_user_tenant import require_read_tenant
 from backend.utils.logger import set_up_logger
 
 
@@ -33,11 +34,13 @@ DJANGO_MODEL_MAPPING = {
 
 
 def get_all_service_groups_from_tenant(actor: User, tenant_id: int) -> list[ServiceGroup]:
+    require_read_tenant(actor, tenant_id)
     requested_service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
     return requested_service_groups
 
 
 def get_service_groups_with_services_from_tenant(actor: User, tenant_id: int, get="all") -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
 
     result = []
@@ -80,6 +83,7 @@ def get_service_groups_with_services_from_tenant(actor: User, tenant_id: int, ge
 
 
 def get_address_groups_with_addresses_from_tenant(actor: User, tenant_id: int, get="all") -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
 
     result = []
@@ -128,6 +132,7 @@ def get_address_groups_with_addresses_from_tenant(actor: User, tenant_id: int, g
 
 
 def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
     addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
@@ -210,6 +215,7 @@ def get_all_addresses_and_groups_with_tags(actor: User, tenant_id: int) -> list[
 
 
 def get_all_services_and_groups_with_tags(actor: User, tenant_id: int) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
     services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
@@ -286,6 +292,7 @@ def get_all_services_and_groups_with_tags(actor: User, tenant_id: int) -> list[d
 
 
 def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
     rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("matches")
     result = []
     for rule in rules:
@@ -322,11 +329,13 @@ def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[
 
 
 def get_all_address_groups_from_tenant(actor: User, tenant_id: int) -> list[AddressGroup]:
+    require_read_tenant(actor, tenant_id)
     requested_address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
     return requested_address_groups
 
 
 def get_all_addresses_from_tenant(actor: User, tenant_id: int, get="all") -> list:
+    require_read_tenant(actor, tenant_id)
     requested_addresses = Address.objects.filter(tenant_id=tenant_id)
     if get == "all":
         return requested_addresses
@@ -337,16 +346,19 @@ def get_all_addresses_from_tenant(actor: User, tenant_id: int, get="all") -> lis
 
 
 def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> list[Address]:
+    require_read_tenant(actor, tenant_id)
     requested_addresses = Address.objects.filter(tenant_id=tenant_id, name__in=names)
     return requested_addresses
 
 
 def get_address_group_members(actor: User, tenant_id: int, address_group_id: int) -> list[Address]:
+    require_read_tenant(actor, tenant_id)
     return Address.objects.filter(addressgroupmember__group_id=address_group_id)
     # return AddressGroupMember.objects.filter(group_id=address_group_id)
 
 
 def get_all_services_from_tenant(actor: User, tenant_id: int, get="all") -> list[Service]:
+    require_read_tenant(actor, tenant_id)
     requested_services = Service.objects.filter(tenant_id=tenant_id)
     if get == "all":
         return requested_services
@@ -357,25 +369,30 @@ def get_all_services_from_tenant(actor: User, tenant_id: int, get="all") -> list
 
 
 def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> list[Service]:
+    require_read_tenant(actor, tenant_id)
     requested_services = Service.objects.filter(tenant_id=tenant_id, name__in=names)
     return requested_services
 
 
 def get_service_group_members(actor: User, tenant_id: int, service_group_id: int) -> list[Address]:
+    require_read_tenant(actor, tenant_id)
     return Service.objects.filter(servicegroupmember__group_id=service_group_id)
     # return ServiceGroupMember.objects.filter(group_id=service_group_id)
 
 
 def get_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object_type: str) -> list[Tag]:
+    require_read_tenant(actor, tenant_id)
     obj = get_object_by_type_and_id(actor, tenant_id, object_id, object_type)
     return list(obj.get_tags())
 
 
 def get_all_tags_from_tenant(actor: User, tenant_id: int) -> list[Tag]:
+    require_read_tenant(actor, tenant_id)
     return Tag.objects.filter(tenant_id=tenant_id)
 
 
 def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, object_id: int):
+    require_read_tenant(actor, tenant_id)
     object_type = object_type.lower()
     model = DJANGO_MODEL_MAPPING.get(object_type)
     if not model:
@@ -384,21 +401,25 @@ def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, obj
 
 
 def get_all_rules_from_tenant(actor: User, tenant_id: int) -> list[Rule]:
+    require_read_tenant(actor, tenant_id)
     requested_rules = Rule.objects.filter(tenant_id=tenant_id)
     return requested_rules
 
 
 def get_all_devices_from_tenant(actor: User, tenant_id: int) -> list[Device]:
+    require_read_tenant(actor, tenant_id)
     requested_devices = Device.objects.filter(tenant_id=tenant_id)
     return requested_devices
 
 
 def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) -> list[Interface]:
+    require_read_tenant(actor, tenant_id)
     requested_interfaces = Interface.objects.filter(device_id=device_id)
     return requested_interfaces
 
 
 def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> list[Filter]:
+    require_read_tenant(actor, tenant_id)
     requested_filters = Filter.objects.filter(interfaces__id=interface_id)
     requested_filters = requested_filters.annotate(
         policy_sequence=models.F("filterinterface__policy_sequence"),
@@ -408,10 +429,12 @@ def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: in
 
 
 def get_all_filters_from_tenant(actor: User, tenant_id: int) -> list[Filter]:
+    require_read_tenant(actor, tenant_id)
     requested_filters = Filter.objects.filter(tenant_id=tenant_id)
     return requested_filters
 
 
 def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:
+    require_read_tenant(actor, tenant_id)
     device = Device.objects.get(id=device_id)
     return device.platform
