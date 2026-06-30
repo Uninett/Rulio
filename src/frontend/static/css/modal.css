@@ -130,6 +130,37 @@ Address Form Layout
 
 /*
 ====================================================================
+Type: "Other" Layout
+====================================================================
+*/
+
+.type-other-row {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.type-other-name-group,
+.type-other-select-group {
+    flex: 1;
+}
+
+.type-other-custom-group {
+    flex: 1;
+}
+
+.type-other-row.type-other-row-active .type-other-name-group {
+    flex: 2;
+}
+
+.type-other-row.type-other-row-active .type-other-select-group,
+.type-other-row.type-other-row-active .type-other-custom-group {
+    flex: 1;
+}
+
+/*
+====================================================================
 Checkbox Lists
 ====================================================================
 */
@@ -158,7 +189,6 @@ Checkbox Lists
 .checkbox-header {
     margin-bottom: 0;
 }
-
 
 /*
 ====================================================================

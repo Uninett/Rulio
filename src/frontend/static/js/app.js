@@ -91,5 +91,27 @@ document.body.addEventListener("htmx:afterSwap", function (event) {
             // Show or hide the correct address input fields based on the currently selected IPv4/IPv6 type values.
             toggleAddressFields(form);
         }
+        if (form.querySelector("#protocol")) {
+            toggleProtocolField(form);
+        }
     });
 });
+
+function toggleProtocolField(form) {
+    const protocol = form.querySelector('#protocol')?.value || '';
+    const row = form.querySelector('.type-other-row');
+    const customProtocolGroup = form.querySelector('#custom-protocol-group');
+    const customProtocolInput = form.querySelector('#custom_protocol');
+
+    if (!row || !customProtocolGroup || !customProtocolInput) return;
+
+    const isOther = protocol === 'OTHER';
+
+    customProtocolGroup.style.display = isOther ? 'flex' : 'none';
+    customProtocolInput.required = isOther;
+    row.classList.toggle('type-other-row-active', isOther);
+
+    if (!isOther) {
+        customProtocolInput.value = '';
+    }
+}
