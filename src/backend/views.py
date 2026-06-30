@@ -186,9 +186,60 @@ def get_filters_page(request):
             "page_title": "Filters",
             "object_type": "filters",
             "add_button_label": "Add Filter",
+            "filters": get_filters_view(request),  # Address data for the page
             **get_tenant_context(request),
         },
     )
+
+
+def get_filters_view(request):
+    status, api_filters = get_addresses_and_groups_with_tags_endpoint(request)
+
+    if status != 200:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    headers = [
+        "#",
+        "Name",
+        "Description",
+        "Action",
+        "Count",
+        "Created",
+        "Modified",
+    ]
+
+    rows = []
+
+    for item in api_filters:
+        expand = [
+            {"label": "Log Type", "value": item.get("log_type", "")},
+            {"label": "Created by", "value": item.get("created_by", "")},
+            {"label": "Changed by", "value": item.get("changed_by", "")},
+            {"label": "Direction", "value": item.get("direction", "")},
+            {"label": "Enable", "value": item.get("enable", "")},
+        ]
+
+        rows.append(
+            {
+                "cells": [
+                    item.get("id", ""),
+                    item.get("name", ""),
+                    item.get("action", ""),
+                    item.get("hit_count") or "",
+                    item.get("date_created") or "",
+                    item.get("date_changed") or "",
+                ],
+                "expand": expand,
+            }
+        )
+
+    return {
+        "headers": headers,
+        "rows": rows,
+    }
 
 
 """
