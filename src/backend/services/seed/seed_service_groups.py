@@ -3,15 +3,10 @@ from backend.services.get import get_all_services_from_tenant_by_names
 from backend.utils.logger import set_up_logger
 
 
-
 logger = set_up_logger(__name__)
 
 
-
-
-
 def seed_servicegroups(actor, tenant_id: int) -> int:
-
 
     required_service_names = [
         "ICMP_RFC792",

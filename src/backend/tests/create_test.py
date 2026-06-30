@@ -130,6 +130,7 @@ class TestAddAddressToGroup:
                 address_id=address_id,
             ).exists()
 
+
 @pytest.mark.django_db
 class TestAddAddressesToGroup:
     def test_add_addresses_to_group(self, sample_addresses, request_with_session):
@@ -187,6 +188,7 @@ class TestAddAddressesToGroup:
                 address_group_id=address_group.id,
                 address_ids=[9999],
             )
+
 
 @pytest.mark.django_db
 class TestAddServiceToGroup:
@@ -373,7 +375,12 @@ class TestGenerateConfigFromFilterObject:
         vendor = "juniper"
         # Now generate the policy from the filter object
         policy = create_policy_from_filter(
-            actor=request_with_session.user, tenant_id=request_with_session.tenant_id, filter_id=sample_filters[0].id, policy_sequence=10, vendor=vendor, policy_type=""
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=sample_filters[0].id,
+            policy_sequence=10,
+            vendor=vendor,
+            policy_type="",
         )
         assert policy is not None
 

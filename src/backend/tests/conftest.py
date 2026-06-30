@@ -49,10 +49,11 @@ def authenticated_client_with_tenant(authenticated_client, create_testing_tenant
     assert response.status_code == 200
     return authenticated_client
 
+
 @pytest.fixture
 def authenticated_user_and_tenant_id(authenticated_client, create_testing_tenant):
     response = authenticated_client.get(f"/api/set_tenant?tenant_id={create_testing_tenant.id}")
-    user = User.objects.get(id=authenticated_client.session['_auth_user_id'])
+    user = User.objects.get(id=authenticated_client.session["_auth_user_id"])
     assert response.status_code == 200
     return user, create_testing_tenant.id
 

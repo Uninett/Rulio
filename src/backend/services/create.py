@@ -93,7 +93,11 @@ def create_policy_rules_from_rule_filter(*, actor: User, tenant_id: int, rule_fi
     if not rule_matches.exists():
         raise ValueError(f"No rule matches found for rule with ID {rule.id}.")
     for rule_match in rule_matches:
-        policy_rules.append(create_policy_rule_from_rule_match(actor=actor, tenant_id=tenant_id, rule_match=rule_match, rule_sequence=rule_sequence))
+        policy_rules.append(
+            create_policy_rule_from_rule_match(
+                actor=actor, tenant_id=tenant_id, rule_match=rule_match, rule_sequence=rule_sequence
+            )
+        )
     return policy_rules
 
 

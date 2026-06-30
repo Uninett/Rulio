@@ -46,7 +46,11 @@ def remove_tag_from_object(actor: User, tenant_id: int, object_id: int, object_t
     return deleted_count
 
 
-def delete_tag_from_tenant(actor: User, tenant_id: int, tag_id: int,) -> int:
+def delete_tag_from_tenant(
+    actor: User,
+    tenant_id: int,
+    tag_id: int,
+) -> int:
     require_write_tenant(actor, tenant_id)
 
     try:

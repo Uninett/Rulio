@@ -384,7 +384,9 @@ class Policy:
     # Add networks definitions for an AddressGroup object
     def _add_address_group_translation_to_networks(self, rule: PolicyRule) -> None:
         values = []
-        for address in get_address_group_members(address_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id):
+        for address in get_address_group_members(
+            address_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id
+        ):
             ipv4_addrs, ipv6_addrs = address.get_address()
 
             for addr in ipv4_addrs:
@@ -414,7 +416,9 @@ class Policy:
     def _add_service_group_translation_to_services(self, rule: PolicyRule) -> list[tuple[str, str, bool]]:
         service_entries = []
 
-        for service in get_service_group_members(service_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id):
+        for service in get_service_group_members(
+            service_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id
+        ):
             service_name = service.name
             protocol = service.get_protocol()
             port_value = service.get_ports()

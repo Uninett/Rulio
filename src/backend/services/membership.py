@@ -63,9 +63,7 @@ def add_addresses_to_group(actor: User, tenant_id: int, address_group_id: int, a
     require_write_tenant(actor, tenant_id)
 
     if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(
-            f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}."
-        )
+        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
 
     address_group = AddressGroup.objects.get(id=address_group_id, tenant_id=tenant_id)
 
@@ -136,9 +134,7 @@ def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, se
     require_write_tenant(actor, tenant_id)
 
     if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(
-            f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}."
-        )
+        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
 
     service_group = ServiceGroup.objects.get(id=service_group_id, tenant_id=tenant_id)
 
@@ -193,6 +189,7 @@ def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, se
         "already_present_service_ids": already_present_service_ids,
         "not_found_service_ids": [],
     }
+
 
 def add_objects_to_rule(
     *,
@@ -291,9 +288,14 @@ def add_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: 
     return rule_filter
 
 
-def add_filter_to_interface(*, actor: User, tenant_id: int, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
+def add_filter_to_interface(
+    *, actor: User, tenant_id: int, filter_id: int, interface_id: int, policy_sequence: int, enable: bool
+):
     require_write_tenant(actor, tenant_id)
-    if not (Filter.objects.filter(id=filter_id, tenant_id=tenant_id).exists() or Filter.objects.filter(id=filter_id, tenant_id=GLOBAL_TENANT_ID).exists()):
+    if not (
+        Filter.objects.filter(id=filter_id, tenant_id=tenant_id).exists()
+        or Filter.objects.filter(id=filter_id, tenant_id=GLOBAL_TENANT_ID).exists()
+    ):
         raise PermissionDenied(f"Filter with ID {filter_id} does not exist in tenant {tenant_id}.")
     if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists():
         raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")

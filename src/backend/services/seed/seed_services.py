@@ -1,16 +1,11 @@
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_service
 from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
 
 
 logger = set_up_logger(__name__)
 
 
-
-
-
 def seed_services(actor, tenant_id: int):
-
 
     default_services = [
         # ---------------------------------------------------------------------
