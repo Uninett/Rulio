@@ -4,4 +4,4 @@ from pydantic import Field, ConfigDict
 
 class CreateTenantSchema(Schema):
     model_config = ConfigDict(extra="forbid")
-    name: str = Field(..., min_length=1, max_length=255, example="NTNU")
+    name: str = Field(..., min_length=1, max_length=255, json_schema_extra={"example": "NTNU"})
