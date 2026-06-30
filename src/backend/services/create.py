@@ -11,8 +11,7 @@ from backend.objects.filters.rule import Rule
 from backend.services.generate_config import Policy, PolicyRule
 from backend.utils.logger import set_up_logger
 from backend.services.get import get_platform_from_device
-from backend.services.helper_user_tenant import is_superadmin
-
+from backend.services.helper_user_tenant import is_superadmin, require_read_tenant
 
 
 # Setup logger
@@ -48,7 +47,10 @@ POLICY GENERATION
 """
 
 
-def create_policy_rule_from_rule_match(rule_match: RuleMatch, rule_sequence: int) -> PolicyRule:
+def create_policy_rule_from_rule_match(
+    *, actor: User, tenant_id: int, rule_match: RuleMatch, rule_sequence: int
+) -> PolicyRule:
+    require_read_tenant(actor, tenant_id)
     rule = rule_match.rule
     obj = rule_match.object
     if not obj:
@@ -69,7 +71,8 @@ def create_policy_rule_from_rule_match(rule_match: RuleMatch, rule_sequence: int
     return policy_rule
 
 
-def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[PolicyRule]:
+def create_policy_rules_from_rule_filter(*, actor: User, tenant_id: int, rule_filter: RuleFilter) -> list[PolicyRule]:
+    require_read_tenant(actor, tenant_id)
     policy_rules = []
     if not rule_filter.rule.id:
         raise ValueError(f"Rule with ID {rule_filter.rule.id} does not exist.")
@@ -92,7 +95,8 @@ def create_policy_rules_from_rule_filter(rule_filter: RuleFilter) -> list[Policy
     return policy_rules
 
 
-def create_policy_from_filter(filter_id, policy_sequence, vendor, policy_type):
+def create_policy_from_filter(*, actor: User, tenant_id: int, filter_id, policy_sequence, vendor, policy_type):
+    require_read_tenant(actor, tenant_id)
 
     # Get filter object by ID
     filter = Filter.objects.get(id=filter_id)
@@ -107,7 +111,9 @@ def create_policy_from_filter(filter_id, policy_sequence, vendor, policy_type):
     # Create PolicyRule objects for each rule
     policy_rules = []
     for rule_filter in rule_filter_matches:
-        policy_rules.extend(create_policy_rules_from_rule_filter(rule_filter))
+        policy_rules.extend(
+            create_policy_rules_from_rule_filter(actor=actor, tenant_id=tenant_id, rule_filter=rule_filter)
+        )
 
     policy = Policy(
         name=filter.name,
@@ -119,7 +125,9 @@ def create_policy_from_filter(filter_id, policy_sequence, vendor, policy_type):
     return policy
 
 
-def create_policies_for_interface(interface_id, policy_type=""):
+def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, policy_type=""):
+    require_read_tenant(actor, tenant_id)
+
     # Get interface object by ID
     interface = Interface.objects.get(id=interface_id)
     if not interface:
@@ -140,7 +148,12 @@ def create_policies_for_interface(interface_id, policy_type=""):
         if not filter_obj:
             raise ValueError(f"Filter with ID {filter_interface.filter_id} does not exist.")
         policy = create_policy_from_filter(
-            filter_obj.id, filter_interface.policy_sequence, vendor, policy_type
+            actor=actor,
+            tenant_id=tenant_id,
+            filter_id=filter_obj.id,
+            policy_sequence=filter_interface.policy_sequence,
+            vendor=vendor,
+            policy_type=policy_type,
         )
         policies.append(policy)
     logger.info(f"Created {len(policies)} policies for interface id={interface_id}")
