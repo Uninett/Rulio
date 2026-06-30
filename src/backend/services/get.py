@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
+from django.db.models import QuerySet
 
 from backend.objects import models
 from backend.objects.attributes.address import Address
@@ -32,303 +33,6 @@ DJANGO_MODEL_MAPPING = {
     "servicegroupmember": ServiceGroupMember,
     "filter": Filter,
 }
-
-
-def get_all_service_groups_from_tenant(actor: User, tenant_id: int) -> list[ServiceGroup]:
-    require_read_tenant(actor, tenant_id)
-    requested_service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
-    return requested_service_groups
-
-
-def get_service_groups_with_services_from_tenant(actor: User, tenant_id: int, get="all") -> list[dict]:
-    require_read_tenant(actor, tenant_id)
-    service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
-    if get == "objects":
-        service_groups_with_services = []
-        for service_group in service_groups:
-            if service_group.services.exists():
-                service_groups_with_services.append(service_group)
-        return service_groups_with_services
-    result = []
-    group_map = {}
-
-    for group in service_groups:
-        group_dict = {
-            "service_group_id": group.id,
-            "service_group_name": group.name,
-            "services": [],
-        }
-        result.append(group_dict)
-        group_map[group.id] = group_dict
-
-    memberships = ServiceGroupMember.objects.filter(
-        group__tenant_id=tenant_id,
-        service__tenant_id=tenant_id,
-    ).select_related("group", "service")
-
-    for membership in memberships:
-        group_id = membership.group.id
-
-        if group_id in group_map:
-            group_map[group_id]["services"].append(
-                {
-                    "service_id": membership.service.id,
-                    "service_name": membership.service.name,
-                    "description": membership.service.description,
-                    "protocol": membership.service.protocol,
-                    "port_start": membership.service.port_start,
-                    "port_end": membership.service.port_end,
-                }
-            )
-    if get == "all":
-        return result
-    elif get == "ids":
-        return [{"service_group_id": group["service_group_id"]} for group in result]
-    elif get == "names":
-        return [{"service_group_name": group["service_group_name"]} for group in result]
-
-
-def get_address_groups_with_addresses_from_tenant(actor: User, tenant_id: int, get="all") -> list[dict]:
-    require_read_tenant(actor, tenant_id)
-    address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
-
-    result = []
-    group_map = {}
-
-    for group in address_groups:
-        group_dict = {
-            "address_group_id": group.id,
-            "address_group_name": group.name,
-            "addresses": [],
-        }
-        result.append(group_dict)
-        group_map[group.id] = group_dict
-
-    memberships = AddressGroupMember.objects.filter(
-        group__tenant_id=tenant_id,
-        address__tenant_id=tenant_id,
-    ).select_related("group", "address")
-
-    for membership in memberships:
-        group_id = membership.group.id
-
-        if group_id in group_map:
-            group_map[group_id]["addresses"].append(
-                {
-                    "address_id": membership.address.id,
-                    "address_name": membership.address.name,
-                    "addr_type": membership.address.addr_type,
-                    "ipv4_type": membership.address.ipv4_type,
-                    "ipv6_type": membership.address.ipv6_type,
-                    "ipv4Network": membership.address.ipv4Network,
-                    "ipv6Network": membership.address.ipv6Network,
-                    "ipv4Address_start": membership.address.ipv4Address_start,
-                    "ipv4Address_end": membership.address.ipv4Address_end,
-                    "ipv6Address_start": membership.address.ipv6Address_start,
-                    "ipv6Address_end": membership.address.ipv6Address_end,
-                }
-            )
-
-    if get == "all":
-        return result
-    elif get == "ids":
-        return [{"address_group_id": group["address_group_id"]} for group in result]
-    elif get == "names":
-        return [{"address_group_name": group["address_group_name"]} for group in result]
-
-def get_all_addresss_groups_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> list[dict]:
-    require_read_tenant(actor, tenant_id)
-    if include_global_tenant:
-        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
-    else:
-        address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
-
-    result = []
-    for group in address_groups:
-        result.append(
-            {
-                "address_group_id": group.id,
-                "address_group_name": group.name,
-                "address_group_description": group.description,
-                "address_group_tags": [
-                    {
-                        "tag_id": tc.tag.id,
-                        "tag_name": tc.tag.name,
-                        "tag_description": tc.tag.description,
-                    }
-                    for tc in group.tag_objects.all()
-                ],
-            }
-        )
-
-    return result, address_groups
-
-def get_all_addresses_and_groups_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> list[dict]:
-    require_read_tenant(actor, tenant_id)
-    if include_global_tenant:
-        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
-        addresses = Address.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
-    else:
-        address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
-        addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
-
-    memberships = AddressGroupMember.objects.filter(
-        group__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
-        address__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
-    ).select_related("group", "address")
-
-    addresses_by_group = {}
-    groups_by_address = {}
-
-    for membership in memberships:
-        group = membership.group
-        address = membership.address
-
-        addresses_by_group.setdefault(group.id, []).append(
-            {
-                "id": address.id,
-                "name": address.name,
-            }
-        )
-
-        groups_by_address.setdefault(address.id, []).append(
-            {
-                "id": group.id,
-                "name": group.name,
-            }
-        )
-
-    result = []
-
-    for group in address_groups:
-        result.append(
-            {
-                "type": "AddressGroup",
-                "id": group.id,
-                "name": group.name,
-                "description": group.description,
-                "tags": [
-                    {
-                        "id": tc.tag.id,
-                        "name": tc.tag.name,
-                        "description": tc.tag.description,
-                    }
-                    for tc in group.tag_objects.all()
-                ],
-                "addresses": addresses_by_group.get(group.id, []),
-            }
-        )
-
-    for address in addresses:
-        result.append(
-            {
-                "type": "Address",
-                "id": address.id,
-                "name": address.name,
-                "description": address.description,
-                "addr_type": address.addr_type,
-                "ipv4_type": address.ipv4_type,
-                "ipv6_type": address.ipv6_type,
-                "ipv4Network": address.ipv4Network,
-                "ipv6Network": address.ipv6Network,
-                "ipv4Address_start": address.ipv4Address_start,
-                "ipv4Address_end": address.ipv4Address_end,
-                "ipv6Address_start": address.ipv6Address_start,
-                "ipv6Address_end": address.ipv6Address_end,
-                "tags": [
-                    {
-                        "id": tc.tag.id,
-                        "name": tc.tag.name,
-                        "description": tc.tag.description,
-                    }
-                    for tc in address.tag_objects.all()
-                ],
-                "address_groups": groups_by_address.get(address.id, []),
-            }
-        )
-
-    return result, addresses, address_groups
-
-
-def get_all_services_and_groups_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
-    require_read_tenant(actor, tenant_id)
-    if include_global_tenant:
-        service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
-        services = Service.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
-    else:
-        service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
-        services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
-
-    memberships = ServiceGroupMember.objects.filter(
-        group__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
-        service__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
-    ).select_related("group", "service")
-
-    services_by_group = {}
-    groups_by_service = {}
-
-    for membership in memberships:
-        group = membership.group
-        service = membership.service
-
-        services_by_group.setdefault(group.id, []).append(
-            {
-                "id": service.id,
-                "name": service.name,
-            }
-        )
-
-        groups_by_service.setdefault(service.id, []).append(
-            {
-                "id": group.id,
-                "name": group.name,
-            }
-        )
-
-    result = []
-
-    for group in service_groups:
-        result.append(
-            {
-                "type": "ServiceGroup",
-                "id": group.id,
-                "name": group.name,
-                "description": group.description,
-                "tags": [
-                    {
-                        "id": tc.tag.id,
-                        "name": tc.tag.name,
-                        "description": tc.tag.description,
-                    }
-                    for tc in group.tag_objects.all()
-                ],
-                "services": services_by_group.get(group.id, []),
-            }
-        )
-
-    for service in services:
-        result.append(
-            {
-                "type": "Service",
-                "id": service.id,
-                "name": service.name,
-                "description": service.description,
-                "protocol": service.protocol,
-                "port_start": service.port_start,
-                "port_end": service.port_end,
-                "tags": [
-                    {
-                        "id": tc.tag.id,
-                        "name": tc.tag.name,
-                        "description": tc.tag.description,
-                    }
-                    for tc in service.tag_objects.all()
-                ],
-                "service_groups": groups_by_service.get(service.id, []),
-            }
-        )
-
-    return result, services, service_groups
 
 
 def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[dict]:
@@ -403,61 +107,6 @@ def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_glo
     return result, rules
 
 
-def get_all_address_groups_from_tenant(actor: User, tenant_id: int) -> list[AddressGroup]:
-    require_read_tenant(actor, tenant_id)
-    requested_address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
-    return requested_address_groups
-
-
-def get_all_addresses_from_tenant(actor: User, tenant_id: int, get="all") -> list:
-    require_read_tenant(actor, tenant_id)
-    requested_addresses = Address.objects.filter(tenant_id=tenant_id)
-    if get == "all":
-        return requested_addresses
-    elif get == "ids":
-        return [{"address_id": address.id} for address in requested_addresses]
-    elif get == "names":
-        return [{"address_name": address.name} for address in requested_addresses]
-
-
-def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> list[Address]:
-    require_read_tenant(actor, tenant_id)
-    requested_addresses = Address.objects.filter(tenant_id=tenant_id, name__in=names)
-    return requested_addresses
-
-
-def get_address_group_members(actor: User, tenant_id: int, address_group_id: int) -> list[Address]:
-    require_read_tenant(actor, tenant_id)
-    if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
-    return Address.objects.filter(addressgroupmember__group_id=address_group_id)
-    # return AddressGroupMember.objects.filter(group_id=address_group_id)
-
-
-def get_all_services_from_tenant(actor: User, tenant_id: int, get="all") -> list[Service]:
-    require_read_tenant(actor, tenant_id)
-    requested_services = Service.objects.filter(tenant_id=tenant_id)
-    if get == "all":
-        return requested_services
-    elif get == "ids":
-        return [{"service_id": service.id} for service in requested_services]
-    elif get == "names":
-        return [{"service_name": service.name} for service in requested_services]
-
-
-def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> list[Service]:
-    require_read_tenant(actor, tenant_id)
-    requested_services = Service.objects.filter(tenant_id=tenant_id, name__in=names)
-    return requested_services
-
-
-def get_service_group_members(actor: User, tenant_id: int, service_group_id: int) -> list[Address]:
-    require_read_tenant(actor, tenant_id)
-    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
-    return Service.objects.filter(servicegroupmember__group_id=service_group_id)
-    # return ServiceGroupMember.objects.filter(group_id=service_group_id)
-
 
 def get_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object_type: str) -> list[Tag]:
     require_read_tenant(actor, tenant_id)
@@ -482,13 +131,14 @@ def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, obj
     return obj
 
 
-def get_all_rules_from_tenant(actor: User, tenant_id: int) -> list[Rule]:
+
+def get_all_rules_from_tenant(actor: User, tenant_id: int) -> QuerySet[Rule]:
     require_read_tenant(actor, tenant_id)
     requested_rules = Rule.objects.filter(tenant_id=tenant_id)
     return requested_rules
 
 
-def get_all_devices_from_tenant(actor: User, tenant_id: int) -> list[Device]:
+def get_all_devices_from_tenant(actor: User, tenant_id: int) -> QuerySet[Device]:
     require_read_tenant(actor, tenant_id)
     requested_devices = Device.objects.filter(tenant_id=tenant_id)
     return requested_devices
@@ -529,7 +179,7 @@ def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) 
     return requested_interfaces
 
 
-def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> list[Filter]:
+def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
     if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists():
         raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
@@ -541,7 +191,7 @@ def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: in
     return requested_filters
 
 
-def get_all_filters_from_tenant(actor: User, tenant_id: int) -> list[Filter]:
+def get_all_filters_from_tenant(actor: User, tenant_id: int) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
     requested_filters = Filter.objects.filter(tenant_id=tenant_id)
     return requested_filters
