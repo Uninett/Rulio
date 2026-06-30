@@ -6,7 +6,7 @@ from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.filter_interface import FilterInterface
 
 
-class TestManagement:
+class TestTenantObjectsImports:
     def test_import_management(self):
         # Test that imports work and we can use the classes
         assert Device is not None

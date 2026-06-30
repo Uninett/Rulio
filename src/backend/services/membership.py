@@ -61,101 +61,138 @@ def add_service_to_group(actor: User, tenant_id: int, service_group_id: int, ser
 
 def add_addresses_to_group(actor: User, tenant_id: int, address_group_id: int, address_ids: list[int]) -> dict:
     require_write_tenant(actor, tenant_id)
+
     if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
-    if not (
-        Address.objects.filter(id__in=address_ids, tenant_id=tenant_id).exists()
-        or Address.objects.filter(id__in=address_ids, tenant_id=GLOBAL_TENANT_ID).exists()
-    ):
-        raise PermissionDenied(f"One or more addresses do not exist in tenant {tenant_id}.")
-    address_group = AddressGroup.objects.get(id=address_group_id)
+        raise PermissionDenied(
+            f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}."
+        )
 
-    request_ids = set(address_ids)
+    address_group = AddressGroup.objects.get(id=address_group_id, tenant_id=tenant_id)
 
-    existing_addresses = Address.objects.filter(id__in=request_ids)
-    found_ids = {address.id for address in existing_addresses}
-    not_found_ids = request_ids - found_ids
-    already_present_ids = set(
+    requested_address_ids = set(address_ids)
+    valid_address_ids = set(
+        Address.objects.filter(
+            id__in=requested_address_ids,
+            tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
+        ).values_list("id", flat=True)
+    )
+
+    invalid_address_ids = sorted(requested_address_ids - valid_address_ids)
+    if invalid_address_ids:
+        raise PermissionDenied(
+            f"One or more addresses do not exist in tenant {tenant_id} or the global tenant. "
+            f"Invalid address IDs: {invalid_address_ids}"
+        )
+
+    already_present_address_ids = set(
         AddressGroupMember.objects.filter(
-            group=address_group,
-            address__in=found_ids,
+            group_id=address_group_id,
+            address_id__in=requested_address_ids,
         ).values_list("address_id", flat=True)
     )
 
-    new_addresses = [address for address in existing_addresses if address.id not in already_present_ids]
+    added_address_ids = []
 
     with transaction.atomic():
-        AddressGroupMember.objects.bulk_create(
-            [AddressGroupMember(group=address_group, address=address) for address in new_addresses]
-        )
-    added_ids = [address.id for address in new_addresses]
+        for address_id in address_ids:
+            if address_id in already_present_address_ids:
+                continue
+
+            AddressGroupMember.objects.create(
+                group=address_group,
+                address_id=address_id,
+            )
+            added_address_ids.append(address_id)
+            already_present_address_ids.add(address_id)
+
+    returned_already_present_address_ids = [
+        address_id for address_id in address_ids if address_id in (set(address_ids) - set(added_address_ids))
+    ]
 
     logger.info(
-        f"Group {address_group.id}: added={added_ids}, "
-        f"already_present={list(already_present_ids)}, "
-        f"not_found={list(not_found_ids)}"
+        "Group %s: added=%s, already_present=%s, not_found=%s",
+        address_group.id,
+        added_address_ids,
+        returned_already_present_address_ids,
+        [],
     )
 
     return {
         "address_group_id": address_group.id,
-        "added_address_ids": sorted(added_ids),
-        "already_present_address_ids": sorted(already_present_ids),
-        "not_found_address_ids": sorted(not_found_ids),
+        "added_address_ids": added_address_ids,
+        "already_present_address_ids": returned_already_present_address_ids,
+        "not_found_address_ids": [],
     }
 
 
 def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, service_ids: list[int]) -> dict:
     """
-    Adds a list of services to a service group
+    Adds a list of services to a service group.
+
     Args:
     - service_group_id: ID of the service group to add services to
     - service_ids: List of service IDs to add to the group
     """
     require_write_tenant(actor, tenant_id)
+
     if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
-    if not (
-        Service.objects.filter(id__in=service_ids, tenant_id=tenant_id).exists()
-        or Service.objects.filter(id__in=service_ids, tenant_id=GLOBAL_TENANT_ID).exists()
-    ):
-        raise PermissionDenied(f"One or more services do not exist in tenant {tenant_id}.")
-    service_group = ServiceGroup.objects.get(id=service_group_id)
+        raise PermissionDenied(
+            f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}."
+        )
 
-    requested_ids = set(service_ids)
+    service_group = ServiceGroup.objects.get(id=service_group_id, tenant_id=tenant_id)
 
-    existing_services = Service.objects.filter(id__in=requested_ids)
-    found_ids = {service.id for service in existing_services}
-    not_found_ids = requested_ids - found_ids
+    requested_service_ids = set(service_ids)
+    # Validate that all requested service IDs exist in the tenant or global tenant
+    valid_service_ids = set(
+        Service.objects.filter(
+            id__in=requested_service_ids,
+            tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
+        ).values_list("id", flat=True)
+    )
 
-    already_present_ids = set(
+    invalid_service_ids = sorted(requested_service_ids - valid_service_ids)
+    if invalid_service_ids:
+        raise PermissionDenied(
+            f"One or more services do not exist in tenant {tenant_id} or the global tenant. "
+            f"Invalid service IDs: {invalid_service_ids}"
+        )
+
+    existing_member_ids = set(
         ServiceGroupMember.objects.filter(
-            group=service_group,
-            service_id__in=found_ids,
+            group_id=service_group_id,
+            service_id__in=requested_service_ids,
         ).values_list("service_id", flat=True)
     )
 
-    new_services = [service for service in existing_services if service.id not in already_present_ids]
+    added_service_ids = []
+    already_present_service_ids = []
 
-    with transaction.atomic():
-        ServiceGroupMember.objects.bulk_create(
-            [ServiceGroupMember(group=service_group, service=service) for service in new_services]
-        )
-
-    added_ids = [service.id for service in new_services]
+    for service_id in service_ids:
+        if service_id in existing_member_ids:
+            already_present_service_ids.append(service_id)
+        else:
+            ServiceGroupMember.objects.create(
+                group=service_group,
+                service_id=service_id,
+            )
+            added_service_ids.append(service_id)
+            existing_member_ids.add(service_id)
 
     logger.info(
-        f"Group {service_group.id}: added={added_ids}, "
-        f"already_present={list(already_present_ids)}, "
-        f"not_found={list(not_found_ids)}"
+        "Group %s: added=%s, already_present=%s, not_found=%s",
+        service_group_id,
+        added_service_ids,
+        already_present_service_ids,
+        [],
     )
 
     return {
-        "service_group_id": service_group.id,
-        "added_service_ids": sorted(added_ids),
-        "already_present_service_ids": sorted(already_present_ids),
-        "not_found_service_ids": sorted(not_found_ids),
+        "service_group_id": service_group_id,
+        "added_service_ids": added_service_ids,
+        "already_present_service_ids": already_present_service_ids,
+        "not_found_service_ids": [],
     }
-
 
 def add_objects_to_rule(
     *,

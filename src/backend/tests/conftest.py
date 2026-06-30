@@ -2,6 +2,7 @@ import pytest
 
 from django.test import Client, RequestFactory
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
@@ -37,33 +38,40 @@ def authenticated_client(superuser):
 
 
 @pytest.fixture
-def tenant(db):
-    return Tenant.objects.create(tenant_name="Test Tenant")
+def get_testing_tenant_id():
+    tenant, _ = Tenant.objects.get_or_create(tenant_name="Test Tenant")
+    return tenant.id
 
 
 @pytest.fixture
-def authenticated_client_with_tenant(authenticated_client, tenant):
-    response = authenticated_client.get(f"/api/set_tenant?tenant_id={tenant.id}")
+def authenticated_client_with_tenant(authenticated_client, create_testing_tenant):
+    response = authenticated_client.get(f"/api/set_tenant?tenant_id={create_testing_tenant.id}")
     assert response.status_code == 200
     return authenticated_client
+
+@pytest.fixture
+def authenticated_user_and_tenant_id(authenticated_client, create_testing_tenant):
+    response = authenticated_client.get(f"/api/set_tenant?tenant_id={create_testing_tenant.id}")
+    user = User.objects.get(id=authenticated_client.session['_auth_user_id'])
+    assert response.status_code == 200
+    return user, create_testing_tenant.id
 
 
 @pytest.fixture(scope="session")
 def create_testing_tenant(django_db_setup, django_db_blocker):
     with django_db_blocker.unblock():
-        tenant, created = Tenant.objects.get_or_create(
+        tenant, _ = Tenant.objects.get_or_create(
             tenant_name="Test Tenant",
         )
         return tenant
 
 
 @pytest.fixture
-def request_with_session(create_testing_tenant):
+def request_with_session(create_testing_tenant, authenticated_user_and_tenant_id):
     factory = RequestFactory()
     request = factory.get("/")
     request.session = {"current_tenant_id": create_testing_tenant.id}
-    request.tenant = create_testing_tenant
-    request.user = MockUser(user_id=2)  # Mock user for testing purposes
+    request.user, request.tenant_id = authenticated_user_and_tenant_id
     return request
 
 
@@ -121,11 +129,13 @@ def sample_addresses(create_testing_tenant):
 
 
 @pytest.fixture
-def address_policy_rules(sample_addresses):
+def address_policy_rules(sample_addresses, request_with_session):
     policy_rules = []
 
     for i, address in enumerate(sample_addresses):
         rule = PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name=f"Test_Address_Rule_{i + 1}",
             obj_type="address",
             action="accept" if i % 2 == 0 else "deny",
@@ -194,11 +204,13 @@ def sample_services(create_testing_tenant):
 
 
 @pytest.fixture
-def service_policy_rules(sample_services):
+def service_policy_rules(sample_services, request_with_session):
     policy_rules = []
 
     for i, service in enumerate(sample_services):
         rule = PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name=f"Test_Service_Rule_{i + 1}",
             obj_type="service",
             action="accept" if i % 2 == 0 else "deny",
@@ -212,15 +224,17 @@ def service_policy_rules(sample_services):
 
 
 @pytest.fixture
-def sample_address_group(sample_addresses, request_with_session, create_testing_tenant):
+def sample_address_group(sample_addresses, authenticated_client_with_tenant, request_with_session):
     sample_address_group_1 = AddressGroup(
         name="Test_Address_Group_1",
         description="This is a test address group",
-        tenant_id=create_testing_tenant.id,
+        tenant_id=request_with_session.tenant_id,
     )
     sample_address_group_1.save()
 
     add_addresses_to_group(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
         address_group_id=sample_address_group_1.id,
         address_ids=[address.id for address in sample_addresses],
     )
@@ -229,27 +243,30 @@ def sample_address_group(sample_addresses, request_with_session, create_testing_
     sample_address_group_2 = AddressGroup(
         name="Test_Address_Group_2",
         description="This is another test address group",
-        tenant_id=create_testing_tenant.id,
+        tenant_id=request_with_session.tenant_id,
     )
     sample_address_group_2.save()
 
     sample_address_group_2_addresses = [
         get_or_create_address(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Private_Class_A_IPv4_RFC1918",
             description="RFC1918 private IPv4 Class A address space for internal networks.",
             ipv4_type="standard",
             ipv4Network="10.0.0.0/8",
         )[0],
         get_or_create_address(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Private_Class_B_IPv4_RFC1918",
             description="RFC1918 private IPv4 Class B address space for internal networks.",
             ipv4_type="standard",
             ipv4Network="172.16.0.0/12",
         )[0],
         get_or_create_address(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Private_Class_C_IPv4_RFC1918",
             description="RFC1918 private IPv4 Class C address space for internal networks.",
             ipv4_type="standard",
@@ -258,6 +275,8 @@ def sample_address_group(sample_addresses, request_with_session, create_testing_
     ]
 
     add_addresses_to_group(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
         address_group_id=sample_address_group_2.id,
         address_ids=[address.id for address in sample_address_group_2_addresses],
     )
@@ -267,17 +286,19 @@ def sample_address_group(sample_addresses, request_with_session, create_testing_
 
 
 @pytest.fixture
-def sample_service_group(sample_services, create_testing_tenant):
+def sample_service_group(sample_services, request_with_session):
     sample_service_group_1 = ServiceGroup(
         name="Test_Service_Group_1",
         description="This is a test service group",
-        tenant_id=create_testing_tenant.id,
+        tenant_id=request_with_session.tenant_id,
     )
     sample_service_group_1.save()
 
     add_services_to_group(
         service_group_id=sample_service_group_1.id,
         service_ids=[service.id for service in sample_services],
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
     )
     sample_service_group_1.save()
 
@@ -475,7 +496,7 @@ def realistic_acl_services(create_testing_tenant):
 
 
 @pytest.fixture
-def realistic_acl_address_groups(realistic_acl_addresses, create_testing_tenant):
+def realistic_acl_address_groups(realistic_acl_addresses, create_testing_tenant, request_with_session):
     by_name = {address.name: address for address in realistic_acl_addresses}
 
     trusted_sources = AddressGroup(
@@ -485,6 +506,8 @@ def realistic_acl_address_groups(realistic_acl_addresses, create_testing_tenant)
     )
     trusted_sources.save()
     add_addresses_to_group(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
         address_group_id=trusted_sources.id,
         address_ids=[
             by_name["ACL_Src_Users"].id,
@@ -499,6 +522,8 @@ def realistic_acl_address_groups(realistic_acl_addresses, create_testing_tenant)
     )
     web_servers.save()
     add_addresses_to_group(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
         address_group_id=web_servers.id,
         address_ids=[
             by_name["ACL_Dst_Web_1"].id,
@@ -510,7 +535,7 @@ def realistic_acl_address_groups(realistic_acl_addresses, create_testing_tenant)
 
 
 @pytest.fixture
-def realistic_acl_service_groups(realistic_acl_services, create_testing_tenant):
+def realistic_acl_service_groups(realistic_acl_services, create_testing_tenant, request_with_session):
     by_name = {service.name: service for service in realistic_acl_services}
 
     web_services = ServiceGroup(
@@ -520,6 +545,8 @@ def realistic_acl_service_groups(realistic_acl_services, create_testing_tenant):
     )
     web_services.save()
     add_services_to_group(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
         service_group_id=web_services.id,
         service_ids=[
             by_name["ACL_HTTP"].id,
@@ -534,6 +561,8 @@ def realistic_acl_service_groups(realistic_acl_services, create_testing_tenant):
     )
     dns_services.save()
     add_services_to_group(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
         service_group_id=dns_services.id,
         service_ids=[
             by_name["ACL_DNS_TCP"].id,
@@ -672,12 +701,14 @@ def realistic_acl_policy_rules(
 def sample_filters(request_with_session, create_testing_tenant):
     return [
         create_filter(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Sample_Filter",
             description="This is a sample filter for testing.",
         ),
         create_filter(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Sample_Filter_2",
             description="This is another sample filter for testing.",
         ),
@@ -688,7 +719,8 @@ def sample_filters(request_with_session, create_testing_tenant):
 def sample_rules(request_with_session, create_testing_tenant):
     sample_rules = [
         create_rule(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_1",
             description="This is a sample rule for testing.",
             action="accept",
@@ -697,7 +729,8 @@ def sample_rules(request_with_session, create_testing_tenant):
             enable=True,
         ),
         create_rule(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_2",
             description="This is another sample rule for testing.",
             action="deny",
@@ -706,7 +739,8 @@ def sample_rules(request_with_session, create_testing_tenant):
             enable=True,
         ),
         create_rule(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_3",
             description="This is yet another sample rule for testing.",
             action="accept",
@@ -715,7 +749,8 @@ def sample_rules(request_with_session, create_testing_tenant):
             enable=True,
         ),
         create_rule(
-            request=request_with_session,
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_4",
             description="This is a fourth sample rule for testing.",
             action="deny",

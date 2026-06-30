@@ -61,6 +61,8 @@ def create_policy_rule_from_rule_match(
         raise ValueError(f"Invalid object type {rule_match.object_type} for rule with ID {rule.id}.")
 
     policy_rule = PolicyRule(
+        actor=actor,
+        tenant_id=tenant_id,
         name=rule.name,
         obj_type=model_name,
         action=rule.action,
@@ -91,7 +93,7 @@ def create_policy_rules_from_rule_filter(*, actor: User, tenant_id: int, rule_fi
     if not rule_matches.exists():
         raise ValueError(f"No rule matches found for rule with ID {rule.id}.")
     for rule_match in rule_matches:
-        policy_rules.append(create_policy_rule_from_rule_match(rule_match, rule_sequence))
+        policy_rules.append(create_policy_rule_from_rule_match(actor=actor, tenant_id=tenant_id, rule_match=rule_match, rule_sequence=rule_sequence))
     return policy_rules
 
 
@@ -116,6 +118,8 @@ def create_policy_from_filter(*, actor: User, tenant_id: int, filter_id, policy_
         )
 
     policy = Policy(
+        actor=actor,
+        tenant_id=tenant_id,
         name=filter.name,
         rules=policy_rules,
         vendor=vendor,

@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from aerleon.lib import naming
 from aerleon import api as aerleon_api
+from django.contrib.auth.models import User
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
@@ -36,6 +37,8 @@ class PolicyRule:
 
     def __init__(
         self,
+        actor: User,
+        tenant_id: int,
         name: str,
         obj_type: str,
         action: str,
@@ -48,6 +51,8 @@ class PolicyRule:
         self.action = action.lower()
         self.object = object
         self.rule_sequence = rule_sequence
+        self.actor = actor
+        self.tenant_id = tenant_id
 
         if direction.lower() not in DIRECTION_CHOICES:
             raise ValueError(f"Invalid direction: {direction}. Must be one of {DIRECTION_CHOICES}")
@@ -67,12 +72,16 @@ class Policy:
 
     def __init__(
         self,
+        actor: User,
+        tenant_id: int,
         name: str,
         rules: list[PolicyRule],
         vendor: str,
         policy_type: str = "",
         policy_sequence: int = 0,
     ):
+        self.actor = actor
+        self.tenant_id = tenant_id
         self.name = name.strip()
         self.name = self.name.replace(" ", "_")
         self.vendor = vendor.lower()
@@ -375,7 +384,7 @@ class Policy:
     # Add networks definitions for an AddressGroup object
     def _add_address_group_translation_to_networks(self, rule: PolicyRule) -> None:
         values = []
-        for address in get_address_group_members(address_group_id=rule.object.id):
+        for address in get_address_group_members(address_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id):
             ipv4_addrs, ipv6_addrs = address.get_address()
 
             for addr in ipv4_addrs:
@@ -405,7 +414,7 @@ class Policy:
     def _add_service_group_translation_to_services(self, rule: PolicyRule) -> list[tuple[str, str, bool]]:
         service_entries = []
 
-        for service in get_service_group_members(service_group_id=rule.object.id):
+        for service in get_service_group_members(service_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id):
             service_name = service.name
             protocol = service.get_protocol()
             port_value = service.get_ports()
