@@ -306,9 +306,11 @@ def sample_service_group(sample_services, request_with_session):
 
 
 @pytest.fixture
-def address_group_policy_rules(sample_address_group):
+def address_group_policy_rules(sample_address_group, request_with_session):
     return [
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Test_Rule_for_Address_Group_1",
             obj_type="addressgroup",
             action="accept",
@@ -317,6 +319,8 @@ def address_group_policy_rules(sample_address_group):
             rule_sequence=0,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Test_Rule_for_Address_Group_2",
             obj_type="addressgroup",
             action="deny",
@@ -328,9 +332,11 @@ def address_group_policy_rules(sample_address_group):
 
 
 @pytest.fixture
-def service_group_policy_rules(sample_service_group):
+def service_group_policy_rules(sample_service_group, request_with_session):
     return [
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Test_Rule_for_Service_Group_1",
             obj_type="servicegroup",
             action="accept",
@@ -342,9 +348,11 @@ def service_group_policy_rules(sample_service_group):
 
 
 @pytest.fixture
-def combined_policy_rules(sample_addresses, sample_services):
+def combined_policy_rules(sample_addresses, sample_services, request_with_session):
     return [
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Combined_Rule_1_Address",
             obj_type="address",
             action="accept",
@@ -353,6 +361,8 @@ def combined_policy_rules(sample_addresses, sample_services):
             rule_sequence=0,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Combined_Rule_1_Service",
             obj_type="service",
             action="accept",
@@ -361,6 +371,8 @@ def combined_policy_rules(sample_addresses, sample_services):
             rule_sequence=0,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Combined_Rule_2_Address",
             obj_type="address",
             action="deny",
@@ -369,6 +381,8 @@ def combined_policy_rules(sample_addresses, sample_services):
             rule_sequence=1,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Combined_Rule_2_Service",
             obj_type="service",
             action="deny",
@@ -579,6 +593,7 @@ def realistic_acl_policy_rules(
     realistic_acl_services,
     realistic_acl_address_groups,
     realistic_acl_service_groups,
+    request_with_session,
 ):
     addr = {a.name: a for a in realistic_acl_addresses}
     svc = {s.name: s for s in realistic_acl_services}
@@ -588,6 +603,8 @@ def realistic_acl_policy_rules(
     return [
         # rule_sequence 10 -> 1 tcp term
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Trusted_To_Web_Src_Group",
             obj_type="addressgroup",
             action="accept",
@@ -596,6 +613,8 @@ def realistic_acl_policy_rules(
             rule_sequence=10,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Trusted_To_Web_Dst_Group",
             obj_type="addressgroup",
             action="accept",
@@ -604,6 +623,8 @@ def realistic_acl_policy_rules(
             rule_sequence=10,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Trusted_To_Web_Dst_Direct",
             obj_type="address",
             action="accept",
@@ -612,6 +633,8 @@ def realistic_acl_policy_rules(
             rule_sequence=10,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Trusted_To_Web_Services",
             obj_type="servicegroup",
             action="accept",
@@ -621,6 +644,8 @@ def realistic_acl_policy_rules(
         ),
         # rule_sequence 20 -> 2 terms (tcp + udp)
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Trusted_To_DNS_Src_Group",
             obj_type="addressgroup",
             action="accept",
@@ -629,6 +654,8 @@ def realistic_acl_policy_rules(
             rule_sequence=20,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Trusted_To_DNS_Dst",
             obj_type="address",
             action="accept",
@@ -637,6 +664,8 @@ def realistic_acl_policy_rules(
             rule_sequence=20,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Trusted_To_DNS_Services",
             obj_type="servicegroup",
             action="accept",
@@ -646,6 +675,8 @@ def realistic_acl_policy_rules(
         ),
         # rule_sequence 30 -> 1 tcp term
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Deny_Admins_To_Blocked_Src",
             obj_type="address",
             action="deny",
@@ -654,6 +685,8 @@ def realistic_acl_policy_rules(
             rule_sequence=30,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Deny_Admins_To_Blocked_Dst",
             obj_type="address",
             action="deny",
@@ -662,6 +695,8 @@ def realistic_acl_policy_rules(
             rule_sequence=30,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Deny_Admins_To_Blocked_Service",
             obj_type="service",
             action="deny",
@@ -671,6 +706,8 @@ def realistic_acl_policy_rules(
         ),
         # rule_sequence 40 -> 1 icmp term
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Admins_ICMP_Src",
             obj_type="address",
             action="accept",
@@ -679,6 +716,8 @@ def realistic_acl_policy_rules(
             rule_sequence=40,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Admins_ICMP_Dst",
             obj_type="address",
             action="accept",
@@ -687,6 +726,8 @@ def realistic_acl_policy_rules(
             rule_sequence=40,
         ),
         PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
             name="Allow_Admins_ICMP_Service",
             obj_type="service",
             action="accept",
