@@ -24,8 +24,14 @@ from backend.services.delete import (
     delete_tenant,
 )
 from backend.services.generate_config import generate_multi_policy_config
-from backend.services.attribute_objects.get_address_objects import get_address_groups_and_addresses_from_tenant, get_all_addresses_and_groups_with_tags_from_tenant
-from backend.services.attribute_objects.get_service_objects import get_service_groups_and_services_from_tenant, get_all_services_and_groups_with_tags_from_tenant
+from backend.services.attribute_objects.get_address_objects import (
+    get_address_groups_and_addresses_from_tenant,
+    get_all_addresses_and_groups_with_tags_from_tenant,
+)
+from backend.services.attribute_objects.get_service_objects import (
+    get_service_groups_and_services_from_tenant,
+    get_all_services_and_groups_with_tags_from_tenant,
+)
 from backend.services.get import (
     get_all_devices_from_tenant,
     get_all_filters_from_interface,

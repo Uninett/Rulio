@@ -10,7 +10,6 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 
 
-
 from backend.services.attribute_objects.get_address_objects import get_address_group_members
 from backend.services.attribute_objects.get_service_objects import get_service_group_members
 from backend.utils.logger import set_up_logger
