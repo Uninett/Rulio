@@ -443,7 +443,7 @@ def create_and_add_tag_to_object(
     require_write_tenant(actor, tenant_id)
 
     tag = create_tag(actor=actor, tenant_id=tenant_id, name=tag_name, description=tag_description)
-    obj = get_object_by_type_and_id(object_type, object_id)
+    obj = get_object_by_type_and_id(actor, tenant_id, object_type, object_id)
     if isinstance(obj, TaggableMixin):
         obj.add_tag(tag)
         logger.info(f"Added {tag} to {obj}")
