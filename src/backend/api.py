@@ -88,7 +88,6 @@ from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.helper_user_tenant import (
     is_superadmin,
-    can_write_tenant,
     can_read_tenant,
 )
 from backend.services.membership import (

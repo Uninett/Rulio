@@ -3,7 +3,6 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import QuerySet
 from django.db.models import F
 
-from backend.objects import models
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
