@@ -107,7 +107,6 @@ def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_glo
     return result, rules
 
 
-
 def get_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object_type: str) -> list[Tag]:
     require_read_tenant(actor, tenant_id)
     obj = get_object_by_type_and_id(actor, tenant_id, object_id, object_type)
