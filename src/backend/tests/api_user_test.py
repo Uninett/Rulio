@@ -51,8 +51,10 @@ def test__api_get_users(authenticated_client_with_tenant):
     response = client.get("/api/get_users")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    for member in data:
+    assert isinstance(data, dict)
+    assert data["status"] == "success"
+    assert isinstance(data["users"], list)
+    for member in data["users"]:
         assert "username" in member
         assert "email" in member
 
@@ -76,7 +78,7 @@ def test_create_user(authenticated_client_with_tenant):
     check = client.get("/api/get_users")
     assert check.status_code == 200
     data = check.json()
-    assert any(member["username"] == "newuser" for member in data)
+    assert any(member["username"] == "newuser" for member in data["users"])
 
 
 @pytest.mark.django_db
@@ -108,7 +110,7 @@ def test_delete_user(authenticated_client_with_tenant):
     check = client.get("/api/get_users")
     assert check.status_code == 200
     data = check.json()
-    assert not any(member["username"] == "tobedeleted" for member in data)
+    assert not any(member["username"] == "tobedeleted" for member in data["users"])
 
 
 @pytest.mark.django_db
