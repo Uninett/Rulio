@@ -1,19 +1,46 @@
-<form method="post">
-    {% csrf_token %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
 
-    <div>
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username" required>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="{% static 'images/favicon.svg' %}" type="image/svg+xml">
+    <title>{% block title %}Rulio{% endblock %}</title>
+
+    <!-- Loads the local htmx library from the frontend static/js folder -->
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/login.css' %}" />
+    {% block extra_css %}{% endblock %}
+
+</head>
+
+<body class="login-page">
+    <div class="login-container">
+        <form method="post" class="login-form">
+            {% csrf_token %}
+
+            <img class="site-logo login-logo" aria-label="Site logo" src="{% static 'images/rulio.svg' %}"
+                alt="Rulio logo" />
+
+            <div class="login-field">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="login-field">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit" class="login-button">Log in</button>
+
+            {% if error %}
+            <p class="login-error">{{ error }}</p>
+            {% endif %}
+        </form>
     </div>
+</body>
 
-    <div>
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-    </div>
-
-    <button type="submit">Log in</button>
-
-    {% if error %}
-    <p>{{ error }}</p>
-    {% endif %}
-</form>
+</html>

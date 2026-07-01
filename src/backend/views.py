@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+from django.http import HttpResponse
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
@@ -25,7 +27,6 @@ from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
 
-
 """
 ====================================================================
 Login Page
@@ -33,9 +34,10 @@ Login Page
 """
 
 
-# TODO: Only allow redirect to other pages if user is authenticated. Otherwise, redirect to login page.
-# TODO: Only redirect to login page if logged out. The user should not be able to access the page without logged out.
 def get_login_page(request):
+    if request.user.is_authenticated:
+        return redirect(request.session.get("active_page", "devices"))
+
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
@@ -53,6 +55,7 @@ def get_login_page(request):
             )
 
         login(request, user)
+        request.session["active_page"] = "devices"
 
         if user.is_superuser:
             # Set the first tenant as the current tenant for superusers as default.
@@ -73,7 +76,17 @@ def get_login_page(request):
     )
 
 
-# TODO: Add a logout view that clears the session and redirects to the login page.
+# Remove the current tenant from the session and log out the user, then redirect to the login page.
+@login_required(login_url="login")
+def logout_view(request):
+    if request.method == "POST":
+        request.session.pop("current_tenant_id", None)
+        request.session.pop("active_page", None)
+        logout(request)
+        return redirect("login")
+
+    return redirect("login")
+
 
 """
 ====================================================================
@@ -82,7 +95,7 @@ Tenant
 """
 
 
-# Gets the list of tenants from the backend API function list_tenants()
+# Gets the list of tenants from the backend
 def get_tenants_view(request):
     if not request.user.is_superuser:
         return []
@@ -106,6 +119,28 @@ def get_tenant_context(request):
     }
 
 
+# Handles setting the current tenant in the session based on the selected tenant from the dropdown.
+@login_required(login_url="login")
+def set_tenant_view(request):
+    if request.method != "POST":
+        return redirect(request.session.get("active_page", "devices"))
+
+    tenant_id = request.POST.get("tenant_id")
+
+    if not tenant_id:
+        return HttpResponse("Missing tenant_id", status=400)
+
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+    except Tenant.DoesNotExist:
+        return HttpResponse(f"Tenant with id {tenant_id} does not exist.", status=404)
+
+    request.session["current_tenant_id"] = tenant.id
+    request.session.modified = True
+
+    return HttpResponse(status=204)
+
+
 """
 ====================================================================
 Device Page
@@ -113,7 +148,9 @@ Device Page
 """
 
 
+@login_required(login_url="login")
 def get_devices_page(request):
+    request.session["active_page"] = "devices"
     return render(
         request,
         "devices.html",
@@ -134,7 +171,9 @@ Filters Page
 """
 
 
+@login_required(login_url="login")
 def get_filters_page(request):
+    request.session["active_page"] = "filters"
     return render(
         request,
         "filters.html",
@@ -155,7 +194,9 @@ Objects Page
 """
 
 
+@login_required(login_url="login")
 def get_objects_page(request):
+    request.session["active_page"] = "objects"
     return render(
         request,
         "objects.html",
@@ -198,7 +239,9 @@ Objects Page: Address
 
 
 # Render the Addresses tab content for the Objects page.
+@login_required(login_url="login")
 def get_objects_addresses(request):
+    request.session["active_page"] = "objects"
     return render(
         request,
         "partials/_page_content.html",
@@ -213,7 +256,7 @@ def get_objects_addresses(request):
     )
 
 
-# Fetch addresses from the API and map them to data.
+# Fetch addresses from backend and map them to data.
 def get_addresses_view(request):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
@@ -283,6 +326,7 @@ def get_addresses_view(request):
 
 
 # Handles creation of a new address from modal form submission.
+@login_required(login_url="login")
 def post_address_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -389,6 +433,7 @@ def post_address_view(request):
 
 
 # Handles creation of a new address group from modal form submission.
+@login_required(login_url="login")
 def post_address_group_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -464,7 +509,9 @@ Objects Page: Service
 
 
 # Render the Services tab content for the Objects page.
+@login_required(login_url="login")
 def get_objects_services(request):
+    request.session["active_page"] = "objects"
     return render(
         request,
         "partials/_page_content.html",
@@ -479,7 +526,7 @@ def get_objects_services(request):
     )
 
 
-# Fetch services from the API and map them to data.
+# Fetch services from the backend and map them to data.
 def get_services_view(request):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
@@ -547,6 +594,7 @@ def get_services_view(request):
 
 
 # Handles creation of a new service from modal form submission.
+@login_required(login_url="login")
 def post_service_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -613,6 +661,7 @@ def post_service_view(request):
 
 
 # Handles creation of a new service group from modal form submission.
+@login_required(login_url="login")
 def post_service_group_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -679,7 +728,9 @@ Tags Page
 """
 
 
+@login_required(login_url="login")
 def get_tags_page(request):
+    request.session["active_page"] = "tags"
     return render(
         request,
         "tags.html",
@@ -775,6 +826,7 @@ def get_add_modal_config(object_type):
 
 
 # Render the Add modal with the default form for the selected object type.
+@login_required(login_url="login")
 def get_add_modal(request, object_type):
     config = get_add_modal_config(object_type)
 
@@ -815,6 +867,7 @@ def get_add_modal(request, object_type):
 
 
 # Render the modal content when switching between item/group form types.
+@login_required(login_url="login")
 def get_add_modal_form_content(request, object_type, type):
     config = get_add_modal_config(object_type)
 
@@ -865,7 +918,7 @@ def get_group_options_view(request, object_type):
         tenant_id = int(tenant_id)
 
         if object_type == "addresses":
-            api_objects = get_all_addresses_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -875,12 +928,12 @@ def get_group_options_view(request, object_type):
                     "id": item.get("id"),
                     "name": item.get("name", ""),
                 }
-                for item in api_objects
+                for item in objects
                 if item.get("type") == "AddressGroup"
             ]
 
         if object_type == "services":
-            api_objects = get_all_services_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -890,7 +943,7 @@ def get_group_options_view(request, object_type):
                     "id": item.get("id"),
                     "name": item.get("name", ""),
                 }
-                for item in api_objects
+                for item in objects
                 if item.get("type") == "ServiceGroup"
             ]
 
@@ -910,7 +963,7 @@ def get_item_options_view(request, object_type):
         tenant_id = int(tenant_id)
 
         if object_type == "addresses":
-            api_objects = get_all_addresses_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -920,12 +973,12 @@ def get_item_options_view(request, object_type):
                     "id": item.get("id"),
                     "name": item.get("name", ""),
                 }
-                for item in api_objects
+                for item in objects
                 if item.get("type") != "AddressGroup"
             ]
 
         if object_type == "services":
-            api_objects = get_all_services_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -935,7 +988,7 @@ def get_item_options_view(request, object_type):
                     "id": item.get("id"),
                     "name": item.get("name", ""),
                 }
-                for item in api_objects
+                for item in objects
                 if item.get("type") != "ServiceGroup"
             ]
 

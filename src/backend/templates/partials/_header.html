@@ -32,14 +32,23 @@
         </div>
 
         <div class="header-actions">
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="logged-in-user">
+                    <span class="button-text default-text">Logged in as {{request.user.username }}</span>
+                    <span class="button-text hover-text">Log out of {{ request.user.username }}</span>
+                </button>
+            </form>
+
             <input class="form-control" type="search" name="search" placeholder="Search...">
 
             <div class="form-group tenant-form-group">
                 <label for="tenant" class="tenant-label">Tenant</label>
 
                 <!-- When this form is triggered, send a POST request to the Django URL named set-tenant. After the HTMX request finishes, reload the page. -->
-                <form hx-get="/api/set_tenant" hx-trigger="change from:#tenant" hx-swap="none"
+                <form hx-post="{% url 'set-tenant' %}" hx-trigger="change from:#tenant" hx-swap="none"
                     hx-on::after-request="window.location.reload()">
+                    {% csrf_token %}
                     <select name="tenant_id" id="tenant" class="tenant-select">
                         {% for tenant in tenants %}
                         {% if selected_tenant|stringformat:'s' == tenant.id|stringformat:'s' %}

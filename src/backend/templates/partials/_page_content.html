@@ -5,14 +5,19 @@
     </div>
 
     {% if title == "Devices" %}
+    No devices to display.
+
     {% elif title == "Filters" %}
+    No filters to display.
 
     <!--Insert table here, with type of table depending on the title (i.e. title == "Addresses" -> address table, title == "Services" -> service table)-->
     {% elif title == "Addresses" %}
     {% include "partials/objects/_addressesTable.html" %}
     {% elif title == "Services" %}
     {% include "partials/objects/_servicesTable.html" %}
+
     {% elif title == "Tags" %}
+    No tags to display.
     {% else %}
     <p>No content available.</p>
     {% endif %}
