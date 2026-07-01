@@ -32,6 +32,11 @@
         </div>
 
         <div class="header-actions">
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit">Log out</button>
+            </form>
+
             <input class="form-control" type="search" name="search" placeholder="Search...">
 
             <div class="form-group tenant-form-group">

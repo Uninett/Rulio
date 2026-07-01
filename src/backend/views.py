@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.urls import reverse
 
 from backend.objects.tenant_objects.tenant import Tenant
@@ -73,7 +73,15 @@ def get_login_page(request):
     )
 
 
-# TODO: Add a logout view that clears the session and redirects to the login page.
+# Remove the current tenant from the session and log out the user, then redirect to the login page.
+def logout_view(request):
+    if request.method == "POST":
+        request.session.pop("current_tenant_id", None)
+        logout(request)
+        return redirect("login")
+
+    return redirect("login")
+
 
 """
 ====================================================================
