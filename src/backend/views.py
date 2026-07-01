@@ -82,7 +82,7 @@ Tenant
 """
 
 
-# Gets the list of tenants from the backend API function list_tenants()
+# Gets the list of tenants from the backend
 def get_tenants_view(request):
     if not request.user.is_superuser:
         return []
@@ -213,7 +213,7 @@ def get_objects_addresses(request):
     )
 
 
-# Fetch addresses from the API and map them to data.
+# Fetch addresses from backend and map them to data.
 def get_addresses_view(request):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
@@ -479,7 +479,7 @@ def get_objects_services(request):
     )
 
 
-# Fetch services from the API and map them to data.
+# Fetch services from the backend and map them to data.
 def get_services_view(request):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
@@ -865,7 +865,7 @@ def get_group_options_view(request, object_type):
         tenant_id = int(tenant_id)
 
         if object_type == "addresses":
-            api_objects = get_all_addresses_and_groups_with_tags_from_tenant(
+            objects = get_all_addresses_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -875,12 +875,12 @@ def get_group_options_view(request, object_type):
                     "id": item.get("id"),
                     "name": item.get("name", ""),
                 }
-                for item in api_objects
+                for item in objects
                 if item.get("type") == "AddressGroup"
             ]
 
         if object_type == "services":
-            api_objects = get_all_services_and_groups_with_tags_from_tenant(
+            objects = get_all_services_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -890,7 +890,7 @@ def get_group_options_view(request, object_type):
                     "id": item.get("id"),
                     "name": item.get("name", ""),
                 }
-                for item in api_objects
+                for item in objects
                 if item.get("type") == "ServiceGroup"
             ]
 
@@ -910,7 +910,7 @@ def get_item_options_view(request, object_type):
         tenant_id = int(tenant_id)
 
         if object_type == "addresses":
-            api_objects = get_all_addresses_and_groups_with_tags_from_tenant(
+            objects = get_all_addresses_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -920,12 +920,12 @@ def get_item_options_view(request, object_type):
                     "id": item.get("id"),
                     "name": item.get("name", ""),
                 }
-                for item in api_objects
+                for item in objects
                 if item.get("type") != "AddressGroup"
             ]
 
         if object_type == "services":
-            api_objects = get_all_services_and_groups_with_tags_from_tenant(
+            objects = get_all_services_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -935,7 +935,7 @@ def get_item_options_view(request, object_type):
                     "id": item.get("id"),
                     "name": item.get("name", ""),
                 }
-                for item in api_objects
+                for item in objects
                 if item.get("type") != "ServiceGroup"
             ]
 
