@@ -26,7 +26,6 @@ from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
 
-
 """
 ====================================================================
 Login Page
@@ -34,11 +33,9 @@ Login Page
 """
 
 
-# TODO: Only allow redirect to other pages if user is authenticated. Otherwise, redirect to login page.
-# TODO: Only redirect to login page if logged out. The user should not be able to access the page without logged out.
 def get_login_page(request):
     if request.user.is_authenticated:
-        return redirect("devices")
+        return redirect(request.session.get("active_page", "devices"))
 
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
@@ -57,6 +54,7 @@ def get_login_page(request):
             )
 
         login(request, user)
+        request.session["active_page"] = "devices"
 
         if user.is_superuser:
             # Set the first tenant as the current tenant for superusers as default.
@@ -82,6 +80,7 @@ def get_login_page(request):
 def logout_view(request):
     if request.method == "POST":
         request.session.pop("current_tenant_id", None)
+        request.session.pop("active_page", None)
         logout(request)
         return redirect("login")
 
@@ -128,6 +127,7 @@ Device Page
 
 @login_required(login_url="login")
 def get_devices_page(request):
+    request.session["active_page"] = "devices"
     return render(
         request,
         "devices.html",
@@ -150,6 +150,7 @@ Filters Page
 
 @login_required(login_url="login")
 def get_filters_page(request):
+    request.session["active_page"] = "filters"
     return render(
         request,
         "filters.html",
@@ -172,6 +173,7 @@ Objects Page
 
 @login_required(login_url="login")
 def get_objects_page(request):
+    request.session["active_page"] = "objects"
     return render(
         request,
         "objects.html",
@@ -216,6 +218,7 @@ Objects Page: Address
 # Render the Addresses tab content for the Objects page.
 @login_required(login_url="login")
 def get_objects_addresses(request):
+    request.session["active_page"] = "objects"
     return render(
         request,
         "partials/_page_content.html",
@@ -485,6 +488,7 @@ Objects Page: Service
 # Render the Services tab content for the Objects page.
 @login_required(login_url="login")
 def get_objects_services(request):
+    request.session["active_page"] = "objects"
     return render(
         request,
         "partials/_page_content.html",
@@ -703,6 +707,7 @@ Tags Page
 
 @login_required(login_url="login")
 def get_tags_page(request):
+    request.session["active_page"] = "tags"
     return render(
         request,
         "tags.html",
