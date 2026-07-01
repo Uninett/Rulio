@@ -752,9 +752,19 @@ def get_tags_page(request):
 
 # Fetch services from the API and map them to data.
 def get_tags_view(request):
-    status, api_services = get_all_tags_from_tenant(request)
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return {
+            "headers": [],
+            "rows": [],
+        }
 
-    if status != 200:
+    try:
+        tags, _, _ = get_all_tags_from_tenant(
+            actor=request.user,
+            tenant_id=int(tenant_id),
+        )
+    except Exception:
         return {
             "headers": [],
             "rows": [],
@@ -764,7 +774,7 @@ def get_tags_view(request):
 
     rows = []
 
-    for item in api_services:
+    for item in tags:
         rows.append(
             {
                 "id": item.get("id", ""),
@@ -772,9 +782,7 @@ def get_tags_view(request):
                     item.get("name", ""),
                     item.get("description", ""),
                 ],
-                "expand": [
-                    {"label": "ID", "value": item.get("id", "")},
-                ],
+                "expand": {"label": "ID", "value": item.get("id", "")},
             }
         )
 
