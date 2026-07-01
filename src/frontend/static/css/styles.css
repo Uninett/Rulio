@@ -68,6 +68,33 @@ Header
     flex-wrap: wrap;
 }
 
+button.logged-in-user {
+    background-color: transparent;
+    border: 2px solid transparent;
+    border-bottom: 2px solid #7351FB;
+    border-radius: 0;
+    color: #000000;
+    width: 11rem;
+}
+
+.logged-in-user .hover-text {
+    display: none;
+}
+
+button.logged-in-user:hover {
+    background-color: #7351FB;
+    border: 2px solid #7351FB;
+    border-radius: 0;
+    color: #FFFFFF;
+}
+
+.logged-in-user:hover .default-text {
+    display: none;
+}
+
+.logged-in-user:hover .hover-text {
+    display: inline;
+}
 
 /*
 ====================================================================

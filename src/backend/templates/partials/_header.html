@@ -34,7 +34,10 @@
         <div class="header-actions">
             <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
-                <button type="submit">Log out</button>
+                <button type="submit" class="logged-in-user">
+                    <span class="button-text default-text">Logged in as {{request.user.username }}</span>
+                    <span class="button-text hover-text">Log out of {{ request.user.username }}</span>
+                </button>
             </form>
 
             <input class="form-control" type="search" name="search" placeholder="Search...">
