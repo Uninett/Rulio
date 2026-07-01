@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 
 from backend.objects.attributes.address import Address
+from backend.objects.attributes.service import Service
 from backend.objects.attributes.tag import Tag
 from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import add_tag_to_object
@@ -249,3 +250,342 @@ def add_tags_to_default_addresses(
             )
 
     logger.info("Added tags to all seeded default addresses.")
+
+
+def add_tags_to_default_services(
+    actor: User,
+    tenant_id: int,
+    default_services: list[Service],
+) -> None:
+    """
+    Add the correct tags to the seeded default services.
+    """
+    require_write_tenant(actor, tenant_id)
+
+    tenant_tags = get_all_tags_from_tenant(actor=actor, tenant_id=tenant_id)
+    tags_by_name: dict[str, Tag] = {tag.name: tag for tag in tenant_tags}
+    services_by_name: dict[str, Service] = {service.name: service for service in default_services}
+
+    service_tag_mappings: dict[str, list[str]] = {
+        "ICMP_RFC792": ["default", "infrastructure", "monitoring", "debugging", "priority_1"],
+        "ICMPv6_RFC4443": ["default", "infrastructure", "monitoring", "debugging", "priority_1"],
+        "GRE_RFC2784": ["default", "vpn", "transit", "restricted", "priority_3"],
+        "ESP_RFC4303": ["default", "vpn", "restricted", "priority_3"],
+        "AH_RFC4302": ["default", "vpn", "restricted", "priority_3"],
+        "IP_RFC791": ["default", "shared", "priority_1"],
+        "HTTP_TCP_RFC2616_RFC9110": ["default", "web", "external", "outbound", "priority_1"],
+        "HTTPS_TCP_RFC2818_RFC9110": ["default", "web", "external", "outbound", "priority_1"],
+        "HTTP_Alternate_TCP": ["default", "web", "external", "outbound", "priority_2"],
+        "HTTPS_Alternate_TCP": ["default", "web", "external", "management", "priority_2"],
+        "DNS_UDP_RFC1034_RFC1035": ["default", "infrastructure", "internal", "priority_1"],
+        "DNS_TCP_RFC1034_RFC1035": ["default", "infrastructure", "internal", "priority_1"],
+        "MDNS_UDP_RFC6762": ["default", "infrastructure", "multicast", "link_local", "priority_3"],
+        "SSH_TCP_RFC4251": ["default", "management", "restricted", "sensitive", "priority_1"],
+        "Telnet_TCP_RFC854": ["default", "management", "legacy", "restricted", "priority_3"],
+        "RDP_TCP": ["default", "management", "restricted", "sensitive", "priority_2"],
+        "WinRM_HTTP_TCP": ["default", "management", "restricted", "sensitive", "priority_2"],
+        "WinRM_HTTPS_TCP": ["default", "management", "restricted", "sensitive", "priority_2"],
+        "FTP_Control_TCP_RFC959": ["default", "legacy", "file_sharing", "priority_3"],
+        "FTP_Data_TCP_RFC959": ["default", "legacy", "file_sharing", "priority_3"],
+        "SFTP_TCP": ["default", "file_sharing", "management", "restricted", "priority_2"],
+        "TFTP_UDP_RFC1350": ["default", "legacy", "file_sharing", "restricted", "priority_3"],
+        "SMTP_TCP_RFC5321": ["default", "external", "outbound", "priority_2"],
+        "SMTP_Submission_TCP_RFC6409": ["default", "external", "outbound", "priority_2"],
+        "SMTPS_TCP": ["default", "external", "outbound", "priority_2"],
+        "POP3_TCP_RFC1939": ["default", "legacy", "priority_3"],
+        "POP3S_TCP": ["default", "priority_3"],
+        "IMAP_TCP_RFC3501": ["default", "legacy", "priority_3"],
+        "IMAPS_TCP": ["default", "priority_3"],
+        "LDAP_TCP_RFC4511": ["default", "authentication", "infrastructure", "internal", "restricted", "priority_2"],
+        "LDAPS_TCP": ["default", "authentication", "infrastructure", "internal", "restricted", "priority_2"],
+        "Kerberos_TCP_RFC4120": ["default", "authentication", "infrastructure", "internal", "restricted", "priority_2"],
+        "Kerberos_UDP_RFC4120": ["default", "authentication", "infrastructure", "internal", "restricted", "priority_2"],
+        "RADIUS_Auth_UDP_RFC2865": ["default", "authentication", "infrastructure", "restricted", "priority_2"],
+        "RADIUS_Acct_UDP_RFC2866": ["default", "authentication", "infrastructure", "restricted", "priority_2"],
+        "DHCP_Server_UDP_RFC2131": ["default", "infrastructure", "internal", "priority_1"],
+        "DHCP_Client_UDP_RFC2131": ["default", "infrastructure", "internal", "priority_1"],
+        "NTP_UDP_RFC5905": ["default", "infrastructure", "internal", "priority_1"],
+        "SNMP_UDP_RFC3411": ["default", "monitoring", "management", "restricted", "priority_2"],
+        "SNMP_Trap_UDP_RFC3411": ["default", "monitoring", "management", "restricted", "priority_2"],
+        "Syslog_UDP_RFC5424": ["default", "monitoring", "priority_2"],
+        "Syslog_TCP_RFC6587": ["default", "monitoring", "priority_2"],
+        "SMB_TCP": ["default", "file_sharing", "internal", "restricted", "priority_2"],
+        "NetBIOS_NS_UDP": ["default", "legacy", "file_sharing", "internal", "priority_3"],
+        "NetBIOS_DGM_UDP": ["default", "legacy", "file_sharing", "internal", "priority_3"],
+        "NetBIOS_SSN_TCP": ["default", "legacy", "file_sharing", "internal", "priority_3"],
+        "NFS_TCP_RFC7530": ["default", "file_sharing", "internal", "restricted", "priority_2"],
+        "NFS_UDP": ["default", "legacy", "file_sharing", "internal", "priority_3"],
+        "MySQL_TCP": ["default", "database", "internal", "restricted", "sensitive", "priority_2"],
+        "PostgreSQL_TCP": ["default", "database", "internal", "restricted", "sensitive", "priority_2"],
+        "MSSQL_TCP": ["default", "database", "internal", "restricted", "sensitive", "priority_2"],
+        "IKE_UDP_RFC7296": ["default", "vpn", "restricted", "priority_3"],
+        "IPsec_NAT_T_UDP_RFC3948": ["default", "vpn", "restricted", "priority_3"],
+        "L2TP_UDP_RFC2661": ["default", "vpn", "legacy", "restricted", "priority_3"],
+        "OpenVPN_TCP": ["default", "vpn", "restricted", "priority_3"],
+        "OpenVPN_UDP": ["default", "vpn", "restricted", "priority_3"],
+        "WireGuard_UDP": ["default", "vpn", "restricted", "priority_2"],
+        "SIP_TCP_RFC3261": ["default", "voice", "priority_3"],
+        "SIP_UDP_RFC3261": ["default", "voice", "priority_3"],
+        "SIPS_TCP_RFC3261": ["default", "voice", "priority_3"],
+        "Prometheus_TCP": ["default", "monitoring", "debugging", "priority_2"],
+        "Grafana_TCP": ["default", "monitoring", "debugging", "web", "priority_2"],
+        "Any_TCP": ["default", "shared", "priority_1"],
+        "Any_UDP": ["default", "shared", "priority_1"],
+    }
+
+    missing_tags = {
+        tag_name
+        for tag_names in service_tag_mappings.values()
+        for tag_name in tag_names
+        if tag_name not in tags_by_name
+    }
+    if missing_tags:
+        raise ValueError(
+            "Cannot tag default services because these tags are missing: "
+            + ", ".join(sorted(missing_tags))
+        )
+
+    missing_services = [
+        service_name
+        for service_name in service_tag_mappings
+        if service_name not in services_by_name
+    ]
+    if missing_services:
+        raise ValueError(
+            "Cannot tag default services because these services are missing: "
+            + ", ".join(sorted(missing_services))
+        )
+
+    for service_name, tag_names in service_tag_mappings.items():
+        service = services_by_name[service_name]
+        for tag_name in tag_names:
+            add_tag_to_object(
+                actor=actor,
+                tenant_id=tenant_id,
+                tag=tags_by_name[tag_name],
+                obj=service,
+            )
+
+    logger.info("Added tags to all seeded default services.")
+
+
+    
+def add_tags_to_default_address_groups(
+    actor: User,
+    tenant_id: int,
+    default_address_groups: list,
+) -> None:
+    """
+    Add the correct tags to the seeded default address groups.
+    """
+    require_write_tenant(actor, tenant_id)
+
+    tenant_tags = get_all_tags_from_tenant(actor=actor, tenant_id=tenant_id)
+    tags_by_name: dict[str, Tag] = {tag.name: tag for tag in tenant_tags}
+    address_groups_by_name = {address_group.name: address_group for address_group in default_address_groups}
+
+    address_group_tag_mappings: dict[str, list[str]] = {
+        "Private_And_Local_Use_Addresses": [
+            "default",
+            "private_address_space",
+            "internal",
+            "restricted",
+            "priority_1",
+        ],
+        "Invalid_Transit_Addresses": [
+            "default",
+            "transit",
+            "deny_list",
+            "restricted",
+            "priority_1",
+        ],
+        "Documentation_And_Test_Addresses": [
+            "default",
+            "documentation",
+            "debugging",
+            "development",
+            "deny_list",
+            "priority_3",
+        ],
+        "Multicast_Addresses": [
+            "default",
+            "multicast",
+            "restricted",
+            "priority_2",
+        ],
+        "IPv6_Transition_And_Translation_Addresses": [
+            "default",
+            "transit",
+            "restricted",
+            "priority_2",
+        ],
+    }
+
+    missing_tags = {
+        tag_name
+        for tag_names in address_group_tag_mappings.values()
+        for tag_name in tag_names
+        if tag_name not in tags_by_name
+    }
+    if missing_tags:
+        raise ValueError(
+            "Cannot tag default address groups because these tags are missing: "
+            + ", ".join(sorted(missing_tags))
+        )
+
+    missing_address_groups = [
+        address_group_name
+        for address_group_name in address_group_tag_mappings
+        if address_group_name not in address_groups_by_name
+    ]
+    if missing_address_groups:
+        raise ValueError(
+            "Cannot tag default address groups because these address groups are missing: "
+            + ", ".join(sorted(missing_address_groups))
+        )
+
+    for address_group_name, tag_names in address_group_tag_mappings.items():
+        address_group = address_groups_by_name[address_group_name]
+        for tag_name in tag_names:
+            add_tag_to_object(
+                actor=actor,
+                tenant_id=tenant_id,
+                tag=tags_by_name[tag_name],
+                obj=address_group,
+            )
+
+    logger.info("Added tags to all seeded default address groups.")
+
+
+def add_tags_to_default_service_groups(
+    actor: User,
+    tenant_id: int,
+    default_service_groups: list,
+) -> None:
+    """
+    Add the correct tags to the seeded default service groups.
+    """
+    require_write_tenant(actor, tenant_id)
+
+    tenant_tags = get_all_tags_from_tenant(actor=actor, tenant_id=tenant_id)
+    tags_by_name: dict[str, Tag] = {tag.name: tag for tag in tenant_tags}
+    service_groups_by_name = {service_group.name: service_group for service_group in default_service_groups}
+
+    service_group_tag_mappings: dict[str, list[str]] = {
+        "Common_Infrastructure_Client_Services": [
+            "default",
+            "infrastructure",
+            "internal",
+            "allow_list",
+            "priority_1",
+        ],
+        "Common_Web_Access_Services": [
+            "default",
+            "web",
+            "external",
+            "allow_list",
+            "priority_1",
+        ],
+        "Restricted_Administrative_Access_Services": [
+            "default",
+            "management",
+            "restricted",
+            "sensitive",
+            "priority_1",
+        ],
+        "Restricted_Internal_Identity_Services": [
+            "default",
+            "authentication",
+            "infrastructure",
+            "internal",
+            "restricted",
+            "priority_2",
+        ],
+        "Restricted_Internal_File_Sharing_Services": [
+            "default",
+            "file_sharing",
+            "internal",
+            "restricted",
+            "priority_2",
+        ],
+        "Restricted_Database_Services": [
+            "default",
+            "database",
+            "internal",
+            "restricted",
+            "sensitive",
+            "priority_2",
+        ],
+        "Restricted_Monitoring_And_Logging_Services": [
+            "default",
+            "monitoring",
+            "management",
+            "debugging",
+            "restricted",
+            "priority_2",
+        ],
+        "Deny_Legacy_Insecure_Services": [
+            "default",
+            "legacy",
+            "deny_list",
+            "restricted",
+            "priority_3",
+        ],
+        "Deny_Tunneling_And_VPN_Services": [
+            "default",
+            "vpn",
+            "deny_list",
+            "restricted",
+            "priority_3",
+        ],
+        "Deny_Voice_And_Signaling_Services": [
+            "default",
+            "voice",
+            "deny_list",
+            "restricted",
+            "priority_3",
+        ],
+        "Deny_Local_Link_Resolution_Services": [
+            "default",
+            "multicast",
+            "link_local",
+            "deny_list",
+            "restricted",
+            "priority_3",
+        ],
+    }
+
+    missing_tags = {
+        tag_name
+        for tag_names in service_group_tag_mappings.values()
+        for tag_name in tag_names
+        if tag_name not in tags_by_name
+    }
+    if missing_tags:
+        raise ValueError(
+            "Cannot tag default service groups because these tags are missing: "
+            + ", ".join(sorted(missing_tags))
+        )
+
+    missing_service_groups = [
+        service_group_name
+        for service_group_name in service_group_tag_mappings
+        if service_group_name not in service_groups_by_name
+    ]
+    if missing_service_groups:
+        raise ValueError(
+            "Cannot tag default service groups because these service groups are missing: "
+            + ", ".join(sorted(missing_service_groups))
+        )
+
+    for service_group_name, tag_names in service_group_tag_mappings.items():
+        service_group = service_groups_by_name[service_group_name]
+        for tag_name in tag_names:
+            add_tag_to_object(
+                actor=actor,
+                tenant_id=tenant_id,
+                tag=tags_by_name[tag_name],
+                obj=service_group,
+            )
+
+    logger.info("Added tags to all seeded default service groups.")

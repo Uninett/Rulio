@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 
+from backend.objects.attributes.service import Service
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address_group
 from backend.services.attribute_objects.get_address_objects import get_all_addresses_from_tenant_by_names
 from backend.utils.logger import set_up_logger
@@ -8,7 +9,7 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def seed_addressgroups(actor: User, tenant_id: int) -> int:
+def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[Service]]:
 
     required_address_names = [
         "Private_Class_A_IPv4_RFC1918",
@@ -149,7 +150,7 @@ def seed_addressgroups(actor: User, tenant_id: int) -> int:
     ]
 
     created_flags = [address_group[2] for address_group in default_address_groups]
-
+    default_address_groups = [address_group[0] for address_group in default_address_groups]
     if all(created_flags):
         logger.info("All default address groups were created. No duplicates existed.")
     elif any(created_flags):
@@ -157,4 +158,4 @@ def seed_addressgroups(actor: User, tenant_id: int) -> int:
     else:
         logger.warning("No default address groups were created because they already all existed.")
 
-    return len(default_address_groups)
+    return len(default_address_groups), default_address_groups
