@@ -20,7 +20,6 @@ def create_rule(
     action: str,
     log_type: str,
     hit_count: int,
-    enable: bool = True,
 ) -> Rule:
     require_write_tenant(actor, tenant_id)
     tenant = get_tenant_by_id(tenant_id)
@@ -36,7 +35,6 @@ def create_rule(
         date_changed=now,
         created_by=actor.id,
         changed_by=actor.id,
-        enable=enable,
     )
     try:
         rule.full_clean()

@@ -24,17 +24,21 @@ from backend.services.delete import (
     delete_tenant,
 )
 from backend.services.generate_config import generate_multi_policy_config
+from backend.services.attribute_objects.get_address_objects import (
+    get_address_groups_and_addresses_from_tenant,
+    get_all_addresses_and_groups_with_tags_from_tenant,
+)
+from backend.services.attribute_objects.get_service_objects import (
+    get_service_groups_and_services_from_tenant,
+    get_all_services_and_groups_with_tags_from_tenant,
+)
 from backend.services.get import (
-    get_all_addresses_and_groups_with_tags,
     get_all_devices_from_tenant,
     get_all_filters_from_interface,
     get_all_filters_from_tenant,
     get_all_interfaces_from_device,
     get_all_tags_from_object,
-    get_service_groups_with_services_from_tenant,
-    get_address_groups_with_addresses_from_tenant,
     get_all_tags_from_tenant,
-    get_all_services_and_groups_with_tags,
     get_all_rules_from_tenant,
     get_all_rules_with_objects_from_tenant,
 )
@@ -163,7 +167,7 @@ Attributes
 )
 @require_read_tenantd
 def get_address_group_and_addresses_endpoint(request, get="all"):
-    response = get_address_groups_with_addresses_from_tenant(
+    response = get_address_groups_and_addresses_from_tenant(
         request.session["current_tenant_id"],
         get=get,
     )
@@ -177,7 +181,7 @@ def get_address_group_and_addresses_endpoint(request, get="all"):
 )
 @require_read_tenantd
 def get_addresses_and_groups_with_tags_endpoint(request):
-    response = get_all_addresses_and_groups_with_tags(request.session["current_tenant_id"])
+    response = get_all_addresses_and_groups_with_tags_from_tenant(request.session["current_tenant_id"])
     return 200, response
 
 
@@ -421,7 +425,7 @@ def get_service_group_and_services_endpoint(request, get="all"):
             "status": "error",
             "message": "You do not have permission to read services from this tenant.",
         }
-    response = get_service_groups_with_services_from_tenant(
+    response = get_service_groups_and_services_from_tenant(
         request.session["current_tenant_id"],
         get=get,
     )
@@ -435,7 +439,7 @@ def get_service_group_and_services_endpoint(request, get="all"):
 )
 @require_read_tenantd
 def get_services_and_groups_with_tags_endpoint(request):
-    response = get_all_services_and_groups_with_tags(request.session["current_tenant_id"])
+    response = get_all_services_and_groups_with_tags_from_tenant(request.session["current_tenant_id"])
     return 200, response
 
 
@@ -992,7 +996,6 @@ def create_rule_endpoint(request, payload: CreateRuleSchema):
         action=payload.action,
         log_type=payload.log_type,
         hit_count=0,
-        enable=payload.enable,
     )
     logger.info(f"create_rule endpoint succeeded for rule id={rule.id}")
     return 200, {
