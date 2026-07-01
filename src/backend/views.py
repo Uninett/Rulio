@@ -1,11 +1,10 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 
 from .api import (
-    # Tenant
-    list_tenants,
     # Object Page: Address
     get_addresses_and_groups_with_tags_endpoint,
     create_address_endpoint,
@@ -78,17 +77,17 @@ Tenant
 
 # Gets the list of tenants from the backend API function list_tenants()
 def get_tenants_view(request):
-    status, api_tenants = list_tenants(request)
+    if not request.user.is_superuser:
+        return []
 
-    if status != 200:
-        return []  # If call failed, return an empty list
+    tenants = Tenant.objects.all()
 
     return [
         {
-            "id": item.get("id"),
-            "name": item.get("tenant_name"),
+            "id": tenant.id,
+            "name": tenant.tenant_name,
         }
-        for item in api_tenants
+        for tenant in tenants
     ]
 
 
