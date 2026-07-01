@@ -1,10 +1,9 @@
-import datetime
-import os
 import yaml
 import pytest
 
 from backend.services.generate_config import generate_config, Policy
 from backend.utils.logger import clear_logs, set_up_logger
+from backend.utils.write_to_file import write_configuration_to_file
 from constants import TEST_LOGPATH
 
 
@@ -61,20 +60,8 @@ class TestGenerateConfig:
 
             config = generate_config(policy)
             filepath = TEST_LOGPATH / "addr" / f"{vendor.upper()}_generated_config.yaml"
-            os.makedirs(TEST_LOGPATH / "addr", exist_ok=True)
-
-            for filename, content in config.items():
-                if vendor in self.log_for_vendors:
-                    logger.info(
-                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                        filename,
-                        content,
-                    )
-                with open(filepath, "w") as f:
-                    f.write(
-                        f"# Generated on {datetime.datetime.now()}\n# Test for generating using only Address objects\n\n"
-                    )
-                    f.write(content)
+            filedir = TEST_LOGPATH / "addr"
+            write_configuration_to_file(config, filepath, filedir, vendor, __name__, self.log_for_vendors)
 
     def test_generate_address_group_config(self, address_group_policy_rules, request_with_session):
         for vendor, policy_type in self.vendor_policy_type_pairs:
@@ -114,20 +101,9 @@ class TestGenerateConfig:
 
             config = generate_config(policy)
             filepath = TEST_LOGPATH / "addr_group" / f"{vendor.upper()}_generated_config.yaml"
-            os.makedirs(TEST_LOGPATH / "addr_group", exist_ok=True)
+            filedir = TEST_LOGPATH / "addr_group"
 
-            for filename, content in config.items():
-                if vendor in self.log_for_vendors:
-                    logger.info(
-                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                        filename,
-                        content,
-                    )
-                with open(filepath, "w") as f:
-                    f.write(
-                        f"# Generated on {datetime.datetime.now()}\n# Test for generating using Address Group objects\n\n"
-                    )
-                    f.write(content)
+            write_configuration_to_file(config, filepath, filedir, vendor, __name__, self.log_for_vendors)
 
     def test_generate_service_config(self, service_policy_rules, request_with_session):
         for vendor, policy_type in self.vendor_policy_type_pairs:
@@ -176,20 +152,9 @@ class TestGenerateConfig:
 
             config = generate_config(policy)
             filepath = TEST_LOGPATH / "service" / f"{vendor.upper()}_generated_config.yaml"
-            os.makedirs(TEST_LOGPATH / "service", exist_ok=True)
+            filedir = TEST_LOGPATH / "service"
 
-            for filename, content in config.items():
-                if vendor in self.log_for_vendors:
-                    logger.info(
-                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                        filename,
-                        content,
-                    )
-                with open(filepath, "w") as f:
-                    f.write(
-                        f"# Generated on {datetime.datetime.now()}\n# Test for generating using Service objects\n\n"
-                    )
-                    f.write(content)
+            write_configuration_to_file(config, filepath, filedir, vendor, __name__, self.log_for_vendors)
 
     def test_generate_service_group_config(self, service_group_policy_rules, request_with_session):
         for vendor, policy_type in self.vendor_policy_type_pairs:
@@ -242,20 +207,8 @@ class TestGenerateConfig:
 
             config = generate_config(policy)
             filepath = TEST_LOGPATH / "service_group" / f"{vendor.upper()}_generated_config.yaml"
-            os.makedirs(TEST_LOGPATH / "service_group", exist_ok=True)
-
-            for filename, content in config.items():
-                if vendor in self.log_for_vendors:
-                    logger.info(
-                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                        filename,
-                        content,
-                    )
-                with open(filepath, "w") as f:
-                    f.write(
-                        f"# Generated on {datetime.datetime.now()}\n# Test for generating using Service Group objects\n\n"
-                    )
-                    f.write(content)
+            filedir = TEST_LOGPATH / "service_group"
+            write_configuration_to_file(config, filepath, filedir, vendor, __name__, self.log_for_vendors)
 
     def test_generate_config_with_address_and_service(self, combined_policy_rules, request_with_session):
         for vendor, policy_type in self.vendor_policy_type_pairs:
@@ -300,20 +253,8 @@ class TestGenerateConfig:
 
             config = generate_config(policy)
             filepath = TEST_LOGPATH / "combined" / f"{vendor.upper()}_generated_config.yaml"
-            os.makedirs(TEST_LOGPATH / "combined", exist_ok=True)
-
-            for filename, content in config.items():
-                if vendor in self.log_for_vendors:
-                    logger.info(
-                        "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                        filename,
-                        content,
-                    )
-                with open(filepath, "w") as f:
-                    f.write(
-                        f"# Generated on {datetime.datetime.now()}\n# Test for generating using both Address and Service objects\n\n"
-                    )
-                    f.write(content)
+            filedir = TEST_LOGPATH / "combined"
+            write_configuration_to_file(config, filepath, filedir, vendor, __name__, self.log_for_vendors)
 
     def test_generate_realistic_router_policy(self, realistic_acl_policy_rules, request_with_session):
         for vendor, policy_type in self.vendor_policy_type_pairs:
@@ -415,18 +356,5 @@ class TestGenerateConfig:
             assert len(config) >= 1
 
             filepath = TEST_LOGPATH / "realistic" / f"{vendor.upper()}_generated_config.yaml"
-            os.makedirs(TEST_LOGPATH / "realistic", exist_ok=True)
-
-            for filename, content in config.items():
-                assert content
-                if vendor in self.log_for_vendors:
-                    logger.info(
-                        "\n=== Generated realistic config: %s ===\n%s\n=== End config ===",
-                        filename,
-                        content,
-                    )
-                with open(filepath, "w") as f:
-                    f.write(
-                        f"# Generated on {datetime.datetime.now()}\n# Test for generating a realistic router ACL policy\n\n"
-                    )
-                    f.write(content)
+            filedir = TEST_LOGPATH / "realistic"
+            write_configuration_to_file(config, filepath, filedir, vendor, __name__, self.log_for_vendors)
