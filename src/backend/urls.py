@@ -24,6 +24,7 @@ from .api import (
 )
 
 from .views import (
+    get_login_page,
     # Device Page
     get_devices_page,
     # Filters Page
@@ -48,6 +49,7 @@ from .views import (
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api.urls),
+    path("login/", get_login_page, name="login"),
     # Device Page
     path("devices/", get_devices_page, name="devices"),
     # Filters Page

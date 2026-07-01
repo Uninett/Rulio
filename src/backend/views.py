@@ -1,32 +1,75 @@
-from django.shortcuts import render
-from .api import (
-    # Tenant
-    list_tenants,
-    # Device Page
-    # get_devices_and_groups_with_tags_endpoint
-    # create_device_endpoint
-    # create_and_add_device_to_groups_endpoint
-    # create_device_group_endpoint
-    # create_device_group_and_add_devices_endpoint
-    # Object Page: Address
-    get_addresses_and_groups_with_tags_endpoint,
-    create_address_endpoint,
-    create_and_add_address_to_groups_endpoint,
-    create_address_group_endpoint,
-    create_address_group_and_add_addresses_endpoint,
-    # Object Page: Service
-    get_services_and_groups_with_tags_endpoint,
-    create_service_endpoint,
-    create_and_add_service_to_groups_endpoint,
-    create_service_group_endpoint,
-    create_service_group_and_add_services_endpoint,
-)
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login
 from django.urls import reverse
 
+from backend.objects.tenant_objects.tenant import Tenant
+from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 
-class Payload:
-    pass
+from backend.services.attribute_objects.create_attribute_objects import (
+    create_address,
+    create_address_group,
+    create_service,
+    create_service_group,
+)
 
+from backend.services.membership import (
+    add_addresses_to_group,
+    add_services_to_group,
+)
+
+from backend.services.get import (
+    get_all_addresses_and_groups_with_tags,
+    get_all_services_and_groups_with_tags,
+)
+
+"""
+====================================================================
+Login Page
+====================================================================
+"""
+
+
+# TODO: Only allow redirect to other pages if user is authenticated. Otherwise, redirect to login page.
+# TODO: Only redirect to login page if logged out. The user should not be able to access the page without logged out.
+def get_login_page(request):
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            return render(
+                request,
+                "login.html",
+                {
+                    "error": "Invalid username or password",
+                },
+                status=401,
+            )
+
+        login(request, user)
+
+        if user.is_superuser:
+            # Set the first tenant as the current tenant for superusers as default.
+            first_tenant = Tenant.objects.first()
+            if first_tenant:
+                request.session["current_tenant_id"] = first_tenant.id
+        else:
+            # Set the current tenant for non-superusers based on their membership.
+            tenant_member = TenantUserMember.objects.filter(user_id=user.id).first()
+            if tenant_member:
+                request.session["current_tenant_id"] = tenant_member.tenant_id
+
+        return redirect("devices")
+
+    return render(
+        request,
+        "login.html",
+    )
+
+
+# TODO: Add a logout view that clears the session and redirects to the login page.
 
 """
 ====================================================================
@@ -37,17 +80,17 @@ Tenant
 
 # Gets the list of tenants from the backend API function list_tenants()
 def get_tenants_view(request):
-    status, api_tenants = list_tenants(request)
+    if not request.user.is_superuser:
+        return []
 
-    if status != 200:
-        return []  # If call failed, return an empty list
+    tenants = Tenant.objects.all()
 
     return [
         {
-            "id": item.get("id"),
-            "name": item.get("tenant_name"),
+            "id": tenant.id,
+            "name": tenant.tenant_name,
         }
-        for item in api_tenants
+        for tenant in tenants
     ]
 
 
@@ -79,102 +122,6 @@ def get_devices_page(request):
         },
     )
 
-
-# Handles creation of a new device from modal form submission.
-# def post_device_view(request):
-#     payload = Payload()
-#     payload.name = request.POST.get("name", "")
-#     payload.description = request.POST.get("description", "")
-#     payload.tenant_id = (
-#         int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-#     )
-#     payload.device_type = request.POST.get("device_type", "")
-#     group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
-
-#     if group_ids:
-#         status, created_device = create_and_add_device_to_groups_endpoint(request, payload, group_ids)
-#     else:
-#         status, created_device = create_device_endpoint(request, payload)
-
-#     if status not in [200, 201]:
-#         return render(
-#             request,
-#             "partials/modals/_modal_form.html",
-#             {
-#                 "modal_object_type": "devices",
-#                 "modal_content_partial": "partials/modals/_device_form.html",
-#                 "modal_supports_types": True,
-#                 "modal_type": "item",
-#                 "item_type_editable": True,
-#                 "modal_type_labels": {
-#                     "item": "Device",
-#                     "group": "Device Group",
-#                 },
-#                 "error_message": "Could not create device.",
-#                 "group_options": get_group_options_view(request, "devices"),
-#             },
-#             status=400,
-#         )
-
-#     row = {
-#         "id": f"{created_device.get('type', '').lower()}-{created_device.get('id')}",
-#         "cells": [
-#             created_device.get("type", ""),
-#             created_device.get("name", ""),
-#             created_device.get("description", ""),
-#         ],
-#         "raw": created_device,
-#     }
-
-#     return render(request, "partials/objects/_tableRow.html", {"row": row})
-
-
-# Handles creation of a new device group from modal form submission.
-# def post_device_group_view(request):
-#     payload = Payload()
-#     payload.name = request.POST.get("name", "")
-#     payload.description = request.POST.get("description", "")
-#     payload.tenant_id = (
-#         int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-#     )
-#     device_ids = [int(device_id) for device_id in request.POST.getlist("device_ids") if device_id]
-
-#     if device_ids:
-#         status, created_device_group = create_device_group_and_add_devices_endpoint(request, payload, device_ids)
-#     else:
-#         status, created_device_group = create_device_group_endpoint(request, payload)
-
-#     if status not in [200, 201]:
-#         return render(
-#             request,
-#             "partials/modals/_modal_form.html",
-#             {
-#                 "modal_object_type": "devices",
-#                 "modal_content_partial": "partials/modals/_device_group_form.html",
-#                 "modal_supports_types": True,
-#                 "modal_type": "group",
-#                 "item_type_editable": True,
-#                 "modal_type_labels": {
-#                     "item": "Device",
-#                     "group": "Device Group",
-#                 },
-#                 "error_message": "Could not create device group.",
-#                 "item_options": get_item_options_view(request, "devices"),
-#             },
-#             status=400,
-#         )
-
-#     row = {
-#         "id": f"{created_device_group.get('type', '').lower()}-{created_device_group.get('id')}",
-#         "cells": [
-#             created_device_group.get("type", ""),
-#             created_device_group.get("name", ""),
-#             created_device_group.get("description", ""),
-#         ],
-#         "raw": created_device_group,
-#     }
-
-#     return render(request, "partials/objects/_tableRow.html", {"row": row})
 
 """
 ====================================================================
@@ -239,106 +186,6 @@ def get_objects_toolbar_context(active_tool, add_button_label="Add Address"):
     }
 
 
-# Fetch all groups of given object_type, by calling all items with "type"=AddressGroup/ServiceGroup
-def get_group_options_view(request, object_type):
-    if object_type == "addresses":
-        status, api_objects = get_addresses_and_groups_with_tags_endpoint(request)
-
-        if status != 200:
-            return []
-
-        return [
-            {
-                "id": item.get("id"),
-                "name": item.get("name", ""),
-            }
-            for item in api_objects
-            if item.get("type") == "AddressGroup"
-        ]
-
-    if object_type == "services":
-        status, api_objects = get_services_and_groups_with_tags_endpoint(request)
-
-        if status != 200:
-            return []
-
-        return [
-            {
-                "id": item.get("id"),
-                "name": item.get("name", ""),
-            }
-            for item in api_objects
-            if item.get("type") == "ServiceGroup"
-        ]
-
-    # if object_type == "devices":
-    #     status, api_objects = get_devices_and_groups_with_tags_endpoint(request)
-
-    #     if status != 200:
-    #         return []
-
-    #     return [
-    #         {
-    #             "id": item.get("id"),
-    #             "name": item.get("name", ""),
-    #         }
-    #         for item in api_objects
-    #         if item.get("type") == "DeviceGroup"
-    #     ]
-
-    return []
-
-
-# Fetch all item options of given object_type, excluding groups.
-def get_item_options_view(request, object_type):
-    if object_type == "addresses":
-        status, api_objects = get_addresses_and_groups_with_tags_endpoint(request)
-
-        if status != 200:
-            return []
-
-        return [
-            {
-                "id": item.get("id"),
-                "name": item.get("name", ""),
-            }
-            for item in api_objects
-            if item.get("type") != "AddressGroup"
-        ]
-
-    if object_type == "services":
-        status, api_objects = get_services_and_groups_with_tags_endpoint(request)
-
-        if status != 200:
-            return []
-
-        return [
-            {
-                "id": item.get("id"),
-                "name": item.get("name", ""),
-            }
-            for item in api_objects
-            if item.get("type") != "ServiceGroup"
-        ]
-
-    # if object_type == "devices":
-    #     status, api_objects = get_devices_and_groups_with_tags_endpoint(request)
-
-    #     if status != 200:
-    #         return []
-
-    #     return [
-    #         {
-    #             "id": item.get("id"),
-    #             "name": item.get("name", ""),
-    #         }
-    #         for item in api_objects
-    #         if item.get("type") != "DeviceGroup"
-    #     ]
-
-    return []
-
-
 """
 ====================================================================
 Objects Page: Address
@@ -364,9 +211,19 @@ def get_objects_addresses(request):
 
 # Fetch addresses from the API and map them to data.
 def get_addresses_view(request):
-    status, api_addresses = get_addresses_and_groups_with_tags_endpoint(request)
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return {
+            "headers": [],
+            "rows": [],
+        }
 
-    if status != 200:
+    try:
+        api_addresses = get_all_addresses_and_groups_with_tags(
+            actor=request.user,
+            tenant_id=int(tenant_id),
+        )
+    except Exception:
         return {
             "headers": [],
             "rows": [],
@@ -396,10 +253,7 @@ def get_addresses_view(request):
                 {"label": "IPv4 End", "value": item.get("ipv4Address_end", "")},
                 {"label": "IPv6 Start", "value": item.get("ipv6Address_start", "")},
                 {"label": "IPv6 End", "value": item.get("ipv6Address_end", "")},
-                {
-                    "label": "Tags",
-                    "value": tags_value,
-                },
+                {"label": "Tags", "value": tags_value},
             ]
 
         rows.append(
@@ -426,25 +280,21 @@ def get_addresses_view(request):
 
 # Handles creation of a new address from modal form submission.
 def post_address_view(request):
-    payload = Payload()  # Build a payload object from submitted form data.
-    payload.name = request.POST.get("name", "")
-    payload.description = request.POST.get("description", "")
-    payload.tenant_id = (
-        int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-    )
-    payload.addr_type = request.POST.get("addr_type", "host")
-    payload.ipv4_type = request.POST.get("ipv4_type") or None
-    payload.ipv6_type = request.POST.get("ipv6_type") or None
-    payload.ipv4Network = request.POST.get("ipv4Network") or None
-    payload.ipv6Network = request.POST.get("ipv6Network") or None
-    payload.ipv4Address_start = request.POST.get("ipv4Address_start") or None
-    payload.ipv4Address_end = request.POST.get("ipv4Address_end") or None
-    payload.ipv6Address_start = request.POST.get("ipv6Address_start") or None
-    payload.ipv6Address_end = request.POST.get("ipv6Address_end") or None
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    addr_type = request.POST.get("addr_type", "host")
+    ipv4_type = request.POST.get("ipv4_type") or None
+    ipv6_type = request.POST.get("ipv6_type") or None
+    ipv4Network = request.POST.get("ipv4Network") or None
+    ipv6Network = request.POST.get("ipv6Network") or None
+    ipv4Address_start = request.POST.get("ipv4Address_start") or None
+    ipv4Address_end = request.POST.get("ipv4Address_end") or None
+    ipv6Address_start = request.POST.get("ipv6Address_start") or None
+    ipv6Address_end = request.POST.get("ipv6Address_end") or None
     group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
-    # Require at least one address version to be selected.
-    if not payload.ipv4_type and not payload.ipv6_type:
+    if not ipv4_type and not ipv6_type:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -464,13 +314,32 @@ def post_address_view(request):
             status=400,
         )
 
-    if group_ids:
-        status, created_address = create_and_add_address_to_groups_endpoint(request, payload, group_ids)
-    else:
-        status, created_address = create_address_endpoint(request, payload)
+    try:
+        created_address = create_address(
+            actor=request.user,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+            addr_type=addr_type,
+            ipv4_type=ipv4_type,
+            ipv6_type=ipv6_type,
+            ipv4Network=ipv4Network,
+            ipv6Network=ipv6Network,
+            ipv4Address_start=ipv4Address_start,
+            ipv4Address_end=ipv4Address_end,
+            ipv6Address_start=ipv6Address_start,
+            ipv6Address_end=ipv6Address_end,
+        )
 
-    # If creation failed, re-render the modal form content with an error message.
-    if status not in [200, 201]:
+        for group_id in group_ids:
+            add_addresses_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                address_group_id=group_id,
+                address_ids=[created_address.id],
+            )
+
+    except Exception as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -484,32 +353,31 @@ def post_address_view(request):
                     "item": "Address",
                     "group": "Group",
                 },
-                "error_message": "Could not create address.",
+                "error_message": f"Could not create address: {e}",
                 "group_options": get_group_options_view(request, "addresses"),
             },
             status=400,
         )
 
-    # Map the created address response into the generic table row format used by the shared table component.
     row = {
-        "id": f"{created_address.get('type', '').lower()}-{created_address.get('id')}",
+        "id": f"address-{created_address.id}",
         "cells": [
-            created_address.get("addr_type", ""),
-            created_address.get("name", ""),
-            created_address.get("description", ""),
-            created_address.get("ipv4Network") or "-",
-            created_address.get("ipv6Network") or "-",
-            created_address.get("tags", ""),
+            created_address.addr_type or "",
+            created_address.name,
+            created_address.description,
+            created_address.ipv4Network or "-",
+            created_address.ipv6Network or "-",
+            [],
         ],
         "expand": [
-            created_address.get("ipv4_type", ""),
-            created_address.get("ipv6_type", ""),
-            created_address.get("ipv4Address_start") or "",
-            created_address.get("ipv4Address_end") or "",
-            created_address.get("ipv6Address_start") or "",
-            created_address.get("ipv6Address_end") or "",
-            created_address.get("address_groups", []),
-            created_address.get("addresses", []),
+            created_address.ipv4_type or "",
+            created_address.ipv6_type or "",
+            created_address.ipv4Address_start or "",
+            created_address.ipv4Address_end or "",
+            created_address.ipv6Address_start or "",
+            created_address.ipv6Address_end or "",
+            [],
+            [],
         ],
     }
 
@@ -518,20 +386,28 @@ def post_address_view(request):
 
 # Handles creation of a new address group from modal form submission.
 def post_address_group_view(request):
-    payload = Payload()
-    payload.name = request.POST.get("name", "")
-    payload.description = request.POST.get("description", "")
-    payload.tenant_id = (
-        int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-    )
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     address_ids = [int(address_id) for address_id in request.POST.getlist("address_ids") if address_id]
 
-    if address_ids:
-        status, created_address_group = create_address_group_and_add_addresses_endpoint(request, payload, address_ids)
-    else:
-        status, created_address_group = create_address_group_endpoint(request, payload)
+    try:
+        created_address_group = create_address_group(
+            actor=request.user,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+        )
 
-    if status not in [200, 201]:
+        if address_ids:
+            add_addresses_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                address_group_id=created_address_group.id,
+                address_ids=address_ids,
+            )
+
+    except Exception as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -545,21 +421,21 @@ def post_address_group_view(request):
                     "item": "Address",
                     "group": "Address Group",
                 },
-                "error_message": "Could not create address group.",
+                "error_message": f"Could not create address group: {e}",
                 "item_options": get_item_options_view(request, "addresses"),
             },
             status=400,
         )
 
     row = {
-        "id": f"{created_address_group.get('type', '').lower()}-{created_address_group.get('id')}",
+        "id": f"addressgroup-{created_address_group.id}",
         "cells": [
-            created_address_group.get("type", ""),
-            created_address_group.get("name", ""),
-            created_address_group.get("description", ""),
+            "AddressGroup",
+            created_address_group.name,
+            created_address_group.description,
             "-",
             "-",
-            created_address_group.get("tags", ""),
+            [],
         ],
         "expand": [
             "",
@@ -569,7 +445,7 @@ def post_address_group_view(request):
             "",
             "",
             [],
-            created_address_group.get("addresses", []),
+            [],
         ],
     }
 
@@ -601,9 +477,19 @@ def get_objects_services(request):
 
 # Fetch services from the API and map them to data.
 def get_services_view(request):
-    status, api_services = get_services_and_groups_with_tags_endpoint(request)
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return {
+            "headers": [],
+            "rows": [],
+        }
 
-    if status != 200:
+    try:
+        api_services = get_all_services_and_groups_with_tags(
+            actor=request.user,
+            tenant_id=int(tenant_id),
+        )
+    except Exception:
         return {
             "headers": [],
             "rows": [],
@@ -658,23 +544,34 @@ def get_services_view(request):
 
 # Handles creation of a new service from modal form submission.
 def post_service_view(request):
-    payload = Payload()
-    payload.name = request.POST.get("name", "")
-    payload.description = request.POST.get("description", "")
-    payload.tenant_id = (
-        int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-    )
-    payload.protocol = request.POST.get("protocol", "")
-    payload.port_start = request.POST.get("port_start") or None
-    payload.port_end = request.POST.get("port_end") or None
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    protocol = request.POST.get("protocol", "")
+    port_start = int(request.POST.get("port_start")) if request.POST.get("port_start") else None
+    port_end = int(request.POST.get("port_end")) if request.POST.get("port_end") else None
     group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
-    if group_ids:
-        status, created_service = create_and_add_service_to_groups_endpoint(request, payload, group_ids)
-    else:
-        status, created_service = create_service_endpoint(request, payload)
+    try:
+        created_service = create_service(
+            actor=request.user,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+            protocol=protocol,
+            port_start=port_start,
+            port_end=port_end,
+        )
 
-    if status not in [200, 201]:
+        for group_id in group_ids:
+            add_services_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                service_group_id=group_id,
+                service_ids=[created_service.id],
+            )
+
+    except Exception as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -688,22 +585,22 @@ def post_service_view(request):
                     "item": "Service",
                     "group": "Group",
                 },
-                "error_message": "Could not create service.",
+                "error_message": f"Could not create service: {e}",
                 "group_options": get_group_options_view(request, "services"),
             },
             status=400,
         )
 
     row = {
-        "id": f"{created_service.get('type', '').lower()}-{created_service.get('id')}",
+        "id": f"service-{created_service.id}",
         "cells": [
-            created_service.get("type", ""),
-            created_service.get("name", ""),
-            created_service.get("description", ""),
-            created_service.get("protocol", ""),
-            created_service.get("port_start", ""),
-            created_service.get("port_end", ""),
-            created_service.get("tags", ""),
+            "Service",
+            created_service.name,
+            created_service.description,
+            created_service.protocol,
+            created_service.port_start or "",
+            created_service.port_end or "",
+            [],
         ],
         "raw": created_service,
     }
@@ -713,20 +610,28 @@ def post_service_view(request):
 
 # Handles creation of a new service group from modal form submission.
 def post_service_group_view(request):
-    payload = Payload()
-    payload.name = request.POST.get("name", "")
-    payload.description = request.POST.get("description", "")
-    payload.tenant_id = (
-        int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-    )
-    service_ids = [int(service_ids) for service_ids in request.POST.getlist("service_ids") if service_ids]
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    service_ids = [int(service_id) for service_id in request.POST.getlist("service_ids") if service_id]
 
-    if service_ids:
-        status, created_service_group = create_service_group_and_add_services_endpoint(request, payload, service_ids)
-    else:
-        status, created_service_group = create_service_group_endpoint(request, payload)
+    try:
+        created_service_group = create_service_group(
+            actor=request.user,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+        )
 
-    if status not in [200, 201]:
+        if service_ids:
+            add_services_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                service_group_id=created_service_group.id,
+                service_ids=service_ids,
+            )
+
+    except Exception as e:
         return render(
             request,
             "partials/modals/_type_content.html",
@@ -740,22 +645,22 @@ def post_service_group_view(request):
                     "item": "Service",
                     "group": "Service Group",
                 },
-                "error_message": "Could not create service group.",
+                "error_message": f"Could not create service group: {e}",
                 "item_options": get_item_options_view(request, "services"),
             },
             status=400,
         )
 
     row = {
-        "id": f"{created_service_group.get('type', '').lower()}-{created_service_group.get('id')}",
+        "id": f"servicegroup-{created_service_group.id}",
         "cells": [
-            created_service_group.get("type", ""),
-            created_service_group.get("name", ""),
-            created_service_group.get("description", ""),
+            "ServiceGroup",
+            created_service_group.name,
+            created_service_group.description,
             "-",
             "-",
             "-",
-            created_service_group.get("tags", ""),
+            [],
         ],
         "raw": created_service_group,
     }
@@ -786,7 +691,7 @@ def get_tags_page(request):
 
 """
 ====================================================================
-Modal Partial
+Modal Partial: Add Modal
 ====================================================================
 """
 
@@ -798,7 +703,7 @@ def get_add_modal_config(object_type):
             "title": "Add Device",
             "supports_types": True,
             "default_type": "item",
-            "item_type_editable": True,  # Device object contains a type (i.e. host, switch etc.)
+            "item_type_editable": True,
             "type_labels": {
                 "item": "Device",
                 "group": "Device Group",
@@ -807,13 +712,6 @@ def get_add_modal_config(object_type):
                 "item": "partials/modals/_device_form.html",
                 "group": "partials/modals/_device_group_form.html",
             },
-            # "post_urls": {
-            #     "item": reverse("post-device-view"),
-            #     "group": reverse("post-device-group-view"),
-            #     },
-            # "target": "#devices-table",
-            # "swap": "beforeend",
-            # "refresh_url": reverse("devices"),
         },
         "filters": {
             "title": "Add Filter",
@@ -905,7 +803,7 @@ def get_add_modal(request, object_type):
     }
 
     # If object_type is address, service or device, then show all groups
-    if object_type in ["addresses", "services"]:  # If object_type in ["addresses", "services", "devices"]:
+    if object_type in ["addresses", "services"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
 
@@ -939,8 +837,105 @@ def get_add_modal_form_content(request, object_type, type):
     }
 
     # If object_type is address, service or device, then show all groups
-    if object_type in ["addresses", "services"]:  # If object_type in ["addresses", "services", "devices"]:
+    if object_type in ["addresses", "services"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
 
     return render(request, "partials/modals/_modal_form.html", context)
+
+
+"""
+====================================================================
+Modal Partial: Item/Group Options
+====================================================================
+"""
+
+
+# Fetch all groups of given object_type, by calling all items with "type"=AddressGroup/ServiceGroup
+def get_group_options_view(request, object_type):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return []
+
+    try:
+        tenant_id = int(tenant_id)
+
+        if object_type == "addresses":
+            api_objects = get_all_addresses_and_groups_with_tags(
+                actor=request.user,
+                tenant_id=tenant_id,
+            )
+
+            return [
+                {
+                    "id": item.get("id"),
+                    "name": item.get("name", ""),
+                }
+                for item in api_objects
+                if item.get("type") == "AddressGroup"
+            ]
+
+        if object_type == "services":
+            api_objects = get_all_services_and_groups_with_tags(
+                actor=request.user,
+                tenant_id=tenant_id,
+            )
+
+            return [
+                {
+                    "id": item.get("id"),
+                    "name": item.get("name", ""),
+                }
+                for item in api_objects
+                if item.get("type") == "ServiceGroup"
+            ]
+
+    except Exception:
+        return []
+
+    return []
+
+
+# Fetch all item options of given object_type, excluding groups.
+def get_item_options_view(request, object_type):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return []
+
+    try:
+        tenant_id = int(tenant_id)
+
+        if object_type == "addresses":
+            api_objects = get_all_addresses_and_groups_with_tags(
+                actor=request.user,
+                tenant_id=tenant_id,
+            )
+
+            return [
+                {
+                    "id": item.get("id"),
+                    "name": item.get("name", ""),
+                }
+                for item in api_objects
+                if item.get("type") != "AddressGroup"
+            ]
+
+        if object_type == "services":
+            api_objects = get_all_services_and_groups_with_tags(
+                actor=request.user,
+                tenant_id=tenant_id,
+            )
+
+            return [
+                {
+                    "id": item.get("id"),
+                    "name": item.get("name", ""),
+                }
+                for item in api_objects
+                if item.get("type") != "ServiceGroup"
+            ]
+
+    except Exception:
+        return []
+
+    return []
