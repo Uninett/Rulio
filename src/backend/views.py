@@ -1,4 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login
+
+from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+
 from .api import (
     # Tenant
     list_tenants,
@@ -35,12 +39,41 @@ Login Page
 """
 
 
+# TODO: Only allow redirect to other pages if user is authenticated. Otherwise, redirect to login page.
+# TODO: Only redirect to login page if logged out. The user should not be able to access the page without logged out.
 def get_login_page(request):
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            return render(
+                request,
+                "login.html",
+                {
+                    "error": "Invalid username or password",
+                },
+                status=401,
+            )
+
+        login(request, user)
+
+        if not user.is_superuser:
+            tenant_member = TenantUserMember.objects.filter(user_id=user.id).first()
+            if tenant_member:
+                request.session["current_tenant_id"] = tenant_member.tenant_id
+
+        return redirect("devices")
+
     return render(
         request,
         "login.html",
     )
 
+
+# TODO: Add a logout view that clears the session and redirects to the login page.
 
 """
 ====================================================================
