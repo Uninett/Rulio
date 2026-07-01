@@ -106,17 +106,14 @@ def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_glo
 
     return result, rules
 
-
 def get_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object_type: str) -> list[Tag]:
     require_read_tenant(actor, tenant_id)
     obj = get_object_by_type_and_id(actor, tenant_id, object_id, object_type)
     return list(obj.get_tags())
 
-
 def get_all_tags_from_tenant(actor: User, tenant_id: int) -> list[Tag]:
     require_read_tenant(actor, tenant_id)
     return Tag.objects.filter(tenant_id=tenant_id)
-
 
 def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, object_id: int):
     require_read_tenant(actor, tenant_id)
@@ -129,13 +126,10 @@ def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, obj
         raise PermissionDenied(f"Object with ID {object_id} does not belong to tenant {tenant_id}.")
     return obj
 
-
-
 def get_all_rules_from_tenant(actor: User, tenant_id: int) -> QuerySet[Rule]:
     require_read_tenant(actor, tenant_id)
     requested_rules = Rule.objects.filter(tenant_id=tenant_id)
     return requested_rules
-
 
 def get_all_devices_from_tenant(actor: User, tenant_id: int) -> QuerySet[Device]:
     require_read_tenant(actor, tenant_id)
@@ -177,7 +171,6 @@ def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) 
     requested_interfaces = Interface.objects.filter(device_id=device_id)
     return requested_interfaces
 
-
 def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
     if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists():
@@ -188,7 +181,6 @@ def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: in
         enable=models.F("filterinterface__enable"),
     ).order_by("policy_sequence")
     return requested_filters
-
 
 def get_all_filters_from_tenant(actor: User, tenant_id: int) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
@@ -232,7 +224,7 @@ def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str
     device = Device.objects.get(id=device_id)
     return device.platform
 
-def get_all_objects_with_certain_tag(actor: User, tenant_id: int, tag_id: int, include_global_tenant=True) -> list[dict]:
+def get_all_objects_with_certain_tag(actor: User, tenant_id: int, tag_id: int, include_global_tenant=True) -> tuple[list[dict], dict[str, list]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
         tag = Tag.objects.filter(id=tag_id, tenant_id__in=[tenant_id, 1]).first()
@@ -243,6 +235,7 @@ def get_all_objects_with_certain_tag(actor: User, tenant_id: int, tag_id: int, i
         raise PermissionDenied(f"Tag with ID {tag_id} does not belong to tenant {tenant_id}.")
     tagged_objects = tag.tagged_objects.all()
     result = []
+    objects = {"address": [], "addressgroup": [], "service": [], "servicegroup": [], "rule": [], "filter": [], "device": [], "interface": []}
     for tagged_object in tagged_objects:
         obj = tagged_object.content_object
         if obj and hasattr(obj, "tenant_id") and (obj.tenant_id == tenant_id or (include_global_tenant and obj.tenant_id == 1)):
@@ -253,5 +246,6 @@ def get_all_objects_with_certain_tag(actor: User, tenant_id: int, tag_id: int, i
                     "object_name": getattr(obj, "name", None),
                 }
             )
-    return result
+            objects[obj.__class__.__name__.lower()].append(obj)
+    return result, objects
 
