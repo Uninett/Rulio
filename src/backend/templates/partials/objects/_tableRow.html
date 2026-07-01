@@ -1,4 +1,5 @@
-<tr id="row-{{ row.id }}" class="main-row" onclick="expandRow('{{ row.id }}')">
+<tr id="row-{{ row.id }}" class="main-row" onclick="expandRow('{{ row.id }}')"
+    ondblclick="openUpdateModal('{{ row.id }}')">
 
     {% include "partials/objects/_lastCellTags.html" with cell=cell is_last=forloop.last object_type=object_type %}
 

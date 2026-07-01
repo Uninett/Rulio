@@ -694,7 +694,7 @@ def post_service_group_view(request):
     except Exception as e:
         return render(
             request,
-            "partials/modals/_type_content.html",
+            "partials/modals/_modal_form.html",
             {
                 "modal_object_type": "services",
                 "modal_content_partial": "partials/modals/_service_group_form.html",
@@ -965,6 +965,163 @@ def get_add_modal_form_content(request, object_type, type):
         context["item_options"] = get_item_options_view(request, object_type)
 
     return render(request, "partials/modals/_modal_form.html", context)
+
+
+"""
+====================================================================
+Modal Partial: Update Modal
+====================================================================
+"""
+
+
+@login_required(login_url="login")
+def get_update_modal(request, row_id):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return HttpResponse("No tenant selected", status=400)
+
+    object_type, object_id = row_id.split("-", 1)
+    object_id = int(object_id)
+    tenant_id = int(tenant_id)
+
+    context = {
+        "modal_mode": "update",
+        "modal_object_id": object_id,
+        "modal_row_id": row_id,
+    }
+
+    if object_type == "address":
+        objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
+            actor=request.user,
+            tenant_id=tenant_id,
+        )
+        obj = next(
+            (item for item in objects if item.get("type") == "Address" and item.get("id") == object_id),
+            None,
+        )
+        if not obj:
+            return HttpResponse("Address not found", status=404)
+
+        context.update(
+            {
+                "modal_title": "Update Address",
+                "modal_object_type": "addresses",
+                "modal_type": "item",
+                "modal_supports_types": True,
+                "item_type_editable": True,
+                "modal_type_labels": {
+                    "item": "Address",
+                    "group": "Address Group",
+                },
+                "modal_content_partial": "partials/modals/_address_form.html",
+                "modal_post_url": reverse("update-address-view", args=[object_id]),
+                "modal_target": f"#row-{row_id}",
+                "modal_swap": "outerHTML",
+                "group_options": get_group_options_view(request, "addresses"),
+                "object_data": obj,
+            }
+        )
+
+    elif object_type == "addressgroup":
+        objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
+            actor=request.user,
+            tenant_id=tenant_id,
+        )
+        obj = next(
+            (item for item in objects if item.get("type") == "AddressGroup" and item.get("id") == object_id),
+            None,
+        )
+        if not obj:
+            return HttpResponse("Address group not found", status=404)
+
+        context.update(
+            {
+                "modal_title": "Update Address Group",
+                "modal_object_type": "addresses",
+                "modal_type": "group",
+                "modal_supports_types": True,
+                "item_type_editable": True,
+                "modal_type_labels": {
+                    "item": "Address",
+                    "group": "Address Group",
+                },
+                "modal_content_partial": "partials/modals/_address_group_form.html",
+                "modal_post_url": reverse("update-address-group-view", args=[object_id]),
+                "modal_target": f"#row-{row_id}",
+                "modal_swap": "outerHTML",
+                "item_options": get_item_options_view(request, "addresses"),
+                "object_data": obj,
+            }
+        )
+
+    elif object_type == "service":
+        objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
+            actor=request.user,
+            tenant_id=tenant_id,
+        )
+        obj = next(
+            (item for item in objects if item.get("type") == "Service" and item.get("id") == object_id),
+            None,
+        )
+        if not obj:
+            return HttpResponse("Service not found", status=404)
+
+        context.update(
+            {
+                "modal_title": "Update Service",
+                "modal_object_type": "services",
+                "modal_type": "item",
+                "modal_supports_types": True,
+                "item_type_editable": False,
+                "modal_type_labels": {
+                    "item": "Service",
+                    "group": "Service Group",
+                },
+                "modal_content_partial": "partials/modals/_service_form.html",
+                "modal_post_url": reverse("update-service-view", args=[object_id]),
+                "modal_target": f"#row-{row_id}",
+                "modal_swap": "outerHTML",
+                "group_options": get_group_options_view(request, "services"),
+                "object_data": obj,
+            }
+        )
+
+    elif object_type == "servicegroup":
+        objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
+            actor=request.user,
+            tenant_id=tenant_id,
+        )
+        obj = next(
+            (item for item in objects if item.get("type") == "ServiceGroup" and item.get("id") == object_id),
+            None,
+        )
+        if not obj:
+            return HttpResponse("Service group not found", status=404)
+
+        context.update(
+            {
+                "modal_title": "Update Service Group",
+                "modal_object_type": "services",
+                "modal_type": "group",
+                "modal_supports_types": True,
+                "item_type_editable": True,
+                "modal_type_labels": {
+                    "item": "Service",
+                    "group": "Service Group",
+                },
+                "modal_content_partial": "partials/modals/_service_group_form.html",
+                "modal_post_url": reverse("update-service-group-view", args=[object_id]),
+                "modal_target": f"#row-{row_id}",
+                "modal_swap": "outerHTML",
+                "item_options": get_item_options_view(request, "services"),
+                "object_data": obj,
+            }
+        )
+
+    else:
+        return HttpResponse("Unsupported object type", status=400)
+
+    return render(request, "partials/_modal.html", context)
 
 
 """
