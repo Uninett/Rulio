@@ -9,16 +9,19 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.rule_match import RuleMatch
 from backend.services.attribute_objects.create_attribute_objects import create_address, create_service
 from backend.services.attribute_objects.create_attribute_objects import create_address_group, create_service_group
-from backend.services.create import create_policy_from_filter
+from backend.services.create import create_policies_for_interface, create_policy_from_filter
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 from backend.services.membership import (
     add_addresses_to_group,
+    add_filter_to_interface,
     add_services_to_group,
     add_objects_to_rule,
     add_rule_to_filter,
 )
-from backend.services.generate_config import generate_config
+from backend.services.generate_config import generate_config, generate_multi_policy_config
+from backend.services.tenant_objects.create_tenant_objects import create_device, create_interface
 from backend.utils.logger import set_up_logger
+from backend.utils.write_to_file import write_configuration_to_file
 from constants import TEST_LOGPATH
 
 logger = set_up_logger(__name__)
@@ -387,19 +390,8 @@ class TestGenerateConfigFromFilterObject:
         config = generate_config(policy)
 
         filepath = TEST_LOGPATH / "from_filter" / f"{vendor.upper()}_simple_generated_config.yaml"
-        os.makedirs(TEST_LOGPATH / "from_filter", exist_ok=True)
-
-        for filename, content in config.items():
-            logger.info(
-                "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                filename,
-                content,
-            )
-            with open(filepath, "w") as f:
-                f.write(
-                    f"# Generated on {datetime.datetime.now()}\n# Test for generating using only Address objects\n\n"
-                )
-                f.write(content)
+        filedir = TEST_LOGPATH / "from_filter"
+        write_configuration_to_file(config, filepath, filedir, vendor, __name__)
 
     def test_generate_config_from_complex_filter_object(
         self,
@@ -475,17 +467,112 @@ class TestGenerateConfigFromFilterObject:
         assert policy is not None
 
         filepath = TEST_LOGPATH / "from_filter" / f"{vendor.upper()}_complex_generated_config.yaml"
-        os.makedirs(TEST_LOGPATH / "from_filter", exist_ok=True)
-
+        filedir = TEST_LOGPATH / "from_filter"
         config = generate_config(policy)
-        for filename, content in config.items():
-            logger.info(
-                "\n=== Generated config: %s ===\n%s\n=== End config ===",
-                filename,
-                content,
-            )
-            with open(filepath, "w") as f:
-                f.write(
-                    f"# Generated on {datetime.datetime.now()}\n# Test for generating using complex filter objects\n\n"
-                )
-                f.write(content)
+        write_configuration_to_file(config, filepath, filedir, vendor, __name__)
+        
+
+    def test_generate_config_from_interface(
+        self,
+        request_with_session,
+        sample_rules_with_objects,
+        sample_filters,
+    ):
+        device = create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            description="This is a test device",
+            platform="juniper",
+            type="firewall",
+        )
+        interface = create_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Interface",
+            description="This is a test interface",
+            type="ethernet",
+            device_id=device.id,
+            VRF=None,
+        )
+
+        new_filter = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Filter for Interface",
+            description="This is a test filter for interface",
+        )
+        add_rule_to_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=sample_rules_with_objects[0].id,
+            filter_id=new_filter.id,
+            rule_sequence=10,
+        )
+        add_rule_to_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=sample_rules_with_objects[1].id,
+            filter_id=sample_filters[0].id,
+            rule_sequence=10,
+        )
+        add_rule_to_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=sample_rules_with_objects[2].id,
+            filter_id=sample_filters[1].id,
+            rule_sequence=20,
+        )
+
+        add_filter_to_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            interface_id=interface.id,
+            filter_id=new_filter.id,
+            policy_sequence=5,
+            enable=False,
+        )
+        add_filter_to_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            interface_id=interface.id,
+            filter_id=sample_filters[0].id,
+            policy_sequence=10,
+            enable=True,
+        )
+        add_filter_to_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            interface_id=interface.id,
+            filter_id=sample_filters[1].id,
+            policy_sequence=20,
+            enable=True,
+        )
+
+        policies = create_policies_for_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            interface_id=interface.id,
+            policy_type="",
+        )
+        assert len(policies) == 2
+        assert policies[0].policy_sequence == 10
+        assert policies[1].policy_sequence == 20
+        YAML1 = policies[0].YAMLConfig
+        YAML2 = policies[1].YAMLConfig
+        terms1 = YAML1["filters"][0]["terms"]
+        terms2 = YAML2["filters"][0]["terms"]
+        assert len(terms1) == 1
+        assert len(terms2) == 1
+        assert terms1[0]["name"] == f"seq10-{sample_rules_with_objects[1].name}"
+        assert terms2[0]["name"] == f"seq20-{sample_rules_with_objects[2].name}"
+        
+        config = generate_multi_policy_config(policies)
+        assert config is not None
+        
+
+        filepath = TEST_LOGPATH / "interface" / "interface_generated_config.yaml"
+        filedir = TEST_LOGPATH / "interface"
+        write_configuration_to_file(config, filepath, filedir, device.platform, __name__)
+
+

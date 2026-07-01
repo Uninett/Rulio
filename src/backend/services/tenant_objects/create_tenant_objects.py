@@ -20,7 +20,7 @@ def create_tenant(actor: User, name: str):
     return tenant
 
 
-def create_device(*, actor: User, tenant_id: int, name: str, platform: str, description: str, type: str) -> object:
+def create_device(*, actor: User, tenant_id: int, name: str, platform: str, description: str, type: str) -> Device:
 
     require_write_tenant(actor, tenant_id)
 
@@ -42,7 +42,7 @@ def create_device(*, actor: User, tenant_id: int, name: str, platform: str, desc
     return device
 
 
-def create_device_group(*, actor: User, tenant_id: int, name: str, description: str) -> object:
+def create_device_group(*, actor: User, tenant_id: int, name: str, description: str) -> DeviceGroup:
     require_write_tenant(actor, tenant_id)
 
     device_group = DeviceGroup(
@@ -63,7 +63,7 @@ def create_device_group(*, actor: User, tenant_id: int, name: str, description: 
 
 def create_interface(
     *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
-) -> object:
+) -> Interface:
     require_write_tenant(actor, tenant_id)
     # Check if the device exists and belongs to the tenant
     try:

@@ -9,7 +9,7 @@ from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.tenant_objects.tenant import Tenant
-from backend.services.membership import add_addresses_to_group, add_services_to_group
+from backend.services.membership import add_addresses_to_group, add_objects_to_rule, add_services_to_group
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 
@@ -758,7 +758,7 @@ def sample_filters(request_with_session, create_testing_tenant):
 
 
 @pytest.fixture
-def sample_rules(request_with_session, create_testing_tenant):
+def sample_rules(request_with_session, sample_addresses, sample_services, create_testing_tenant):
     sample_rules = [
         create_rule(
             actor=request_with_session.user,
@@ -797,4 +797,37 @@ def sample_rules(request_with_session, create_testing_tenant):
             hit_count=0,
         ),
     ]
+    return sample_rules
+
+@pytest.fixture
+def sample_rules_with_objects(request_with_session, sample_rules, sample_addresses, sample_services):
+    # Add objects to the rules
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=sample_rules[0].id,
+        match_type="source",
+        objects=[sample_addresses[0]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=sample_rules[1].id,
+        match_type="destination",
+        objects=[sample_services[0]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=sample_rules[2].id,
+        match_type="source",
+        objects=[sample_addresses[1]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=sample_rules[3].id,
+        match_type="destination",
+        objects=[sample_services[1]],
+    )
     return sample_rules

@@ -88,6 +88,7 @@ class Policy:
         self.name = name.strip()
         self.name = self.name.replace(" ", "_")
         self.vendor = vendor.lower()
+        self.rules = rules
         self.policy_type = policy_type
         self.policy_sequence = policy_sequence
 
@@ -465,7 +466,7 @@ def generate_config(policy: Policy) -> str:
     return configs
 
 
-def generate_multi_policy_config(policies: list[Policy]) -> str:
+def generate_multi_policy_config(policies: list[Policy], name: str = None) -> str:
     """
     Generates a configuration for the specified vendor based on the provided list of Policy objects.
 
@@ -497,7 +498,7 @@ def generate_multi_policy_config(policies: list[Policy]) -> str:
         "services": merged_services,
     }
 
-    definitions.ParseDefinitionsObject(definitions_obj, "merged_policy")
+    definitions.ParseDefinitionsObject(definitions_obj, name or "merged_policy")
 
     yaml_configs = [policy.YAMLConfig for policy in policies]
     configs = aerleon_api.Generate(yaml_configs, definitions)

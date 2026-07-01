@@ -117,6 +117,9 @@ def create_policy_from_filter(*, actor: User, tenant_id: int, filter_id, policy_
     # Create PolicyRule objects for each rule
     policy_rules = []
     for rule_filter in rule_filter_matches:
+        if rule_filter.enable is False:
+            logger.info(f"Skipping disabled rule filter with ID {rule_filter.id} for filter with ID {filter_id}.")
+            continue
         policy_rules.extend(
             create_policy_rules_from_rule_filter(actor=actor, tenant_id=tenant_id, rule_filter=rule_filter)
         )
@@ -142,7 +145,7 @@ def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, 
         raise ValueError(f"Interface with ID {interface_id} does not exist.")
 
     # Get the vendor/platform from the device associated with the interface
-    vendor = get_platform_from_device(actor, tenant_id, interface.device_id)
+    vendor = get_platform_from_device(actor=actor, tenant_id=tenant_id, device_id=interface.device_id)
 
     # Join interface on filters using FilterInterface, then sort filters by policy_sequence
     filter_interfaces = FilterInterface.objects.filter(interface_id=interface).order_by("policy_sequence")
@@ -152,6 +155,9 @@ def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, 
     # Create Policy objects for each filter
     policies = []
     for filter_interface in filter_interfaces:
+        if filter_interface.enable is False:
+            logger.info(f"Skipping disabled filter interface with ID {filter_interface.id} for interface with ID {interface_id}.")
+            continue
         filter_obj = Filter.objects.get(id=filter_interface.filter_id)
         if not filter_obj:
             raise ValueError(f"Filter with ID {filter_interface.filter_id} does not exist.")
