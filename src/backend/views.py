@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 
 from backend.objects.tenant_objects.tenant import Tenant
@@ -36,6 +37,9 @@ Login Page
 # TODO: Only allow redirect to other pages if user is authenticated. Otherwise, redirect to login page.
 # TODO: Only redirect to login page if logged out. The user should not be able to access the page without logged out.
 def get_login_page(request):
+    if request.user.is_authenticated:
+        return redirect("devices")
+
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
@@ -74,6 +78,7 @@ def get_login_page(request):
 
 
 # Remove the current tenant from the session and log out the user, then redirect to the login page.
+@login_required(login_url="login")
 def logout_view(request):
     if request.method == "POST":
         request.session.pop("current_tenant_id", None)
@@ -121,6 +126,7 @@ Device Page
 """
 
 
+@login_required(login_url="login")
 def get_devices_page(request):
     return render(
         request,
@@ -142,6 +148,7 @@ Filters Page
 """
 
 
+@login_required(login_url="login")
 def get_filters_page(request):
     return render(
         request,
@@ -163,6 +170,7 @@ Objects Page
 """
 
 
+@login_required(login_url="login")
 def get_objects_page(request):
     return render(
         request,
@@ -206,6 +214,7 @@ Objects Page: Address
 
 
 # Render the Addresses tab content for the Objects page.
+@login_required(login_url="login")
 def get_objects_addresses(request):
     return render(
         request,
@@ -291,6 +300,7 @@ def get_addresses_view(request):
 
 
 # Handles creation of a new address from modal form submission.
+@login_required(login_url="login")
 def post_address_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -397,6 +407,7 @@ def post_address_view(request):
 
 
 # Handles creation of a new address group from modal form submission.
+@login_required(login_url="login")
 def post_address_group_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -472,6 +483,7 @@ Objects Page: Service
 
 
 # Render the Services tab content for the Objects page.
+@login_required(login_url="login")
 def get_objects_services(request):
     return render(
         request,
@@ -555,6 +567,7 @@ def get_services_view(request):
 
 
 # Handles creation of a new service from modal form submission.
+@login_required(login_url="login")
 def post_service_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -621,6 +634,7 @@ def post_service_view(request):
 
 
 # Handles creation of a new service group from modal form submission.
+@login_required(login_url="login")
 def post_service_group_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -687,6 +701,7 @@ Tags Page
 """
 
 
+@login_required(login_url="login")
 def get_tags_page(request):
     return render(
         request,
@@ -783,6 +798,7 @@ def get_add_modal_config(object_type):
 
 
 # Render the Add modal with the default form for the selected object type.
+@login_required(login_url="login")
 def get_add_modal(request, object_type):
     config = get_add_modal_config(object_type)
 
@@ -823,6 +839,7 @@ def get_add_modal(request, object_type):
 
 
 # Render the modal content when switching between item/group form types.
+@login_required(login_url="login")
 def get_add_modal_form_content(request, object_type, type):
     config = get_add_modal_config(object_type)
 
