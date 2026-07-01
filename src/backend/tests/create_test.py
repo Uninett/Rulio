@@ -1,4 +1,3 @@
-
 import pytest
 from django.core.exceptions import PermissionDenied
 
