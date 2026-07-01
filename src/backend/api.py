@@ -733,16 +733,22 @@ def delete_service_group_endpoint(request, group_id: int):
         service_group = ServiceGroup.objects.get(id=group_id, tenant_id=request.session["current_tenant_id"])
         service_group.delete()
         logger.info(f"Service Group deleted: {service_group}")
-        return 200, {
-            "status": "success",
-            "message": f"Service Group with id {group_id} deleted.",
-        }
+        return Status(
+            200,
+            {
+                "status": "success",
+                "message": f"Service Group with id {group_id} deleted.",
+            },
+        )
     except ServiceGroup.DoesNotExist:
         logger.warning(f"Tried to delete service group with id {group_id}, but it does not exist.")
-        return 404, {
-            "status": "error",
-            "message": f"Service Group with id {group_id} does not exist.",
-        }
+        return Status(
+            404,
+            {
+                "status": "error",
+                "message": f"Service Group with id {group_id} does not exist.",
+            },
+        )
 
 
 @api.get("/get_all_tags_from_object", tags=["Attributes - Tag"], response={200: list[dict], 403: MessageSchema})
