@@ -768,7 +768,6 @@ def sample_rules(request_with_session, create_testing_tenant):
             action="accept",
             log_type="all",
             hit_count=0,
-            enable=True,
         ),
         create_rule(
             actor=request_with_session.user,
@@ -778,7 +777,6 @@ def sample_rules(request_with_session, create_testing_tenant):
             action="deny",
             log_type="all",
             hit_count=0,
-            enable=True,
         ),
         create_rule(
             actor=request_with_session.user,
@@ -788,7 +786,6 @@ def sample_rules(request_with_session, create_testing_tenant):
             action="accept",
             log_type="all",
             hit_count=0,
-            enable=True,
         ),
         create_rule(
             actor=request_with_session.user,
@@ -798,7 +795,6 @@ def sample_rules(request_with_session, create_testing_tenant):
             action="deny",
             log_type="all",
             hit_count=0,
-            enable=True,
         ),
     ]
     return sample_rules

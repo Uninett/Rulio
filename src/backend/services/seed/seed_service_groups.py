@@ -1,5 +1,5 @@
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_service_group
-from backend.services.get import get_all_services_from_tenant_by_names
+from backend.services.attribute_objects.get_service_objects import get_all_services_from_tenant_by_names
 from backend.utils.logger import set_up_logger
 
 
