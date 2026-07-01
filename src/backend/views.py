@@ -21,6 +21,7 @@ from backend.services.membership import (
 
 from backend.services.get import (
     get_all_tags_from_tenant,
+    get_all_filters_from_tenant,
 )
 
 from backend.services.attribute_objects.get_address_objects import (
@@ -193,9 +194,19 @@ def get_filters_page(request):
 
 
 def get_filters_view(request):
-    status, api_filters = get_addresses_and_groups_with_tags_endpoint(request)
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return {
+            "headers": [],
+            "rows": [],
+        }
 
-    if status != 200:
+    try:
+        filters, _, _ = get_all_filters_from_tenant(
+            actor=request.user,
+            tenant_id=int(tenant_id),
+        )
+    except Exception:
         return {
             "headers": [],
             "rows": [],
@@ -213,7 +224,7 @@ def get_filters_view(request):
 
     rows = []
 
-    for item in api_filters:
+    for item in filters:
         expand = [
             {"label": "Log Type", "value": item.get("log_type", "")},
             {"label": "Created by", "value": item.get("created_by", "")},
