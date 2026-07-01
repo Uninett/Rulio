@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import QuerySet
+from django.db.models import F
 
 from backend.objects import models
 from backend.objects.attributes.address import Address
@@ -110,7 +111,7 @@ def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_glo
 
 def get_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object_type: str) -> list[Tag]:
     require_read_tenant(actor, tenant_id)
-    obj = get_object_by_type_and_id(actor, tenant_id, object_id, object_type)
+    obj = get_object_by_type_and_id(actor, tenant_id, object_type, object_id)
     return list(obj.get_tags())
 
 
@@ -126,7 +127,7 @@ def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, obj
     if not model:
         raise ValueError(f"Unsupported object type: {object_type}")
     obj = model.objects.get(id=object_id)
-    if obj.tenant_id != tenant_id:
+    if obj.tenant_id != int(tenant_id):
         raise PermissionDenied(f"Object with ID {object_id} does not belong to tenant {tenant_id}.")
     return obj
 
@@ -182,13 +183,16 @@ def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) 
 
 def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
+
     if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists():
         raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
-    requested_filters = Filter.objects.filter(interfaces__id=interface_id)
+
+    requested_filters = Filter.objects.filter(filterinterface__interface_id=interface_id)
     requested_filters = requested_filters.annotate(
-        policy_sequence=models.F("filterinterface__policy_sequence"),
-        enable=models.F("filterinterface__enable"),
+        policy_sequence=F("filterinterface__policy_sequence"),
+        interface_enable=F("filterinterface__enable"),
     ).order_by("policy_sequence")
+
     return requested_filters
 
 

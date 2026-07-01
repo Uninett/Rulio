@@ -142,7 +142,7 @@ def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, 
         raise ValueError(f"Interface with ID {interface_id} does not exist.")
 
     # Get the vendor/platform from the device associated with the interface
-    vendor = get_platform_from_device(interface.device_id)
+    vendor = get_platform_from_device(actor, tenant_id, interface.device_id)
 
     # Join interface on filters using FilterInterface, then sort filters by policy_sequence
     filter_interfaces = FilterInterface.objects.filter(interface_id=interface).order_by("policy_sequence")
