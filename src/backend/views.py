@@ -6,12 +6,6 @@ from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from .api import (
     # Tenant
     list_tenants,
-    # Device Page
-    # get_devices_and_groups_with_tags_endpoint
-    # create_device_endpoint
-    # create_and_add_device_to_groups_endpoint
-    # create_device_group_endpoint
-    # create_device_group_and_add_devices_endpoint
     # Object Page: Address
     get_addresses_and_groups_with_tags_endpoint,
     create_address_endpoint,
@@ -127,102 +121,6 @@ def get_devices_page(request):
     )
 
 
-# Handles creation of a new device from modal form submission.
-# def post_device_view(request):
-#     payload = Payload()
-#     payload.name = request.POST.get("name", "")
-#     payload.description = request.POST.get("description", "")
-#     payload.tenant_id = (
-#         int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-#     )
-#     payload.device_type = request.POST.get("device_type", "")
-#     group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
-
-#     if group_ids:
-#         status, created_device = create_and_add_device_to_groups_endpoint(request, payload, group_ids)
-#     else:
-#         status, created_device = create_device_endpoint(request, payload)
-
-#     if status not in [200, 201]:
-#         return render(
-#             request,
-#             "partials/modals/_modal_form.html",
-#             {
-#                 "modal_object_type": "devices",
-#                 "modal_content_partial": "partials/modals/_device_form.html",
-#                 "modal_supports_types": True,
-#                 "modal_type": "item",
-#                 "item_type_editable": True,
-#                 "modal_type_labels": {
-#                     "item": "Device",
-#                     "group": "Device Group",
-#                 },
-#                 "error_message": "Could not create device.",
-#                 "group_options": get_group_options_view(request, "devices"),
-#             },
-#             status=400,
-#         )
-
-#     row = {
-#         "id": f"{created_device.get('type', '').lower()}-{created_device.get('id')}",
-#         "cells": [
-#             created_device.get("type", ""),
-#             created_device.get("name", ""),
-#             created_device.get("description", ""),
-#         ],
-#         "raw": created_device,
-#     }
-
-#     return render(request, "partials/objects/_tableRow.html", {"row": row})
-
-
-# Handles creation of a new device group from modal form submission.
-# def post_device_group_view(request):
-#     payload = Payload()
-#     payload.name = request.POST.get("name", "")
-#     payload.description = request.POST.get("description", "")
-#     payload.tenant_id = (
-#         int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-#     )
-#     device_ids = [int(device_id) for device_id in request.POST.getlist("device_ids") if device_id]
-
-#     if device_ids:
-#         status, created_device_group = create_device_group_and_add_devices_endpoint(request, payload, device_ids)
-#     else:
-#         status, created_device_group = create_device_group_endpoint(request, payload)
-
-#     if status not in [200, 201]:
-#         return render(
-#             request,
-#             "partials/modals/_modal_form.html",
-#             {
-#                 "modal_object_type": "devices",
-#                 "modal_content_partial": "partials/modals/_device_group_form.html",
-#                 "modal_supports_types": True,
-#                 "modal_type": "group",
-#                 "item_type_editable": True,
-#                 "modal_type_labels": {
-#                     "item": "Device",
-#                     "group": "Device Group",
-#                 },
-#                 "error_message": "Could not create device group.",
-#                 "item_options": get_item_options_view(request, "devices"),
-#             },
-#             status=400,
-#         )
-
-#     row = {
-#         "id": f"{created_device_group.get('type', '').lower()}-{created_device_group.get('id')}",
-#         "cells": [
-#             created_device_group.get("type", ""),
-#             created_device_group.get("name", ""),
-#             created_device_group.get("description", ""),
-#         ],
-#         "raw": created_device_group,
-#     }
-
-#     return render(request, "partials/objects/_tableRow.html", {"row": row})
-
 """
 ====================================================================
 Filters Page
@@ -318,21 +216,6 @@ def get_group_options_view(request, object_type):
             if item.get("type") == "ServiceGroup"
         ]
 
-    # if object_type == "devices":
-    #     status, api_objects = get_devices_and_groups_with_tags_endpoint(request)
-
-    #     if status != 200:
-    #         return []
-
-    #     return [
-    #         {
-    #             "id": item.get("id"),
-    #             "name": item.get("name", ""),
-    #         }
-    #         for item in api_objects
-    #         if item.get("type") == "DeviceGroup"
-    #     ]
-
     return []
 
 
@@ -367,21 +250,6 @@ def get_item_options_view(request, object_type):
             for item in api_objects
             if item.get("type") != "ServiceGroup"
         ]
-
-    # if object_type == "devices":
-    #     status, api_objects = get_devices_and_groups_with_tags_endpoint(request)
-
-    #     if status != 200:
-    #         return []
-
-    #     return [
-    #         {
-    #             "id": item.get("id"),
-    #             "name": item.get("name", ""),
-    #         }
-    #         for item in api_objects
-    #         if item.get("type") != "DeviceGroup"
-    #     ]
 
     return []
 
@@ -845,7 +713,7 @@ def get_add_modal_config(object_type):
             "title": "Add Device",
             "supports_types": True,
             "default_type": "item",
-            "item_type_editable": True,  # Device object contains a type (i.e. host, switch etc.)
+            "item_type_editable": True,
             "type_labels": {
                 "item": "Device",
                 "group": "Device Group",
@@ -854,13 +722,6 @@ def get_add_modal_config(object_type):
                 "item": "partials/modals/_device_form.html",
                 "group": "partials/modals/_device_group_form.html",
             },
-            # "post_urls": {
-            #     "item": reverse("post-device-view"),
-            #     "group": reverse("post-device-group-view"),
-            #     },
-            # "target": "#devices-table",
-            # "swap": "beforeend",
-            # "refresh_url": reverse("devices"),
         },
         "filters": {
             "title": "Add Filter",
@@ -952,7 +813,7 @@ def get_add_modal(request, object_type):
     }
 
     # If object_type is address, service or device, then show all groups
-    if object_type in ["addresses", "services"]:  # If object_type in ["addresses", "services", "devices"]:
+    if object_type in ["addresses", "services"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
 
@@ -986,7 +847,7 @@ def get_add_modal_form_content(request, object_type, type):
     }
 
     # If object_type is address, service or device, then show all groups
-    if object_type in ["addresses", "services"]:  # If object_type in ["addresses", "services", "devices"]:
+    if object_type in ["addresses", "services"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
 
