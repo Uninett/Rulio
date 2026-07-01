@@ -6,7 +6,7 @@
 
     <div class="form-group type-other-select-group">
         <label for="protocol">Protocol</label>
-        <select id="protocol" name="protocol" onchange="toggleProtocolField(this.form)">
+        <select id="type" class="type" name="protocol">
             <option value="TCP">TCP</option>
             <option value="UDP">UDP</option>
             <option value="ICMP">ICMP</option>
@@ -15,13 +15,7 @@
             <option value="ESP">ESP</option>
             <option value="AH">AH</option>
             <option value="IP">IP</option>
-            <option value="OTHER">Other</option>
         </select>
-    </div>
-
-    <div class="form-group type-other-custom-group" id="custom-protocol-group" style="display: none;">
-        <label for="custom_protocol">Custom protocol<span class="required"> *</span></label>
-        <input id="custom_protocol" name="custom_protocol" type="text" placeholder="Enter protocol">
     </div>
 </div>
 
