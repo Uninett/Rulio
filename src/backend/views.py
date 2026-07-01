@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+from django.http import HttpResponse
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
@@ -116,6 +117,28 @@ def get_tenant_context(request):
         "tenants": get_tenants_view(request),
         "selected_tenant": request.session.get("current_tenant_id"),
     }
+
+
+# Handles setting the current tenant in the session based on the selected tenant from the dropdown.
+@login_required(login_url="login")
+def set_tenant_view(request):
+    if request.method != "POST":
+        return redirect(request.session.get("active_page", "devices"))
+
+    tenant_id = request.POST.get("tenant_id")
+
+    if not tenant_id:
+        return HttpResponse("Missing tenant_id", status=400)
+
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+    except Tenant.DoesNotExist:
+        return HttpResponse(f"Tenant with id {tenant_id} does not exist.", status=404)
+
+    request.session["current_tenant_id"] = tenant.id
+    request.session.modified = True
+
+    return HttpResponse(status=204)
 
 
 """
