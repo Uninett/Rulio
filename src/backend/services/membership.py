@@ -362,11 +362,14 @@ def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, d
         "not_found_device_ids": sorted(not_found_ids),
     }
 
+
 def add_tag_to_object(*, actor: User, tenant_id: int, tag: Tag, obj: object):
     require_write_tenant(actor, tenant_id)
     if not Tag.objects.filter(id=tag.id, tenant_id=tenant_id).exists() and not is_superadmin(actor):
         raise PermissionDenied(f"Tag with ID {tag.id} does not exist in tenant {tenant_id}.")
-    if TagConnection.objects.filter(tag=tag, content_type=ContentType.objects.get_for_model(obj), object_id=obj.id).exists():
+    if TagConnection.objects.filter(
+        tag=tag, content_type=ContentType.objects.get_for_model(obj), object_id=obj.id
+    ).exists():
         logger.warning(f"Tag {tag.id} is already associated with object {obj}.")
         return
     TagConnection.objects.create(tag=tag, content_object=obj)

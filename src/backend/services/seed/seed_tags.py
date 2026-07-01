@@ -341,19 +341,13 @@ def add_tags_to_default_services(
     }
     if missing_tags:
         raise ValueError(
-            "Cannot tag default services because these tags are missing: "
-            + ", ".join(sorted(missing_tags))
+            "Cannot tag default services because these tags are missing: " + ", ".join(sorted(missing_tags))
         )
 
-    missing_services = [
-        service_name
-        for service_name in service_tag_mappings
-        if service_name not in services_by_name
-    ]
+    missing_services = [service_name for service_name in service_tag_mappings if service_name not in services_by_name]
     if missing_services:
         raise ValueError(
-            "Cannot tag default services because these services are missing: "
-            + ", ".join(sorted(missing_services))
+            "Cannot tag default services because these services are missing: " + ", ".join(sorted(missing_services))
         )
 
     for service_name, tag_names in service_tag_mappings.items():
@@ -369,7 +363,6 @@ def add_tags_to_default_services(
     logger.info("Added tags to all seeded default services.")
 
 
-    
 def add_tags_to_default_address_groups(
     actor: User,
     tenant_id: int,
@@ -429,8 +422,7 @@ def add_tags_to_default_address_groups(
     }
     if missing_tags:
         raise ValueError(
-            "Cannot tag default address groups because these tags are missing: "
-            + ", ".join(sorted(missing_tags))
+            "Cannot tag default address groups because these tags are missing: " + ", ".join(sorted(missing_tags))
         )
 
     missing_address_groups = [
@@ -563,8 +555,7 @@ def add_tags_to_default_service_groups(
     }
     if missing_tags:
         raise ValueError(
-            "Cannot tag default service groups because these tags are missing: "
-            + ", ".join(sorted(missing_tags))
+            "Cannot tag default service groups because these tags are missing: " + ", ".join(sorted(missing_tags))
         )
 
     missing_service_groups = [

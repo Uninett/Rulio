@@ -30,9 +30,13 @@ class TestPopulateDB:
             service_group_count_before_seeding,
         ] = self.seed_counts()
 
-        default_tag_count, default_address_count, default_service_count, default_address_group_count, default_service_group_count = (
-            populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
-        )
+        (
+            default_tag_count,
+            default_address_count,
+            default_service_count,
+            default_address_group_count,
+            default_service_group_count,
+        ) = populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
         [
             tag_count_after_seeding,
@@ -97,9 +101,13 @@ class TestPopulateDB:
 
     @pytest.mark.django_db
     def test_populate_db_recreates_missing_seed_data(self, request_with_session):
-        default_tag_count, default_address_count, default_service_count, default_address_group_count, default_service_group_count = (
-            populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
-        )
+        (
+            default_tag_count,
+            default_address_count,
+            default_service_count,
+            default_address_group_count,
+            default_service_group_count,
+        ) = populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
         AddressGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
         ServiceGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
