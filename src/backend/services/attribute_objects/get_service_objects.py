@@ -14,13 +14,15 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-
 def get_all_service_groups_from_tenant(actor: User, tenant_id: int) -> QuerySet[ServiceGroup]:
     require_read_tenant(actor, tenant_id)
     requested_service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
     return requested_service_groups
 
-def get_service_groups_and_services_from_tenant(actor: User, tenant_id: int, include_global_tenant=True, get="all") -> list[dict] | tuple[QuerySet[Service], QuerySet[ServiceGroup]]:
+
+def get_service_groups_and_services_from_tenant(
+    actor: User, tenant_id: int, include_global_tenant=True, get="all"
+) -> list[dict] | tuple[QuerySet[Service], QuerySet[ServiceGroup]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
         service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, 1])
@@ -67,7 +69,10 @@ def get_service_groups_and_services_from_tenant(actor: User, tenant_id: int, inc
     elif get == "names":
         return [{"service_group_name": group["service_group_name"]} for group in result]
 
-def get_all_services_and_groups_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> tuple[list[dict], QuerySet[Service], QuerySet[ServiceGroup]]:
+
+def get_all_services_and_groups_with_tags_from_tenant(
+    actor: User, tenant_id: int, include_global_tenant=True
+) -> tuple[list[dict], QuerySet[Service], QuerySet[ServiceGroup]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
         service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
@@ -147,6 +152,7 @@ def get_all_services_and_groups_with_tags_from_tenant(actor: User, tenant_id: in
 
     return result, services, service_groups
 
+
 def get_all_services_from_tenant(actor: User, tenant_id: int, get="objects") -> list[Service]:
     require_read_tenant(actor, tenant_id)
     requested_services = Service.objects.filter(tenant_id=tenant_id)
@@ -157,10 +163,12 @@ def get_all_services_from_tenant(actor: User, tenant_id: int, get="objects") -> 
     elif get == "names":
         return [{"service_name": service.name} for service in requested_services]
 
+
 def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> QuerySet[Service]:
     require_read_tenant(actor, tenant_id)
     requested_services = Service.objects.filter(tenant_id=tenant_id, name__in=names)
     return requested_services
+
 
 def get_service_group_members(actor: User, tenant_id: int, service_group_id: int) -> QuerySet[Service]:
     require_read_tenant(actor, tenant_id)
@@ -168,12 +176,20 @@ def get_service_group_members(actor: User, tenant_id: int, service_group_id: int
         raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
     return Service.objects.filter(servicegroupmember__group_id=service_group_id)
 
-def get_all_services_with_certain_tags_from_tenant(actor: User, tenant_id: int, tag_names: list[str]) -> QuerySet[Service]:
+
+def get_all_services_with_certain_tags_from_tenant(
+    actor: User, tenant_id: int, tag_names: list[str]
+) -> QuerySet[Service]:
     require_read_tenant(actor, tenant_id)
     requested_services = Service.objects.filter(tenant_id=tenant_id, tag_objects__tag__name__in=tag_names).distinct()
     return requested_services
 
-def get_all_service_groups_with_certain_tags_from_tenant(actor: User, tenant_id: int, tag_names: list[str]) -> QuerySet[ServiceGroup]:
+
+def get_all_service_groups_with_certain_tags_from_tenant(
+    actor: User, tenant_id: int, tag_names: list[str]
+) -> QuerySet[ServiceGroup]:
     require_read_tenant(actor, tenant_id)
-    requested_service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id, tag_objects__tag__name__in=tag_names).distinct()
+    requested_service_groups = ServiceGroup.objects.filter(
+        tenant_id=tenant_id, tag_objects__tag__name__in=tag_names
+    ).distinct()
     return requested_service_groups

@@ -15,7 +15,9 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def get_address_groups_and_addresses_from_tenant(actor: User, tenant_id: int, include_global_tenant=True, get="all") -> list[dict] | tuple[QuerySet[Address], QuerySet[AddressGroup]]:
+def get_address_groups_and_addresses_from_tenant(
+    actor: User, tenant_id: int, include_global_tenant=True, get="all"
+) -> list[dict] | tuple[QuerySet[Address], QuerySet[AddressGroup]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
         address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1])
@@ -71,6 +73,7 @@ def get_address_groups_and_addresses_from_tenant(actor: User, tenant_id: int, in
         return [{"address_group_name": group["address_group_name"]} for group in result]
     raise ValueError(f"Invalid value for 'get': {get}. Must be one of 'all', 'ids', or 'names'.")
 
+
 def get_all_addresss_groups_with_tags_from_tenant(
     actor: User, tenant_id: int, include_global_tenant=True
 ) -> tuple[list[dict], QuerySet[AddressGroup]]:
@@ -99,6 +102,7 @@ def get_all_addresss_groups_with_tags_from_tenant(
         )
 
     return result, address_groups
+
 
 def get_all_addresses_and_groups_with_tags_from_tenant(
     actor: User, tenant_id: int, include_global_tenant=True
@@ -188,10 +192,12 @@ def get_all_addresses_and_groups_with_tags_from_tenant(
 
     return result, addresses, address_groups
 
+
 def get_all_address_groups_from_tenant(actor: User, tenant_id: int) -> QuerySet[AddressGroup]:
     require_read_tenant(actor, tenant_id)
     requested_address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
     return requested_address_groups
+
 
 def get_all_addresses_from_tenant(actor: User, tenant_id: int, get="objects") -> list[dict] | QuerySet[Address]:
     require_read_tenant(actor, tenant_id)
@@ -203,10 +209,12 @@ def get_all_addresses_from_tenant(actor: User, tenant_id: int, get="objects") ->
     elif get == "names":
         return [{"address_name": address.name} for address in requested_addresses]
 
+
 def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> QuerySet[Address]:
     require_read_tenant(actor, tenant_id)
     requested_addresses = Address.objects.filter(tenant_id=tenant_id, name__in=names)
     return requested_addresses
+
 
 def get_address_group_members(actor: User, tenant_id: int, address_group_id: int) -> QuerySet[Address]:
     require_read_tenant(actor, tenant_id)
@@ -214,12 +222,20 @@ def get_address_group_members(actor: User, tenant_id: int, address_group_id: int
         raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
     return Address.objects.filter(addressgroupmember__group_id=address_group_id)
 
-def get_all_addresses_with_certain_tags_from_tenant(actor: User, tenant_id: int, tag_names: list[str]) -> QuerySet[Address]:
+
+def get_all_addresses_with_certain_tags_from_tenant(
+    actor: User, tenant_id: int, tag_names: list[str]
+) -> QuerySet[Address]:
     require_read_tenant(actor, tenant_id)
     requested_addresses = Address.objects.filter(tenant_id=tenant_id, tag_objects__tag__name__in=tag_names).distinct()
     return requested_addresses
 
-def get_all_address_groups_with_certain_tags_from_tenant(actor: User, tenant_id: int, tag_names: list[str]) -> QuerySet[AddressGroup]:
+
+def get_all_address_groups_with_certain_tags_from_tenant(
+    actor: User, tenant_id: int, tag_names: list[str]
+) -> QuerySet[AddressGroup]:
     require_read_tenant(actor, tenant_id)
-    requested_address_groups = AddressGroup.objects.filter(tenant_id=tenant_id, tag_objects__tag__name__in=tag_names).distinct()
+    requested_address_groups = AddressGroup.objects.filter(
+        tenant_id=tenant_id, tag_objects__tag__name__in=tag_names
+    ).distinct()
     return requested_address_groups
