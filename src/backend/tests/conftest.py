@@ -799,6 +799,7 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
     ]
     return sample_rules
 
+
 @pytest.fixture
 def sample_rules_with_objects(request_with_session, sample_rules, sample_addresses, sample_services):
     # Add objects to the rules

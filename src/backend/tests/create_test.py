@@ -1,5 +1,3 @@
-import datetime
-import os
 
 import pytest
 from django.core.exceptions import PermissionDenied
@@ -470,7 +468,6 @@ class TestGenerateConfigFromFilterObject:
         filedir = TEST_LOGPATH / "from_filter"
         config = generate_config(policy)
         write_configuration_to_file(config, filepath, filedir, vendor, __name__)
-        
 
     def test_generate_config_from_interface(
         self,
@@ -566,13 +563,10 @@ class TestGenerateConfigFromFilterObject:
         assert len(terms2) == 1
         assert terms1[0]["name"] == f"seq10-{sample_rules_with_objects[1].name}"
         assert terms2[0]["name"] == f"seq20-{sample_rules_with_objects[2].name}"
-        
+
         config = generate_multi_policy_config(policies)
         assert config is not None
-        
 
         filepath = TEST_LOGPATH / "interface" / "interface_generated_config.yaml"
         filedir = TEST_LOGPATH / "interface"
         write_configuration_to_file(config, filepath, filedir, device.platform, __name__)
-
-

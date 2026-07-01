@@ -156,7 +156,9 @@ def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, 
     policies = []
     for filter_interface in filter_interfaces:
         if filter_interface.enable is False:
-            logger.info(f"Skipping disabled filter interface with ID {filter_interface.id} for interface with ID {interface_id}.")
+            logger.info(
+                f"Skipping disabled filter interface with ID {filter_interface.id} for interface with ID {interface_id}."
+            )
             continue
         filter_obj = Filter.objects.get(id=filter_interface.filter_id)
         if not filter_obj:

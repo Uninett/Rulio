@@ -1,5 +1,3 @@
-import datetime
-import os
 import yaml
 import pytest
 
@@ -64,7 +62,6 @@ class TestGenerateConfig:
             filepath = TEST_LOGPATH / "addr" / f"{vendor.upper()}_generated_config.yaml"
             filedir = TEST_LOGPATH / "addr"
             write_configuration_to_file(config, filepath, filedir, vendor, __name__, self.log_for_vendors)
-
 
     def test_generate_address_group_config(self, address_group_policy_rules, request_with_session):
         for vendor, policy_type in self.vendor_policy_type_pairs:

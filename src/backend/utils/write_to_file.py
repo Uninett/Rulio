@@ -1,19 +1,19 @@
-
-
 from datetime import datetime
 import logging
 import os
 
 
-def write_configuration_to_file(config, filepath, file_dir, vendor, logger_name, generated_by = "tests",log_for_vendors=None):
+def write_configuration_to_file(
+    config, filepath, file_dir, vendor, logger_name, generated_by="tests", log_for_vendors=None
+):
     if log_for_vendors is None:
         log_for_vendors = ["juniper"]
-    
+
     os.makedirs(file_dir, exist_ok=True)
 
-    i=0
+    i = 0
     for filename, content in config.items():
-        i+=1
+        i += 1
         indexed_filename = f"{filepath}_{i:02d}" if len(config.items()) > 1 else filepath
         if vendor in log_for_vendors:
             logger = logging.getLogger(logger_name)
@@ -22,9 +22,7 @@ def write_configuration_to_file(config, filepath, file_dir, vendor, logger_name,
                 indexed_filename,
                 content,
             )
-        
+
         with open(indexed_filename, "w") as f:
-            f.write(
-            f"# Generated on {datetime.now()}\n# Test for generating from {generated_by} \n\n"
-        )
+            f.write(f"# Generated on {datetime.now()}\n# Test for generating from {generated_by} \n\n")
             f.write(content)
