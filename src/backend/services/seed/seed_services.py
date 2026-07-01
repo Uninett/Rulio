@@ -616,6 +616,7 @@ def seed_services(actor, tenant_id: int):
         ),
     ]
     created_flags = [service[2] for service in default_services]
+    default_services = [service[0] for service in default_services]
 
     if all(created_flags):
         logger.info("All default services were created. No duplicates existed.")
@@ -623,4 +624,4 @@ def seed_services(actor, tenant_id: int):
         logger.warning("Some default services already existed. Missing services were created.")
     else:
         logger.warning("No default services were created because they already all existed.")
-    return len(default_services)
+    return len(default_services), default_services
