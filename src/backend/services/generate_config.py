@@ -8,7 +8,15 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
-from backend.services.get import get_service_group_members, get_address_group_members
+
+from backend.services.attribute_objects.get_address_objects import (
+    get_all_address_groups_from_tenant,
+)
+
+from backend.services.attribute_objects.get_service_objects import (
+    get_all_service_groups_from_tenant,
+)
+
 from backend.utils.logger import set_up_logger
 from constants import DIRECTION_CHOICES
 
@@ -384,7 +392,7 @@ class Policy:
     # Add networks definitions for an AddressGroup object
     def _add_address_group_translation_to_networks(self, rule: PolicyRule) -> None:
         values = []
-        for address in get_address_group_members(
+        for address in get_all_address_groups_from_tenant(
             address_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id
         ):
             ipv4_addrs, ipv6_addrs = address.get_address()
@@ -416,7 +424,7 @@ class Policy:
     def _add_service_group_translation_to_services(self, rule: PolicyRule) -> list[tuple[str, str, bool]]:
         service_entries = []
 
-        for service in get_service_group_members(
+        for service in get_all_service_groups_from_tenant(
             service_group_id=rule.object.id, actor=self.actor, tenant_id=self.tenant_id
         ):
             service_name = service.name
