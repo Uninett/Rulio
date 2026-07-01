@@ -895,7 +895,7 @@ def get_group_options_view(request, object_type):
         tenant_id = int(tenant_id)
 
         if object_type == "addresses":
-            objects = get_all_addresses_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -910,7 +910,7 @@ def get_group_options_view(request, object_type):
             ]
 
         if object_type == "services":
-            objects = get_all_services_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -940,7 +940,7 @@ def get_item_options_view(request, object_type):
         tenant_id = int(tenant_id)
 
         if object_type == "addresses":
-            objects = get_all_addresses_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -955,7 +955,7 @@ def get_item_options_view(request, object_type):
             ]
 
         if object_type == "services":
-            objects = get_all_services_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
