@@ -1,5 +1,6 @@
 import pytest
 from django.core.exceptions import PermissionDenied
+import yaml
 
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
@@ -15,7 +16,7 @@ from backend.services.membership import (
     add_objects_to_rule,
     add_rule_to_filter,
 )
-from backend.services.generate_config import generate_config, generate_multi_policy_config
+from backend.services.generate_config import generate_config, generate_multi_policy_config, merge_policies
 from backend.services.tenant_objects.create_tenant_objects import create_device, create_interface
 from backend.utils.logger import set_up_logger
 from backend.utils.write_to_file import write_configuration_to_file
@@ -503,23 +504,6 @@ class TestGenerateConfigFromFilterObject:
         sample_rules_with_objects,
         sample_filters,
     ):
-        device = create_device(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Test Device",
-            description="This is a test device",
-            platform="juniper",
-            type="firewall",
-        )
-        interface = create_interface(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Test Interface",
-            description="This is a test interface",
-            type="ethernet",
-            device_id=device.id,
-            VRF=None,
-        )
 
         new_filter = create_filter(
             actor=request_with_session.user,
@@ -549,52 +533,85 @@ class TestGenerateConfigFromFilterObject:
             rule_sequence=20,
         )
 
-        add_filter_to_interface(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            interface_id=interface.id,
-            filter_id=new_filter.id,
-            policy_sequence=5,
-            enable=False,
-        )
-        add_filter_to_interface(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            interface_id=interface.id,
-            filter_id=sample_filters[0].id,
-            policy_sequence=10,
-            enable=True,
-        )
-        add_filter_to_interface(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            interface_id=interface.id,
-            filter_id=sample_filters[1].id,
-            policy_sequence=20,
-            enable=True,
-        )
+        interfaces = []
+        for vendor in ["juniper", "cisco"]:
+            device = create_device(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name=f"{vendor.upper()}_Test_Device",
+                description="This is a test device",
+                platform=vendor,
+                type="firewall",
+            )
+            interface = create_interface(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name=f"{vendor.upper()}_Test_Interface",
+                description="This is a test interface",
+                type="ethernet",
+                device_id=device.id,
+                VRF=None,
+            )
+            interfaces.append(interface)
 
-        policies = create_policies_for_interface(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            interface_id=interface.id,
-            policy_type="",
-        )
-        assert len(policies) == 2
-        assert policies[0].policy_sequence == 10
-        assert policies[1].policy_sequence == 20
-        YAML1 = policies[0].YAMLConfig
-        YAML2 = policies[1].YAMLConfig
-        terms1 = YAML1["filters"][0]["terms"]
-        terms2 = YAML2["filters"][0]["terms"]
-        assert len(terms1) == 1
-        assert len(terms2) == 1
-        assert terms1[0]["name"] == f"seq10-{sample_rules_with_objects[1].name}"
-        assert terms2[0]["name"] == f"seq20-{sample_rules_with_objects[2].name}"
+            add_filter_to_interface(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                interface_id=interface.id,
+                filter_id=new_filter.id,
+                policy_sequence=5,
+                enable=False,
+            )
+            add_filter_to_interface(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                interface_id=interface.id,
+                filter_id=sample_filters[0].id,
+                policy_sequence=10,
+                enable=True,
+            )
+            add_filter_to_interface(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                interface_id=interface.id,
+                filter_id=sample_filters[1].id,
+                policy_sequence=20,
+                enable=True,
+            )
 
-        config = generate_multi_policy_config(policies)
-        assert config is not None
+            policies = create_policies_for_interface(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                interface_id=interface.id,
+                policy_type="",
+            )
+            assert len(policies) == 2
+            assert policies[0].policy_sequence == 10
+            assert policies[1].policy_sequence == 20
+            YAML1 = policies[0].YAMLConfig
+            YAML2 = policies[1].YAMLConfig
+            terms1 = YAML1["filters"][0]["terms"]
+            terms2 = YAML2["filters"][0]["terms"]
+            assert len(terms1) == 1
+            assert len(terms2) == 1
+            assert terms1[0]["name"] == f"seq10-{sample_rules_with_objects[1].name}"
+            assert terms2[0]["name"] == f"seq20-{sample_rules_with_objects[2].name}"
 
-        filepath = TEST_LOGPATH / "interface" / "interface_generated_config.yaml"
-        filedir = TEST_LOGPATH / "interface"
-        write_configuration_to_file(config, filepath, filedir, device.platform, __name__)
+            merged_policy = merge_policies(policies, name=None)
+            assert merged_policy is not None
+            logger.info(
+                "Generated policy YAML:\n%s",
+                yaml.dump(merged_policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+            )
+            config = generate_multi_policy_config(policies)
+            logger.info(
+                "config.keys(): %s",
+                config.keys(),
+            )
+            assert config is not None
+
+            filepath = TEST_LOGPATH / "interface" / f"{interface.name}_generated_config.yaml"
+            filedir = TEST_LOGPATH / "interface"
+            write_configuration_to_file(
+                config, filepath, filedir, device.platform, __name__, log_for_vendors=["juniper", "cisco"]
+            )

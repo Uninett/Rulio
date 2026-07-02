@@ -12,9 +12,10 @@ def write_configuration_to_file(
     os.makedirs(file_dir, exist_ok=True)
 
     i = 0
+    filepath = str(filepath).split(".")[0]  # Remove file extension if present
     for filename, content in config.items():
         i += 1
-        indexed_filename = f"{filepath}_{i:02d}" if len(config.items()) > 1 else filepath
+        indexed_filename = f"{filepath}_{i:02d}.yaml" if len(config.items()) > 1 else f"{filepath}.yaml"
         if vendor in log_for_vendors:
             logger = logging.getLogger(logger_name)
             logger.info(

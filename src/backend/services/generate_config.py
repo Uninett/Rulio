@@ -1,4 +1,5 @@
 from collections import defaultdict
+import copy
 
 from aerleon.lib import naming
 from aerleon import api as aerleon_api
@@ -443,6 +444,30 @@ class Policy:
         return list(dict.fromkeys(items))
 
 
+def merge_policies(policies: list[Policy], name: str = None) -> Policy:
+    if not policies:
+        raise ValueError("No policies provided for merging.")
+
+    policies = sorted(policies, key=lambda p: p.policy_sequence)
+    merged_policy = copy.deepcopy(policies[0])
+    for policy in policies[1:]:
+        for name, value in policy.networks.get("networks", {}).items():
+            if name in merged_policy.networks.get("networks", {}) and merged_policy.networks["networks"][name] != value:
+                raise ValueError(f"Duplicate network definition with different values: {name}")
+            merged_policy.networks["networks"][name] = value
+        for name, value in policy.services.get("services", {}).items():
+            if name in merged_policy.services.get("services", {}) and merged_policy.services["services"][name] != value:
+                raise ValueError(f"Duplicate service definition with different values: {name}")
+            merged_policy.services["services"][name] = value
+        filter = policy.YAMLConfig["filters"][0]
+        merged_policy.YAMLConfig["filters"].append(filter)
+
+    if name:
+        merged_policy.name = name
+
+    return merged_policy
+
+
 def generate_config(policy: Policy) -> str:
     """
     Generates a configuration for the specified vendor based on the provided YAML configuration.
@@ -478,28 +503,13 @@ def generate_multi_policy_config(policies: list[Policy], name: str = None) -> st
     """
     definitions = naming.Naming()
 
-    # Merge networks and services from all policies
-    merged_networks = {}
-    merged_services = {}
-
-    policies = sorted(policies, key=lambda p: p.policy_sequence)
-    for policy in policies:
-        for name, value in policy.networks.get("networks", {}).items():
-            if name in merged_networks and merged_networks[name] != value:
-                raise ValueError(f"Duplicate network definition with different values: {name}")
-            merged_networks[name] = value
-        for name, value in policy.services.get("services", {}).items():
-            if name in merged_services and merged_services[name] != value:
-                raise ValueError(f"Duplicate service definition with different values: {name}")
-            merged_services[name] = value
-
+    merged_policy = merge_policies(policies, name)
     definitions_obj = {
-        "networks": merged_networks,
-        "services": merged_services,
+        "networks": merged_policy.networks.get("networks", {}),
+        "services": merged_policy.services.get("services", {}),
     }
 
-    definitions.ParseDefinitionsObject(definitions_obj, name or "merged_policy")
+    definitions.ParseDefinitionsObject(definitions_obj, merged_policy.name)
 
-    yaml_configs = [policy.YAMLConfig for policy in policies]
-    configs = aerleon_api.Generate(yaml_configs, definitions)
+    configs = aerleon_api.Generate([merged_policy.YAMLConfig], definitions)
     return configs
