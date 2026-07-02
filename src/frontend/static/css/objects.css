@@ -210,3 +210,19 @@ td:nth-child(1) {
     padding-left: 4px;
     padding-right: 4px;
 }
+
+.tagsElipse {
+    display: inline-block;
+    max-width: 200px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: smaller;
+}
+
+@media (min-width: 2000px) {
+    .tagsElipse {
+        font-size: small;
+        max-width: 400px;
+    }
+}

@@ -1,15 +1,22 @@
 <td colspan="{{ row.cells|length }}">
     <section class="details-content">
-        {% if row.is_group %}
+        {% if row.is_group or row.istrue %}
         <div class="group-detail-columns">
             {% for field in row.expand %}
-            {% if field.label == "Addresses" or field.label == "Services" %}
+            {% if field.label == "Addresses" or field.label == "Services" or field.special_style == True%}
             <div class="detail-block">
                 <p> <strong>{{ field.label}}:</strong></p>
+                {% if field.special_style == True %}
+                {% for value in field.value %}
+                <div class="tagsElipse" title="{{ value }}"> {{ value }}</div>
+
+                {% endfor %}
+                {% else %}
                 {% for value in field.value %}
                 <div> {{ value }}</div>
 
                 {% endfor %}
+                {% endif %}
             </div>
 
             {% elif field.label == "Tags" %}

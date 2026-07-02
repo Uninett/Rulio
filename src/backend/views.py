@@ -19,6 +19,11 @@ from backend.services.membership import (
     add_services_to_group,
 )
 
+from backend.services.get import (
+    get_all_tags_from_tenant,
+    get_all_objects_with_certain_tag,
+)
+
 from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
@@ -242,12 +247,13 @@ Objects Page: Address
 @login_required(login_url="login")
 def get_objects_addresses(request):
     request.session["active_page"] = "objects"
+    object_type = "addresses"
     return render(
         request,
         "partials/_page_content.html",
         {
             "title": "Addresses",
-            "object_type": "addresses",
+            "object_type": object_type,
             "addresses": get_addresses_view(request),  # Address data for the page
             **get_objects_toolbar_context(
                 "addresses", add_button_label="Add Address"
@@ -739,9 +745,68 @@ def get_tags_page(request):
             "page_title": "Tags",
             "object_type": "tags",
             "add_button_label": "Add Tag",
+            "tags": get_tags_view(request),
             **get_tenant_context(request),
         },
     )
+
+
+# Fetch services from the API and map them to data.
+def get_tags_view(request):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    try:
+        tags = get_all_tags_from_tenant(
+            actor=request.user,
+            tenant_id=int(tenant_id),
+        )
+    except Exception:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    headers = ["Name", "Description"]
+
+    rows = []
+
+    for item in tags:
+        istrue = True
+        results, objects = get_all_objects_with_certain_tag(
+            actor=request.user, tenant_id=int(tenant_id), tag_id=item.id
+        )
+        expand = [
+            {"label": "Addresses", "value": [obj.name for obj in objects["address"]], "special_style": True},
+            {"label": "Address Group", "value": [obj.name for obj in objects["addressgroup"]], "special_style": True},
+            {"label": "Services", "value": [obj.name for obj in objects["service"]], "special_style": True},
+            {"label": "Service Group", "value": [obj.name for obj in objects["servicegroup"]], "special_style": True},
+            {"label": "Rule", "value": [obj.name for obj in objects["rule"]], "special_style": True},
+            {"label": "Filter", "value": [obj.name for obj in objects["filter"]], "special_style": True},
+            {"label": "Device", "value": [obj.name for obj in objects["device"]], "special_style": True},
+            {"label": "Interface", "value": [obj.name for obj in objects["interface"]], "special_style": True},
+        ]
+
+        rows.append(
+            {
+                "id": f"tag-{item.id}",
+                "istrue": istrue,
+                "cells": [
+                    item.name,
+                    item.description,
+                ],
+                "expand": expand,
+            }
+        )
+
+    return {
+        "headers": headers,
+        "rows": rows,
+    }
 
 
 """
