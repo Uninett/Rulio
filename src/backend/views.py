@@ -776,19 +776,25 @@ def get_tags_view(request):
     rows = []
 
     for item in tags:
-        objects = get_all_objects_with_certain_tag(actor=request.user, tenant_id=int(tenant_id), tag_id=item.id)
+        istrue = True
+        results, objects = get_all_objects_with_certain_tag(
+            actor=request.user, tenant_id=int(tenant_id), tag_id=item.id
+        )
         expand = [
-            {"label": "Address", "value": objects.get("addresses", [])},
-            {"label": "Address Group", "value": objects.get("addressgroup", [])},
-            {"label": "Service", "value": objects.get("services", [])},
-            {"label": "Rule", "value": objects.get("rules", [])},
-            {"label": "Filter", "value": objects.get("filter", [])},
-            {"label": "Device", "value": objects.get("device", [])},
-            {"label": "Interface", "value": objects.get("interface", [])},
+            {"label": "Addresses", "value": [obj.name for obj in objects["address"]], "special_style": True},
+            {"label": "Address Group", "value": [obj.name for obj in objects["addressgroup"]], "special_style": True},
+            {"label": "Services", "value": [obj.name for obj in objects["service"]], "special_style": True},
+            {"label": "Service Group", "value": [obj.name for obj in objects["servicegroup"]], "special_style": True},
+            {"label": "Rule", "value": [obj.name for obj in objects["rule"]], "special_style": True},
+            {"label": "Filter", "value": [obj.name for obj in objects["filter"]], "special_style": True},
+            {"label": "Device", "value": [obj.name for obj in objects["device"]], "special_style": True},
+            {"label": "Interface", "value": [obj.name for obj in objects["interface"]], "special_style": True},
         ]
 
         rows.append(
             {
+                "id": f"tag-{item.id}",
+                "istrue": istrue,
                 "cells": [
                     item.name,
                     item.description,

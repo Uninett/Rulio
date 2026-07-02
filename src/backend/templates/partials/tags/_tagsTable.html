@@ -9,7 +9,7 @@
         </thead>
         <tbody id="addresses-table">
             {% for row in tags.rows %}
-            {% include "partials/objects/_tableRow.html" with row=row headers=headers%}
+            {% include "partials/objects/_tableRow.html" with row=row headers=tags.headers%}
             {% endfor %}
         </tbody>
     </table>
