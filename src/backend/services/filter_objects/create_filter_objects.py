@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
+from backend.objects.filters.versionControl import VersionControl
 from backend.utils.logger import set_up_logger
 from backend.services.helper_user_tenant import get_tenant_by_id, require_write_tenant
 
@@ -126,3 +127,26 @@ def get_or_create_filter(
     else:
         logger.info(f"Found existing {filter_obj} for tenant={filter_obj.tenant_id}")
     return filter_obj, created
+
+def create_version_control(
+    *,
+    actor: User,
+    tenant_id: int,
+    filter: Filter,
+) -> VersionControl:
+    require_write_tenant(actor, tenant_id)
+    tenant = get_tenant_by_id(tenant_id)
+    version_control = VersionControl(
+        filter=filter,
+        tenant=tenant,
+        datetime=datetime.now(timezone.utc),
+    )
+    try:
+        version_control.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"VersionControl validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+
+    version_control.save()
+    logger.info(f"Created {version_control} for tenant={version_control.tenant_id}")
+    return version_control

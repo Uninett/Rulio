@@ -10,7 +10,7 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.membership import add_addresses_to_group, add_objects_to_rule, add_services_to_group
-from backend.services.attribute_objects.create_attribute_objects import get_or_create_address
+from backend.services.attribute_objects.create_attribute_objects import create_tag, get_or_create_address
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 
 from backend.services.generate_config import PolicyRule
@@ -832,3 +832,24 @@ def sample_rules_with_objects(request_with_session, sample_rules, sample_address
         objects=[sample_services[1]],
     )
     return sample_rules
+
+
+@pytest.fixture
+def sample_tags(request_with_session, create_testing_tenant):
+    tags = [
+        create_tag(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Tag_1",
+            description="This is a sample tag for testing.",
+        ),
+        create_tag(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Tag_2",
+            description="This is another sample tag for testing.",
+        ),
+    ]
+    for tag in tags:
+        tag.save()
+    return tags

@@ -2,7 +2,8 @@ import pytest
 
 from django.core.exceptions import ObjectDoesNotExist
 from backend.objects.attributes.address import Address
-from backend.services.get import get_object_by_type_and_id
+from backend.services.get import get_object_by_type_and_id, get_all_objects_with_certain_tag
+from backend.services.membership import add_tag_to_object
 
 
 @pytest.mark.django_db
@@ -40,3 +41,23 @@ class TestGetObjectByTypeAndId:
                 object_type="address",
                 object_id=9999,
             )  # Assuming ID 9999 does not exist
+
+
+@pytest.mark.django_db
+class TestGetObjectsFromTags:
+    def test_get_objects_from_certain_tag(self, sample_addresses, sample_tags, request_with_session):
+        for address in sample_addresses:
+            add_tag_to_object(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                tag=sample_tags[0],
+                obj=address,
+            )
+        _, tagged_objects = get_all_objects_with_certain_tag(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            tag_id=sample_tags[0].id,
+        )
+        tagged_addresses = tagged_objects["address"]
+        for address in sample_addresses:
+            assert address in tagged_addresses
