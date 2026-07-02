@@ -983,28 +983,142 @@ Modal Partial: Update Modal
 """
 
 
+# Return modal configuration for each object type.
+def get_update_modal_config(object_type):
+    configs = {
+        "address": {
+            "fetcher": get_all_addresses_and_groups_with_tags_from_tenant,
+            "match_type": "Address",
+            "modal_title": "Update Address",
+            "modal_object_type": "addresses",
+            "modal_type": "item",
+            "modal_content_partial": "partials/modals/_address_form.html",
+            "modal_submit_handler": "prepareAddressForm",
+            "modal_refresh_url_name": "objects-addresses",
+            "options_mode": "group",
+            "options_object_type": "addresses",
+            "selected_context_key": "selected_group_ids",
+            "selected_source_key": "address_groups",
+        },
+        "addressgroup": {
+            "fetcher": get_all_addresses_and_groups_with_tags_from_tenant,
+            "match_type": "AddressGroup",
+            "modal_title": "Update Address Group",
+            "modal_object_type": "addresses",
+            "modal_type": "group",
+            "modal_content_partial": "partials/modals/_address_group_form.html",
+            "modal_submit_handler": None,
+            "modal_refresh_url_name": "objects-addresses",
+            "options_mode": "item",
+            "options_object_type": "addresses",
+            "selected_context_key": "selected_address_ids",
+            "selected_source_key": "addresses",
+        },
+        "service": {
+            "fetcher": get_all_services_and_groups_with_tags_from_tenant,
+            "match_type": "Service",
+            "modal_title": "Update Service",
+            "modal_object_type": "services",
+            "modal_type": "item",
+            "modal_content_partial": "partials/modals/_service_form.html",
+            "modal_submit_handler": None,
+            "modal_refresh_url_name": "objects-services",
+            "options_mode": "group",
+            "options_object_type": "services",
+            "selected_context_key": "selected_group_ids",
+            "selected_source_key": "service_groups",
+        },
+        "servicegroup": {
+            "fetcher": get_all_services_and_groups_with_tags_from_tenant,
+            "match_type": "ServiceGroup",
+            "modal_title": "Update Service Group",
+            "modal_object_type": "services",
+            "modal_type": "group",
+            "modal_content_partial": "partials/modals/_service_group_form.html",
+            "modal_submit_handler": None,
+            "modal_refresh_url_name": "objects-services",
+            "options_mode": "item",
+            "options_object_type": "services",
+            "selected_context_key": "selected_service_ids",
+            "selected_source_key": "services",
+        },
+    }
+    return configs.get(object_type)
+
+
+def get_modal_options(request, options_mode, options_object_type):
+    if options_mode == "group":
+        return "group_options", get_group_options_view(request, options_object_type)
+
+    if options_mode == "item":
+        return "item_options", get_item_options_view(request, options_object_type)
+
+    return None, None
+
+
+def get_object_data(request, tenant_id, object_id, config):
+    objects, _, _ = config["fetcher"](
+        actor=request.user,
+        tenant_id=tenant_id,
+        include_global_tenant=False,
+    )
+
+    return next(
+        (item for item in objects if item.get("type") == config["match_type"] and item.get("id") == object_id),
+        None,
+    )
+
+
 @login_required(login_url="login")
 def get_update_modal(request, row_id):
-    return render(
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        object_type, object_id = row_id.split("-", 1)
+        object_id = int(object_id)
+        tenant_id = int(tenant_id)
+    except (ValueError, TypeError):
+        return HttpResponse("Invalid row id.", status=400)
+
+    config = get_update_modal_config(object_type)
+    if not config:
+        return HttpResponse("Unsupported object type.", status=400)
+
+    object_data = get_object_data(request, tenant_id, object_id, config)
+    if not object_data:
+        return HttpResponse(f"{config['match_type']} not found.", status=404)
+
+    options_context_key, options_value = get_modal_options(
         request,
-        "partials/_modal.html",
-        {
-            "modal_title": "Update Object",
-            "modal_mode": "update",
-            "modal_object_type": "addresses",
-            "modal_type": None,
-            "modal_supports_types": False,
-            "item_type_editable": False,
-            "modal_type_labels": {},
-            "modal_content_partial": "partials/modals/_update_placeholder.html",
-            "modal_post_url": "#",
-            "modal_target": None,
-            "modal_swap": None,
-            "modal_submit_handler": None,
-            "modal_refresh_url": None,
-            "row_id": row_id,
-        },
+        config["options_mode"],
+        config["options_object_type"],
     )
+
+    context = {
+        "modal_title": config["modal_title"],
+        "modal_mode": "update",
+        "modal_row_id": row_id,
+        "modal_object_type": config["modal_object_type"],
+        "modal_type": config["modal_type"],
+        "modal_supports_types": False,
+        "item_type_editable": False,
+        "modal_type_labels": {},
+        "modal_content_partial": config["modal_content_partial"],
+        "modal_post_url": "#",
+        "modal_target": None,
+        "modal_swap": None,
+        "modal_submit_handler": config["modal_submit_handler"],
+        "modal_refresh_url": reverse(config["modal_refresh_url_name"]),
+        "object_data": object_data,
+        config["selected_context_key"]: [item["id"] for item in object_data.get(config["selected_source_key"], [])],
+    }
+
+    if options_context_key:
+        context[options_context_key] = options_value
+
+    return render(request, "partials/_modal.html", context)
 
 
 """
