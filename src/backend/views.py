@@ -923,6 +923,10 @@ def get_add_modal(request, object_type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": config.get("submit_handler"),
         "modal_refresh_url": config.get("refresh_url"),
+        "object_data": {},
+        "selected_group_ids": [],
+        "selected_address_ids": [],
+        "selected_service_ids": [],
     }
 
     # If object_type is address, service or device, then show all groups
@@ -958,6 +962,10 @@ def get_add_modal_form_content(request, object_type, type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": modal_submit_handler,
         "modal_refresh_url": config.get("refresh_url"),
+        "object_data": {},
+        "selected_group_ids": [],
+        "selected_address_ids": [],
+        "selected_service_ids": [],
     }
 
     # If object_type is address, service or device, then show all groups

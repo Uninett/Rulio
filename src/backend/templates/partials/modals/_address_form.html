@@ -1,22 +1,36 @@
 <div class="form-row">
     <div class="form-group">
         <label for="name">Name<span class="required"> *</span></label>
-        <input id="name" name="name" type="text" required>
+        <input id="name" name="name" value="{{ object_data.name|default:'' }}" type="text" required>
     </div>
 
     <div class="form-group">
         <label for="addr_type">Address type</label>
         <select id="addr_type" name="addr_type">
+            {% if object_data.addr_type == "host" %}
+            <option value="host" selected>Host</option>
+            {% else %}
             <option value="host">Host</option>
+            {% endif %}
+
+            {% if object_data.addr_type == "network" %}
+            <option value="network" selected>Network</option>
+            {% else %}
             <option value="network">Network</option>
+            {% endif %}
+
+            {% if object_data.addr_type == "range" %}
+            <option value="range" selected>Range</option>
+            {% else %}
             <option value="range">Range</option>
+            {% endif %}
         </select>
     </div>
 </div>
 
 <div class="form-group form-description">
     <label for="description">Description</label>
-    <textarea id="description" name="description"></textarea>
+    <textarea id="description" name="description">{{ object_data.description|default:'' }}</textarea>
 </div>
 
 <p class="form-help">
@@ -29,9 +43,23 @@
         <div class="form-group">
             <label for="ipv4_type">IPv4 address</label>
             <select id="ipv4_type" name="ipv4_type" onchange="toggleAddressFields(this.form)">
+                {% if not object_data.ipv4_type %}
+                <option value="" selected>Not selected</option>
+                {% else %}
                 <option value="">Not selected</option>
+                {% endif %}
+
+                {% if object_data.ipv4_type == "standard" %}
+                <option value="standard" selected>Standard</option>
+                {% else %}
                 <option value="standard">Standard</option>
+                {% endif %}
+
+                {% if object_data.ipv4_type == "custom_range" %}
+                <option value="custom_range" selected>Custom range</option>
+                {% else %}
                 <option value="custom_range">Custom range</option>
+                {% endif %}
             </select>
         </div>
 
@@ -39,7 +67,8 @@
         <div id="ipv4-standard-fields" style="display: none;">
             <div class="form-group">
                 <label for="ipv4Network">IPv4<span class="required"> *</span></label>
-                <input id="ipv4Network" name="ipv4Network" type="text" placeholder="x.x.x.x/y">
+                <input id="ipv4Network" name="ipv4Network" value="{{ object_data.ipv4Network|default:'' }}" type="text"
+                    placeholder="x.x.x.x/y">
             </div>
         </div>
 
@@ -47,12 +76,14 @@
         <div id="ipv4-custom-fields" class="custom-fields-row form-row" style="display: none;">
             <div class="form-group">
                 <label for="ipv4Address_start">IPv4 start<span class="required"> *</span></label>
-                <input id="ipv4Address_start" name="ipv4Address_start" type="text" placeholder="x.x.x.x">
+                <input id="ipv4Address_start" name="ipv4Address_start"
+                    value="{{ object_data.ipv4Address_start|default:'' }}" type="text" placeholder="x.x.x.x">
             </div>
 
             <div class="form-group">
                 <label for="ipv4Address_end">IPv4 end<span class="required"> *</span></label>
-                <input id="ipv4Address_end" name="ipv4Address_end" type="text" placeholder="x.x.x.x">
+                <input id="ipv4Address_end" name="ipv4Address_end" value="{{ object_data.ipv4Address_end|default:'' }}"
+                    type="text" placeholder="x.x.x.x">
             </div>
         </div>
     </div>
@@ -62,9 +93,23 @@
         <div class="form-group">
             <label for="ipv6_type">IPv6 address</label>
             <select id="ipv6_type" name="ipv6_type" onchange="toggleAddressFields(this.form)">
+                {% if not object_data.ipv6_type %}
+                <option value="" selected>Not selected</option>
+                {% else %}
                 <option value="">Not selected</option>
+                {% endif %}
+
+                {% if object_data.ipv6_type == "standard" %}
+                <option value="standard" selected>Standard</option>
+                {% else %}
                 <option value="standard">Standard</option>
+                {% endif %}
+
+                {% if object_data.ipv6_type == "custom_range" %}
+                <option value="custom_range" selected>Custom range</option>
+                {% else %}
                 <option value="custom_range">Custom range</option>
+                {% endif %}
             </select>
         </div>
 
@@ -72,7 +117,8 @@
         <div id="ipv6-standard-fields" style="display: none;">
             <div class="form-group">
                 <label for="ipv6Network">IPv6<span class="required"> *</span></label>
-                <input id="ipv6Network" name="ipv6Network" type="text" placeholder="x:x:x:x:x:x:x:x/y">
+                <input id="ipv6Network" name="ipv6Network" value="{{ object_data.ipv6Network|default:'' }}" type="text"
+                    placeholder="x:x:x:x:x:x:x:x/y">
             </div>
         </div>
 
@@ -80,12 +126,14 @@
         <div id="ipv6-custom-fields" class="custom-fields-row form-row" style="display: none;">
             <div class="form-group">
                 <label for="ipv6Address_start">IPv6 start<span class="required"> *</span></label>
-                <input id="ipv6Address_start" name="ipv6Address_start" type="text" placeholder="x:x:x:x:x:x:x:x">
+                <input id="ipv6Address_start" name="ipv6Address_start"
+                    value="{{ object_data.ipv6Address_start|default:'' }}" type="text" placeholder="x:x:x:x:x:x:x:x">
             </div>
 
             <div class="form-group">
                 <label for="ipv6Address_end">IPv6 end<span class="required"> *</span></label>
-                <input id="ipv6Address_end" name="ipv6Address_end" type="text" placeholder="x:x:x:x:x:x:x:x">
+                <input id="ipv6Address_end" name="ipv6Address_end" value="{{ object_data.ipv6Address_end|default:'' }}"
+                    type="text" placeholder="x:x:x:x:x:x:x:x">
             </div>
         </div>
     </div>
@@ -103,7 +151,11 @@
     <div class="group-checkbox-list">
         {% for group in group_options %}
         <label class="checkbox-label">
+            {% if group.id in selected_group_ids %}
+            <input type="checkbox" name="group_ids" value="{{ group.id }}" checked>
+            {% else %}
             <input type="checkbox" name="group_ids" value="{{ group.id }}">
+            {% endif %}
             <span>{{ group.name }}</span>
         </label>
         {% empty %}
