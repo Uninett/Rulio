@@ -19,6 +19,10 @@ from backend.services.membership import (
     add_services_to_group,
 )
 
+from backend.services.get import (
+    get_all_rules_with_objects_from_tenant,
+)
+
 from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
@@ -185,6 +189,78 @@ def get_filters_page(request):
             **get_tenant_context(request),
         },
     )
+
+
+def get_rule_view(request):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    try:
+        rules, _, _ = get_all_rules_with_objects_from_tenant(
+            actor=request.user,
+            tenant_id=int(tenant_id),
+        )
+    except Exception:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    headers = [
+        "#",
+        "Name",
+        "Source",
+        "Destination",
+        "Service",
+        "Action",
+        "Log",
+        "Count",
+        "Description",
+        "Created",
+        "Modified",
+        "Tags",
+    ]
+
+    rows = []
+
+    for item in rules:
+        expand = [
+            {"label": "MoreInfo?", "value": item.get("", "")},
+        ]
+
+        rows.append(
+            {
+                "cells": [
+                    item.get("rule_id", ""),
+                    item.get("rule_name", ""),
+                    item.get("source", "") or "",
+                    item.get("destination", "") or "",
+                    item.get("service", "") or "",
+                    item.get("rule_action", ""),
+                    item.get("rule_log_type", ""),
+                    item.get("rule_hit_count", ""),
+                    item.get("rule_description", ""),
+                    item.get("description", ""),
+                    [
+                        {item.get("rule_date_created", "")},
+                        {item.get("rule_created_by", "")},
+                    ][
+                        {item.get("rule_date_changed", "")},
+                        {item.get("rule_changed_by", "")},
+                    ],
+                ],
+                "expand": expand,
+            }
+        )
+
+    return {
+        "headers": headers,
+        "rows": rows,
+    }
 
 
 """

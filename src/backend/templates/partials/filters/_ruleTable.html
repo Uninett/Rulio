@@ -1,0 +1,16 @@
+<section class="table-container">
+    <table>
+        <thead>
+            <tr>
+                {% for header in rule.headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="addresses-table">
+            {% for row in rule.rows %}
+            {% include "partials/objects/_tableRow.html" with row=row headers=rule.headers%}
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
