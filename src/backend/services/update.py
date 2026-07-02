@@ -153,7 +153,9 @@ def update_tag(*, actor, tenant_id, tag_id, name=None, description=None):
 
 def update_interface(*, actor, tenant_id, interface_id, name=None, description=None, type=None, VRF=None):
     require_write_tenant(actor, tenant_id)
-    interface = Interface.objects.get(id=interface_id, tenant_id=tenant_id)
+    if Interface.objects.get(id=interface_id).device.tenant_id != tenant_id:
+        raise ValueError("Interface does not belong to the specified tenant.")
+    interface = Interface.objects.get(id=interface_id)
     if name is not None:
         interface.name = name
     if description is not None:

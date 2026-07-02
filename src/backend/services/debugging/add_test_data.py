@@ -71,7 +71,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
     except ValueError as e:
         logger.warning(str(e))
 
-    interface = get_or_create_interface(
+    interface, _ = get_or_create_interface(
         actor=actor,
         tenant_id=tenant_id,
         device_id=device.id,
@@ -81,7 +81,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
     )
     logger.info(f"Created {interface} for device={device.id} and tenant={tenant_id}")
 
-    interface2 = get_or_create_interface(
+    interface2, _ = get_or_create_interface(
         actor=actor,
         tenant_id=tenant_id,
         device_id=device3.id,
