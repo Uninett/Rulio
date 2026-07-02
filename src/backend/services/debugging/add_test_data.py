@@ -1,18 +1,11 @@
-from backend.objects.tenant_objects.device import Device
-from backend.objects.tenant_objects.device_group import DeviceGroup
-from backend.objects.tenant_objects.interface import Interface
-from backend.objects.filters.filter import Filter
 from django.contrib.auth.models import User
 
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address, get_or_create_tag
-from backend.services.filter_objects.create_filter_objects import create_filter, get_or_create_filter
+from backend.services.filter_objects.create_filter_objects import get_or_create_filter
 from backend.services.tenant_objects.create_tenant_objects import get_or_create_device
 from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import add_devices_to_group, add_filter_to_interface, add_tag_to_object
 from backend.services.tenant_objects.create_tenant_objects import (
-    create_device,
-    create_device_group,
-    create_interface,
     get_or_create_device_group,
     get_or_create_interface,
 )

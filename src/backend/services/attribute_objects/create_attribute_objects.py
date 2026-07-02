@@ -435,8 +435,9 @@ def create_tag(*, actor: User, tenant_id: int, name: str, description: str) -> T
     logger.info(f"Created {tag} for tenant={tag.tenant_id}")
     return tag
 
+
 def get_or_create_tag(*, actor: User, tenant_id: int, name: str, description: str) -> tuple[Tag, int, bool]:
-    
+
     require_write_tenant(actor, tenant_id)
 
     tag, created = Tag.objects.get_or_create(

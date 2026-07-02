@@ -122,6 +122,7 @@ def create_interface(
     logger.info(f"Created {interface} for device={interface.device_id}")
     return interface
 
+
 def get_or_create_interface(
     *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
 ) -> Interface:
