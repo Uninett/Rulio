@@ -38,22 +38,16 @@ def update_address(
         address.description = description
     if addr_type is not None:
         address.addr_type = addr_type
-    if ipv4_type is not None:
-        address.ipv4_type = ipv4_type
-    if ipv6_type is not None:
-        address.ipv6_type = ipv6_type
-    if ipv4Network is not None:
-        address.ipv4Network = ipv4Network
-    if ipv6Network is not None:
-        address.ipv6Network = ipv6Network
-    if ipv4Address_start is not None:
-        address.ipv4Address_start = ipv4Address_start
-    if ipv4Address_end is not None:
-        address.ipv4Address_end = ipv4Address_end
-    if ipv6Address_start is not None:
-        address.ipv6Address_start = ipv6Address_start
-    if ipv6Address_end is not None:
-        address.ipv6Address_end = ipv6Address_end
+
+    address.ipv4_type = ipv4_type
+    address.ipv6_type = ipv6_type
+    address.ipv4Network = ipv4Network
+    address.ipv6Network = ipv6Network
+    address.ipv4Address_start = ipv4Address_start
+    address.ipv4Address_end = ipv4Address_end
+    address.ipv6Address_start = ipv6Address_start
+    address.ipv6Address_end = ipv6Address_end
+
     address.save()
     return address
 
