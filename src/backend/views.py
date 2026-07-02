@@ -463,28 +463,6 @@ def update_address_view(request, object_id):
     ipv6Address_end = request.POST.get("ipv6Address_end") or None
     group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
-    if ipv4_type == "standard":
-        ipv4Address_start = None
-        ipv4Address_end = None
-    elif ipv4_type == "custom_range":
-        ipv4Network = None
-    else:
-        ipv4_type = None
-        ipv4Network = None
-        ipv4Address_start = None
-        ipv4Address_end = None
-
-    if ipv6_type == "standard":
-        ipv6Address_start = None
-        ipv6Address_end = None
-    elif ipv6_type == "custom_range":
-        ipv6Network = None
-    else:
-        ipv6_type = None
-        ipv6Network = None
-        ipv6Address_start = None
-        ipv6Address_end = None
-
     object_data = {
         "name": name,
         "description": description,
@@ -499,33 +477,6 @@ def update_address_view(request, object_id):
         "ipv6Address_end": ipv6Address_end,
         "address_groups": [{"id": group_id} for group_id in group_ids],
     }
-
-    if not tenant_id:
-        return render(
-            request,
-            "partials/_modal.html",
-            {
-                "modal_title": "Update Address",
-                "modal_mode": "update",
-                "modal_row_id": f"address-{object_id}",
-                "modal_object_type": "addresses",
-                "modal_type": "item",
-                "modal_supports_types": False,
-                "item_type_editable": False,
-                "modal_type_labels": {},
-                "modal_content_partial": "partials/modals/_address_form.html",
-                "modal_post_url": reverse("update-address-view", args=[object_id]),
-                "modal_target": "#modal-container",
-                "modal_swap": "innerHTML",
-                "modal_submit_handler": "prepareAddressForm",
-                "modal_refresh_url": reverse("objects-addresses"),
-                "object_data": object_data,
-                "group_options": get_group_options_view(request, "addresses"),
-                "selected_group_ids": group_ids,
-                "error_message": "No tenant selected.",
-            },
-            status=400,
-        )
 
     if not ipv4_type and not ipv6_type:
         return render(
@@ -555,7 +506,7 @@ def update_address_view(request, object_id):
         )
 
     try:
-        update_address(
+        updated_address = update_address(
             actor=request.user,
             tenant_id=tenant_id,
             address_id=object_id,
@@ -571,6 +522,15 @@ def update_address_view(request, object_id):
             ipv6Address_start=ipv6Address_start,
             ipv6Address_end=ipv6Address_end,
         )
+
+        for group_id in group_ids:
+            add_addresses_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                address_group_id=group_id,
+                address_ids=[updated_address.id],
+            )
+
     except Exception as e:
         return render(
             request,
