@@ -444,9 +444,7 @@ class Policy:
         return list(dict.fromkeys(items))
 
 
-
-
-def merge_policies(policies: list[Policy], name: str = None)-> Policy:
+def merge_policies(policies: list[Policy], name: str = None) -> Policy:
     if not policies:
         raise ValueError("No policies provided for merging.")
 
@@ -464,12 +462,10 @@ def merge_policies(policies: list[Policy], name: str = None)-> Policy:
         filter = policy.YAMLConfig["filters"][0]
         merged_policy.YAMLConfig["filters"].append(filter)
 
-
     if name:
         merged_policy.name = name
 
     return merged_policy
-
 
 
 def generate_config(policy: Policy) -> str:
@@ -512,9 +508,8 @@ def generate_multi_policy_config(policies: list[Policy], name: str = None) -> st
         "networks": merged_policy.networks.get("networks", {}),
         "services": merged_policy.services.get("services", {}),
     }
-    
-    definitions.ParseDefinitionsObject(definitions_obj, merged_policy.name)
 
+    definitions.ParseDefinitionsObject(definitions_obj, merged_policy.name)
 
     configs = aerleon_api.Generate([merged_policy.YAMLConfig], definitions)
     return configs

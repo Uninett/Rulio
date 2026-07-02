@@ -6,7 +6,7 @@ from backend.objects.attributes.tag import Tag
 from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import add_tag_to_object
 from backend.utils.logger import set_up_logger
-from backend.services.attribute_objects.create_attribute_objects import create_tag
+from backend.services.attribute_objects.create_attribute_objects import get_or_create_tag
 from backend.services.get import get_all_tags_from_tenant
 
 
@@ -155,7 +155,7 @@ def seed_tags(actor: User, tenant_id: int) -> tuple[int, list[Tag]]:
             continue
 
         created_tags.append(
-            create_tag(
+            get_or_create_tag(
                 actor=actor,
                 tenant_id=tenant_id,
                 name=tag_data["name"],

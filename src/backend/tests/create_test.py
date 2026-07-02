@@ -504,7 +504,7 @@ class TestGenerateConfigFromFilterObject:
         sample_rules_with_objects,
         sample_filters,
     ):
-        
+
         new_filter = create_filter(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
@@ -533,7 +533,6 @@ class TestGenerateConfigFromFilterObject:
             rule_sequence=20,
         )
 
-
         interfaces = []
         for vendor in ["juniper", "cisco"]:
             device = create_device(
@@ -554,7 +553,6 @@ class TestGenerateConfigFromFilterObject:
                 VRF=None,
             )
             interfaces.append(interface)
-
 
             add_filter_to_interface(
                 actor=request_with_session.user,
@@ -602,9 +600,9 @@ class TestGenerateConfigFromFilterObject:
             merged_policy = merge_policies(policies, name=None)
             assert merged_policy is not None
             logger.info(
-                        "Generated policy YAML:\n%s",
-                        yaml.dump(merged_policy.YAMLConfig, sort_keys=False, default_flow_style=False),
-                    )
+                "Generated policy YAML:\n%s",
+                yaml.dump(merged_policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+            )
             config = generate_multi_policy_config(policies)
             logger.info(
                 "config.keys(): %s",
@@ -614,4 +612,6 @@ class TestGenerateConfigFromFilterObject:
 
             filepath = TEST_LOGPATH / "interface" / f"{interface.name}_generated_config.yaml"
             filedir = TEST_LOGPATH / "interface"
-            write_configuration_to_file(config, filepath, filedir, device.platform, __name__, log_for_vendors=["juniper", "cisco"])
+            write_configuration_to_file(
+                config, filepath, filedir, device.platform, __name__, log_for_vendors=["juniper", "cisco"]
+            )
