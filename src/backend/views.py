@@ -975,6 +975,30 @@ Modal Partial: Update Modal
 """
 
 
+@login_required(login_url="login")
+def get_update_modal(request, row_id):
+    return render(
+        request,
+        "partials/_modal.html",
+        {
+            "modal_title": "Update Object",
+            "modal_mode": "update",
+            "modal_object_type": "addresses",
+            "modal_type": None,
+            "modal_supports_types": False,
+            "item_type_editable": False,
+            "modal_type_labels": {},
+            "modal_content_partial": "partials/modals/_update_placeholder.html",
+            "modal_post_url": "#",
+            "modal_target": None,
+            "modal_swap": None,
+            "modal_submit_handler": None,
+            "modal_refresh_url": None,
+            "row_id": row_id,
+        },
+    )
+
+
 """
 ====================================================================
 Modal Partial: Item/Group Options
