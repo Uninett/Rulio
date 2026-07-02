@@ -135,11 +135,14 @@ class TestPopulateDB:
             default_filter_count,
         ) = populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
-        AddressGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
-        ServiceGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
+        Tag.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
         Address.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
         Service.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
-        Tag.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
+        AddressGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
+        ServiceGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
+        Rule.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
+        Filter.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
+
         populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
         [
