@@ -8,7 +8,7 @@
                 <p> <strong>{{ field.label}}:</strong></p>
                 {% if field.special_style == True %}
                 {% for value in field.value %}
-                <div class="tagsElipse"> {{ value }}</div>
+                <div class="tagsElipse" title="{{ value }}"> {{ value }}</div>
 
                 {% endfor %}
                 {% else %}
