@@ -436,6 +436,22 @@ def create_tag(*, actor: User, tenant_id: int, name: str, description: str) -> T
     return tag
 
 
+def get_or_create_tag(*, actor: User, tenant_id: int, name: str, description: str) -> tuple[Tag, int, bool]:
+
+    require_write_tenant(actor, tenant_id)
+
+    tag, created = Tag.objects.get_or_create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    if created:
+        logger.info(f"Created {tag} for tenant={tag.tenant_id}")
+    else:
+        logger.warning(f"Tag already exists: {tag} for tenant={tag.tenant_id}")
+    return tag, created
+
+
 def create_and_add_tag_to_object(
     *, actor: User, tenant_id: int, tag_name: str, tag_description: str, object_type: str, object_id: int
 ) -> Tag:

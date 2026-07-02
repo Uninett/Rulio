@@ -13,6 +13,7 @@ from backend.schemas.filter import CreateFilterSchema
 from backend.schemas.interface import CreateInterfaceSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.authentication import require_read_tenantd, require_superadmind, require_write_tenantd
+from backend.services.debugging.add_test_data import create_interfaces_devices_devicegroups_tags
 from backend.services.delete import (
     clear_all_tags_from_object,
     delete_device,
@@ -1470,6 +1471,19 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
                 "message": str(e),
             },
         )
+
+
+@api.post("/add_test_data", tags=["Configuration"], response={200: dict, 403: MessageSchema})
+@require_write_tenantd
+def add_test_data(request):
+    create_interfaces_devices_devicegroups_tags(actor=request.user, tenant_id=request.session["current_tenant_id"])
+    return Status(
+        200,
+        {
+            "status": "success",
+            "message": "Test data added successfully",
+        },
+    )
 
 
 @api.get(

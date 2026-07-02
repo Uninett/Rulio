@@ -42,6 +42,25 @@ def create_device(*, actor: User, tenant_id: int, name: str, platform: str, desc
     return device
 
 
+def get_or_create_device(
+    *, actor: User, tenant_id: int, name: str, platform: str, description: str, type: str
+) -> Device:
+    require_write_tenant(actor, tenant_id)
+
+    device, created = Device.objects.get_or_create(
+        name=name,
+        platform=platform,
+        type=type,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    if created:
+        logger.info(f"Created {device} for tenant={device.tenant_id}")
+    else:
+        logger.info(f"Retrieved existing {device} for tenant={device.tenant_id}")
+    return device
+
+
 def create_device_group(*, actor: User, tenant_id: int, name: str, description: str) -> DeviceGroup:
     require_write_tenant(actor, tenant_id)
 
@@ -58,6 +77,21 @@ def create_device_group(*, actor: User, tenant_id: int, name: str, description: 
 
     device_group.save()
     logger.info(f"Created {device_group} for tenant={device_group.tenant_id}")
+    return device_group
+
+
+def get_or_create_device_group(*, actor: User, tenant_id: int, name: str, description: str) -> DeviceGroup:
+    require_write_tenant(actor, tenant_id)
+
+    device_group, created = DeviceGroup.objects.get_or_create(
+        name=name,
+        description=description,
+        tenant_id=tenant_id,
+    )
+    if created:
+        logger.info(f"Created {device_group} for tenant={device_group.tenant_id}")
+    else:
+        logger.info(f"Retrieved existing {device_group} for tenant={device_group.tenant_id}")
     return device_group
 
 
@@ -86,4 +120,28 @@ def create_interface(
 
     interface.save()
     logger.info(f"Created {interface} for device={interface.device_id}")
+    return interface
+
+
+def get_or_create_interface(
+    *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
+) -> Interface:
+    require_write_tenant(actor, tenant_id)
+    # Check if the device exists and belongs to the tenant
+    try:
+        Device.objects.get(id=device_id, tenant_id=tenant_id)
+    except Device.DoesNotExist:
+        raise ValueError(f"Device with id={device_id} does not exist in tenant={tenant_id}.")
+
+    interface, created = Interface.objects.get_or_create(
+        name=name,
+        description=description,
+        device_id=device_id,
+        type=type,
+        VRF=VRF,
+    )
+    if created:
+        logger.info(f"Created {interface} for device={interface.device_id}")
+    else:
+        logger.info(f"Retrieved existing {interface} for device={interface.device_id}")
     return interface
