@@ -27,6 +27,7 @@ from backend.services.get import (
     get_all_tags_from_tenant,
     get_all_objects_with_certain_tag,
     get_all_filters_with_tags_from_tenant,
+    get_all_rules_with_objects_from_tenant,
 )
 
 from backend.services.attribute_objects.get_address_objects import (
