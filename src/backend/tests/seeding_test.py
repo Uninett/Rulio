@@ -5,6 +5,8 @@ from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
+from backend.objects.filters.rule import Rule
+from backend.objects.filters.filter import Filter
 from backend.services.seed.populate import populate_db
 from constants import GLOBAL_TENANT_ID
 
@@ -18,6 +20,8 @@ class TestPopulateDB:
             Service.objects.filter(tenant_id=GLOBAL_TENANT_ID).count(),
             AddressGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).count(),
             ServiceGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).count(),
+            Rule.objects.filter(tenant_id=GLOBAL_TENANT_ID).count(),
+            Filter.objects.filter(tenant_id=GLOBAL_TENANT_ID).count(),
         ]
 
     @pytest.mark.django_db
@@ -28,6 +32,8 @@ class TestPopulateDB:
             service_count_before_seeding,
             address_group_count_before_seeding,
             service_group_count_before_seeding,
+            rule_count_before_seeding,
+            filter_count_before_seeding,
         ] = self.seed_counts()
 
         (
@@ -36,6 +42,8 @@ class TestPopulateDB:
             default_service_count,
             default_address_group_count,
             default_service_group_count,
+            default_rule_count,
+            default_filter_count,
         ) = populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
         [
@@ -44,6 +52,8 @@ class TestPopulateDB:
             service_count_after_seeding,
             address_group_count_after_seeding,
             service_group_count_after_seeding,
+            rule_count_after_seeding,
+            filter_count_after_seeding,
         ] = self.seed_counts()
 
         if (
@@ -52,24 +62,32 @@ class TestPopulateDB:
             and service_count_before_seeding == 0
             and address_group_count_before_seeding == 0
             and service_group_count_before_seeding == 0
+            and rule_count_before_seeding == 0
+            and filter_count_before_seeding == 0
         ):
             assert tag_count_after_seeding > 0
             assert address_count_after_seeding > 0
             assert service_count_after_seeding > 0
             assert address_group_count_after_seeding > 0
             assert service_group_count_after_seeding > 0
+            assert rule_count_after_seeding > 0
+            assert filter_count_after_seeding > 0
 
             assert tag_count_after_seeding == default_tag_count
             assert address_count_after_seeding == default_address_count
             assert service_count_after_seeding == default_service_count
             assert address_group_count_after_seeding == default_address_group_count
             assert service_group_count_after_seeding == default_service_group_count
+            assert rule_count_after_seeding == default_rule_count
+            assert filter_count_after_seeding == default_filter_count
         else:
             assert tag_count_after_seeding >= tag_count_before_seeding
             assert address_count_after_seeding >= address_count_before_seeding
             assert service_count_after_seeding >= service_count_before_seeding
             assert address_group_count_after_seeding >= address_group_count_before_seeding
             assert service_group_count_after_seeding >= service_group_count_before_seeding
+            assert rule_count_after_seeding >= rule_count_before_seeding
+            assert filter_count_after_seeding >= filter_count_before_seeding
 
     @pytest.mark.django_db
     def test_populate_db_does_not_create_duplicate_seed_data(self, request_with_session):
@@ -81,6 +99,8 @@ class TestPopulateDB:
             service_count_after_first_seeding,
             address_group_count_after_first_seeding,
             service_group_count_after_first_seeding,
+            rule_count_after_first_seeding,
+            filter_count_after_first_seeding,
         ] = self.seed_counts()
 
         populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
@@ -91,6 +111,8 @@ class TestPopulateDB:
             service_count_after_second_seeding,
             address_group_count_after_second_seeding,
             service_group_count_after_second_seeding,
+            rule_count_after_second_seeding,
+            filter_count_after_second_seeding,
         ] = self.seed_counts()
 
         assert tag_count_after_second_seeding == tag_count_after_first_seeding
@@ -98,6 +120,8 @@ class TestPopulateDB:
         assert service_count_after_second_seeding == service_count_after_first_seeding
         assert address_group_count_after_second_seeding == address_group_count_after_first_seeding
         assert service_group_count_after_second_seeding == service_group_count_after_first_seeding
+        assert rule_count_after_second_seeding == rule_count_after_first_seeding
+        assert filter_count_after_second_seeding == filter_count_after_first_seeding
 
     @pytest.mark.django_db
     def test_populate_db_recreates_missing_seed_data(self, request_with_session):
@@ -107,6 +131,8 @@ class TestPopulateDB:
             default_service_count,
             default_address_group_count,
             default_service_group_count,
+            default_rule_count,
+            default_filter_count,
         ) = populate_db(actor=request_with_session.user, tenant_id=request_with_session.tenant_id)
 
         AddressGroup.objects.filter(tenant_id=GLOBAL_TENANT_ID).delete()
@@ -122,6 +148,8 @@ class TestPopulateDB:
             service_count_after_reseeding,
             address_group_count_after_reseeding,
             service_group_count_after_reseeding,
+            rule_count_after_reseeding,
+            filter_count_after_reseeding,
         ] = self.seed_counts()
 
         assert tag_count_after_reseeding == default_tag_count
@@ -129,3 +157,5 @@ class TestPopulateDB:
         assert service_count_after_reseeding == default_service_count
         assert address_group_count_after_reseeding == default_address_group_count
         assert service_group_count_after_reseeding == default_service_group_count
+        assert rule_count_after_reseeding == default_rule_count
+        assert filter_count_after_reseeding == default_filter_count

@@ -1,5 +1,3 @@
-
-
 from django.contrib.auth.models import User
 
 from backend.objects.filters.rule import Rule
@@ -304,5 +302,3 @@ def seed_filters(
         logger.warning("No default filters were created because they already all existed.")
 
     return default_filter_count, default_filters
-
-

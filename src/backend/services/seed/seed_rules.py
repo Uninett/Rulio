@@ -1,4 +1,3 @@
-
 from django.contrib.auth.models import User
 
 from backend.objects.filters.rule import Rule
@@ -8,6 +7,7 @@ from backend.utils.logger import set_up_logger
 
 
 logger = set_up_logger(__name__)
+
 
 def seed_rules(
     *,
@@ -511,4 +511,3 @@ def seed_rules(
         logger.warning("No default rules were created because they already all existed.")
 
     return default_rules_count, default_rules
-

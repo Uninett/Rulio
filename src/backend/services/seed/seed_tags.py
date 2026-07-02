@@ -580,3 +580,262 @@ def add_tags_to_default_service_groups(
             )
 
     logger.info("Added tags to all seeded default service groups.")
+
+
+def add_tags_to_default_rules(
+    actor: User,
+    tenant_id: int,
+    default_rules: list,
+) -> None:
+    """
+    Add the correct tags to the seeded default rules.
+    """
+    require_write_tenant(actor, tenant_id)
+
+    tenant_tags = get_all_tags_from_tenant(actor=actor, tenant_id=tenant_id)
+    tags_by_name: dict[str, Tag] = {tag.name: tag for tag in tenant_tags}
+    rules_by_name = {rule.name: rule for rule in default_rules}
+
+    rule_tag_mappings: dict[str, list[str]] = {
+        "Allow_Private_And_Local_Use_Addresses_To_Common_Infrastructure_Client_Services": [
+            "default",
+            "internal",
+            "infrastructure",
+            "allow_list",
+            "priority_1",
+        ],
+        "Allow_Private_And_Local_Use_Addresses_To_Common_Web_Access_Services": [
+            "default",
+            "internal",
+            "web",
+            "allow_list",
+            "priority_1",
+        ],
+        "Allow_Private_And_Local_Use_Addresses_To_Restricted_Administrative_Access_Services": [
+            "default",
+            "internal",
+            "management",
+            "restricted",
+            "allow_list",
+            "priority_1",
+        ],
+        "Allow_Private_And_Local_Use_Addresses_To_Restricted_Internal_Identity_Services": [
+            "default",
+            "internal",
+            "authentication",
+            "restricted",
+            "allow_list",
+            "priority_2",
+        ],
+        "Allow_Private_And_Local_Use_Addresses_To_Restricted_Internal_File_Sharing_Services": [
+            "default",
+            "internal",
+            "file_sharing",
+            "restricted",
+            "allow_list",
+            "priority_2",
+        ],
+        "Allow_Private_And_Local_Use_Addresses_To_Restricted_Database_Services": [
+            "default",
+            "internal",
+            "database",
+            "restricted",
+            "sensitive",
+            "allow_list",
+            "priority_2",
+        ],
+        "Allow_Private_And_Local_Use_Addresses_To_Restricted_Monitoring_And_Logging_Services": [
+            "default",
+            "internal",
+            "monitoring",
+            "management",
+            "restricted",
+            "allow_list",
+            "priority_2",
+        ],
+        "Deny_Invalid_Transit_Addresses_To_Any_TCP": [
+            "default",
+            "transit",
+            "deny_list",
+            "restricted",
+            "priority_1",
+        ],
+        "Deny_Invalid_Transit_Addresses_To_Any_UDP": [
+            "default",
+            "transit",
+            "deny_list",
+            "restricted",
+            "priority_1",
+        ],
+        "Deny_Documentation_And_Test_Addresses_To_Any_TCP": [
+            "default",
+            "documentation",
+            "debugging",
+            "deny_list",
+            "priority_2",
+        ],
+        "Deny_Documentation_And_Test_Addresses_To_Any_UDP": [
+            "default",
+            "documentation",
+            "debugging",
+            "deny_list",
+            "priority_2",
+        ],
+        "Deny_Multicast_Addresses_To_Any_TCP": [
+            "default",
+            "multicast",
+            "deny_list",
+            "restricted",
+            "priority_2",
+        ],
+        "Deny_Multicast_Addresses_To_Any_UDP": [
+            "default",
+            "multicast",
+            "deny_list",
+            "restricted",
+            "priority_2",
+        ],
+        "Deny_IPv6_Transition_And_Translation_Addresses_To_Any_TCP": [
+            "default",
+            "transit",
+            "deny_list",
+            "restricted",
+            "priority_2",
+        ],
+        "Deny_IPv6_Transition_And_Translation_Addresses_To_Any_UDP": [
+            "default",
+            "transit",
+            "deny_list",
+            "restricted",
+            "priority_2",
+        ],
+        "Deny_Private_And_Local_Use_Addresses_To_Deny_Legacy_Insecure_Services": [
+            "default",
+            "internal",
+            "legacy",
+            "deny_list",
+            "restricted",
+            "priority_3",
+        ],
+        "Deny_Private_And_Local_Use_Addresses_To_Deny_Tunneling_And_VPN_Services": [
+            "default",
+            "internal",
+            "vpn",
+            "deny_list",
+            "restricted",
+            "priority_3",
+        ],
+        "Deny_Private_And_Local_Use_Addresses_To_Deny_Voice_And_Signaling_Services": [
+            "default",
+            "internal",
+            "voice",
+            "deny_list",
+            "restricted",
+            "priority_3",
+        ],
+        "Deny_Private_And_Local_Use_Addresses_To_Deny_Local_Link_Resolution_Services": [
+            "default",
+            "internal",
+            "link_local",
+            "multicast",
+            "deny_list",
+            "restricted",
+            "priority_3",
+        ],
+    }
+
+    missing_tags = {
+        tag_name for tag_names in rule_tag_mappings.values() for tag_name in tag_names if tag_name not in tags_by_name
+    }
+    if missing_tags:
+        raise ValueError("Cannot tag default rules because these tags are missing: " + ", ".join(sorted(missing_tags)))
+
+    missing_rules = [rule_name for rule_name in rule_tag_mappings if rule_name not in rules_by_name]
+    if missing_rules:
+        raise ValueError(
+            "Cannot tag default rules because these rules are missing: " + ", ".join(sorted(missing_rules))
+        )
+
+    for rule_name, tag_names in rule_tag_mappings.items():
+        rule = rules_by_name[rule_name]
+        for tag_name in tag_names:
+            add_tag_to_object(
+                actor=actor,
+                tenant_id=tenant_id,
+                tag=tags_by_name[tag_name],
+                obj=rule,
+            )
+
+    logger.info("Added tags to all seeded default rules.")
+
+
+def add_tags_to_default_filters(
+    actor: User,
+    tenant_id: int,
+    default_filters: list,
+) -> None:
+    """
+    Add the correct tags to the seeded default filters.
+    """
+    require_write_tenant(actor, tenant_id)
+
+    tenant_tags = get_all_tags_from_tenant(actor=actor, tenant_id=tenant_id)
+    tags_by_name: dict[str, Tag] = {tag.name: tag for tag in tenant_tags}
+    filters_by_name = {filter_obj.name: filter_obj for filter_obj in default_filters}
+
+    filter_tag_mappings: dict[str, list[str]] = {
+        "Baseline_Internal_Client_Policy": [
+            "default",
+            "internal",
+            "allow_list",
+            "deny_list",
+            "restricted",
+            "priority_1",
+        ],
+        "Internal_Server_Policy": [
+            "default",
+            "internal",
+            "management",
+            "authentication",
+            "database",
+            "file_sharing",
+            "monitoring",
+            "restricted",
+            "priority_1",
+        ],
+        "Strict_Egress_Policy": [
+            "default",
+            "internal",
+            "outbound",
+            "deny_list",
+            "allow_list",
+            "restricted",
+            "priority_1",
+        ],
+    }
+
+    missing_tags = {
+        tag_name for tag_names in filter_tag_mappings.values() for tag_name in tag_names if tag_name not in tags_by_name
+    }
+    if missing_tags:
+        raise ValueError(
+            "Cannot tag default filters because these tags are missing: " + ", ".join(sorted(missing_tags))
+        )
+
+    missing_filters = [filter_name for filter_name in filter_tag_mappings if filter_name not in filters_by_name]
+    if missing_filters:
+        raise ValueError(
+            "Cannot tag default filters because these filters are missing: " + ", ".join(sorted(missing_filters))
+        )
+
+    for filter_name, tag_names in filter_tag_mappings.items():
+        filter_obj = filters_by_name[filter_name]
+        for tag_name in tag_names:
+            add_tag_to_object(
+                actor=actor,
+                tenant_id=tenant_id,
+                tag=tags_by_name[tag_name],
+                obj=filter_obj,
+            )
+
+    logger.info("Added tags to all seeded default filters.")
