@@ -1,4 +1,5 @@
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_service_group
+from backend.objects.attributes.service_group import ServiceGroup
 from backend.services.attribute_objects.get_service_objects import get_all_services_from_tenant_by_names
 from backend.utils.logger import set_up_logger
 
@@ -6,7 +7,7 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list]:
+def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
     """
     Seed the default service groups for a tenant.
     """

@@ -47,6 +47,39 @@ def create_rule(
     return rule
 
 
+def get_or_create_rule(
+    *,
+    actor: User,
+    tenant_id: int,
+    name: str,
+    description: str,
+    action: str,
+    log_type: str,
+    hit_count: int,
+) -> tuple[Rule, bool]:
+    require_write_tenant(actor, tenant_id)
+    rule, created = Rule.objects.get_or_create(
+        tenant_id=tenant_id,
+        name=name,
+        defaults={
+            "description": description,
+            "action": action,
+            "log_type": log_type,
+            "hit_count": hit_count,
+            "date_created": datetime.now(timezone.utc),
+            "date_changed": datetime.now(timezone.utc),
+            "created_by": actor.id,
+            "changed_by": actor.id,
+        },
+    )
+    if created:
+        rule.full_clean()
+        logger.info(f"Created {rule} for tenant={rule.tenant_id}")
+    else:
+        logger.info(f"Found existing {rule} for tenant={rule.tenant_id}")
+    return rule, created
+
+
 def create_filter(
     *,
     actor: User,
@@ -70,3 +103,26 @@ def create_filter(
     filter_obj.save()
     logger.info(f"Created {filter_obj} for tenant={filter_obj.tenant_id}")
     return filter_obj
+
+
+def get_or_create_filter(
+    *,
+    actor: User,
+    tenant_id: int,
+    name: str,
+    description: str,
+) -> tuple[Filter, bool]:
+    require_write_tenant(actor, tenant_id)
+    filter_obj, created = Filter.objects.get_or_create(
+        tenant_id=tenant_id,
+        name=name,
+        defaults={
+            "description": description,
+        },
+    )
+    if created:
+        filter_obj.full_clean()
+        logger.info(f"Created {filter_obj} for tenant={filter_obj.tenant_id}")
+    else:
+        logger.info(f"Found existing {filter_obj} for tenant={filter_obj.tenant_id}")
+    return filter_obj, created
