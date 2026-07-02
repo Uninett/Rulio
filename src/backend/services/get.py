@@ -253,7 +253,7 @@ def get_all_objects_with_certain_tag(
     if tag.tenant_id != tenant_id and tag.tenant_id != 1:
         raise PermissionDenied(f"Tag with ID {tag_id} does not belong to tenant {tenant_id}.")
     tagged_objects = TagConnection.objects.filter(tag_id=tag_id).select_related("content_type", "tag")
-    
+
     result = []
     objects = {
         "address": [],
