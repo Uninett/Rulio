@@ -1,7 +1,6 @@
 import ipaddress
 import pytest
 
-
 from backend.services.update import (
     update_address,
     update_service,
@@ -12,9 +11,7 @@ from backend.services.update import (
     update_device,
     update_device_group,
     update_interface,
-    update_filter_interface,
     update_tag,
-    update_rule_filter,
 )
 
 
@@ -38,8 +35,7 @@ def convert_ipv4_to_ipv6(ipv4_network):
 class TestUpdate:
     def test_update_address(self, request_with_session, sample_addresses):
         for address in sample_addresses:
-            old_name = address.name
-            new_name = f"{old_name}_updated"
+            new_name = f"{address.name}_updated"
 
             update_address(
                 actor=request_with_session.user,
@@ -66,7 +62,7 @@ class TestUpdate:
 
                 address.refresh_from_db()
                 assert address.ipv6_type == "standard"
-                assert address.ipv6Network == str(convert_ipv4_to_ipv6(old_ipv4_network))
+                assert str(address.ipv6Network) == str(convert_ipv4_to_ipv6(old_ipv4_network))
 
     def test_update_service(self, request_with_session, sample_services):
         for service in sample_services:
@@ -106,6 +102,7 @@ class TestUpdate:
 
     def test_update_address_group_invalid_type(self, request_with_session, sample_address_group):
         address_group = sample_address_group[0]
+        old_name = address_group.name
 
         with pytest.raises(ValueError, match="Address group type must be 'group'"):
             update_address_group(
@@ -114,6 +111,9 @@ class TestUpdate:
                 address_group_id=address_group.id,
                 addr_type="standard",
             )
+
+        address_group.refresh_from_db()
+        assert address_group.name == old_name
 
     def test_update_service_group(self, request_with_session, sample_service_group):
         service_group = sample_service_group
