@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-
+from backend.objects.attributes.address import Address
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address
 from backend.utils.logger import set_up_logger
 
@@ -7,7 +7,7 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def seed_addresses(*, actor: User, tenant_id: int) -> tuple[int, list]:
+def seed_addresses(*, actor: User, tenant_id: int) -> tuple[int, list[Address]]:
     default_addresses = [
         # ---------------------------------------------------------------------
         # IPv4 - RFC1918 Private Networks

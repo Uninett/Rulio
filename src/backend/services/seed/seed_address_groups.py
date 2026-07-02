@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 
-from backend.objects.attributes.service import Service
+from backend.objects.attributes.address_group import AddressGroup
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address_group
 from backend.services.attribute_objects.get_address_objects import get_all_addresses_from_tenant_by_names
 from backend.utils.logger import set_up_logger
@@ -9,7 +9,7 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[Service]]:
+def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[AddressGroup]]:
 
     required_address_names = [
         "Private_Class_A_IPv4_RFC1918",

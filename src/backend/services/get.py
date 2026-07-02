@@ -10,6 +10,7 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.tag import Tag
+from backend.objects.attributes.tag_connection import TagConnection
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
@@ -275,7 +276,8 @@ def get_all_objects_with_certain_tag(
 
     if tag.tenant_id != tenant_id and tag.tenant_id != 1 and not is_superadmin(actor):
         raise PermissionDenied(f"Tag with ID {tag_id} does not belong to tenant {tenant_id}.")
-    tagged_objects = tag.tagged_objects.all()
+    tagged_objects = TagConnection.objects.filter(tag_id=tag_id).select_related("content_type", "tag")
+
     result = []
     objects = {
         "address": [],
