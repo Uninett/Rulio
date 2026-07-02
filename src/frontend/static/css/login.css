@@ -39,13 +39,11 @@
 }
 
 .login-button {
-    color: #000000;
-    background-color: #F3F1FE;
-    border: 2px solid #F3F1FE;
+    background-color: #7351FB;
+    border: 2px solid #7351FB;
 }
 
 .login-button:hover {
-    background-color: #7351FB;
-    border: 2px solid #7351FB;
-    color: #ffffff;
+    background-color: #643FFA;
+    border: 2px solid #643FFA;
 }
