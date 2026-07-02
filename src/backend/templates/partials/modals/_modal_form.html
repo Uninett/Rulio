@@ -30,7 +30,7 @@
                 </button>
 
                 <button class="btn btn-save" type="submit">
-                    Submit
+                    {% if modal_mode == "update" %}Save{% else %}Submit{% endif %}
                 </button>
             </div>
         </form>
