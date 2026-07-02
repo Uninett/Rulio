@@ -1473,7 +1473,7 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
         )
 
 
-@api.post("/add_test_data", tags=["Configuration"], response={200: dict, 403: MessageSchema})
+@api.post("/add_test_data", tags=["Debugging"], response={200: dict, 403: MessageSchema})
 @require_write_tenantd
 def add_test_data(request):
     create_interfaces_devices_devicegroups_tags(actor=request.user, tenant_id=request.session["current_tenant_id"])
