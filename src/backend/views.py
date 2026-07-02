@@ -21,6 +21,7 @@ from backend.services.membership import (
 
 from backend.services.get import (
     get_all_tags_from_tenant,
+    get_all_objects_with_certain_tag,
 )
 
 from backend.services.attribute_objects.get_address_objects import (
@@ -760,7 +761,7 @@ def get_tags_view(request):
         }
 
     try:
-        tags, _, _ = get_all_tags_from_tenant(
+        tags = get_all_tags_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
         )
@@ -775,14 +776,24 @@ def get_tags_view(request):
     rows = []
 
     for item in tags:
+        objects = get_all_objects_with_certain_tag(actor=request.user, tenant_id=int(tenant_id), tag_id=item.id)
+        expand = [
+            {"label": "Address", "value": objects.get("addresses", [])},
+            {"label": "Address Group", "value": objects.get("addressgroup", [])},
+            {"label": "Service", "value": objects.get("services", [])},
+            {"label": "Rule", "value": objects.get("rules", [])},
+            {"label": "Filter", "value": objects.get("filter", [])},
+            {"label": "Device", "value": objects.get("device", [])},
+            {"label": "Interface", "value": objects.get("interface", [])},
+        ]
+
         rows.append(
             {
-                "id": item.get("id", ""),
                 "cells": [
-                    item.get("name", ""),
-                    item.get("description", ""),
+                    item.name,
+                    item.description,
                 ],
-                "expand": {"label": "ID", "value": item.get("id", "")},
+                "expand": expand,
             }
         )
 
