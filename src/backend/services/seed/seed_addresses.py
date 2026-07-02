@@ -7,7 +7,7 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def seed_addresses(*, actor: User, tenant_id: int) -> int:
+def seed_addresses(*, actor: User, tenant_id: int) -> tuple[int, list]:
     default_addresses = [
         # ---------------------------------------------------------------------
         # IPv4 - RFC1918 Private Networks
@@ -284,10 +284,11 @@ def seed_addresses(*, actor: User, tenant_id: int) -> int:
         ),
     ]
     created_flags = [address[2] for address in default_addresses]
+    default_addresses = [address[0] for address in default_addresses]
     if all(created_flags):
         logger.info("All default addresses were created. No duplicates existed.")
     elif any(created_flags):
         logger.warning("Some default addresses already existed. Missing addresses were created.")
     else:
         logger.warning("No default addresses were created because they already all existed.")
-    return len(default_addresses)
+    return len(default_addresses), default_addresses

@@ -10,6 +10,8 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
+from backend.objects.attributes.tag import Tag
+from backend.objects.attributes.tag_connection import TagConnection
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_filter import RuleFilter
@@ -18,7 +20,7 @@ from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.device_group_member import DeviceGroupMember
 from backend.objects.tenant_objects.interface import Interface
-from backend.services.helper_user_tenant import require_write_tenant
+from backend.services.helper_user_tenant import is_superadmin, require_write_tenant
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
 
@@ -359,3 +361,15 @@ def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, d
         "already_present_device_ids": sorted(already_present_ids),
         "not_found_device_ids": sorted(not_found_ids),
     }
+
+
+def add_tag_to_object(*, actor: User, tenant_id: int, tag: Tag, obj: object):
+    require_write_tenant(actor, tenant_id)
+    if not Tag.objects.filter(id=tag.id, tenant_id=tenant_id).exists() and not is_superadmin(actor):
+        raise PermissionDenied(f"Tag with ID {tag.id} does not exist in tenant {tenant_id}.")
+    if TagConnection.objects.filter(
+        tag=tag, content_type=ContentType.objects.get_for_model(obj), object_id=obj.id
+    ).exists():
+        logger.warning(f"Tag {tag.id} is already associated with object {obj}.")
+        return
+    TagConnection.objects.create(tag=tag, content_object=obj)

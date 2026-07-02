@@ -6,8 +6,10 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def seed_servicegroups(actor, tenant_id: int) -> int:
-
+def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list]:
+    """
+    Seed the default service groups for a tenant.
+    """
     required_service_names = [
         "ICMP_RFC792",
         "ICMPv6_RFC4443",
@@ -278,6 +280,7 @@ def seed_servicegroups(actor, tenant_id: int) -> int:
     ]
 
     created_flags = [service_group[2] for service_group in default_service_groups]
+    default_service_groups = [service_group[0] for service_group in default_service_groups]
 
     if all(created_flags):
         logger.info("All default service groups were created. No duplicates existed.")
@@ -286,4 +289,4 @@ def seed_servicegroups(actor, tenant_id: int) -> int:
     else:
         logger.warning("No default service groups were created because they already all existed.")
 
-    return len(default_service_groups)
+    return len(default_service_groups), default_service_groups
