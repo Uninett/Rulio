@@ -202,7 +202,7 @@ def get_filters_view(request):
         }
 
     try:
-        filters, _, _ = get_all_filters_from_tenant(
+        filters = get_all_filters_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
         )
@@ -213,13 +213,8 @@ def get_filters_view(request):
         }
 
     headers = [
-        "#",
         "Name",
         "Description",
-        "Action",
-        "Count",
-        "Created",
-        "Modified",
     ]
 
     rows = []
