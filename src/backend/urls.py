@@ -36,6 +36,7 @@ from .views import (
     # Objects Page: Address
     get_objects_addresses,
     post_address_view,
+    update_address_group_view,
     update_address_view,
     post_address_group_view,
     # Objects Page: Service
@@ -66,6 +67,7 @@ urlpatterns = [
     path("addresses/create/", post_address_view, name="post-address-view"),
     path("addresses/<int:object_id>/update/", update_address_view, name="update-address-view"),
     path("address-groups/create/", post_address_group_view, name="post-address-group-view"),
+    path("address-groups/<int:object_id>/update/", update_address_group_view, name="update-address-group-view"),
     # Objects Page: Service
     path("objects/services/", get_objects_services, name="objects-services"),
     path("services/create/", post_service_view, name="post-service-view"),
