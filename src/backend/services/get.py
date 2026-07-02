@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import QuerySet
 from django.db.models import F
 
@@ -15,7 +15,7 @@ from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
 
-from backend.services.helper_user_tenant import require_read_tenant
+from backend.services.helper_user_tenant import is_superadmin, require_read_tenant
 from backend.utils.logger import set_up_logger
 
 
@@ -125,9 +125,15 @@ def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, obj
     model = DJANGO_MODEL_MAPPING.get(object_type)
     if not model:
         raise ValueError(f"Unsupported object type: {object_type}")
-    obj = model.objects.get(id=object_id)
-    if obj.tenant_id != int(tenant_id):
+
+    try:
+        obj = model.objects.get(id=object_id)
+    except model.DoesNotExist:
+        raise ObjectDoesNotExist(f"{model.__name__} with ID {object_id} does not exist.")
+
+    if obj.tenant_id != int(tenant_id) and not is_superadmin(actor):
         raise PermissionDenied(f"Object with ID {object_id} does not belong to tenant {tenant_id}.")
+
     return obj
 
 
@@ -172,18 +178,27 @@ def get_all_devices_with_tags_from_tenant(actor: User, tenant_id: int, include_g
     return result, requested_devices
 
 
-def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) -> list[Interface]:
+def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) -> QuerySet[Interface]:
     require_read_tenant(actor, tenant_id)
-    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists():
+    try:
+        device = Device.objects.get(id=device_id)
+    except Device.DoesNotExist:
+        raise ObjectDoesNotExist(f"Device with ID {device_id} does not exist.")
+
+    if not is_superadmin(actor) and device.tenant_id != tenant_id:
         raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
-    requested_interfaces = Interface.objects.filter(device_id=device_id)
-    return requested_interfaces
+
+    return Interface.objects.filter(device=device)
 
 
 def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
 
-    if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists():
+    interface = Interface.objects.filter(id=interface_id).first()
+    if interface is None:
+        raise ObjectDoesNotExist(f"Interface with ID {interface_id} does not exist.")
+
+    if not is_superadmin(actor) and interface.device.tenant_id != tenant_id:
         raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
 
     requested_filters = Filter.objects.filter(filterinterface__interface_id=interface_id)
@@ -234,9 +249,15 @@ def get_all_filters_with_tags_from_tenant(actor: User, tenant_id: int, include_g
 
 def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:
     require_read_tenant(actor, tenant_id)
-    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists():
+
+    try:
+        device = Device.objects.get(id=device_id)
+    except Device.DoesNotExist:
+        raise ObjectDoesNotExist(f"Device with ID {device_id} does not exist.")
+
+    if not is_superadmin(actor) and device.tenant_id != tenant_id:
         raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
-    device = Device.objects.get(id=device_id)
+
     return device.platform
 
 
@@ -249,7 +270,10 @@ def get_all_objects_with_certain_tag(
     else:
         tag = Tag.objects.filter(id=tag_id, tenant_id=tenant_id).first()
 
-    if tag.tenant_id != tenant_id and tag.tenant_id != 1:
+    if tag is None:
+        raise ObjectDoesNotExist(f"Tag with ID {tag_id} does not exist or is not accessible to tenant {tenant_id}.")
+
+    if tag.tenant_id != tenant_id and tag.tenant_id != 1 and not is_superadmin(actor):
         raise PermissionDenied(f"Tag with ID {tag_id} does not belong to tenant {tenant_id}.")
     tagged_objects = tag.tagged_objects.all()
     result = []

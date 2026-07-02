@@ -21,16 +21,15 @@ def get_all_service_groups_from_tenant(actor: User, tenant_id: int) -> QuerySet[
 
 
 def get_service_groups_and_services_from_tenant(
-    actor: User, tenant_id: int, include_global_tenant=True, get="all"
+    actor: User, tenant_id: int, include_global_tenant=True
 ) -> list[dict] | tuple[QuerySet[Service], QuerySet[ServiceGroup]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
         service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, 1])
     else:
         service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
-    if get == "objects":
-        services = Service.objects.filter(tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id])
-        return services, service_groups
+    services = Service.objects.filter(tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id])
+
     result = []
     group_map = {}
 
@@ -62,12 +61,8 @@ def get_service_groups_and_services_from_tenant(
                     "port_end": membership.service.port_end,
                 }
             )
-    if get == "all":
-        return result
-    elif get == "ids":
-        return [{"service_group_id": group["service_group_id"]} for group in result]
-    elif get == "names":
-        return [{"service_group_name": group["service_group_name"]} for group in result]
+
+    return result, service_groups, services
 
 
 def get_all_services_and_groups_with_tags_from_tenant(
@@ -153,15 +148,10 @@ def get_all_services_and_groups_with_tags_from_tenant(
     return result, services, service_groups
 
 
-def get_all_services_from_tenant(actor: User, tenant_id: int, get="objects") -> list[Service]:
+def get_all_services_from_tenant(actor: User, tenant_id: int) -> list[Service]:
     require_read_tenant(actor, tenant_id)
     requested_services = Service.objects.filter(tenant_id=tenant_id)
-    if get == "objects":
-        return requested_services
-    elif get == "ids":
-        return [{"service_id": service.id} for service in requested_services]
-    elif get == "names":
-        return [{"service_name": service.name} for service in requested_services]
+    return requested_services
 
 
 def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> QuerySet[Service]:

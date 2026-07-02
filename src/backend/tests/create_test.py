@@ -48,6 +48,35 @@ class TestCreateAddress:
         assert address.ipv4_type == "standard"
         assert address.ipv6_type == "standard"
 
+    def test_create_address_with_custom_range(self, request_with_session, create_testing_tenant):
+        address = create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Address Range",
+            description="This is a test address range",
+            addr_type="range",
+            ipv4_type="custom_range",
+            ipv6_type="custom_range",
+            ipv4Address_start="192.168.1.1",
+            ipv4Address_end="192.168.1.255",
+            ipv6Address_start="2001:db8::1",
+            ipv6Address_end="2001:db8::ffff",
+        )
+        assert address is not None
+        assert address.name == "Test Address Range"
+        assert address.description == "This is a test address range"
+        assert address.tenant_id == request_with_session.tenant_id
+        print("custom range: ", address.get_address())
+        ipv4_networks, ipv6_networks = address.get_address()
+
+        assert str(ipv4_networks[0]) == "192.168.1.1/32"
+        assert str(ipv4_networks[-1]) == "192.168.1.128/25"
+
+        assert str(ipv6_networks[0]) == "2001:db8::1/128"
+        assert str(ipv6_networks[-1]) == "2001:db8::8000/113"
+        assert address.ipv4_type == "custom_range"
+        assert address.ipv6_type == "custom_range"
+
 
 @pytest.mark.django_db
 class TestCreateService:

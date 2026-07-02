@@ -16,17 +16,16 @@ logger = set_up_logger(__name__)
 
 
 def get_address_groups_and_addresses_from_tenant(
-    actor: User, tenant_id: int, include_global_tenant=True, get="all"
-) -> list[dict] | tuple[QuerySet[Address], QuerySet[AddressGroup]]:
+    actor: User, tenant_id: int, include_global_tenant=True
+) -> tuple[list[dict], QuerySet[Address], QuerySet[AddressGroup]]:
     require_read_tenant(actor, tenant_id)
+
     if include_global_tenant:
         address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1])
+        addresses = Address.objects.filter(tenant_id__in=[tenant_id, 1])
     else:
         address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
-
-    if get == "objects":
-        addresses = Address.objects.filter(tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id])
-        return addresses, address_groups
+        addresses = Address.objects.filter(tenant_id=tenant_id)
 
     result = []
     group_map = {}
@@ -65,13 +64,7 @@ def get_address_groups_and_addresses_from_tenant(
                 }
             )
 
-    if get == "all":
-        return result
-    elif get == "ids":
-        return [{"address_group_id": group["address_group_id"]} for group in result]
-    elif get == "names":
-        return [{"address_group_name": group["address_group_name"]} for group in result]
-    raise ValueError(f"Invalid value for 'get': {get}. Must be one of 'all', 'ids', or 'names'.")
+    return result, addresses, address_groups
 
 
 def get_all_addresss_groups_with_tags_from_tenant(
@@ -199,15 +192,10 @@ def get_all_address_groups_from_tenant(actor: User, tenant_id: int) -> QuerySet[
     return requested_address_groups
 
 
-def get_all_addresses_from_tenant(actor: User, tenant_id: int, get="objects") -> list[dict] | QuerySet[Address]:
+def get_all_addresses_from_tenant(actor: User, tenant_id: int) -> list[dict] | QuerySet[Address]:
     require_read_tenant(actor, tenant_id)
     requested_addresses = Address.objects.filter(tenant_id=tenant_id)
-    if get == "objects":
-        return requested_addresses
-    elif get == "ids":
-        return [{"address_id": address.id} for address in requested_addresses]
-    elif get == "names":
-        return [{"address_name": address.name} for address in requested_addresses]
+    return requested_addresses
 
 
 def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> QuerySet[Address]:
