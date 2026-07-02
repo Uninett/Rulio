@@ -32,6 +32,13 @@ from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
 
+from backend.services.update import (
+    update_address,
+    update_service,
+    update_address_group,
+    update_service_group,
+)
+
 """
 ====================================================================
 Login Page
@@ -437,6 +444,49 @@ def post_address_view(request):
     }
 
     return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
+@login_required(login_url="login")
+def update_address_view(request, object_id):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400)
+
+    tenant_id = int(tenant_id)
+
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    addr_type = request.POST.get("addr_type") or None
+    ipv4_type = request.POST.get("ipv4_type") or None
+    ipv6_type = request.POST.get("ipv6_type") or None
+    ipv4Network = request.POST.get("ipv4Network") or None
+    ipv6Network = request.POST.get("ipv6Network") or None
+    ipv4Address_start = request.POST.get("ipv4Address_start") or None
+    ipv4Address_end = request.POST.get("ipv4Address_end") or None
+    ipv6Address_start = request.POST.get("ipv6Address_start") or None
+    ipv6Address_end = request.POST.get("ipv6Address_end") or None
+
+    try:
+        update_address(
+            actor=request.user,
+            tenant_id=tenant_id,
+            address_id=object_id,
+            name=name,
+            description=description,
+            addr_type=addr_type,
+            ipv4_type=ipv4_type,
+            ipv6_type=ipv6_type,
+            ipv4Network=ipv4Network,
+            ipv6Network=ipv6Network,
+            ipv4Address_start=ipv4Address_start,
+            ipv4Address_end=ipv4Address_end,
+            ipv6Address_start=ipv6Address_start,
+            ipv6Address_end=ipv6Address_end,
+        )
+    except Exception as e:
+        return HttpResponse(f"Could not update address: {e}", status=400)
+
+    return HttpResponse(status=204)
 
 
 # Handles creation of a new address group from modal form submission.
@@ -995,6 +1045,7 @@ def get_update_modal_config(object_type):
             "modal_content_partial": "partials/modals/_address_form.html",
             "modal_submit_handler": "prepareAddressForm",
             "modal_refresh_url_name": "objects-addresses",
+            "post_url_name": "update-address-view",
             "options_mode": "group",
             "options_object_type": "addresses",
             "selected_context_key": "selected_group_ids",
@@ -1106,9 +1157,9 @@ def get_update_modal(request, row_id):
         "item_type_editable": False,
         "modal_type_labels": {},
         "modal_content_partial": config["modal_content_partial"],
-        "modal_post_url": "#",
-        "modal_target": None,
-        "modal_swap": None,
+        "modal_post_url": reverse(config["post_url_name"], args=[object_id]) if config.get("post_url_name") else "#",
+        "modal_target": "#modal-container",
+        "modal_swap": "innerHTML",
         "modal_submit_handler": config["modal_submit_handler"],
         "modal_refresh_url": reverse(config["modal_refresh_url_name"]),
         "object_data": object_data,
