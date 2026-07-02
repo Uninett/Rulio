@@ -68,18 +68,18 @@ function toggleAddressFields(form) {
 
     // Toggle visible field groups based on the selected address type.
     form.querySelector('#ipv4-standard-fields').style.display = ipv4Type === 'standard' ? 'block' : 'none';
-    form.querySelector('#ipv4-custom-fields').style.display = ipv4Type === 'custom' ? 'flex' : 'none';
+    form.querySelector('#ipv4-custom-fields').style.display = ipv4Type === 'custom_range' ? 'flex' : 'none';
     form.querySelector('#ipv6-standard-fields').style.display = ipv6Type === 'standard' ? 'block' : 'none';
-    form.querySelector('#ipv6-custom-fields').style.display = ipv6Type === 'custom' ? 'flex' : 'none';
+    form.querySelector('#ipv6-custom-fields').style.display = ipv6Type === 'custom_range' ? 'flex' : 'none';
 
     // Update required validation so only the visible, relevant fields are required.
     form.querySelector('#ipv4Network').required = ipv4Type === 'standard';
-    form.querySelector('#ipv4Address_start').required = ipv4Type === 'custom';
-    form.querySelector('#ipv4Address_end').required = ipv4Type === 'custom';
+    form.querySelector('#ipv4Address_start').required = ipv4Type === 'custom_range';
+    form.querySelector('#ipv4Address_end').required = ipv4Type === 'custom_range';
 
     form.querySelector('#ipv6Network').required = ipv6Type === 'standard';
-    form.querySelector('#ipv6Address_start').required = ipv6Type === 'custom';
-    form.querySelector('#ipv6Address_end').required = ipv6Type === 'custom';
+    form.querySelector('#ipv6Address_start').required = ipv6Type === 'custom_range';
+    form.querySelector('#ipv6Address_end').required = ipv6Type === 'custom_range';
 }
 
 // Listen for the HTMX event that fires after new HTML has been swapped into the page.
