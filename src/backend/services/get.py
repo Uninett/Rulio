@@ -174,7 +174,9 @@ def get_all_devices_with_tags_from_tenant(actor: User, tenant_id: int, include_g
 
 def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) -> list[Interface]:
     require_read_tenant(actor, tenant_id)
-    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists() and (not is_superadmin(actor) and Device.objects.filter(id=device_id).exists()):
+    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists() and (
+        not is_superadmin(actor) and Device.objects.filter(id=device_id).exists()
+    ):
         raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
     requested_interfaces = Interface.objects.filter(device_id=device_id)
     return requested_interfaces
@@ -183,7 +185,9 @@ def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) 
 def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
 
-    if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists() and (not is_superadmin(actor) and Interface.objects.filter(id=interface_id).exists()):
+    if not Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).exists() and (
+        not is_superadmin(actor) and Interface.objects.filter(id=interface_id).exists()
+    ):
         raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
 
     requested_filters = Filter.objects.filter(filterinterface__interface_id=interface_id)
@@ -234,7 +238,9 @@ def get_all_filters_with_tags_from_tenant(actor: User, tenant_id: int, include_g
 
 def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:
     require_read_tenant(actor, tenant_id)
-    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists() and (not is_superadmin(actor) and Device.objects.filter(id=device_id).exists()):
+    if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists() and (
+        not is_superadmin(actor) and Device.objects.filter(id=device_id).exists()
+    ):
         raise PermissionDenied(f"Device with ID {device_id} does not belong to tenant {tenant_id}.")
     device = Device.objects.get(id=device_id)
     return device.platform
