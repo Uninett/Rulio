@@ -37,13 +37,3 @@
     color: #dc2626;
     text-align: center;
 }
-
-.login-button {
-    background-color: #7351FB;
-    border: 2px solid #7351FB;
-}
-
-.login-button:hover {
-    background-color: #643FFA;
-    border: 2px solid #643FFA;
-}

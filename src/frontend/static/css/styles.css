@@ -48,6 +48,11 @@ button {
     margin-top: 0.5rem;
 }
 
+button:hover {
+    background-color: #643FFA;
+    border: 2px solid #643FFA;
+}
+
 
 /*
 ====================================================================
