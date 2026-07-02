@@ -165,13 +165,12 @@ Attributes
     response={200: list[dict], 403: MessageSchema},
 )
 @require_read_tenantd
-def get_address_group_and_addresses_endpoint(request, get="all"):
-    response = get_address_groups_and_addresses_from_tenant(
+def get_address_group_and_addresses_endpoint(request):
+    result, _, _ = get_address_groups_and_addresses_from_tenant(
         request.user,
         request.session["current_tenant_id"],
-        get=get,
     )
-    return Status(200, response)
+    return Status(200, result)
 
 
 @api.get(
@@ -480,7 +479,7 @@ def list_services(request):
     response={200: list[dict], 403: MessageSchema},
 )
 @require_read_tenantd
-def get_service_group_and_services_endpoint(request, get="all"):
+def get_service_group_and_services_endpoint(request):
     if not can_read_tenant(request.user, request.session["current_tenant_id"]):
         logger.warning(
             f"Unauthorized attempt to read services from tenant={request.session['current_tenant_id']} "
@@ -490,12 +489,11 @@ def get_service_group_and_services_endpoint(request, get="all"):
             "status": "error",
             "message": "You do not have permission to read services from this tenant.",
         }
-    response = get_service_groups_and_services_from_tenant(
+    result, _, _ = get_service_groups_and_services_from_tenant(
         request.user,
         request.session["current_tenant_id"],
-        get=get,
     )
-    return Status(200, response)
+    return Status(200, result)
 
 
 @api.get(
