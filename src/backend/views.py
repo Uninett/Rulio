@@ -6,6 +6,8 @@ from django.http import HttpResponse
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+from backend.objects.attributes.address_group_member import AddressGroupMember
+from backend.objects.attributes.service_group_member import ServiceGroupMember
 
 from backend.services.attribute_objects.create_attribute_objects import (
     create_address,
@@ -15,7 +17,9 @@ from backend.services.attribute_objects.create_attribute_objects import (
 )
 
 from backend.services.membership import (
+    add_address_to_group,
     add_addresses_to_group,
+    add_service_to_group,
     add_services_to_group,
 )
 
@@ -30,6 +34,20 @@ from backend.services.attribute_objects.get_address_objects import (
 
 from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
+)
+
+from backend.services.update import (
+    update_address,
+    update_service,
+    update_address_group,
+    update_service_group,
+)
+
+from backend.services.delete import (
+    delete_address,
+    delete_address_group,
+    delete_service,
+    delete_service_group,
 )
 
 """
@@ -275,6 +293,7 @@ def get_addresses_view(request):
         addresses, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
+            include_global_tenant=False,
         )
     except Exception:
         return {
@@ -386,11 +405,11 @@ def post_address_view(request):
         )
 
         for group_id in group_ids:
-            add_addresses_to_group(
+            add_address_to_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 address_group_id=group_id,
-                address_ids=[created_address.id],
+                address_id=created_address.id,
             )
 
     except Exception as e:
@@ -436,6 +455,143 @@ def post_address_view(request):
     }
 
     return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
+@login_required(login_url="login")
+def update_address_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    addr_type = request.POST.get("addr_type") or None
+    ipv4_type = request.POST.get("ipv4_type") or "remove"
+    ipv6_type = request.POST.get("ipv6_type") or "remove"
+    ipv4Network = request.POST.get("ipv4Network") or None
+    ipv6Network = request.POST.get("ipv6Network") or None
+    ipv4Address_start = request.POST.get("ipv4Address_start") or None
+    ipv4Address_end = request.POST.get("ipv4Address_end") or None
+    ipv6Address_start = request.POST.get("ipv6Address_start") or None
+    ipv6Address_end = request.POST.get("ipv6Address_end") or None
+    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
+
+    object_data = {
+        "name": name,
+        "description": description,
+        "addr_type": addr_type,
+        "ipv4_type": ipv4_type,
+        "ipv6_type": ipv6_type,
+        "ipv4Network": ipv4Network,
+        "ipv6Network": ipv6Network,
+        "ipv4Address_start": ipv4Address_start,
+        "ipv4Address_end": ipv4Address_end,
+        "ipv6Address_start": ipv6Address_start,
+        "ipv6Address_end": ipv6Address_end,
+        "address_groups": [{"id": group_id} for group_id in group_ids],
+    }
+
+    if not ipv4_type and not ipv6_type:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Address",
+                "modal_mode": "update",
+                "modal_row_id": f"address-{object_id}",
+                "modal_object_type": "addresses",
+                "modal_type": "item",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_address_form.html",
+                "modal_post_url": reverse("update-address-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": "prepareAddressForm",
+                "modal_refresh_url": reverse("objects-addresses"),
+                "object_data": object_data,
+                "group_options": get_group_options_view(request, "addresses"),
+                "selected_group_ids": group_ids,
+                "error_message": "At least one of IPv4 or IPv6 must be selected.",
+            },
+            status=400,
+        )
+
+    try:
+        updated_address = update_address(
+            actor=request.user,
+            tenant_id=tenant_id,
+            address_id=object_id,
+            name=name,
+            description=description,
+            addr_type=addr_type,
+            ipv4_type=ipv4_type,
+            ipv6_type=ipv6_type,
+            ipv4Network=ipv4Network,
+            ipv6Network=ipv6Network,
+            ipv4Address_start=ipv4Address_start,
+            ipv4Address_end=ipv4Address_end,
+            ipv6Address_start=ipv6Address_start,
+            ipv6Address_end=ipv6Address_end,
+        )
+
+        AddressGroupMember.objects.filter(address_id=updated_address.id).delete()
+
+        for group_id in group_ids:
+            add_address_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                address_group_id=group_id,
+                address_id=updated_address.id,
+            )
+
+    except Exception as e:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Address",
+                "modal_mode": "update",
+                "modal_row_id": f"address-{object_id}",
+                "modal_object_type": "addresses",
+                "modal_type": "item",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_address_form.html",
+                "modal_post_url": reverse("update-address-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": "prepareAddressForm",
+                "modal_refresh_url": reverse("objects-addresses"),
+                "object_data": object_data,
+                "group_options": get_group_options_view(request, "addresses"),
+                "selected_group_ids": group_ids,
+                "error_message": f"Could not update address: {e}",
+            },
+            status=400,
+        )
+
+    return HttpResponse(status=204)
+
+
+# Handles deletion of an address from the backend.
+@login_required(login_url="login")
+def delete_address_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        delete_address(
+            actor=request.user,
+            tenant_id=tenant_id,
+            address_id=object_id,
+        )
+    except Exception as e:
+        return HttpResponse(f"Could not delete address: {e}", status=400)
+
+    return HttpResponse(status=204)
 
 
 # Handles creation of a new address group from modal form submission.
@@ -507,6 +663,116 @@ def post_address_group_view(request):
     return render(request, "partials/objects/_tableRow.html", {"row": row})
 
 
+@login_required(login_url="login")
+def update_address_group_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    address_ids = [int(address_id) for address_id in request.POST.getlist("address_ids") if address_id]
+
+    object_data = {
+        "name": name,
+        "description": description,
+        "addresses": [{"id": address_id} for address_id in address_ids],
+    }
+
+    if not tenant_id:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Address Group",
+                "modal_mode": "update",
+                "modal_row_id": f"addressgroup-{object_id}",
+                "modal_object_type": "addresses",
+                "modal_type": "group",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_address_group_form.html",
+                "modal_post_url": reverse("update-address-group-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-addresses"),
+                "object_data": object_data,
+                "item_options": get_item_options_view(request, "addresses"),
+                "selected_address_ids": address_ids,
+                "error_message": "No tenant selected.",
+            },
+            status=400,
+        )
+
+    try:
+        update_address_group(
+            actor=request.user,
+            tenant_id=tenant_id,
+            address_group_id=object_id,
+            name=name,
+            description=description,
+        )
+
+        AddressGroupMember.objects.filter(group_id=object_id).delete()
+
+        if address_ids:
+            add_addresses_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                address_group_id=object_id,
+                address_ids=address_ids,
+            )
+
+    except Exception as e:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Address Group",
+                "modal_mode": "update",
+                "modal_row_id": f"addressgroup-{object_id}",
+                "modal_object_type": "addresses",
+                "modal_type": "group",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_address_group_form.html",
+                "modal_post_url": reverse("update-address-group-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-addresses"),
+                "object_data": object_data,
+                "item_options": get_item_options_view(request, "addresses"),
+                "selected_address_ids": address_ids,
+                "error_message": f"Could not update address group: {e}",
+            },
+            status=400,
+        )
+
+    return HttpResponse(status=204)
+
+
+# Handles deletion of an address group from the backend.
+@login_required(login_url="login")
+def delete_address_group_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        delete_address_group(
+            actor=request.user,
+            tenant_id=tenant_id,
+            address_group_id=object_id,
+        )
+    except Exception as e:
+        return HttpResponse(f"Could not delete address group: {e}", status=400)
+
+    return HttpResponse(status=204)
+
+
 """
 ====================================================================
 Objects Page: Service
@@ -545,6 +811,7 @@ def get_services_view(request):
         services, _, _ = get_all_services_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
+            include_global_tenant=False,
         )
     except Exception:
         return {
@@ -622,11 +889,11 @@ def post_service_view(request):
         )
 
         for group_id in group_ids:
-            add_services_to_group(
+            add_service_to_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 service_group_id=group_id,
-                service_ids=[created_service.id],
+                service_id=created_service.id,
             )
 
     except Exception as e:
@@ -666,6 +933,129 @@ def post_service_view(request):
     return render(request, "partials/objects/_tableRow.html", {"row": row})
 
 
+# Handles updating an existing service from modal form submission.
+@login_required(login_url="login")
+def update_service_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    protocol = request.POST.get("protocol", "")
+    port_start = request.POST.get("port_start") or None
+    port_end = request.POST.get("port_end") or None
+    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
+
+    port_start = int(port_start) if port_start is not None else None
+    port_end = int(port_end) if port_end is not None else None
+
+    object_data = {
+        "name": name,
+        "description": description,
+        "protocol": protocol,
+        "port_start": port_start,
+        "port_end": port_end,
+        "service_groups": [{"id": group_id} for group_id in group_ids],
+    }
+
+    if not tenant_id:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Service",
+                "modal_mode": "update",
+                "modal_row_id": f"service-{object_id}",
+                "modal_object_type": "services",
+                "modal_type": "item",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_service_form.html",
+                "modal_post_url": reverse("update-service-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-services"),
+                "object_data": object_data,
+                "group_options": get_group_options_view(request, "services"),
+                "selected_group_ids": group_ids,
+                "error_message": "No tenant selected.",
+            },
+            status=400,
+        )
+
+    try:
+        updated_service = update_service(
+            actor=request.user,
+            tenant_id=tenant_id,
+            service_id=object_id,
+            name=name,
+            description=description,
+            protocol=protocol,
+            port_start=port_start,
+            port_end=port_end,
+        )
+
+        ServiceGroupMember.objects.filter(service_id=updated_service.id).delete()
+
+        for group_id in group_ids:
+            add_service_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                service_group_id=group_id,
+                service_id=updated_service.id,
+            )
+
+    except Exception as e:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Service",
+                "modal_mode": "update",
+                "modal_row_id": f"service-{object_id}",
+                "modal_object_type": "services",
+                "modal_type": "item",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_service_form.html",
+                "modal_post_url": reverse("update-service-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-services"),
+                "object_data": object_data,
+                "group_options": get_group_options_view(request, "services"),
+                "selected_group_ids": group_ids,
+                "error_message": f"Could not update service: {e}",
+            },
+            status=400,
+        )
+
+    return HttpResponse(status=204)
+
+
+# Handles deletion of a service from the backend.
+@login_required(login_url="login")
+def delete_service_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        delete_service(
+            actor=request.user,
+            tenant_id=tenant_id,
+            service_id=object_id,
+        )
+    except Exception as e:
+        return HttpResponse(f"Could not delete service: {e}", status=400)
+
+    return HttpResponse(status=204)
+
+
 # Handles creation of a new service group from modal form submission.
 @login_required(login_url="login")
 def post_service_group_view(request):
@@ -693,7 +1083,7 @@ def post_service_group_view(request):
     except Exception as e:
         return render(
             request,
-            "partials/modals/_type_content.html",
+            "partials/modals/_modal_form.html",
             {
                 "modal_object_type": "services",
                 "modal_content_partial": "partials/modals/_service_group_form.html",
@@ -725,6 +1115,117 @@ def post_service_group_view(request):
     }
 
     return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
+# Handles updating an existing service group from modal form submission.
+@login_required(login_url="login")
+def update_service_group_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    service_ids = [int(service_id) for service_id in request.POST.getlist("service_ids") if service_id]
+
+    object_data = {
+        "name": name,
+        "description": description,
+        "services": [{"id": service_id} for service_id in service_ids],
+    }
+
+    if not tenant_id:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Service Group",
+                "modal_mode": "update",
+                "modal_row_id": f"servicegroup-{object_id}",
+                "modal_object_type": "services",
+                "modal_type": "group",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_service_group_form.html",
+                "modal_post_url": reverse("update-service-group-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-services"),
+                "object_data": object_data,
+                "item_options": get_item_options_view(request, "services"),
+                "selected_service_ids": service_ids,
+                "error_message": "No tenant selected.",
+            },
+            status=400,
+        )
+
+    try:
+        update_service_group(
+            actor=request.user,
+            tenant_id=tenant_id,
+            service_group_id=object_id,
+            name=name,
+            description=description,
+        )
+
+        ServiceGroupMember.objects.filter(group_id=object_id).delete()
+
+        if service_ids:
+            add_services_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                service_group_id=object_id,
+                service_ids=service_ids,
+            )
+
+    except Exception as e:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Service Group",
+                "modal_mode": "update",
+                "modal_row_id": f"servicegroup-{object_id}",
+                "modal_object_type": "services",
+                "modal_type": "group",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_service_group_form.html",
+                "modal_post_url": reverse("update-service-group-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-services"),
+                "object_data": object_data,
+                "item_options": get_item_options_view(request, "services"),
+                "selected_service_ids": service_ids,
+                "error_message": f"Could not update service group: {e}",
+            },
+            status=400,
+        )
+
+    return HttpResponse(status=204)
+
+
+# Handles deletion of a service group from the backend.
+@login_required(login_url="login")
+def delete_service_group_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        delete_service_group(
+            actor=request.user,
+            tenant_id=tenant_id,
+            service_group_id=object_id,
+        )
+    except Exception as e:
+        return HttpResponse(f"Could not delete service group: {e}", status=400)
+
+    return HttpResponse(status=204)
 
 
 """
@@ -921,6 +1422,10 @@ def get_add_modal(request, object_type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": config.get("submit_handler"),
         "modal_refresh_url": config.get("refresh_url"),
+        "object_data": {},
+        "selected_group_ids": [],
+        "selected_address_ids": [],
+        "selected_service_ids": [],
     }
 
     # If object_type is address, service or device, then show all groups
@@ -956,6 +1461,10 @@ def get_add_modal_form_content(request, object_type, type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": modal_submit_handler,
         "modal_refresh_url": config.get("refresh_url"),
+        "object_data": {},
+        "selected_group_ids": [],
+        "selected_address_ids": [],
+        "selected_service_ids": [],
     }
 
     # If object_type is address, service or device, then show all groups
@@ -964,6 +1473,180 @@ def get_add_modal_form_content(request, object_type, type):
         context["item_options"] = get_item_options_view(request, object_type)
 
     return render(request, "partials/modals/_modal_form.html", context)
+
+
+"""
+====================================================================
+Modal Partial: Update Modal
+====================================================================
+"""
+
+
+# Return modal configuration for each object type.
+def get_update_modal_config(object_type):
+    configs = {
+        "devices": {
+            "title": "Update Device",
+            "modal_object_type": "devices",
+        },
+        "devicegroup": {
+            "title": "Update Device Group",
+            "modal_object_type": "devices",
+        },
+        "filters": {
+            "title": "Update Filter",
+            "modal_object_type": "filters",
+        },
+        "address": {
+            "title": "Update Address",
+            "modal_object_type": "addresses",
+            "modal_type": "item",
+            "content_partial": "partials/modals/_address_form.html",
+            "post_url_name": "update-address-view",
+            "delete_url_name": "delete-address-view",
+            "refresh_url_name": "objects-addresses",
+            "submit_handler": "prepareAddressForm",
+        },
+        "addressgroup": {
+            "title": "Update Address Group",
+            "modal_object_type": "addresses",
+            "modal_type": "group",
+            "content_partial": "partials/modals/_address_group_form.html",
+            "post_url_name": "update-address-group-view",
+            "delete_url_name": "delete-address-group-view",
+            "refresh_url_name": "objects-addresses",
+            "submit_handler": None,
+        },
+        "service": {
+            "title": "Update Service",
+            "modal_object_type": "services",
+            "modal_type": "item",
+            "content_partial": "partials/modals/_service_form.html",
+            "post_url_name": "update-service-view",
+            "delete_url_name": "delete-service-view",
+            "refresh_url_name": "objects-services",
+            "submit_handler": None,
+        },
+        "servicegroup": {
+            "title": "Update Service Group",
+            "modal_object_type": "services",
+            "modal_type": "group",
+            "content_partial": "partials/modals/_service_group_form.html",
+            "post_url_name": "update-service-group-view",
+            "delete_url_name": "delete-service-group-view",
+            "refresh_url_name": "objects-services",
+            "submit_handler": None,
+        },
+        "tags": {
+            "title": "Update Tag",
+            "modal_object_type": "tags",
+        },
+    }
+    return configs.get(object_type)
+
+
+@login_required(login_url="login")
+def get_update_modal(request, row_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    # Validate row_id format and extract object_type and object_id
+    try:
+        object_type, object_id = row_id.split("-", 1)
+        object_id = int(object_id)
+        tenant_id = int(tenant_id)
+    except (ValueError, TypeError):
+        return HttpResponse("Invalid row id.", status=400)
+
+    # Get the modal configuration for the object type
+    config = get_update_modal_config(object_type)
+
+    # Prepare placeholders for object data and options context
+    object_data = None
+    options_context = {}
+    selected_ids = []
+
+    if object_type in ["address", "addressgroup"]:
+        objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
+            actor=request.user,
+            tenant_id=tenant_id,
+            include_global_tenant=False,
+        )
+
+        # Fetch the specific object data based on type and id
+        if object_type == "address":
+            object_data = next(
+                (item for item in objects if item.get("type") == "Address" and item.get("id") == object_id),
+                None,
+            )
+            # If the object data is found, fetch group options and selected group ids
+            if object_data:
+                options_context["group_options"] = get_group_options_view(request, "addresses")
+                selected_ids = [int(item["id"]) for item in object_data.get("address_groups", [])]
+                options_context["selected_group_ids"] = selected_ids
+
+        elif object_type == "addressgroup":
+            object_data = next(
+                (item for item in objects if item.get("type") == "AddressGroup" and item.get("id") == object_id),
+                None,
+            )
+            if object_data:
+                options_context["item_options"] = get_item_options_view(request, "addresses")
+                selected_ids = [int(item["id"]) for item in object_data.get("addresses", [])]
+                options_context["selected_address_ids"] = selected_ids
+
+    elif object_type in ["service", "servicegroup"]:
+        objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
+            actor=request.user,
+            tenant_id=tenant_id,
+            include_global_tenant=False,
+        )
+
+        if object_type == "service":
+            object_data = next(
+                (item for item in objects if item.get("type") == "Service" and item.get("id") == object_id),
+                None,
+            )
+            if object_data:
+                options_context["group_options"] = get_group_options_view(request, "services")
+                selected_ids = [int(item["id"]) for item in object_data.get("service_groups", [])]
+                options_context["selected_group_ids"] = selected_ids
+
+        elif object_type == "servicegroup":
+            object_data = next(
+                (item for item in objects if item.get("type") == "ServiceGroup" and item.get("id") == object_id),
+                None,
+            )
+            if object_data:
+                options_context["item_options"] = get_item_options_view(request, "services")
+                selected_ids = [int(item["id"]) for item in object_data.get("services", [])]
+                options_context["selected_service_ids"] = selected_ids
+
+    if not object_data:
+        return HttpResponse("Object not found.", status=404)
+
+    context = {
+        "modal_title": config["title"],
+        "modal_mode": "update",
+        "modal_row_id": row_id,
+        "modal_object_type": config["modal_object_type"],
+        "modal_type": config["modal_type"],
+        "modal_supports_types": False,
+        "item_type_editable": False,
+        "modal_type_labels": {},
+        "modal_content_partial": config["content_partial"],
+        "modal_post_url": reverse(config["post_url_name"], args=[object_id]),
+        "modal_delete_url": reverse(config["delete_url_name"], args=[object_id])
+        if config.get("delete_url_name")
+        else None,
+        "modal_target": "#modal-container",
+        "modal_swap": "innerHTML",
+        "modal_submit_handler": config["submit_handler"],
+        "modal_refresh_url": reverse(config["refresh_url_name"]),
+        "object_data": object_data,
+        **options_context,
+    }
+
+    return render(request, "partials/_modal.html", context)
 
 
 """

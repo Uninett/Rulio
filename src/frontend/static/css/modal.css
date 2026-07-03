@@ -168,11 +168,25 @@ Modal Actions
 
 .modal-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     gap: 0.75rem;
     margin-top: 1rem;
+    padding-top: 1rem;
     flex-shrink: 0;
     border-top: 1px solid #E0E0E0;
+}
+
+.modal-actions-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .btn-cancel {
@@ -186,4 +200,15 @@ Modal Actions
     background-color: #FFEAE9;
     border-color: #FFEAE9;
     /* color-support-critical-subtle */
+}
+
+.btn-delete {
+    background-color: #B60203;
+    border-color: #B60203;
+    color: white;
+}
+
+.btn-delete.btn-delete:hover {
+    background-color: #970002;
+    border-color: #970002;
 }
