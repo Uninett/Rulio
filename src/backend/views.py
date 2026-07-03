@@ -688,12 +688,12 @@ def update_address_group_view(request, object_id):
 
         AddressGroupMember.objects.filter(group_id=object_id).delete()
 
-        for address_id in address_ids:
+        if address_ids:
             add_addresses_to_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 address_group_id=object_id,
-                address_ids=[address_id],
+                address_ids=address_ids,
             )
 
     except Exception as e:
