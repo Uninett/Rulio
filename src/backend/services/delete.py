@@ -1,5 +1,9 @@
 from django.contrib.auth.models import User
 
+from backend.objects.attributes.address import Address
+from backend.objects.attributes.address_group import AddressGroup
+from backend.objects.attributes.service import Service
+from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.filters.filter import Filter
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
@@ -61,6 +65,46 @@ def delete_tag_from_tenant(
     deleted_count, _ = tag.delete()
     logger.info(f"Deleted tag id={tag_id} from tenant={tenant_id}. Deleted connections: {deleted_count}.")
     return deleted_count
+
+def delete_address(actor: User, tenant_id: int, address_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
+    try:
+        address = Address.objects.get(id=address_id, tenant_id=tenant_id)
+    except Address.DoesNotExist:
+        raise ValueError(f"Address with id={address_id} does not exist in tenant={tenant_id}.")
+
+    address.delete()
+    logger.info(f"Deleted address id={address_id} from tenant={tenant_id}.")
+
+def delete_address_group(actor: User, tenant_id: int, address_group_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
+    try:
+        address_group = AddressGroup.objects.get(id=address_group_id, tenant_id=tenant_id)
+    except AddressGroup.DoesNotExist:
+        raise ValueError(f"Address group with id={address_group_id} does not exist in tenant={tenant_id}.")
+
+    address_group.delete()
+    logger.info(f"Deleted address group id={address_group_id} from tenant={tenant_id}.")
+
+def delete_service(actor: User, tenant_id: int, service_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
+    try:
+        service = Service.objects.get(id=service_id, tenant_id=tenant_id)
+    except Service.DoesNotExist:
+        raise ValueError(f"Service with id={service_id} does not exist in tenant={tenant_id}.")
+
+    service.delete()
+    logger.info(f"Deleted service id={service_id} from tenant={tenant_id}.")
+
+def delete_service_group(actor: User, tenant_id: int, service_group_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
+    try:
+        service_group = ServiceGroup.objects.get(id=service_group_id, tenant_id=tenant_id)
+    except ServiceGroup.DoesNotExist:
+        raise ValueError(f"Service group with id={service_group_id} does not exist in tenant={tenant_id}.")
+
+    service_group.delete()
+    logger.info(f"Deleted service group id={service_group_id} from tenant={tenant_id}.")
 
 
 def delete_rule(actor: User, tenant_id: int, rule_id: int) -> None:

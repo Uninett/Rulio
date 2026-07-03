@@ -1,11 +1,19 @@
 import pytest
 
+from backend.objects.attributes.address import Address
+from backend.objects.attributes.address_group import AddressGroup
+from backend.objects.attributes.service import Service
+from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
 from backend.services.delete import (
+    delete_address,
+    delete_address_group,
+    delete_service,
+    delete_service_group,
     delete_tag_from_tenant,
     delete_rule,
     delete_device,
@@ -16,6 +24,59 @@ from backend.services.delete import (
 
 @pytest.mark.django_db
 class TestDelete:
+
+    def test_delete_address(self, request_with_session, sample_addresses):
+        for address in sample_addresses:
+            address_id = address.id
+            assert Address.objects.filter(id=address_id).exists()
+
+            delete_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                address_id=address_id,
+            )
+
+            assert Address.objects.filter(id=address_id).exists() is False
+
+    def test_delete_address_group(self, request_with_session, sample_address_group):
+        for address_group in sample_address_group:
+            address_group_id = address_group.id
+            assert AddressGroup.objects.filter(id=address_group_id).exists()
+
+            delete_address_group(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                address_group_id=address_group_id,
+            )
+
+            assert AddressGroup.objects.filter(id=address_group_id).exists() is False
+
+    def test_delete_service(self, request_with_session, sample_services):
+        for service in sample_services:
+            service_id = service.id
+            assert Service.objects.filter(id=service_id).exists()
+
+            delete_service(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                service_id=service_id,
+            )
+
+            assert Service.objects.filter(id=service_id).exists() is False
+
+    def test_delete_service_group(self, request_with_session, realistic_acl_service_groups):
+        for service_group in realistic_acl_service_groups:
+            service_group_id = service_group.id
+            assert ServiceGroup.objects.filter(id=service_group_id).exists()
+
+            delete_service_group(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                service_group_id=service_group_id,
+            )
+
+            assert ServiceGroup.objects.filter(id=service_group_id).exists() is False
+
     def test_delete_tag_from_tenant(self, request_with_session, sample_tags):
         for tag in sample_tags:
             tag_id = tag.id
