@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 
+from backend.objects.attributes.tag import Tag
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address, get_or_create_tag
 from backend.services.filter_objects.create_filter_objects import get_or_create_filter
 from backend.services.tenant_objects.create_tenant_objects import get_or_create_device
@@ -136,3 +137,14 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
     add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag2, obj=device_group)
     add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag2, obj=device_group2)
     add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag2, obj=address)
+
+    if default_tag := Tag.objects.filter(name="default", tenant_id=tenant_id).first():
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=device)
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=device2)
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=device3)
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=device_group)
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=device_group2)
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=interface)
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=interface2)
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=filter1)
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=address)

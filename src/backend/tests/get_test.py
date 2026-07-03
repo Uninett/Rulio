@@ -4,6 +4,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from backend.objects.attributes.address import Address
 from backend.services.get import get_object_by_type_and_id, get_all_objects_with_certain_tag
 from backend.services.membership import add_tag_to_object
+from backend.utils.logger import set_up_logger
+
+logger = set_up_logger(__name__)
 
 
 @pytest.mark.django_db
@@ -79,3 +82,6 @@ class TestGetObjectsFromTags:
 
         for interface in sample_interfaces:
             assert interface in tagged_objects["interface"]
+
+        for obj_type, objects in tagged_objects.items():
+            logger.info(f"Objects of type '{obj_type}' with tag '{sample_tags[0].name}': {len(objects)}")

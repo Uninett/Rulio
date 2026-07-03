@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
-
+from backend.utils.logger import set_up_logger
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.objects.attributes.address_group_member import AddressGroupMember
@@ -26,6 +26,7 @@ from backend.services.membership import (
 from backend.services.get import (
     get_all_tags_from_tenant,
     get_all_objects_with_certain_tag,
+    get_all_filters_with_tags_from_tenant,
 )
 
 from backend.services.attribute_objects.get_address_objects import (
@@ -49,6 +50,8 @@ from backend.services.delete import (
     delete_service,
     delete_service_group,
 )
+
+logger = set_up_logger(__name__)
 
 """
 ====================================================================
@@ -205,9 +208,61 @@ def get_filters_page(request):
             "page_title": "Filters",
             "object_type": "filters",
             "add_button_label": "Add Filter",
+            "filters": get_filters_view(request),  # Address data for the page
             **get_tenant_context(request),
         },
     )
+
+
+def get_filters_view(request):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    try:
+        results, filters = get_all_filters_with_tags_from_tenant(
+            actor=request.user,
+            tenant_id=int(tenant_id),
+        )
+    except Exception:
+        return {
+            "headers": [],
+            "rows": [],
+        }
+
+    headers = [
+        "Name",
+        "Description",
+    ]
+
+    rows = []
+
+    for item in results:
+        expand = [
+            {"label": "Filter Name", "value": item.get("filter_name", "")},
+            {"label": "Filter Description", "value": item.get("filter_description", "")},
+            {"label": "Direction", "value": item.get("direction", "")},
+            {"label": "Enable", "value": item.get("enable", "")},
+        ]
+
+        rows.append(
+            {
+                "id": item.get("filter_id", ""),
+                "cells": [
+                    item.get("filter_name", ""),
+                    item.get("filter_description", ""),
+                ],
+                "expand": expand,
+            }
+        )
+
+    return {
+        "headers": headers,
+        "rows": rows,
+    }
 
 
 """
@@ -1281,6 +1336,11 @@ def get_tags_view(request):
         results, objects = get_all_objects_with_certain_tag(
             actor=request.user, tenant_id=int(tenant_id), tag_id=item.id
         )
+        logger.info("Tag %s (%s)", item.id, item.name)
+        for obj_type, obj_list in objects.items():
+            logger.info("View objects[%s] count = %s", obj_type, len(obj_list))
+            if obj_type == "interface":
+                logger.info("Interface names = %s", [getattr(obj, "name", None) for obj in obj_list])
         expand = [
             {"label": "Addresses", "value": [obj.name for obj in objects["address"]], "special_style": True},
             {"label": "Address Group", "value": [obj.name for obj in objects["addressgroup"]], "special_style": True},
