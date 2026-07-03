@@ -213,7 +213,7 @@ td:nth-child(1) {
 
 .tagsElipse {
     display: inline-block;
-    max-width: 200px;
+    max-width: 150px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -223,6 +223,6 @@ td:nth-child(1) {
 @media (min-width: 2000px) {
     .tagsElipse {
         font-size: small;
-        max-width: 400px;
+        max-width: 1500px;
     }
 }
