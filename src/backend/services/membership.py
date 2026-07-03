@@ -124,6 +124,24 @@ def add_addresses_to_group(actor: User, tenant_id: int, address_group_id: int, a
         "not_found_address_ids": [],
     }
 
+def remove_address_from_group(actor: User, tenant_id: int, address_group_id: int, address_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
+    if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
+    if not (
+        Address.objects.filter(id=address_id, tenant_id=tenant_id).exists()
+        or Address.objects.filter(id=address_id, tenant_id=GLOBAL_TENANT_ID).exists()
+    ):
+        raise PermissionDenied(f"Address with ID {address_id} does not exist in tenant {tenant_id}.")
+    address_group = AddressGroup.objects.get(id=address_group_id)
+    address = Address.objects.get(id=address_id)
+    try:
+        address_group_member = AddressGroupMember.objects.get(group=address_group, address=address)
+        address_group_member.delete()
+        logger.info(f"Removed address id={address_id} from address group id={address_group_id}.")
+    except AddressGroupMember.DoesNotExist:
+        logger.warning(f"Address id={address_id} is not a member of address group id={address_group_id}.")
+
 
 def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, service_ids: list[int]) -> dict:
     """
@@ -191,6 +209,24 @@ def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, se
         "already_present_service_ids": already_present_service_ids,
         "not_found_service_ids": [],
     }
+
+def remove_service_from_group(actor: User, tenant_id: int, service_group_id: int, service_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
+    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
+    if not (
+        Service.objects.filter(id=service_id, tenant_id=tenant_id).exists()
+        or Service.objects.filter(id=service_id, tenant_id=GLOBAL_TENANT_ID).exists()
+    ):
+        raise PermissionDenied(f"Service with ID {service_id} does not exist in tenant {tenant_id}.")
+    service_group = ServiceGroup.objects.get(id=service_group_id)
+    service = Service.objects.get(id=service_id)
+    try:
+        service_group_member = ServiceGroupMember.objects.get(group=service_group, service=service)
+        service_group_member.delete()
+        logger.info(f"Removed service id={service_id} from service group id={service_group_id}.")
+    except ServiceGroupMember.DoesNotExist:
+        logger.warning(f"Service id={service_id} is not a member of service group id={service_group_id}.")
 
 
 def add_objects_to_rule(
