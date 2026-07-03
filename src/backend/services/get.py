@@ -232,7 +232,6 @@ def get_all_filters_with_tags_from_tenant(actor: User, tenant_id: int, include_g
                 "filter_name": filter.name,
                 "filter_description": filter.description,
                 "filter_enable": filter.enable,
-                "filter_policy_sequence": filter.policy_sequence,
                 "filter_tenant_id": filter.tenant_id,
                 "filter_tags": [
                     {
