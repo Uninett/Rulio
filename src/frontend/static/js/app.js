@@ -61,8 +61,8 @@ Show or hide IPv4/IPv6 input fields based on the selected dropdown value.
 - empty selection hides both field groups
 */
 function toggleAddressFields(form) {
-    const ipv4Type = form.querySelector('[name="ipv4_type"]').value;
-    const ipv6Type = form.querySelector('[name="ipv6_type"]').value;
+    const ipv4Type = form.querySelector('[name="ipv4_type"]')?.value || '';
+    const ipv6Type = form.querySelector('[name="ipv6_type"]')?.value || '';
 
     const ipv4StandardFields = form.querySelector('#ipv4-standard-fields');
     const ipv4CustomFields = form.querySelector('#ipv4-custom-fields');
