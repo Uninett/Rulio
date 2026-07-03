@@ -294,6 +294,8 @@ def get_all_objects_with_certain_tag(
             obj
             and hasattr(obj, "tenant_id")
             and (obj.tenant_id == tenant_id or (include_global_tenant and obj.tenant_id == 1))
+            or obj.__class__.__name__.lower() == "interface"
+            and obj.device.tenant_id == (tenant_id or (include_global_tenant and obj.device.tenant_id == 1))
         ):
             result.append(
                 {
@@ -302,5 +304,8 @@ def get_all_objects_with_certain_tag(
                     "object_name": getattr(obj, "name", None),
                 }
             )
-            objects[obj.__class__.__name__.lower()].append(obj)
+            if obj.__class__.__name__.lower() in objects:
+                objects[obj.__class__.__name__.lower()].append(obj)
+            else:
+                logger.error(f"Unexpected object type: {obj.__class__.__name__} for object ID {obj.id}")
     return result, objects
