@@ -6,7 +6,7 @@
 
     <div class="form-group type-other-select-group">
         <label for="protocol">Protocol</label>
-        <select id="protocol" name="protocol" onchange="toggleProtocolField(this.form)">
+        <select id="protocol" name="protocol">
             {% if object_data.protocol == "TCP" or not object_data.protocol %}
             <option value="TCP" selected>TCP</option>
             {% else %}
