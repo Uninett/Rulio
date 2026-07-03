@@ -15,6 +15,7 @@ from backend.services.attribute_objects.create_attribute_objects import (
 )
 
 from backend.services.membership import (
+    add_address_to_group,
     add_addresses_to_group,
     add_services_to_group,
 )
@@ -394,11 +395,11 @@ def post_address_view(request):
         )
 
         for group_id in group_ids:
-            add_addresses_to_group(
+            add_address_to_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 address_group_id=group_id,
-                address_ids=[created_address.id],
+                address_id=created_address.id,
             )
 
     except Exception as e:
@@ -524,11 +525,11 @@ def update_address_view(request, object_id):
         )
 
         for group_id in group_ids:
-            add_addresses_to_group(
+            add_address_to_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 address_group_id=group_id,
-                address_ids=[updated_address.id],
+                address_id=updated_address.id,
             )
 
     except Exception as e:
