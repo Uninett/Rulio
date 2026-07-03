@@ -144,4 +144,4 @@ def get_or_create_interface(
         logger.info(f"Created {interface} for device={interface.device_id}")
     else:
         logger.info(f"Retrieved existing {interface} for device={interface.device_id}")
-    return interface
+    return interface, created

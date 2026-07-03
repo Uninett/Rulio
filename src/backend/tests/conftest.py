@@ -8,12 +8,23 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
+
 from backend.objects.tenant_objects.tenant import Tenant
-from backend.services.membership import add_addresses_to_group, add_objects_to_rule, add_services_to_group
+from backend.services.membership import (
+    add_addresses_to_group,
+    add_devices_to_group,
+    add_objects_to_rule,
+    add_services_to_group,
+)
 from backend.services.attribute_objects.create_attribute_objects import create_tag, get_or_create_address
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 
 from backend.services.generate_config import PolicyRule
+from backend.services.tenant_objects.create_tenant_objects import (
+    create_device,
+    get_or_create_device_group,
+    get_or_create_interface,
+)
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
@@ -853,3 +864,95 @@ def sample_tags(request_with_session, create_testing_tenant):
     for tag in tags:
         tag.save()
     return tags
+
+
+@pytest.fixture
+def sample_devices(request_with_session, create_testing_tenant):
+    devices = [
+        create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Device_1",
+            description="This is a sample device for testing.",
+            platform="juniper",
+            type="firewall",
+        ),
+        create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Device_2",
+            description="This is another sample device for testing.",
+            platform="cisco",
+            type="router",
+        ),
+        create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Device_3",
+            description="This is yet another sample device for testing.",
+            platform="arista",
+            type="firewall",
+        ),
+        create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Device_4",
+            description="This is a fourth sample device for testing.",
+            platform="fortinet",
+            type="firewall",
+        ),
+    ]
+    for device in devices:
+        device.save()
+    return devices
+
+
+@pytest.fixture
+def sample_device_groups(request_with_session, sample_devices, create_testing_tenant):
+    device_groups = [
+        get_or_create_device_group(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Device_Group_1",
+            description="This is a sample device group for testing.",
+        ),
+        get_or_create_device_group(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Device_Group_2",
+            description="This is another sample device group for testing.",
+        ),
+        get_or_create_device_group(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Device_Group_3",
+            description="This is yet another sample device group for testing.",
+        ),
+    ]
+    for i in range(len(device_groups)):
+        if i % 3 == 0:
+            add_devices_to_group(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                device_group_id=device_groups[i % 3].id,
+                device_ids=[sample_devices[i].id],
+            )
+
+    return device_groups
+
+
+@pytest.fixture
+def sample_interfaces(request_with_session, sample_devices):
+    interfaces = []
+    for device in sample_devices:
+        for i in range(1, 3):  # Create 2 interfaces per device
+            interface, _ = get_or_create_interface(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                device_id=device.id,
+                name=f"ge-0/0/{i}",
+                description=f"Sample interface {i} for {device.name}",
+                type="physical",
+            )
+            interfaces.append(interface)
+    return interfaces
