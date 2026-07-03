@@ -464,8 +464,8 @@ def update_address_view(request, object_id):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
     addr_type = request.POST.get("addr_type") or None
-    ipv4_type = request.POST.get("ipv4_type") or None
-    ipv6_type = request.POST.get("ipv6_type") or None
+    ipv4_type = request.POST.get("ipv4_type") or "remove"
+    ipv6_type = request.POST.get("ipv6_type") or "remove"
     ipv4Network = request.POST.get("ipv4Network") or None
     ipv6Network = request.POST.get("ipv6Network") or None
     ipv4Address_start = request.POST.get("ipv4Address_start") or None
