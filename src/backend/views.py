@@ -19,6 +19,7 @@ from backend.services.attribute_objects.create_attribute_objects import (
 from backend.services.membership import (
     add_address_to_group,
     add_addresses_to_group,
+    add_service_to_group,
     add_services_to_group,
 )
 
@@ -841,11 +842,11 @@ def post_service_view(request):
         )
 
         for group_id in group_ids:
-            add_services_to_group(
+            add_service_to_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 service_group_id=group_id,
-                service_ids=[created_service.id],
+                service_id=created_service.id,
             )
 
     except Exception as e:
@@ -883,6 +884,109 @@ def post_service_view(request):
     }
 
     return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
+# Handles updating an existing service from modal form submission.
+@login_required(login_url="login")
+def update_service_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    protocol = request.POST.get("protocol", "")
+    port_start = request.POST.get("port_start") or None
+    port_end = request.POST.get("port_end") or None
+    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
+
+    port_start = int(port_start) if port_start is not None else None
+    port_end = int(port_end) if port_end is not None else None
+
+    object_data = {
+        "name": name,
+        "description": description,
+        "protocol": protocol,
+        "port_start": port_start,
+        "port_end": port_end,
+        "service_groups": [{"id": group_id} for group_id in group_ids],
+    }
+
+    if not tenant_id:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Service",
+                "modal_mode": "update",
+                "modal_row_id": f"service-{object_id}",
+                "modal_object_type": "services",
+                "modal_type": "item",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_service_form.html",
+                "modal_post_url": reverse("update-service-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-services"),
+                "object_data": object_data,
+                "group_options": get_group_options_view(request, "services"),
+                "selected_group_ids": group_ids,
+                "error_message": "No tenant selected.",
+            },
+            status=400,
+        )
+
+    try:
+        updated_service = update_service(
+            actor=request.user,
+            tenant_id=tenant_id,
+            service_id=object_id,
+            name=name,
+            description=description,
+            protocol=protocol,
+            port_start=port_start,
+            port_end=port_end,
+        )
+
+        ServiceGroupMember.objects.filter(service_id=updated_service.id).delete()
+
+        for group_id in group_ids:
+            add_service_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                service_group_id=group_id,
+                service_id=updated_service.id,
+            )
+
+    except Exception as e:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Service",
+                "modal_mode": "update",
+                "modal_row_id": f"service-{object_id}",
+                "modal_object_type": "services",
+                "modal_type": "item",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_service_form.html",
+                "modal_post_url": reverse("update-service-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-services"),
+                "object_data": object_data,
+                "group_options": get_group_options_view(request, "services"),
+                "selected_group_ids": group_ids,
+                "error_message": f"Could not update service: {e}",
+            },
+            status=400,
+        )
+
+    return HttpResponse(status=204)
 
 
 # Handles creation of a new service group from modal form submission.
@@ -944,6 +1048,97 @@ def post_service_group_view(request):
     }
 
     return render(request, "partials/objects/_tableRow.html", {"row": row})
+
+
+# Handles updating an existing service group from modal form submission.
+@login_required(login_url="login")
+def update_service_group_view(request, object_id):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    service_ids = [int(service_id) for service_id in request.POST.getlist("service_ids") if service_id]
+
+    object_data = {
+        "name": name,
+        "description": description,
+        "services": [{"id": service_id} for service_id in service_ids],
+    }
+
+    if not tenant_id:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Service Group",
+                "modal_mode": "update",
+                "modal_row_id": f"servicegroup-{object_id}",
+                "modal_object_type": "services",
+                "modal_type": "group",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_service_group_form.html",
+                "modal_post_url": reverse("update-service-group-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-services"),
+                "object_data": object_data,
+                "item_options": get_item_options_view(request, "services"),
+                "selected_service_ids": service_ids,
+                "error_message": "No tenant selected.",
+            },
+            status=400,
+        )
+
+    try:
+        update_service_group(
+            actor=request.user,
+            tenant_id=tenant_id,
+            service_group_id=object_id,
+            name=name,
+            description=description,
+        )
+
+        ServiceGroupMember.objects.filter(group_id=object_id).delete()
+
+        if service_ids:
+            add_services_to_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                service_group_id=object_id,
+                service_ids=service_ids,
+            )
+
+    except Exception as e:
+        return render(
+            request,
+            "partials/_modal.html",
+            {
+                "modal_title": "Update Service Group",
+                "modal_mode": "update",
+                "modal_row_id": f"servicegroup-{object_id}",
+                "modal_object_type": "services",
+                "modal_type": "group",
+                "modal_supports_types": False,
+                "item_type_editable": False,
+                "modal_type_labels": {},
+                "modal_content_partial": "partials/modals/_service_group_form.html",
+                "modal_post_url": reverse("update-service-group-view", args=[object_id]),
+                "modal_target": "#modal-container",
+                "modal_swap": "innerHTML",
+                "modal_submit_handler": None,
+                "modal_refresh_url": reverse("objects-services"),
+                "object_data": object_data,
+                "item_options": get_item_options_view(request, "services"),
+                "selected_service_ids": service_ids,
+                "error_message": f"Could not update service group: {e}",
+            },
+            status=400,
+        )
+
+    return HttpResponse(status=204)
 
 
 """
