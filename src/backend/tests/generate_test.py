@@ -1,7 +1,7 @@
 import yaml
 import pytest
 
-from backend.services.generate_config import generate_config, Policy
+from backend.services.generate_config import generate_config, Policy, aclcheck
 from backend.utils.logger import clear_logs, set_up_logger
 from backend.utils.write_to_file import write_configuration_to_file
 from constants import TEST_LOGPATH
