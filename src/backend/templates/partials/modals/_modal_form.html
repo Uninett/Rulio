@@ -25,12 +25,26 @@
             </div>
 
             <div class="modal-actions">
-                <button class="btn btn-cancel" type="button" onclick="closeModal(event)">
-                    Cancel
-                </button>
+                <div class="modal-actions-left">
+                    {% if modal_mode == "update" and modal_delete_url %}
+                    <button class="btn btn-delete" type="button" hx-post="{{ modal_delete_url }}"
+                        hx-target="#modal-container" hx-swap="innerHTML"
+                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                        hx-confirm="Are you sure you want to delete this object?"
+                        hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}')">
+                        Delete
+                    </button>
+                    {% endif %}
+                </div>
 
-                <button class="btn btn-save" type="submit">
-                    {% if modal_mode == "update" %}Save{% else %}Submit{% endif %}
-                </button>
+                <div class="modal-actions-right">
+                    <button class="btn btn-cancel" type="button" onclick="closeModal(event)">
+                        Cancel
+                    </button>
+
+                    <button class="btn btn-save" type="submit">
+                        {% if modal_mode == "update" %}Save{% else %}Submit{% endif %}
+                    </button>
+                </div>
             </div>
         </form>
