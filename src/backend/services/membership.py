@@ -124,6 +124,7 @@ def add_addresses_to_group(actor: User, tenant_id: int, address_group_id: int, a
         "not_found_address_ids": [],
     }
 
+
 def remove_address_from_group(actor: User, tenant_id: int, address_group_id: int, address_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
@@ -209,6 +210,7 @@ def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, se
         "already_present_service_ids": already_present_service_ids,
         "not_found_service_ids": [],
     }
+
 
 def remove_service_from_group(actor: User, tenant_id: int, service_group_id: int, service_id: int) -> None:
     require_write_tenant(actor, tenant_id)

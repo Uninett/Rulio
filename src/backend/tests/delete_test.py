@@ -24,7 +24,6 @@ from backend.services.delete import (
 
 @pytest.mark.django_db
 class TestDelete:
-
     def test_delete_address(self, request_with_session, sample_addresses):
         for address in sample_addresses:
             address_id = address.id

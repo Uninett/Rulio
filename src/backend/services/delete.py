@@ -66,6 +66,7 @@ def delete_tag_from_tenant(
     logger.info(f"Deleted tag id={tag_id} from tenant={tenant_id}. Deleted connections: {deleted_count}.")
     return deleted_count
 
+
 def delete_address(actor: User, tenant_id: int, address_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -75,6 +76,7 @@ def delete_address(actor: User, tenant_id: int, address_id: int) -> None:
 
     address.delete()
     logger.info(f"Deleted address id={address_id} from tenant={tenant_id}.")
+
 
 def delete_address_group(actor: User, tenant_id: int, address_group_id: int) -> None:
     require_write_tenant(actor, tenant_id)
@@ -86,6 +88,7 @@ def delete_address_group(actor: User, tenant_id: int, address_group_id: int) -> 
     address_group.delete()
     logger.info(f"Deleted address group id={address_group_id} from tenant={tenant_id}.")
 
+
 def delete_service(actor: User, tenant_id: int, service_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -95,6 +98,7 @@ def delete_service(actor: User, tenant_id: int, service_id: int) -> None:
 
     service.delete()
     logger.info(f"Deleted service id={service_id} from tenant={tenant_id}.")
+
 
 def delete_service_group(actor: User, tenant_id: int, service_group_id: int) -> None:
     require_write_tenant(actor, tenant_id)
