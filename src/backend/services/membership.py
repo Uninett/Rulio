@@ -411,3 +411,4 @@ def add_tag_to_object(*, actor: User, tenant_id: int, tag: Tag, obj: object):
         logger.warning(f"Tag {tag.id} is already associated with object {obj}.")
         return
     TagConnection.objects.create(tag=tag, content_object=obj)
+    logger.info(f"Added tag {tag.id} to object {obj}.")

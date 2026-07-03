@@ -45,7 +45,13 @@ class TestGetObjectByTypeAndId:
 
 @pytest.mark.django_db
 class TestGetObjectsFromTags:
-    def test_get_objects_from_certain_tag(self, sample_addresses, sample_tags, request_with_session):
+    def test_get_objects_from_certain_tag(
+        self,
+        sample_addresses,
+        sample_interfaces,
+        sample_tags,
+        request_with_session,
+    ):
         for address in sample_addresses:
             add_tag_to_object(
                 actor=request_with_session.user,
@@ -53,11 +59,23 @@ class TestGetObjectsFromTags:
                 tag=sample_tags[0],
                 obj=address,
             )
+
+        for interface in sample_interfaces:
+            add_tag_to_object(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                tag=sample_tags[0],
+                obj=interface,
+            )
+
         _, tagged_objects = get_all_objects_with_certain_tag(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             tag_id=sample_tags[0].id,
         )
-        tagged_addresses = tagged_objects["address"]
+
         for address in sample_addresses:
-            assert address in tagged_addresses
+            assert address in tagged_objects["address"]
+
+        for interface in sample_interfaces:
+            assert interface in tagged_objects["interface"]
