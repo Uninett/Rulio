@@ -6,6 +6,8 @@ from django.http import HttpResponse
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+from backend.objects.attributes.address_group_member import AddressGroupMember
+from backend.objects.attributes.service_group_member import ServiceGroupMember
 
 from backend.services.attribute_objects.create_attribute_objects import (
     create_address,
@@ -524,6 +526,8 @@ def update_address_view(request, object_id):
             ipv6Address_end=ipv6Address_end,
         )
 
+        AddressGroupMember.objects.filter(address_id=updated_address.id).delete()
+
         for group_id in group_ids:
             add_address_to_group(
                 actor=request.user,
@@ -680,6 +684,8 @@ def update_address_group_view(request, object_id):
             name=name,
             description=description,
         )
+
+        AddressGroupMember.objects.filter(group_id=object_id).delete()
 
         for address_id in address_ids:
             add_addresses_to_group(
