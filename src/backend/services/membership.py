@@ -331,6 +331,34 @@ def add_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: 
     return rule_filter
 
 
+def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int):
+    require_write_tenant(actor, tenant_id)
+    if not Rule.objects.filter(id=rule_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Rule with ID {rule_id} does not exist in tenant {tenant_id}.")
+    rule = Rule.objects.get(id=rule_id)
+    filter = Filter.objects.get(id=filter_id)
+
+    # Create a new Rule instance with the same attributes as the original rule
+    new_rule = Rule.objects.create(
+        name=f"{rule.name}_copy",
+        description=rule.description,
+        filter=filter,
+        tenant=rule.tenant,
+        action=rule.action,
+        enable=rule.enable,
+        rule_sequence=rule_sequence,
+        log_type=rule.log_type,
+        hit_count=0,  # Reset hit count for the new rule
+        created_by=actor.id,
+        changed_by=actor.id,
+    )
+
+    logger.info(
+        f"Copied Rule {rule.id} to new Rule {new_rule.id} in Filter {filter.id} with rule_sequence {rule_sequence}"
+    )
+    return new_rule
+
+
 def add_filter_to_interface(
     *,
     actor: User,
