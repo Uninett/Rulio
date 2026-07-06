@@ -3,13 +3,13 @@
     <div class="modal-toggle tools-toggle">
         <button type="button" class="modal-btn-toggle btn-toggle {% if modal_type == 'item' %}active{% endif %}"
             hx-get="{% url 'modal-add-form-content' modal_object_type 'item' %}" hx-target="#modal-type-content"
-            hx-swap="innerHTML">
+            hx-swap="innerHTML" hx-include="closest form">
             {{ modal_type_labels.item|default:"Item" }}
         </button>
 
         <button type="button" class="modal-btn-toggle btn-toggle {% if modal_type == 'group' %}active{% endif %}"
             hx-get="{% url 'modal-add-form-content' modal_object_type 'group' %}" hx-target="#modal-type-content"
-            hx-swap="innerHTML">
+            hx-swap="innerHTML" hx-include="closest form">
             {{ modal_type_labels.group|default:"Group" }}
         </button>
     </div>

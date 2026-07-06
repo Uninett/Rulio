@@ -1521,7 +1521,10 @@ def get_add_modal_form_content(request, object_type, type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": modal_submit_handler,
         "modal_refresh_url": config.get("refresh_url"),
-        "object_data": {},
+        "object_data": {
+            "name": request.GET.get("name", ""),
+            "description": request.GET.get("description", ""),
+        },
         "selected_group_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
