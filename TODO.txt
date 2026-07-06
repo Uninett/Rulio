@@ -1,5 +1,0 @@
-
-Legg inn Logger i alle apis
-Add schema for tag and object_tag
-Legg inn Range til IP addresses
-Fikse locks og unlocks på hvert objekt i databasen
