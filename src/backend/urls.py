@@ -23,17 +23,25 @@ from .api import (
     api,
 )
 
-from .views import (
+from .views.session import (
     get_login_page,
     logout_view,
     set_tenant_view,
-    # Device Page
+)
+
+from .views.devices_page import (
     get_devices_page,
-    # Filters Page
+)
+
+from .views.filters_page import (
     get_filters_page,
-    # Objects Page
+)
+
+from .views.objects_page import (
     get_objects_page,
-    # Objects Page: Address
+)
+
+from .views.objects_addresses import (
     get_objects_addresses,
     post_address_view,
     update_address_view,
@@ -41,7 +49,9 @@ from .views import (
     post_address_group_view,
     update_address_group_view,
     delete_address_group_view,
-    # Objects Page: Service
+)
+
+from .views.objects_services import (
     get_objects_services,
     post_service_view,
     update_service_view,
@@ -49,11 +59,18 @@ from .views import (
     post_service_group_view,
     update_service_group_view,
     delete_service_group_view,
-    # Tags Page
+)
+
+from .views.tags_page import (
     get_tags_page,
-    # Modal Partial
+)
+
+from .views.modal_add import (
     get_add_modal,
     get_add_modal_form_content,
+)
+
+from .views.modal_update import (
     get_update_modal,
 )
 
