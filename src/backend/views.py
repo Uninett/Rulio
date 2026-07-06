@@ -405,6 +405,52 @@ def get_addresses_view(request):
     }
 
 
+# Parse the IP input value and return a dictionary with the parsed data.
+def parse_ip_input(value, update=False):
+    value = (value or "").strip()
+
+    if not value:
+        return {
+            "type": "remove" if update else None,
+            "network": None,
+            "start": None,
+            "end": None,
+        }
+
+    if "-" in value:
+        start, end = [part.strip() for part in value.split("-", 1)]
+        return {
+            "type": "custom_range",
+            "network": None,
+            "start": start or None,
+            "end": end or None,
+        }
+
+    return {
+        "type": "standard",
+        "network": value,
+        "start": None,
+        "end": None,
+    }
+
+
+# Build the IP input value based on the provided type and values.
+def build_ip_input(ip_type, network, start, end):
+    if ip_type == "standard":
+        return network or ""
+    if ip_type == "custom_range":
+        if start and end:
+            return f"{start}-{end}"
+    return ""
+
+
+"""
+====================================================================
+Objects Page: Address Item
+====================================================================
+"""
+
+
 # Handles creation of a new address from modal form submission.
 @login_required(login_url="login")
 def post_address_view(request):
@@ -412,14 +458,20 @@ def post_address_view(request):
     description = request.POST.get("description", "")
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     addr_type = request.POST.get("addr_type", "host")
-    ipv4_type = request.POST.get("ipv4_type") or None
-    ipv6_type = request.POST.get("ipv6_type") or None
-    ipv4Network = request.POST.get("ipv4Network") or None
-    ipv6Network = request.POST.get("ipv6Network") or None
-    ipv4Address_start = request.POST.get("ipv4Address_start") or None
-    ipv4Address_end = request.POST.get("ipv4Address_end") or None
-    ipv6Address_start = request.POST.get("ipv6Address_start") or None
-    ipv6Address_end = request.POST.get("ipv6Address_end") or None
+    ipv4_input = request.POST.get("ipv4_input", "")
+    ipv6_input = request.POST.get("ipv6_input", "")
+
+    ipv4_parsed = parse_ip_input(ipv4_input)
+    ipv6_parsed = parse_ip_input(ipv6_input)
+
+    ipv4_type = ipv4_parsed["type"]
+    ipv6_type = ipv6_parsed["type"]
+    ipv4Network = ipv4_parsed["network"]
+    ipv6Network = ipv6_parsed["network"]
+    ipv4Address_start = ipv4_parsed["start"]
+    ipv4Address_end = ipv4_parsed["end"]
+    ipv6Address_start = ipv6_parsed["start"]
+    ipv6Address_end = ipv6_parsed["end"]
     group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
     if not ipv4_type and not ipv6_type:
@@ -435,6 +487,13 @@ def post_address_view(request):
                 "modal_type_labels": {
                     "item": "Address",
                     "group": "Group",
+                },
+                "object_data": {
+                    "name": name,
+                    "description": description,
+                    "addr_type": addr_type,
+                    "ipv4_input": ipv4_input,
+                    "ipv6_input": ipv6_input,
                 },
                 "error_message": "At least one of IPv4 or IPv6 must be selected.",
                 "group_options": get_group_options_view(request, "addresses"),
@@ -512,6 +571,7 @@ def post_address_view(request):
     return render(request, "partials/objects/_tableRow.html", {"row": row})
 
 
+# Handles updating an existing address from modal form submission.
 @login_required(login_url="login")
 def update_address_view(request, object_id):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
@@ -519,32 +579,45 @@ def update_address_view(request, object_id):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
     addr_type = request.POST.get("addr_type") or None
-    ipv4_type = request.POST.get("ipv4_type") or "remove"
-    ipv6_type = request.POST.get("ipv6_type") or "remove"
-    ipv4Network = request.POST.get("ipv4Network") or None
-    ipv6Network = request.POST.get("ipv6Network") or None
-    ipv4Address_start = request.POST.get("ipv4Address_start") or None
-    ipv4Address_end = request.POST.get("ipv4Address_end") or None
-    ipv6Address_start = request.POST.get("ipv6Address_start") or None
-    ipv6Address_end = request.POST.get("ipv6Address_end") or None
+    ipv4_input = request.POST.get("ipv4_input", "")
+    ipv6_input = request.POST.get("ipv6_input", "")
+
+    ipv4_parsed = parse_ip_input(ipv4_input, update=True)
+    ipv6_parsed = parse_ip_input(ipv6_input, update=True)
+
+    ipv4_type = ipv4_parsed["type"]
+    ipv6_type = ipv6_parsed["type"]
+    ipv4Network = ipv4_parsed["network"]
+    ipv6Network = ipv6_parsed["network"]
+    ipv4Address_start = ipv4_parsed["start"]
+    ipv4Address_end = ipv4_parsed["end"]
+    ipv6Address_start = ipv6_parsed["start"]
+    ipv6Address_end = ipv6_parsed["end"]
+
+    if ipv4_type == "standard":
+        ipv4Address_start = ""
+        ipv4Address_end = ""
+    elif ipv4_type == "custom_range":
+        ipv4Network = ""
+
+    if ipv6_type == "standard":
+        ipv6Address_start = ""
+        ipv6Address_end = ""
+    elif ipv6_type == "custom_range":
+        ipv6Network = ""
+
     group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
     object_data = {
         "name": name,
         "description": description,
         "addr_type": addr_type,
-        "ipv4_type": ipv4_type,
-        "ipv6_type": ipv6_type,
-        "ipv4Network": ipv4Network,
-        "ipv6Network": ipv6Network,
-        "ipv4Address_start": ipv4Address_start,
-        "ipv4Address_end": ipv4Address_end,
-        "ipv6Address_start": ipv6Address_start,
-        "ipv6Address_end": ipv6Address_end,
+        "ipv4_input": ipv4_input,
+        "ipv6_input": ipv6_input,
         "address_groups": [{"id": group_id} for group_id in group_ids],
     }
 
-    if not ipv4_type and not ipv6_type:
+    if not ipv4_input.strip() and not ipv6_input.strip():
         return render(
             request,
             "partials/_modal.html",
@@ -568,7 +641,6 @@ def update_address_view(request, object_id):
                 "selected_group_ids": group_ids,
                 "error_message": "At least one of IPv4 or IPv6 must be selected.",
             },
-            status=400,
         )
 
     try:
@@ -647,6 +719,13 @@ def delete_address_view(request, object_id):
         return HttpResponse(f"Could not delete address: {e}", status=400)
 
     return HttpResponse(status=204)
+
+
+"""
+====================================================================
+Objects Page: Address Group
+====================================================================
+"""
 
 
 # Handles creation of a new address group from modal form submission.
@@ -1521,7 +1600,10 @@ def get_add_modal_form_content(request, object_type, type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": modal_submit_handler,
         "modal_refresh_url": config.get("refresh_url"),
-        "object_data": {},
+        "object_data": {
+            "name": request.GET.get("name", ""),
+            "description": request.GET.get("description", ""),
+        },
         "selected_group_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
@@ -1637,6 +1719,18 @@ def get_update_modal(request, row_id):
             object_data = next(
                 (item for item in objects if item.get("type") == "Address" and item.get("id") == object_id),
                 None,
+            )
+            object_data["ipv4_input"] = build_ip_input(
+                object_data.get("ipv4_type"),
+                object_data.get("ipv4Network"),
+                object_data.get("ipv4Address_start"),
+                object_data.get("ipv4Address_end"),
+            )
+            object_data["ipv6_input"] = build_ip_input(
+                object_data.get("ipv6_type"),
+                object_data.get("ipv6Network"),
+                object_data.get("ipv6Address_start"),
+                object_data.get("ipv6Address_end"),
             )
             # If the object data is found, fetch group options and selected group ids
             if object_data:
