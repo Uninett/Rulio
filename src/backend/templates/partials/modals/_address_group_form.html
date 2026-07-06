@@ -10,21 +10,19 @@
     <h2 class="checkbox-header">Addresses</h2>
 </div>
 
-<div class="form-group">
-    <p class="form-help">Choose any addresses you want to add to this address group.</p>
+<p class="form-help">Choose any addresses you want to add to this address group.</p>
 
-    <div class="group-checkbox-list">
-        {% for address in item_options %}
-        <label class="checkbox-label">
-            {% if address.id in selected_address_ids %}
-            <input type="checkbox" name="address_ids" value="{{ address.id }}" checked>
-            {% else %}
-            <input type="checkbox" name="address_ids" value="{{ address.id }}">
-            {% endif %}
-            <span>{{ address.name }}</span>
-        </label>
-        {% empty %}
-        <p>No addresses available.</p>
-        {% endfor %}
-    </div>
+<div class="group-checkbox-list">
+    {% for address in item_options %}
+    <label class="checkbox-label">
+        {% if address.id in selected_address_ids %}
+        <input type="checkbox" name="address_ids" value="{{ address.id }}" checked>
+        {% else %}
+        <input type="checkbox" name="address_ids" value="{{ address.id }}">
+        {% endif %}
+        <span>{{ address.name }}</span>
+    </label>
+    {% empty %}
+    <p>No addresses available.</p>
+    {% endfor %}
 </div>

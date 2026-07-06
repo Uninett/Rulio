@@ -54,21 +54,20 @@
 <div class="modal-header">
     <h2 class="checkbox-header">Address Groups</h2>
 </div>
-<div class="form-group">
-    <p class="form-help">Choose any address groups you want to add this address to.</p>
 
-    <div class="group-checkbox-list">
-        {% for group in group_options %}
-        <label class="checkbox-label">
-            {% if group.id in selected_group_ids %}
-            <input type="checkbox" name="group_ids" value="{{ group.id }}" checked>
-            {% else %}
-            <input type="checkbox" name="group_ids" value="{{ group.id }}">
-            {% endif %}
-            <span>{{ group.name }}</span>
-        </label>
-        {% empty %}
-        <p>No address groups available.</p>
-        {% endfor %}
-    </div>
+<p class="form-help">Choose any address groups you want to add this address to.</p>
+
+<div class="group-checkbox-list">
+    {% for group in group_options %}
+    <label class="checkbox-label">
+        {% if group.id in selected_group_ids %}
+        <input type="checkbox" name="group_ids" value="{{ group.id }}" checked>
+        {% else %}
+        <input type="checkbox" name="group_ids" value="{{ group.id }}">
+        {% endif %}
+        <span>{{ group.name }}</span>
+    </label>
+    {% empty %}
+    <p>No address groups available.</p>
+    {% endfor %}
 </div>
