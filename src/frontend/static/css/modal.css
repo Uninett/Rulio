@@ -53,6 +53,12 @@ Modal Header
     margin: 1rem 0;
 }
 
+.modal p {
+    font-size: 0.85rem;
+    margin: 0;
+    padding: 0;
+}
+
 
 /*
 ====================================================================
