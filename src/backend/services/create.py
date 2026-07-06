@@ -2,7 +2,6 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User
 
 from backend.objects.filters.filter import Filter
-from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
