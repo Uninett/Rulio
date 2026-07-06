@@ -203,6 +203,50 @@ def update_filter_interface(
     filter_interface.save()
     return filter_interface
 
+def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
+    require_write_tenant(actor, tenant_id)
+    filter = rule.filter
+    if filter is None:
+        raise ValueError(f"Rule with id={rule.id} does not belong to any filter.")
+    rules_in_filter = Rule.objects.filter(filter=filter).order_by("rule_sequence")
+
+    if not rules_in_filter.exists():
+        if new_sequence != 1:
+            raise ValueError(f"There are no rules in filter with id={filter.id}, so the only valid sequence is 1.")
+        rule.rule_sequence = new_sequence
+        rule.save()
+        return rule
+    
+    if new_sequence < 1 or new_sequence > rules_in_filter.count() + 1:
+        raise ValueError(f"New sequence {new_sequence} is out of bounds for filter with id={filter.id}.")
+    
+    # rule_sequence = 0 means that the rule has not yet been placed in the sequence
+    if rule.rule_sequence == 0:
+        for r in rules_in_filter.filter(rule_sequence__gte=new_sequence):
+            r.rule_sequence += 1
+            r.save()
+        rule.rule_sequence = new_sequence
+        rule.save()
+        return rule
+
+    if rule.rule_sequence == new_sequence:
+        return rule  # No change needed
+    # If rule is in position 3 and we want to move it to position 5, we need to decrement the sequence of rules in positions 4 and 5 by 1.
+    if rule.rule_sequence < new_sequence:
+        # If the new sequence is greater than the current sequence, we need to move the rule up in the order
+        # Therefore, we move the rules between the old and new position down by 1
+        for r in rules_in_filter.filter(rule_sequence__gt=rule.rule_sequence, rule_sequence__lte=new_sequence):
+            r.rule_sequence -= 1
+            r.save()
+    else:
+        # If the new sequence is less than the current sequence, we need to move the rule down in the order
+        # Therefore, we move the rules between the new and old position up by 1
+        for r in rules_in_filter.filter(rule_sequence__lt=rule.rule_sequence, rule_sequence__gte=new_sequence):
+            r.rule_sequence += 1
+            r.save()
+    rule.rule_sequence = new_sequence
+    rule.save()
+    return rule
 
 def update_rule(
     *,
