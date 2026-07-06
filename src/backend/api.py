@@ -1437,7 +1437,9 @@ def get_all_filters_from_tenant_endpoint(request):
     response={200: dict, 403: MessageSchema, 404: MessageSchema},
 )
 @require_write_tenantd
-def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int, policy_sequence: int, enable: bool):
+def add_filter_to_interface_endpoint(
+    request, filter_id: int, interface_id: int, policy_sequence: int, enable: bool, direction: str
+):
     """
     Adds a filter object to the interface object. Importantly this does not generate or apply a configuration to the interface.
     """
@@ -1449,6 +1451,7 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
             interface_id=interface_id,
             policy_sequence=policy_sequence,
             enable=enable,
+            direction=direction,
         )
         logger.info(
             f"Filter id={filter_id} added to interface id={interface_id} with policy_sequence={policy_sequence} and enable={enable}"
@@ -1460,6 +1463,7 @@ def add_filter_to_interface_endpoint(request, filter_id: int, interface_id: int,
                 "interface_id": interface_id,
                 "policy_sequence": policy_sequence,
                 "enable": enable,
+                "direction": direction,
             },
         )
     except ValueError as e:
@@ -1495,10 +1499,13 @@ def add_test_data(request):
     response={200: dict, 403: MessageSchema, 404: MessageSchema},
 )
 @require_write_tenantd
-def generate_config_for_interface(request, interface_id: int):
+def generate_config_for_interface(request, interface_id: int, direction: str):
     try:
         policies = create_policies_for_interface(
-            actor=request.user, tenant_id=request.session["current_tenant_id"], interface_id=interface_id
+            actor=request.user,
+            tenant_id=request.session["current_tenant_id"],
+            interface_id=interface_id,
+            direction=direction,
         )
         logger.info(f"Created policies for interface id={interface_id}")
         logger.info(f"Policies for interface id={interface_id}: {[policy.YAMLConfig for policy in policies]}")

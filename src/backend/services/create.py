@@ -5,6 +5,7 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.rule import Rule
@@ -136,9 +137,11 @@ def create_policy_from_filter(*, actor: User, tenant_id: int, filter_id, policy_
     return policy
 
 
-def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, policy_type=""):
+def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, policy_type="", direction=""):
     require_read_tenant(actor, tenant_id)
 
+    if direction not in ["in", "out"]:
+        raise ValueError(f"Invalid direction '{direction}' specified. Must be 'in' or 'out'.")
     # Get interface object by ID
     interface = Interface.objects.get(id=interface_id)
     if not interface:
@@ -147,17 +150,21 @@ def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, 
     # Get the vendor/platform from the device associated with the interface
     vendor = get_platform_from_device(actor=actor, tenant_id=tenant_id, device_id=interface.device_id)
 
+    interface_direction = InterfaceDirection.objects.get(interface=interface, direction=direction)
+
     # Join interface on filters using FilterInterface, then sort filters by policy_sequence
-    filter_interfaces = FilterInterface.objects.filter(interface_id=interface).order_by("policy_sequence")
+    filter_interfaces = FilterInterface.objects.filter(interface_direction_id=interface_direction.id).order_by(
+        "policy_sequence"
+    )
     if not filter_interfaces.exists():
-        raise ValueError(f"No filters found for interface with ID {interface_id}.")
+        raise ValueError(f"No filters found for interface with ID {interface_id} for direction '{direction}'.")
 
     # Create Policy objects for each filter
     policies = []
     for filter_interface in filter_interfaces:
         if filter_interface.enable is False:
             logger.info(
-                f"Skipping disabled filter interface with ID {filter_interface.id} for interface with ID {interface_id}."
+                f"Skipping disabled filter_interface with ID {filter_interface.id} for interface with ID {interface_id} and direction '{direction}'."
             )
             continue
         filter_obj = Filter.objects.get(id=filter_interface.filter_id)
@@ -172,7 +179,7 @@ def create_policies_for_interface(*, actor: User, tenant_id: int, interface_id, 
             policy_type=policy_type,
         )
         policies.append(policy)
-    logger.info(f"Created {len(policies)} policies for interface id={interface_id}")
+    logger.info(f"Created {len(policies)} policies for interface id={interface_id} direction='{direction}'")
     logger.info(f"Policies: {[policy.YAMLConfig for policy in policies]}")
 
     return policies

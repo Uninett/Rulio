@@ -561,6 +561,7 @@ class TestGenerateConfigFromFilterObject:
                 filter_id=new_filter.id,
                 policy_sequence=5,
                 enable=False,
+                direction="in",
             )
             add_filter_to_interface(
                 actor=request_with_session.user,
@@ -569,6 +570,7 @@ class TestGenerateConfigFromFilterObject:
                 filter_id=sample_filters[0].id,
                 policy_sequence=10,
                 enable=True,
+                direction="in",
             )
             add_filter_to_interface(
                 actor=request_with_session.user,
@@ -577,6 +579,7 @@ class TestGenerateConfigFromFilterObject:
                 filter_id=sample_filters[1].id,
                 policy_sequence=20,
                 enable=True,
+                direction="in",
             )
 
             policies = create_policies_for_interface(
@@ -584,6 +587,7 @@ class TestGenerateConfigFromFilterObject:
                 tenant_id=request_with_session.tenant_id,
                 interface_id=interface.id,
                 policy_type="",
+                direction="in",
             )
             assert len(policies) == 2
             assert policies[0].policy_sequence == 10
