@@ -15,7 +15,7 @@ from backend.services.membership import (
     add_services_to_group,
     add_objects_to_rule,
 )
-from backend.services.generate_config import generate_config, generate_multi_policy_config, merge_policies
+from backend.services.config_generation.generate_config import generate_config, generate_multi_policy_config, merge_policies
 from backend.services.tenant_objects.create_tenant_objects import create_device, create_interface
 from backend.utils.logger import set_up_logger
 from backend.utils.write_to_file import write_configuration_to_file
