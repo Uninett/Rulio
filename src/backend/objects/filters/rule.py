@@ -9,9 +9,7 @@ class Rule(TaggableMixin, models.Model):
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True, null=True)
     filter = models.ForeignKey(Filter, on_delete=models.CASCADE, related_name="rules")
-    tenant = models.ForeignKey(
-        Tenant, on_delete=models.CASCADE, related_name="rules"
-    )
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="rules")
     action = models.CharField(max_length=255, blank=True, null=True)
     enable = models.BooleanField(default=True)
     rule_sequence = models.PositiveIntegerField(default=0)
@@ -24,4 +22,3 @@ class Rule(TaggableMixin, models.Model):
 
     def __str__(self):
         return f"Rule(id={self.id}, name='{self.name}', description='{self.description}', filter_id={self.filter_id}, tenant_id={self.tenant_id}, action='{self.action}', enable={self.enable}, rule_sequence={self.rule_sequence}, log_type='{self.log_type}', hit_count={self.hit_count}, date_created='{self.date_created}', date_changed='{self.date_changed}', created_by='{self.created_by}', changed_by='{self.changed_by}')"
-

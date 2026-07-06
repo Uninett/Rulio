@@ -49,7 +49,7 @@ def populate_db(actor: User, tenant_id: int) -> tuple[int, int, int, int, int, i
         seeded_address_groups=default_address_groups,
         seeded_services=default_services,
         seeded_service_groups=default_service_groups,
-        seeded_filters=default_filters
+        seeded_filters=default_filters,
     )
     add_tags_to_default_rules(actor=actor, tenant_id=tenant_id, default_rules=default_rules)
 
