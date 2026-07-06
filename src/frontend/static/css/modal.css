@@ -138,12 +138,27 @@ Address Form Layout
 ====================================================================
 */
 
-.address-version-column {
-    flex: 1;
+.form-group.ip-input-row {
+    align-items: start;
 }
 
-.custom-fields-row {
-    gap: 1rem;
+.form-group.ip-input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.form-group.ip-input {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.5rem 1rem;
+    min-width: 0;
+    margin: 0;
+}
+
+.form-group.ip-input input {
+    width: 100%;
+    min-width: 0;
 }
 
 /*
