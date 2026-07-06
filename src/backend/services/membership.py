@@ -1,3 +1,5 @@
+from typing_extensions import Literal
+
 from django.db import transaction
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
@@ -20,6 +22,7 @@ from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.device_group_member import DeviceGroupMember
 from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.services.helper_user_tenant import is_superadmin, require_write_tenant
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
@@ -329,7 +332,14 @@ def add_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: 
 
 
 def add_filter_to_interface(
-    *, actor: User, tenant_id: int, filter_id: int, interface_id: int, policy_sequence: int, enable: bool
+    *,
+    actor: User,
+    tenant_id: int,
+    filter_id: int,
+    interface_id: int,
+    policy_sequence: int,
+    enable: bool,
+    direction: Literal["in", "out"],
 ):
     require_write_tenant(actor, tenant_id)
     if not (
@@ -343,7 +353,7 @@ def add_filter_to_interface(
     interface = Interface.objects.get(id=interface_id)
 
     filter_interface, created = interface.filterinterface_set.get_or_create(
-        interface=interface,
+        interface_direction=InterfaceDirection.objects.get(interface=interface, direction=direction),
         filter=filter,
         defaults={"policy_sequence": policy_sequence, "enable": enable},
     )

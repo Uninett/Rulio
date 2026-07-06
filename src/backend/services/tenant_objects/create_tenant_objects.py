@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth.models import User
 
 from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
@@ -120,12 +121,23 @@ def create_interface(
 
     interface.save()
     logger.info(f"Created {interface} for device={interface.device_id}")
+    interface_direction_in = InterfaceDirection(interface=interface, direction="in")
+    interface_direction_out = InterfaceDirection(interface=interface, direction="out")
+    interface_direction_in.save()
+    interface_direction_out.save()
+    try:
+        interface_direction_in.full_clean()
+        interface_direction_out.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"InterfaceDirection validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
+    logger.info(f"Created InterfaceDirection for {interface} with directions 'in' and 'out'")
     return interface
 
 
 def get_or_create_interface(
     *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
-) -> Interface:
+) -> tuple[Interface, bool, InterfaceDirection, bool, InterfaceDirection, bool]:
     require_write_tenant(actor, tenant_id)
     # Check if the device exists and belongs to the tenant
     try:
@@ -144,4 +156,12 @@ def get_or_create_interface(
         logger.info(f"Created {interface} for device={interface.device_id}")
     else:
         logger.info(f"Retrieved existing {interface} for device={interface.device_id}")
-    return interface, created
+    interface_direction_in, created_in = InterfaceDirection.objects.get_or_create(interface=interface, direction="in")
+    interface_direction_out, created_out = InterfaceDirection.objects.get_or_create(
+        interface=interface, direction="out"
+    )
+    if created_in:
+        logger.info(f"Created InterfaceDirection for {interface} with direction 'in'")
+    if created_out:
+        logger.info(f"Created InterfaceDirection for {interface} with direction 'out'")
+    return interface, created, interface_direction_in, created_in, interface_direction_out, created_out

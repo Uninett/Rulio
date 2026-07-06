@@ -946,7 +946,7 @@ def sample_interfaces(request_with_session, sample_devices):
     interfaces = []
     for device in sample_devices:
         for i in range(1, 3):  # Create 2 interfaces per device
-            interface, _ = get_or_create_interface(
+            interface, _, _, _, _, _ = get_or_create_interface(
                 actor=request_with_session.user,
                 tenant_id=request_with_session.tenant_id,
                 device_id=device.id,
