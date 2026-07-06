@@ -95,7 +95,6 @@ from backend.services.membership import (
     add_address_to_group,
     add_filter_to_interface,
     add_objects_to_rule,
-    add_rule_to_filter,
     add_service_to_group,
     add_addresses_to_group,
     add_services_to_group,
@@ -1316,37 +1315,6 @@ def delete_rule_endpoint(request, rule_id: int):
             200,
             {
                 "rule_id": rule_id,
-            },
-        )
-    except ValueError as e:
-        logger.warning(str(e))
-        return Status(
-            404,
-            {
-                "status": "error",
-                "message": str(e),
-            },
-        )
-
-
-@api.post("/add_rule_to_filter", tags=["Configuration"], response={200: dict, 403: MessageSchema, 404: MessageSchema})
-@require_write_tenantd
-def add_rule_to_filter_endpoint(request, filter_id: int, rule_id: int, rule_sequence: int):
-    try:
-        add_rule_to_filter(
-            actor=request.user,
-            tenant_id=request.session["current_tenant_id"],
-            rule_id=rule_id,
-            filter_id=filter_id,
-            rule_sequence=rule_sequence,
-        )
-        logger.info(f"Rule id={rule_id} added to filter id={filter_id} with rule_sequence={rule_sequence}")
-        return Status(
-            200,
-            {
-                "rule_id": rule_id,
-                "filter_id": filter_id,
-                "rule_sequence": rule_sequence,
             },
         )
     except ValueError as e:

@@ -7,7 +7,6 @@ from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
-from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.filter_interface import FilterInterface
@@ -288,14 +287,3 @@ def update_rule(
         rule.changed_by = changed_by
     rule.save()
     return rule
-
-
-def update_rule_filter(*, actor, tenant_id, rule_filter_id, rule_sequence=None, enable=None):
-    require_write_tenant(actor, tenant_id)
-    rule_filter = RuleFilter.objects.get(id=rule_filter_id, tenant_id=tenant_id)
-    if rule_sequence is not None:
-        rule_filter.rule_sequence = rule_sequence
-    if enable is not None:
-        rule_filter.enable = enable
-    rule_filter.save()
-    return rule_filter

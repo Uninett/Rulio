@@ -14,7 +14,6 @@ from backend.services.membership import (
     add_filter_to_interface,
     add_services_to_group,
     add_objects_to_rule,
-    add_rule_to_filter,
 )
 from backend.services.generate_config import generate_config, generate_multi_policy_config, merge_policies
 from backend.services.tenant_objects.create_tenant_objects import create_device, create_interface

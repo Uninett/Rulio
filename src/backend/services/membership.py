@@ -16,7 +16,6 @@ from backend.objects.attributes.tag import Tag
 from backend.objects.attributes.tag_connection import TagConnection
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
-from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
@@ -308,27 +307,6 @@ def add_objects_to_rule(
         "already_exists_count": len(already_exists),
         "error_count": len(errors),
     }
-
-
-def add_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int):
-    require_write_tenant(actor, tenant_id)
-    if not Rule.objects.filter(id=rule_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Rule with ID {rule_id} does not exist in tenant {tenant_id}.")
-    rule = Rule.objects.get(id=rule_id)
-    filter = Filter.objects.get(id=filter_id)
-
-    rule_filter, created = RuleFilter.objects.get_or_create(
-        rule=rule,
-        filter=filter,
-        defaults={"rule_sequence": rule_sequence},
-    )
-
-    if not created:
-        rule_filter.rule_sequence = rule_sequence
-        rule_filter.save()
-
-    logger.info(f"Added Rule {rule.id} to Filter {filter.id} with rule_sequence {rule_sequence}")
-    return rule_filter
 
 
 def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int):

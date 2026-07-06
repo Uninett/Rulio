@@ -1,8 +1,0 @@
-from django.db import models
-
-
-class RuleFilter(models.Model):
-    rule = models.ForeignKey("Rule", on_delete=models.CASCADE)
-    filter = models.ForeignKey("Filter", on_delete=models.CASCADE)
-    rule_sequence = models.IntegerField()
-    enable = models.BooleanField(default=True)
