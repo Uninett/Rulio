@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-
+from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.services.filter_objects.create_filter_objects import get_or_create_rule
 from backend.services.membership import add_objects_to_rule
@@ -17,19 +17,24 @@ def seed_rules(
     seeded_address_groups,
     seeded_services,
     seeded_service_groups,
+    seeded_filters: list[Filter],
 ) -> tuple[int, list[Rule]]:
     default_rules = []
 
     address_groups_by_name = {group.name: group for group in seeded_address_groups}
     services_by_name = {service.name: service for service in seeded_services}
     service_groups_by_name = {group.name: group for group in seeded_service_groups}
+    filters_by_name = {filter_obj.name: filter_obj for filter_obj in seeded_filters}
 
     rule_1, created_1 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Baseline_Internal_Client_Policy"],
         name="Allow_Private_And_Local_Use_Addresses_To_Common_Infrastructure_Client_Services",
         description="Allow traffic from private and local use addresses to common infrastructure client services.",
         action="allow",
+        enable=True,
+        rule_sequence=1,
         log_type="none",
         hit_count=0,
     )
@@ -55,6 +60,9 @@ def seed_rules(
         name="Allow_Private_And_Local_Use_Addresses_To_Common_Web_Access_Services",
         description="Allow traffic from private and local use addresses to common web access services.",
         action="allow",
+        filter=filters_by_name["Internal_Server_Policy"],
+        enable=True,
+        rule_sequence=1,
         log_type="none",
         hit_count=0,
     )
@@ -77,9 +85,12 @@ def seed_rules(
     rule_3, created_3 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Strict_Egress_Policy"],
         name="Allow_Private_And_Local_Use_Addresses_To_Restricted_Administrative_Access_Services",
         description="Allow traffic from private and local use addresses to restricted administrative access services.",
         action="allow",
+        enable=True,
+        rule_sequence=1,
         log_type="flow",
         hit_count=0,
     )
@@ -102,9 +113,12 @@ def seed_rules(
     rule_4, created_4 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Baseline_Internal_Client_Policy"],
         name="Allow_Private_And_Local_Use_Addresses_To_Restricted_Internal_Identity_Services",
         description="Allow traffic from private and local use addresses to restricted internal identity services.",
         action="allow",
+        enable=True,
+        rule_sequence=2,
         log_type="flow",
         hit_count=0,
     )
@@ -127,9 +141,12 @@ def seed_rules(
     rule_5, created_5 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Internal_Server_Policy"],
         name="Allow_Private_And_Local_Use_Addresses_To_Restricted_Internal_File_Sharing_Services",
         description="Allow traffic from private and local use addresses to restricted internal file sharing services.",
         action="allow",
+        enable=True,
+        rule_sequence=2,
         log_type="flow",
         hit_count=0,
     )
@@ -152,9 +169,12 @@ def seed_rules(
     rule_6, created_6 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Strict_Egress_Policy"],
         name="Allow_Private_And_Local_Use_Addresses_To_Restricted_Database_Services",
         description="Allow traffic from private and local use addresses to restricted database services.",
         action="allow",
+        enable=True,
+        rule_sequence=2,
         log_type="flow",
         hit_count=0,
     )
@@ -177,9 +197,12 @@ def seed_rules(
     rule_7, created_7 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Baseline_Internal_Client_Policy"],
         name="Allow_Private_And_Local_Use_Addresses_To_Restricted_Monitoring_And_Logging_Services",
         description="Allow traffic from private and local use addresses to restricted monitoring and logging services.",
         action="allow",
+        enable=True,
+        rule_sequence=3,
         log_type="flow",
         hit_count=0,
     )
@@ -202,9 +225,12 @@ def seed_rules(
     rule_8, created_8 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Internal_Server_Policy"],
         name="Deny_Invalid_Transit_Addresses_To_Any_TCP",
         description="Deny traffic from invalid transit addresses to any TCP service.",
         action="deny",
+        enable=True,
+        rule_sequence=3,
         log_type="flow",
         hit_count=0,
     )
@@ -227,9 +253,12 @@ def seed_rules(
     rule_9, created_9 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Strict_Egress_Policy"],
         name="Deny_Invalid_Transit_Addresses_To_Any_UDP",
         description="Deny traffic from invalid transit addresses to any UDP service.",
         action="deny",
+        enable=True,
+        rule_sequence=3,
         log_type="flow",
         hit_count=0,
     )
@@ -252,9 +281,12 @@ def seed_rules(
     rule_10, created_10 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Baseline_Internal_Client_Policy"],
         name="Deny_Documentation_And_Test_Addresses_To_Any_TCP",
         description="Deny traffic from documentation and test addresses to any TCP service.",
         action="deny",
+        enable=True,
+        rule_sequence=4,
         log_type="flow",
         hit_count=0,
     )
@@ -277,9 +309,12 @@ def seed_rules(
     rule_11, created_11 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Internal_Server_Policy"],
         name="Deny_Documentation_And_Test_Addresses_To_Any_UDP",
         description="Deny traffic from documentation and test addresses to any UDP service.",
         action="deny",
+        enable=True,
+        rule_sequence=4,
         log_type="flow",
         hit_count=0,
     )
@@ -302,9 +337,12 @@ def seed_rules(
     rule_12, created_12 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Strict_Egress_Policy"],
         name="Deny_Multicast_Addresses_To_Any_TCP",
         description="Deny traffic to multicast addresses over any TCP service.",
         action="deny",
+        enable=True,
+        rule_sequence=4,
         log_type="flow",
         hit_count=0,
     )
@@ -327,9 +365,12 @@ def seed_rules(
     rule_13, created_13 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Baseline_Internal_Client_Policy"],
         name="Deny_Multicast_Addresses_To_Any_UDP",
         description="Deny traffic to multicast addresses over any UDP service.",
         action="deny",
+        enable=True,
+        rule_sequence=5,
         log_type="flow",
         hit_count=0,
     )
@@ -352,9 +393,12 @@ def seed_rules(
     rule_14, created_14 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Internal_Server_Policy"],
         name="Deny_IPv6_Transition_And_Translation_Addresses_To_Any_TCP",
         description="Deny traffic to IPv6 transition and translation addresses over any TCP service.",
         action="deny",
+        enable=True,
+        rule_sequence=5,
         log_type="flow",
         hit_count=0,
     )
@@ -377,9 +421,12 @@ def seed_rules(
     rule_15, created_15 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Strict_Egress_Policy"],
         name="Deny_IPv6_Transition_And_Translation_Addresses_To_Any_UDP",
         description="Deny traffic to IPv6 transition and translation addresses over any UDP service.",
         action="deny",
+        enable=True,
+        rule_sequence=5,
         log_type="flow",
         hit_count=0,
     )
@@ -402,9 +449,12 @@ def seed_rules(
     rule_16, created_16 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Baseline_Internal_Client_Policy"],
         name="Deny_Private_And_Local_Use_Addresses_To_Deny_Legacy_Insecure_Services",
         description="Deny traffic from private and local use addresses to legacy insecure services.",
         action="deny",
+        enable=True,
+        rule_sequence=6,
         log_type="flow",
         hit_count=0,
     )
@@ -427,9 +477,12 @@ def seed_rules(
     rule_17, created_17 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Internal_Server_Policy"],
         name="Deny_Private_And_Local_Use_Addresses_To_Deny_Tunneling_And_VPN_Services",
         description="Deny traffic from private and local use addresses to tunneling and VPN services.",
         action="deny",
+        enable=True,
+        rule_sequence=6,
         log_type="flow",
         hit_count=0,
     )
@@ -452,7 +505,10 @@ def seed_rules(
     rule_18, created_18 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Strict_Egress_Policy"],
         name="Deny_Private_And_Local_Use_Addresses_To_Deny_Voice_And_Signaling_Services",
+        enable=True,
+        rule_sequence=6,
         description="Deny traffic from private and local use addresses to voice and signaling services.",
         action="deny",
         log_type="flow",
@@ -477,7 +533,10 @@ def seed_rules(
     rule_19, created_19 = get_or_create_rule(
         tenant_id=tenant_id,
         actor=actor,
+        filter=filters_by_name["Baseline_Internal_Client_Policy"],
         name="Deny_Private_And_Local_Use_Addresses_To_Deny_Local_Link_Resolution_Services",
+        enable=True,
+        rule_sequence=7,
         description="Deny traffic from private and local use addresses to local link resolution services.",
         action="deny",
         log_type="flow",

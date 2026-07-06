@@ -205,6 +205,7 @@ def update_filter_interface(
     filter_interface.save()
     return filter_interface
 
+
 def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
     require_write_tenant(actor, tenant_id)
     with transaction.atomic():
@@ -219,10 +220,10 @@ def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
             rule.rule_sequence = new_sequence
             rule.save()
             return rule
-        
+
         if new_sequence < 1 or new_sequence > rules_in_filter.count() + 1:
             raise ValueError(f"New sequence {new_sequence} is out of bounds for filter with id={filter.id}.")
-        
+
         # rule_sequence = 0 means that the rule has not yet been placed in the sequence
         if rule.rule_sequence == 0:
             for r in rules_in_filter.filter(rule_sequence__gte=new_sequence):
@@ -251,6 +252,7 @@ def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
         rule.save()
         return rule
 
+
 def update_rule(
     *,
     actor,
@@ -259,10 +261,11 @@ def update_rule(
     name=None,
     description=None,
     action=None,
+    enable=None,
+    rule_sequence=None,
     log_type=None,
     hit_count=None,
     changed_by=None,
-    direction=None,
 ):
     require_write_tenant(actor, tenant_id)
     rule = Rule.objects.get(id=rule_id, tenant_id=tenant_id)
@@ -272,14 +275,17 @@ def update_rule(
         rule.description = description
     if action is not None:
         rule.action = action
+    if enable is not None:
+        rule.enable = enable
+    if rule_sequence is not None:
+        rule.rule_sequence = rule_sequence
+        update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule_sequence)
     if log_type is not None:
         rule.log_type = log_type
     if hit_count is not None:
         rule.hit_count = hit_count
     if changed_by is not None:
         rule.changed_by = changed_by
-    if direction is not None:
-        rule.direction = direction
     rule.save()
     return rule
 

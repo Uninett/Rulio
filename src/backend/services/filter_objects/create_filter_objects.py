@@ -24,6 +24,7 @@ def create_rule(
     action: str,
     enable: bool,
     log_type: str,
+    rule_sequence: int,
     hit_count: int,
 ) -> Rule:
     require_write_tenant(actor, tenant_id)
@@ -52,7 +53,7 @@ def create_rule(
                 raise ValueError(e.message_dict) from e
 
             rule.save()
-            update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule.rule_sequence)
+            update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule_sequence)
             logger.info(f"Created {rule} for tenant={rule.tenant_id}")
             return rule
     except IntegrityError as e:

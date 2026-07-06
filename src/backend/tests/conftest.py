@@ -769,12 +769,15 @@ def sample_filters(request_with_session, create_testing_tenant):
 
 
 @pytest.fixture
-def sample_rules(request_with_session, sample_addresses, sample_services, create_testing_tenant):
+def sample_rules(request_with_session, sample_addresses, sample_services, create_testing_tenant, sample_filters):
     sample_rules = [
         create_rule(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_1",
+            filter=sample_filters[0],
+            rule_sequence=1,
+            enable=True,
             description="This is a sample rule for testing.",
             action="accept",
             log_type="all",
@@ -784,6 +787,9 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_2",
+            filter=sample_filters[0],
+            rule_sequence=2,
+            enable=True,
             description="This is another sample rule for testing.",
             action="deny",
             log_type="all",
@@ -793,6 +799,9 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_3",
+            filter=sample_filters[1],
+            rule_sequence=1,
+            enable=True,
             description="This is yet another sample rule for testing.",
             action="accept",
             log_type="all",
@@ -802,6 +811,9 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_4",
+            filter=sample_filters[1],
+            rule_sequence=2,
+            enable=True,
             description="This is a fourth sample rule for testing.",
             action="deny",
             log_type="all",

@@ -312,11 +312,20 @@ class TestAddServicesToGroup:
 @pytest.mark.django_db
 class TestCreateRule:
     def test_create_rule(self, request_with_session, create_testing_tenant, db):
+        filter_obj = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Filter",
+            description="This is a test filter",
+        )
         rule = create_rule(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
+            filter=filter_obj,
+            enable=True,
             name="Test Rule",
             description="This is a test rule",
+            rule_sequence=1,
             action="allow",
             log_type="log",
             hit_count=0,
