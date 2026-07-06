@@ -15,10 +15,12 @@ logger = set_up_logger(__name__)
 def create_rule(
     *,
     actor: User,
+    filter: Filter,
     tenant_id: int,
     name: str,
     description: str,
     action: str,
+    enable: bool,
     log_type: str,
     hit_count: int,
 ) -> Rule:
@@ -28,8 +30,10 @@ def create_rule(
     rule = Rule(
         name=name,
         description=description,
+        filter=filter,
         tenant=tenant,
         action=action,
+        enable=enable,
         log_type=log_type,
         hit_count=hit_count,
         date_created=now,
@@ -44,6 +48,7 @@ def create_rule(
         raise ValueError(e.message_dict) from e
 
     rule.save()
+    update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule.rule_sequence)
     logger.info(f"Created {rule} for tenant={rule.tenant_id}")
     return rule
 
@@ -51,22 +56,28 @@ def create_rule(
 def get_or_create_rule(
     *,
     actor: User,
+    filter: Filter,
     tenant_id: int,
     name: str,
     description: str,
     action: str,
+    enable: bool,
     log_type: str,
     hit_count: int,
+    rule_sequence: int,
 ) -> tuple[Rule, bool]:
     require_write_tenant(actor, tenant_id)
     rule, created = Rule.objects.get_or_create(
+        filter=filter,
         tenant_id=tenant_id,
         name=name,
         defaults={
             "description": description,
             "action": action,
+            "enable": enable,
             "log_type": log_type,
             "hit_count": hit_count,
+            "rule_sequence": 0,
             "date_created": datetime.now(timezone.utc),
             "date_changed": datetime.now(timezone.utc),
             "created_by": actor.id,
@@ -75,6 +86,7 @@ def get_or_create_rule(
     )
     if created:
         rule.full_clean()
+        update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule_sequence)
         logger.info(f"Created {rule} for tenant={rule.tenant_id}")
     else:
         logger.info(f"Found existing {rule} for tenant={rule.tenant_id}")
