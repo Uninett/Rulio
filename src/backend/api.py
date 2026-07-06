@@ -24,7 +24,7 @@ from backend.services.delete import (
     delete_rule,
     delete_tenant,
 )
-from backend.services.generate_config import generate_multi_policy_config
+from backend.services.config_generation.generate_config import generate_multi_policy_config
 from backend.services.attribute_objects.get_address_objects import (
     get_address_groups_and_addresses_from_tenant,
     get_all_addresses_and_groups_with_tags_from_tenant,
@@ -81,11 +81,7 @@ from backend.schemas.rule import CreateRuleSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
-from backend.objects.attributes.tag import Tag
-from backend.objects.attributes.address_group_member import AddressGroupMember
-from backend.objects.attributes.service_group_member import ServiceGroupMember
-from backend.objects.filters.filter import Filter
-from backend.objects.filters.rule import Rule
+from backend.services.get import DJANGO_MODEL_MAPPING
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.helper_user_tenant import (
     is_superadmin,
@@ -109,17 +105,7 @@ logger = set_up_logger(__name__)
 
 api = NinjaAPI(auth=None if settings.DEBUG else django_auth)
 
-DJANGO_MODEL_MAPPING = {
-    "address": Address,
-    "addressgroup": AddressGroup,
-    "service": Service,
-    "servicegroup": ServiceGroup,
-    "rule": Rule,
-    "tag": Tag,
-    "addressgroupmember": AddressGroupMember,
-    "servicegroupmember": ServiceGroupMember,
-    "filter": Filter,
-}
+
 
 
 """
