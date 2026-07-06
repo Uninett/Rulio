@@ -238,8 +238,8 @@ Modal Actions
 */
 
 .modal-actions {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 0.75rem;
     margin-top: 1rem;
@@ -250,14 +250,40 @@ Modal Actions
 
 .modal-actions-left {
     display: flex;
+    justify-content: flex-start;
     align-items: center;
     gap: 0.75rem;
 }
 
+.modal-actions-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
 .modal-actions-right {
     display: flex;
+    justify-content: flex-end;
     align-items: center;
     gap: 0.75rem;
+}
+
+.btn-delete {
+    background-color: #B60203;
+    border-color: #B60203;
+    color: white;
+}
+
+.btn-delete.btn-delete:hover {
+    background-color: #970002;
+    border-color: #970002;
+}
+
+.modal-actions .form-error {
+    margin: 0;
+    color: #B60203;
+    font-size: 0.85rem;
 }
 
 .btn-cancel {
@@ -271,15 +297,4 @@ Modal Actions
     background-color: #FFEAE9;
     border-color: #FFEAE9;
     /* color-support-critical-subtle */
-}
-
-.btn-delete {
-    background-color: #B60203;
-    border-color: #B60203;
-    color: white;
-}
-
-.btn-delete.btn-delete:hover {
-    background-color: #970002;
-    border-color: #970002;
 }

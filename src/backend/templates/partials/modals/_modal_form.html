@@ -13,9 +13,6 @@
             {% csrf_token %}
 
             <div id="modal-form-content" class="modal-form-content">
-                {% if error_message %}
-                <p class="form-error">{{ error_message }}</p>
-                {% endif %}
 
                 <div class="form-group">
                     <label for="name">Name<span class="required"> *</span></label>
@@ -45,6 +42,12 @@
                         hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}')">
                         Delete
                     </button>
+                    {% endif %}
+                </div>
+
+                <div class="modal-actions-center">
+                    {% if error_message %}
+                    <p class="form-error">{{ error_message }}</p>
                     {% endif %}
                 </div>
 
