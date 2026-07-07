@@ -71,7 +71,7 @@ def get_addresses_view(request):
         addresses, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
-            include_global_tenant=False,
+            include_global_tenant=True,
         )
     except Exception:
         return {

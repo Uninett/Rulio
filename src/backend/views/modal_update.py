@@ -112,7 +112,7 @@ def get_update_modal(request, row_id):
         objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=tenant_id,
-            include_global_tenant=False,
+            include_global_tenant=True,
         )
 
         # Fetch the specific object data based on type and id
