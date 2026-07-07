@@ -30,5 +30,3 @@ def create_tenant_user_member(
     )
     logger.info(f"TenantUserMember created by {actor.username}: {tenant_user}")
     return tenant_user
-
-

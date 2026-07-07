@@ -372,5 +372,3 @@ class TestMatchRuleToObjects:
         )
         assert RuleMatch.objects.filter(rule_id=rule_id, match="source").count() == len(sample_addresses)
         assert RuleMatch.objects.filter(rule_id=rule_id, match="destination").count() == len(sample_services)
-
-

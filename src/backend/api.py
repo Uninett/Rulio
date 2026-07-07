@@ -64,7 +64,7 @@ from backend.services.tenant_objects.create_tenant_objects import (
 )
 
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
-from backend.services.config_generation.build import  build_policies_for_interface
+from backend.services.config_generation.build import build_policies_for_interface
 from backend.services.create import (
     create_tenant_user_member,
 )
@@ -103,8 +103,6 @@ logger = set_up_logger(__name__)
 
 
 api = NinjaAPI(auth=None if settings.DEBUG else django_auth)
-
-
 
 
 """

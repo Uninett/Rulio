@@ -21,9 +21,7 @@ logger = set_up_logger(__name__)
 
 @pytest.mark.django_db
 class TestBuildPolicyFromObjects:
-    def test_build_policy_from_simple_filter_object(
-        self, request_with_session, sample_addresses
-    ):
+    def test_build_policy_from_simple_filter_object(self, request_with_session, sample_addresses):
         filter_obj = create_filter(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
