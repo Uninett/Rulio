@@ -7,10 +7,10 @@ from backend.services.filter_objects.create_filter_objects import create_filter
 from backend.services.membership import (
     add_filter_to_interface,
     add_objects_to_rule,
-    add_rule_to_filter,
 )
 from backend.services.config_generation.generate_config import generate_config, generate_multi_policy_config, merge_policies
 from backend.services.tenant_objects.create_tenant_objects import create_device, create_interface
+from backend.services.update import update_rule
 from backend.utils.logger import set_up_logger
 from backend.utils.write_to_file import write_configuration_to_file
 from backend.services.config_generation.build import build_policies_for_interface, build_policy_from_filter
@@ -23,32 +23,21 @@ class TestGenerateConfigFromFilterObject:
     def test_generate_config_from_simple_filter_object(
         self, sample_filters, sample_rules, request_with_session, create_testing_tenant, sample_addresses
     ):
-        filter_id = sample_filters[0].id
-        rule_id = sample_rules[0].id
+        update_rule(request_with_session.user, request_with_session.tenant_id, sample_rules[0].id, filter=sample_filters[0])
 
-        add_rule_to_filter(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            rule_id=rule_id,
-            filter_id=filter_id,
-            rule_sequence=10,
-        )
-        logger.info(
-            f"Added rule {rule_id} to filter {filter_id} with rule_sequence 10, respone:\n{add_rule_to_filter.__name__}"
-        )
 
         # Match the rule to the filter
         response = add_objects_to_rule(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
-            rule_id=rule_id,
+            rule_id=sample_rules[0].id,
             match_type="source",
             objects=[sample_addresses[0]],
         )
 
         assert response["error_count"] == 0
         assert response["added_count"] > 0
-        logger.info(f"Matched rule {rule_id} to filter {filter_id}, response:\n{response}")
+        logger.info(f"Matched rule {sample_rules[0].id} to filter {sample_filters[0].id}, response:\n{response}")
         vendor = "juniper"
         # Now generate the policy from the filter object
         policy = build_policy_from_filter(
@@ -86,15 +75,15 @@ class TestGenerateConfigFromFilterObject:
         ]
 
         for i, rule_id in enumerate(rules):
-            add_rule_to_filter(
+            update_rule(
                 actor=request_with_session.user,
                 tenant_id=request_with_session.tenant_id,
                 rule_id=rule_id,
-                filter_id=filter_id,
+                filter=sample_filters[1],
                 rule_sequence=(i + 1) * 10,
             )
             logger.info(
-                f"Added rule {rule_id} to filter {filter_id} with rule_sequence {(i + 1) * 10}, respone:\n{add_rule_to_filter.__name__}"
+                f"Added rule {rule_id} to filter {filter_id} with rule_sequence {(i + 1) * 10}, respone:\n{update_rule.__name__}"
             )
         responses = [
             add_objects_to_rule(
@@ -158,26 +147,12 @@ class TestGenerateConfigFromFilterObject:
             name="Test Filter for Interface",
             description="This is a test filter for interface",
         )
-        add_rule_to_filter(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            rule_id=sample_rules_with_objects[0].id,
-            filter_id=new_filter.id,
-            rule_sequence=10,
-        )
-        add_rule_to_filter(
+        update_rule(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             rule_id=sample_rules_with_objects[1].id,
-            filter_id=sample_filters[0].id,
+            filter=new_filter,
             rule_sequence=10,
-        )
-        add_rule_to_filter(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            rule_id=sample_rules_with_objects[2].id,
-            filter_id=sample_filters[1].id,
-            rule_sequence=20,
         )
 
         interfaces = []

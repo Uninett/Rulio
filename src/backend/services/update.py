@@ -257,6 +257,7 @@ def update_rule(
     actor,
     tenant_id,
     rule_id,
+    filter=None,
     name=None,
     description=None,
     action=None,
@@ -268,6 +269,8 @@ def update_rule(
 ):
     require_write_tenant(actor, tenant_id)
     rule = Rule.objects.get(id=rule_id, tenant_id=tenant_id)
+    if filter is not None:
+        rule.filter = filter
     if name is not None:
         rule.name = name
     if description is not None:

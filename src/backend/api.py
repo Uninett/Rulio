@@ -64,9 +64,8 @@ from backend.services.tenant_objects.create_tenant_objects import (
 )
 
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
-
+from backend.services.config_generation.build import  build_policies_for_interface
 from backend.services.create import (
-    create_policies_for_interface,
     create_tenant_user_member,
 )
 from backend.schemas.address import CreateAddressSchema
@@ -1455,7 +1454,7 @@ def add_test_data(request):
 @require_write_tenantd
 def generate_config_for_interface(request, interface_id: int, direction: str):
     try:
-        policies = create_policies_for_interface(
+        policies = build_policies_for_interface(
             actor=request.user,
             tenant_id=request.session["current_tenant_id"],
             interface_id=interface_id,
