@@ -10,18 +10,20 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 
 from backend.objects.tenant_objects.tenant import Tenant
+from backend.services.config_generation.build import build_policies_for_interface, build_policy_from_filter
 from backend.services.membership import (
     add_addresses_to_group,
     add_devices_to_group,
+    add_filter_to_interface,
     add_objects_to_rule,
     add_services_to_group,
 )
 from backend.services.attribute_objects.create_attribute_objects import create_tag, get_or_create_address
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 
-from backend.services.generate_config import PolicyRule
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
+    create_interface,
     get_or_create_device_group,
     get_or_create_interface,
 )
@@ -141,26 +143,6 @@ def sample_addresses(create_testing_tenant):
 
 
 @pytest.fixture
-def address_policy_rules(sample_addresses, request_with_session):
-    policy_rules = []
-
-    for i, address in enumerate(sample_addresses):
-        rule = PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name=f"Test_Address_Rule_{i + 1}",
-            obj_type="address",
-            action="accept" if i % 2 == 0 else "deny",
-            object=address,
-            direction="destination" if i % 2 == 0 else "source",
-            rule_sequence=i,
-        )
-        policy_rules.append(rule)
-
-    return policy_rules
-
-
-@pytest.fixture
 def sample_services(create_testing_tenant):
     services = [
         Service(
@@ -213,26 +195,6 @@ def sample_services(create_testing_tenant):
         service.save()
 
     return services
-
-
-@pytest.fixture
-def service_policy_rules(sample_services, request_with_session):
-    policy_rules = []
-
-    for i, service in enumerate(sample_services):
-        rule = PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name=f"Test_Service_Rule_{i + 1}",
-            obj_type="service",
-            action="accept" if i % 2 == 0 else "deny",
-            object=service,
-            direction="destination",
-            rule_sequence=i,
-        )
-        policy_rules.append(rule)
-
-    return policy_rules
 
 
 @pytest.fixture
@@ -315,94 +277,6 @@ def sample_service_group(sample_services, request_with_session):
     sample_service_group_1.save()
 
     return sample_service_group_1
-
-
-@pytest.fixture
-def address_group_policy_rules(sample_address_group, request_with_session):
-    return [
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Test_Rule_for_Address_Group_1",
-            obj_type="addressgroup",
-            action="accept",
-            object=sample_address_group[0],
-            direction="destination",
-            rule_sequence=0,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Test_Rule_for_Address_Group_2",
-            obj_type="addressgroup",
-            action="deny",
-            object=sample_address_group[1],
-            direction="source",
-            rule_sequence=1,
-        ),
-    ]
-
-
-@pytest.fixture
-def service_group_policy_rules(sample_service_group, request_with_session):
-    return [
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Test_Rule_for_Service_Group_1",
-            obj_type="servicegroup",
-            action="accept",
-            object=sample_service_group,
-            direction="destination",
-            rule_sequence=0,
-        )
-    ]
-
-
-@pytest.fixture
-def combined_policy_rules(sample_addresses, sample_services, request_with_session):
-    return [
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Combined_Rule_1_Address",
-            obj_type="address",
-            action="accept",
-            object=sample_addresses[0],
-            direction="destination",
-            rule_sequence=0,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Combined_Rule_1_Service",
-            obj_type="service",
-            action="accept",
-            object=sample_services[0],
-            direction="destination",
-            rule_sequence=0,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Combined_Rule_2_Address",
-            obj_type="address",
-            action="deny",
-            object=sample_addresses[1],
-            direction="source",
-            rule_sequence=1,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Combined_Rule_2_Service",
-            obj_type="service",
-            action="deny",
-            object=sample_services[1],
-            direction="destination",
-            rule_sequence=1,
-        ),
-    ]
 
 
 @pytest.fixture
@@ -600,157 +474,6 @@ def realistic_acl_service_groups(realistic_acl_services, create_testing_tenant, 
 
 
 @pytest.fixture
-def realistic_acl_policy_rules(
-    realistic_acl_addresses,
-    realistic_acl_services,
-    realistic_acl_address_groups,
-    realistic_acl_service_groups,
-    request_with_session,
-):
-    addr = {a.name: a for a in realistic_acl_addresses}
-    svc = {s.name: s for s in realistic_acl_services}
-    ag = realistic_acl_address_groups
-    sg = realistic_acl_service_groups
-
-    return [
-        # rule_sequence 10 -> 1 tcp term
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Trusted_To_Web_Src_Group",
-            obj_type="addressgroup",
-            action="accept",
-            object=ag[0],  # ACL_Trusted_Sources
-            direction="source",
-            rule_sequence=10,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Trusted_To_Web_Dst_Group",
-            obj_type="addressgroup",
-            action="accept",
-            object=ag[1],  # ACL_Web_Servers
-            direction="destination",
-            rule_sequence=10,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Trusted_To_Web_Dst_Direct",
-            obj_type="address",
-            action="accept",
-            object=addr["ACL_Dst_Web_1"],
-            direction="destination",
-            rule_sequence=10,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Trusted_To_Web_Services",
-            obj_type="servicegroup",
-            action="accept",
-            object=sg[0],  # ACL_Web_Services
-            direction="destination",
-            rule_sequence=10,
-        ),
-        # rule_sequence 20 -> 2 terms (tcp + udp)
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Trusted_To_DNS_Src_Group",
-            obj_type="addressgroup",
-            action="accept",
-            object=ag[0],  # ACL_Trusted_Sources
-            direction="source",
-            rule_sequence=20,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Trusted_To_DNS_Dst",
-            obj_type="address",
-            action="accept",
-            object=addr["ACL_Dst_DNS"],
-            direction="destination",
-            rule_sequence=20,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Trusted_To_DNS_Services",
-            obj_type="servicegroup",
-            action="accept",
-            object=sg[1],  # ACL_DNS_Services
-            direction="destination",
-            rule_sequence=20,
-        ),
-        # rule_sequence 30 -> 1 tcp term
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Deny_Admins_To_Blocked_Src",
-            obj_type="address",
-            action="deny",
-            object=addr["ACL_Src_Admins"],
-            direction="source",
-            rule_sequence=30,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Deny_Admins_To_Blocked_Dst",
-            obj_type="address",
-            action="deny",
-            object=addr["ACL_Dst_Blocked"],
-            direction="destination",
-            rule_sequence=30,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Deny_Admins_To_Blocked_Service",
-            obj_type="service",
-            action="deny",
-            object=svc["ACL_HTTPS"],
-            direction="destination",
-            rule_sequence=30,
-        ),
-        # rule_sequence 40 -> 1 icmp term
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Admins_ICMP_Src",
-            obj_type="address",
-            action="accept",
-            object=addr["ACL_Src_Admins"],
-            direction="source",
-            rule_sequence=40,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Admins_ICMP_Dst",
-            obj_type="address",
-            action="accept",
-            object=addr["ACL_Any"],
-            direction="destination",
-            rule_sequence=40,
-        ),
-        PolicyRule(
-            actor=request_with_session.user,
-            tenant_id=request_with_session.tenant_id,
-            name="Allow_Admins_ICMP_Service",
-            obj_type="service",
-            action="accept",
-            object=svc["ACL_ICMP"],
-            direction="destination",
-            rule_sequence=40,
-        ),
-    ]
-
-
-@pytest.fixture
 def sample_filters(request_with_session, create_testing_tenant):
     return [
         create_filter(
@@ -769,12 +492,15 @@ def sample_filters(request_with_session, create_testing_tenant):
 
 
 @pytest.fixture
-def sample_rules(request_with_session, sample_addresses, sample_services, create_testing_tenant):
+def sample_rules(request_with_session, sample_addresses, sample_services, create_testing_tenant, sample_filters):
     sample_rules = [
         create_rule(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_1",
+            filter=sample_filters[0],
+            rule_sequence=1,
+            enable=True,
             description="This is a sample rule for testing.",
             action="accept",
             log_type="all",
@@ -784,6 +510,9 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_2",
+            filter=sample_filters[0],
+            rule_sequence=2,
+            enable=True,
             description="This is another sample rule for testing.",
             action="deny",
             log_type="all",
@@ -793,6 +522,9 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_3",
+            filter=sample_filters[1],
+            rule_sequence=1,
+            enable=True,
             description="This is yet another sample rule for testing.",
             action="accept",
             log_type="all",
@@ -802,6 +534,9 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Rule_4",
+            filter=sample_filters[1],
+            rule_sequence=2,
+            enable=True,
             description="This is a fourth sample rule for testing.",
             action="deny",
             log_type="all",
@@ -956,3 +691,475 @@ def sample_interfaces(request_with_session, sample_devices):
             )
             interfaces.append(interface)
     return interfaces
+
+
+"""
+===================================================================
+Policy Fixtures
+===================================================================
+"""
+
+
+@pytest.fixture
+def built_address_policy(sample_addresses, request_with_session):
+    filter_obj = create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Address_Test_Policy",
+        description="Address-only filter",
+    )
+
+    for i, address in enumerate(sample_addresses):
+        rule = create_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name=f"Test_Address_Rule_{i + 1}",
+            filter=filter_obj,
+            rule_sequence=i + 1,
+            enable=True,
+            description="Address test rule",
+            action="accept" if i % 2 == 0 else "deny",
+            log_type="all",
+            hit_count=0,
+        )
+        add_objects_to_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=rule.id,
+            match_type="destination" if i % 2 == 0 else "source",
+            objects=[address],
+        )
+
+    return build_policy_from_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        filter_id=filter_obj.id,
+        policy_sequence=10,
+        vendor="fixture_vendor",
+        target_spec=None,
+    )
+
+
+@pytest.fixture
+def built_address_group_policy(sample_address_group, request_with_session):
+    filter_obj = create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Address_Group_Test_Policy",
+        description="Address-group-only filter",
+    )
+
+    rule_1 = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Test_Rule_for_Address_Group_1",
+        filter=filter_obj,
+        rule_sequence=1,
+        enable=True,
+        description="Address group rule 1",
+        action="accept",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_1.id,
+        match_type="destination",
+        objects=[sample_address_group[0]],
+    )
+
+    rule_2 = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Test_Rule_for_Address_Group_2",
+        filter=filter_obj,
+        rule_sequence=2,
+        enable=True,
+        description="Address group rule 2",
+        action="deny",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_2.id,
+        match_type="source",
+        objects=[sample_address_group[1]],
+    )
+
+    return build_policy_from_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        filter_id=filter_obj.id,
+        policy_sequence=10,
+        vendor="fixture_vendor",
+        target_spec=None,
+    )
+
+
+@pytest.fixture
+def built_service_policy(sample_services, request_with_session):
+    filter_obj = create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Service_Test_Policy",
+        description="Service-only filter",
+    )
+
+    for i, service in enumerate(sample_services):
+        rule = create_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name=f"Test_Service_Rule_{i + 1}",
+            filter=filter_obj,
+            rule_sequence=i + 1,
+            enable=True,
+            description="Service test rule",
+            action="accept" if i % 2 == 0 else "deny",
+            log_type="all",
+            hit_count=0,
+        )
+        add_objects_to_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=rule.id,
+            match_type="destination",
+            objects=[service],
+        )
+
+    return build_policy_from_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        filter_id=filter_obj.id,
+        policy_sequence=10,
+        vendor="fixture_vendor",
+        target_spec=None,
+    )
+
+
+@pytest.fixture
+def built_service_group_policy(sample_services, request_with_session):
+    filter_obj = create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Service_Group_Test_Policy",
+        description="Service-group-only filter",
+    )
+
+    service_group = ServiceGroup(
+        name="Test_Service_Group_1",
+        description="This is a test service group",
+        tenant_id=request_with_session.tenant_id,
+    )
+    service_group.save()
+
+    add_services_to_group(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        service_group_id=service_group.id,
+        service_ids=[service.id for service in sample_services],
+    )
+
+    rule = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Test_Rule_for_Service_Group_1",
+        filter=filter_obj,
+        rule_sequence=1,
+        enable=True,
+        description="Service group rule",
+        action="accept",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule.id,
+        match_type="destination",
+        objects=[service_group],
+    )
+
+    return build_policy_from_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        filter_id=filter_obj.id,
+        policy_sequence=10,
+        vendor="fixture_vendor",
+        target_spec=None,
+    )
+
+
+@pytest.fixture
+def built_combined_policy(sample_addresses, sample_services, request_with_session):
+    filter_obj = create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Combined_Test_Policy",
+        description="Combined address and service filter",
+    )
+
+    rule_1 = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Combined_Rule_1",
+        filter=filter_obj,
+        rule_sequence=1,
+        enable=True,
+        description="Combined rule 1",
+        action="accept",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_1.id,
+        match_type="destination",
+        objects=[sample_addresses[0], sample_services[0]],
+    )
+
+    rule_2 = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Combined_Rule_2",
+        filter=filter_obj,
+        rule_sequence=2,
+        enable=True,
+        description="Combined rule 2",
+        action="deny",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_2.id,
+        match_type="source",
+        objects=[sample_addresses[1]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_2.id,
+        match_type="destination",
+        objects=[sample_services[1]],
+    )
+
+    return build_policy_from_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        filter_id=filter_obj.id,
+        policy_sequence=10,
+        vendor="fixture_vendor",
+        target_spec=None,
+    )
+
+
+@pytest.fixture
+def built_realistic_acl_policy(
+    realistic_acl_addresses,
+    realistic_acl_services,
+    realistic_acl_address_groups,
+    realistic_acl_service_groups,
+    request_with_session,
+):
+    addr = {a.name: a for a in realistic_acl_addresses}
+    svc = {s.name: s for s in realistic_acl_services}
+    ag = realistic_acl_address_groups
+    sg = realistic_acl_service_groups
+
+    filter_obj = create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Realistic_Router_Policy",
+        description="Realistic ACL test filter",
+    )
+
+    rule_1 = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Allow_Trusted_To_Web",
+        filter=filter_obj,
+        rule_sequence=1,
+        enable=True,
+        description="Allow trusted to web",
+        action="accept",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_1.id,
+        match_type="source",
+        objects=[ag[0]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_1.id,
+        match_type="destination",
+        objects=[ag[1], addr["ACL_Dst_Web_1"], sg[0]],
+    )
+
+    rule_2 = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Allow_Trusted_To_DNS",
+        filter=filter_obj,
+        rule_sequence=2,
+        enable=True,
+        description="Allow trusted to DNS",
+        action="accept",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_2.id,
+        match_type="source",
+        objects=[ag[0]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_2.id,
+        match_type="destination",
+        objects=[addr["ACL_Dst_DNS"], sg[1]],
+    )
+
+    rule_3 = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Deny_Admins_To_Blocked",
+        filter=filter_obj,
+        rule_sequence=3,
+        enable=True,
+        description="Deny admins to blocked host",
+        action="deny",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_3.id,
+        match_type="source",
+        objects=[addr["ACL_Src_Admins"]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_3.id,
+        match_type="destination",
+        objects=[addr["ACL_Dst_Blocked"], svc["ACL_HTTPS"]],
+    )
+
+    rule_4 = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Allow_Admins_ICMP",
+        filter=filter_obj,
+        rule_sequence=4,
+        enable=True,
+        description="Allow admins ICMP",
+        action="accept",
+        log_type="all",
+        hit_count=0,
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_4.id,
+        match_type="source",
+        objects=[addr["ACL_Src_Admins"]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_4.id,
+        match_type="destination",
+        objects=[addr["ACL_Any"], svc["ACL_ICMP"]],
+    )
+
+    return build_policy_from_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        filter_id=filter_obj.id,
+        policy_sequence=10,
+        vendor="fixture_vendor",
+        target_spec=None,
+    )
+
+
+@pytest.fixture
+def built_interface_policies(sample_filters, sample_rules_with_objects, request_with_session):
+    new_filter = create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Test_Filter_for_Interface",
+        description="This is a test filter for interface",
+    )
+
+    moved_rule = sample_rules_with_objects[1]
+    moved_rule.filter = new_filter
+    moved_rule.rule_sequence = 1
+    moved_rule.save()
+
+    device = create_device(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="FIXTURE_VENDOR_Test_Device",
+        description="This is a test device",
+        platform="juniper",
+        type="firewall",
+    )
+    interface = create_interface(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="FIXTURE_VENDOR_Test_Interface",
+        description="This is a test interface",
+        type="ethernet",
+        device_id=device.id,
+        VRF=None,
+    )
+
+    add_filter_to_interface(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        interface_id=interface.id,
+        filter_id=new_filter.id,
+        policy_sequence=5,
+        enable=False,
+        direction="in",
+    )
+    add_filter_to_interface(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        interface_id=interface.id,
+        filter_id=sample_filters[0].id,
+        policy_sequence=10,
+        enable=True,
+        direction="in",
+    )
+    add_filter_to_interface(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        interface_id=interface.id,
+        filter_id=sample_filters[1].id,
+        policy_sequence=20,
+        enable=True,
+        direction="in",
+    )
+
+    return build_policies_for_interface(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        interface_id=interface.id,
+        target_spec="",
+        direction="in",
+    )

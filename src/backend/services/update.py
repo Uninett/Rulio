@@ -1,3 +1,5 @@
+from django.db import transaction
+
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
@@ -5,7 +7,6 @@ from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
-from backend.objects.filters.rule_filter import RuleFilter
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.filter_interface import FilterInterface
@@ -204,45 +205,88 @@ def update_filter_interface(
     return filter_interface
 
 
+def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
+    require_write_tenant(actor, tenant_id)
+    with transaction.atomic():
+        filter = rule.filter
+        if filter is None:
+            raise ValueError(f"Rule with id={rule.id} does not belong to any filter.")
+        rules_in_filter = Rule.objects.filter(filter=filter).order_by("rule_sequence")
+
+        if not rules_in_filter.exists():
+            if new_sequence != 1:
+                raise ValueError(f"There are no rules in filter with id={filter.id}, so the only valid sequence is 1.")
+            rule.rule_sequence = new_sequence
+            rule.save()
+            return rule
+
+        if new_sequence < 1 or new_sequence > rules_in_filter.count() + 1:
+            raise ValueError(f"New sequence {new_sequence} is out of bounds for filter with id={filter.id}.")
+
+        # rule_sequence = 0 means that the rule has not yet been placed in the sequence
+        if rule.rule_sequence == 0:
+            for r in rules_in_filter.filter(rule_sequence__gte=new_sequence):
+                r.rule_sequence += 1
+                r.save()
+            rule.rule_sequence = new_sequence
+            rule.save()
+            return rule
+
+        if rule.rule_sequence == new_sequence:
+            return rule  # No change needed
+        # If rule is in position 3 and we want to move it to position 5, we need to decrement the sequence of rules in positions 4 and 5 by 1.
+        if rule.rule_sequence < new_sequence:
+            # If the new sequence is greater than the current sequence, we need to move the rule up in the order
+            # Therefore, we move the rules between the old and new position down by 1
+            for r in rules_in_filter.filter(rule_sequence__gt=rule.rule_sequence, rule_sequence__lte=new_sequence):
+                r.rule_sequence -= 1
+                r.save()
+        else:
+            # If the new sequence is less than the current sequence, we need to move the rule down in the order
+            # Therefore, we move the rules between the new and old position up by 1
+            for r in rules_in_filter.filter(rule_sequence__lt=rule.rule_sequence, rule_sequence__gte=new_sequence):
+                r.rule_sequence += 1
+                r.save()
+        rule.rule_sequence = new_sequence
+        rule.save()
+        return rule
+
+
 def update_rule(
     *,
     actor,
     tenant_id,
     rule_id,
+    filter=None,
     name=None,
     description=None,
     action=None,
+    enable=None,
+    rule_sequence=None,
     log_type=None,
     hit_count=None,
     changed_by=None,
-    direction=None,
 ):
     require_write_tenant(actor, tenant_id)
     rule = Rule.objects.get(id=rule_id, tenant_id=tenant_id)
+    if filter is not None:
+        rule.filter = filter
     if name is not None:
         rule.name = name
     if description is not None:
         rule.description = description
     if action is not None:
         rule.action = action
+    if enable is not None:
+        rule.enable = enable
+    if rule_sequence is not None:
+        rule.rule_sequence = rule_sequence
+        update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule_sequence)
     if log_type is not None:
         rule.log_type = log_type
     if hit_count is not None:
         rule.hit_count = hit_count
     if changed_by is not None:
         rule.changed_by = changed_by
-    if direction is not None:
-        rule.direction = direction
     rule.save()
     return rule
-
-
-def update_rule_filter(*, actor, tenant_id, rule_filter_id, rule_sequence=None, enable=None):
-    require_write_tenant(actor, tenant_id)
-    rule_filter = RuleFilter.objects.get(id=rule_filter_id, tenant_id=tenant_id)
-    if rule_sequence is not None:
-        rule_filter.rule_sequence = rule_sequence
-    if enable is not None:
-        rule_filter.enable = enable
-    rule_filter.save()
-    return rule_filter

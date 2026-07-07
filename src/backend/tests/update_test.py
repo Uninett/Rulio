@@ -243,7 +243,7 @@ class TestUpdate:
                 action="deny",
                 log_type="start",
                 hit_count=123,
-                direction="in",
+                rule_sequence=rule.rule_sequence,
             )
 
             rule.refresh_from_db()
@@ -252,4 +252,4 @@ class TestUpdate:
             assert rule.action == "deny"
             assert rule.log_type == "start"
             assert rule.hit_count == 123
-            assert rule.direction == "in"
+            assert rule.rule_sequence == rule.rule_sequence

@@ -24,7 +24,7 @@ from backend.services.delete import (
     delete_rule,
     delete_tenant,
 )
-from backend.services.generate_config import generate_multi_policy_config
+from backend.services.config_generation.generate_config import generate_multi_policy_config
 from backend.services.attribute_objects.get_address_objects import (
     get_address_groups_and_addresses_from_tenant,
     get_all_addresses_and_groups_with_tags_from_tenant,
@@ -64,9 +64,8 @@ from backend.services.tenant_objects.create_tenant_objects import (
 )
 
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
-
+from backend.services.config_generation.build import build_policies_for_interface
 from backend.services.create import (
-    create_policies_for_interface,
     create_tenant_user_member,
 )
 from backend.schemas.address import CreateAddressSchema
@@ -81,11 +80,7 @@ from backend.schemas.rule import CreateRuleSchema
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service_group import ServiceGroup
-from backend.objects.attributes.tag import Tag
-from backend.objects.attributes.address_group_member import AddressGroupMember
-from backend.objects.attributes.service_group_member import ServiceGroupMember
-from backend.objects.filters.filter import Filter
-from backend.objects.filters.rule import Rule
+from backend.services.get import DJANGO_MODEL_MAPPING
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.helper_user_tenant import (
     is_superadmin,
@@ -95,7 +90,6 @@ from backend.services.membership import (
     add_address_to_group,
     add_filter_to_interface,
     add_objects_to_rule,
-    add_rule_to_filter,
     add_service_to_group,
     add_addresses_to_group,
     add_services_to_group,
@@ -109,18 +103,6 @@ logger = set_up_logger(__name__)
 
 
 api = NinjaAPI(auth=None if settings.DEBUG else django_auth)
-
-DJANGO_MODEL_MAPPING = {
-    "address": Address,
-    "addressgroup": AddressGroup,
-    "service": Service,
-    "servicegroup": ServiceGroup,
-    "rule": Rule,
-    "tag": Tag,
-    "addressgroupmember": AddressGroupMember,
-    "servicegroupmember": ServiceGroupMember,
-    "filter": Filter,
-}
 
 
 """
@@ -1329,37 +1311,6 @@ def delete_rule_endpoint(request, rule_id: int):
         )
 
 
-@api.post("/add_rule_to_filter", tags=["Configuration"], response={200: dict, 403: MessageSchema, 404: MessageSchema})
-@require_write_tenantd
-def add_rule_to_filter_endpoint(request, filter_id: int, rule_id: int, rule_sequence: int):
-    try:
-        add_rule_to_filter(
-            actor=request.user,
-            tenant_id=request.session["current_tenant_id"],
-            rule_id=rule_id,
-            filter_id=filter_id,
-            rule_sequence=rule_sequence,
-        )
-        logger.info(f"Rule id={rule_id} added to filter id={filter_id} with rule_sequence={rule_sequence}")
-        return Status(
-            200,
-            {
-                "rule_id": rule_id,
-                "filter_id": filter_id,
-                "rule_sequence": rule_sequence,
-            },
-        )
-    except ValueError as e:
-        logger.warning(str(e))
-        return Status(
-            404,
-            {
-                "status": "error",
-                "message": str(e),
-            },
-        )
-
-
 @api.post("/create_filter", tags=["Filter - Filter"], response={200: dict, 403: MessageSchema, 404: MessageSchema})
 @require_write_tenantd
 def create_filter_endpoint(request, payload: CreateFilterSchema):
@@ -1501,7 +1452,7 @@ def add_test_data(request):
 @require_write_tenantd
 def generate_config_for_interface(request, interface_id: int, direction: str):
     try:
-        policies = create_policies_for_interface(
+        policies = build_policies_for_interface(
             actor=request.user,
             tenant_id=request.session["current_tenant_id"],
             interface_id=interface_id,

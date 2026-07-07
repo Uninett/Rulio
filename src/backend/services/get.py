@@ -86,6 +86,7 @@ def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_glo
             "rule_id": rule.id,
             "rule_name": rule.name,
             "rule_description": rule.description,
+            "rule_filter_id": rule.filter_id,
             "rule_tenant_id": rule.tenant_id,
             "rule_action": rule.action,
             "rule_log_type": rule.log_type,
@@ -95,6 +96,7 @@ def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_glo
             "rule_created_by": rule.created_by,
             "rule_changed_by": rule.changed_by,
             "rule_enable": rule.enable,
+            "rule_sequence": rule.rule_sequence,
             "tags": [
                 {
                     "tag_id": tc.tag.id,

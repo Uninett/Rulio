@@ -38,6 +38,9 @@ def populate_db(actor: User, tenant_id: int) -> tuple[int, int, int, int, int, i
     default_service_group_count, default_service_groups = seed_servicegroups(actor=actor, tenant_id=tenant_id)
     add_tags_to_default_service_groups(actor=actor, tenant_id=tenant_id, default_service_groups=default_service_groups)
 
+    default_filter_count, default_filters = seed_filters(actor=actor, tenant_id=tenant_id)
+    add_tags_to_default_filters(actor=actor, tenant_id=tenant_id, default_filters=default_filters)
+
     # Filter objects to be seeded
     default_rules_count, default_rules = seed_rules(
         actor=actor,
@@ -46,10 +49,10 @@ def populate_db(actor: User, tenant_id: int) -> tuple[int, int, int, int, int, i
         seeded_address_groups=default_address_groups,
         seeded_services=default_services,
         seeded_service_groups=default_service_groups,
+        seeded_filters=default_filters,
     )
     add_tags_to_default_rules(actor=actor, tenant_id=tenant_id, default_rules=default_rules)
-    default_filter_count, default_filters = seed_filters(actor=actor, tenant_id=tenant_id, seeded_rules=default_rules)
-    add_tags_to_default_filters(actor=actor, tenant_id=tenant_id, default_filters=default_filters)
+
     return (
         default_tag_count,
         default_address_count,
