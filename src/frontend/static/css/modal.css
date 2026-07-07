@@ -235,6 +235,50 @@ Checkbox Lists
 
 /*
 ====================================================================
+Membership Selection
+====================================================================
+*/
+
+.membership-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.membership-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.membership-list {
+    height: 20rem;
+    overflow-y: auto;
+    background: #ffffff;
+}
+
+.membership-list-item {
+    padding: 0.6rem;
+    cursor: grab;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.membership-list-item:hover {
+    background-color: #F3F1FE;
+}
+
+.membership-list-item:last-child {
+    margin-bottom: 0;
+}
+
+.membership-list-item.dragging {
+    opacity: 0.5;
+}
+
+/*
+====================================================================
 Modal Actions
 ====================================================================
 */
