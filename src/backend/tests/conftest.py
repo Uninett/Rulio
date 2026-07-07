@@ -19,7 +19,6 @@ from backend.services.membership import (
 from backend.services.attribute_objects.create_attribute_objects import create_tag, get_or_create_address
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 
-from backend.services.config_generation.generate_config import PolicyRule, PolicyRuleMember
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
     get_or_create_device_group,
