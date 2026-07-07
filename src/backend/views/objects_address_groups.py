@@ -6,23 +6,11 @@ from backend.utils.logger import set_up_logger
 
 from backend.views.modal import get_item_options_view
 
-from backend.objects.attributes.address_group_member import AddressGroupMember
-
-from backend.services.attribute_objects.create_attribute_objects import (
-    create_address_group,
-)
-
-from backend.services.membership import (
-    add_addresses_to_group,
-)
-
-from backend.services.update import (
-    update_address_group,
-)
-
-from backend.services.delete import (
-    delete_address_group,
-)
+from backend.services.attribute_objects.create_attribute_objects import create_address_group
+from backend.services.attribute_objects.get_address_objects import get_address_group_members
+from backend.services.membership import add_addresses_to_group, remove_address_from_group
+from backend.services.update import update_address_group
+from backend.services.delete import delete_address_group
 
 logger = set_up_logger(__name__)
 
@@ -153,14 +141,35 @@ def update_address_group_view(request, object_id):
             description=description,
         )
 
-        AddressGroupMember.objects.filter(group_id=object_id).delete()
+        # Read current members from the database
+        current_members = get_address_group_members(
+            actor=request.user,
+            tenant_id=tenant_id,
+            address_group_id=object_id,
+        )
 
-        if address_ids:
+        current_address_ids = set(
+            current_members.values_list("id", flat=True)
+        )  # Convert current members to a set of ids
+        submitted_address_ids = set(address_ids)  # Convert submitted selected ids to a set
+
+        address_ids_to_remove = current_address_ids - submitted_address_ids  # Find what to remove
+        address_ids_to_add = submitted_address_ids - current_address_ids  # Find what to add
+
+        for address_id in address_ids_to_remove:
+            remove_address_from_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                address_group_id=object_id,
+                address_id=address_id,
+            )
+
+        if address_ids_to_add:
             add_addresses_to_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 address_group_id=object_id,
-                address_ids=address_ids,
+                address_ids=list(address_ids_to_add),
             )
 
     except Exception as e:

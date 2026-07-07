@@ -8,21 +8,11 @@ from backend.views.modal import get_item_options_view
 
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 
-from backend.services.attribute_objects.create_attribute_objects import (
-    create_service_group,
-)
-
-from backend.services.membership import (
-    add_services_to_group,
-)
-
-from backend.services.update import (
-    update_service_group,
-)
-
-from backend.services.delete import (
-    delete_service_group,
-)
+from backend.services.attribute_objects.create_attribute_objects import create_service_group
+from backend.services.attribute_objects.get_service_objects import get_service_group_members
+from backend.services.membership import add_services_to_group, remove_service_from_group
+from backend.services.update import update_service_group
+from backend.services.delete import delete_service_group
 
 logger = set_up_logger(__name__)
 
@@ -145,14 +135,35 @@ def update_service_group_view(request, object_id):
             description=description,
         )
 
-        ServiceGroupMember.objects.filter(group_id=object_id).delete()
+        # Read current members from the database
+        current_members = get_service_group_members(
+            actor=request.user,
+            tenant_id=tenant_id,
+            service_group_id=object_id,
+        )
 
-        if service_ids:
+        current_service_ids = set(
+            current_members.values_list("id", flat=True)
+        )  # Convert current members to a set of ids
+        submitted_service_ids = set(service_ids)  # Convert submitted selected ids to a set
+
+        service_ids_to_remove = current_service_ids - submitted_service_ids  # Find what to remove
+        service_ids_to_add = submitted_service_ids - current_service_ids  # Find what to add
+
+        for service_id in service_ids_to_remove:
+            remove_service_from_group(
+                actor=request.user,
+                tenant_id=tenant_id,
+                service_group_id=object_id,
+                service_id=service_id,
+            )
+
+        if service_ids_to_add:
             add_services_to_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 service_group_id=object_id,
-                service_ids=service_ids,
+                service_ids=list(service_ids_to_add),
             )
 
     except Exception as e:
