@@ -272,7 +272,6 @@ def add_objects_to_rule(
 
             if created:
                 logger.info(f"Created RuleMatch: {rule_match}")
-                rule.increment_hit_count()
                 added.append(
                     {
                         "object_id": obj.id,

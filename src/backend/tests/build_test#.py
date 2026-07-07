@@ -1,8 +1,6 @@
 import pytest
 import yaml
 
-
-
 from backend.services.filter_objects.create_filter_objects import create_filter
 from backend.services.membership import (
     add_filter_to_interface,
@@ -18,15 +16,19 @@ from constants import TEST_LOGPATH
 
 logger = set_up_logger(__name__)
 
+
 @pytest.mark.django_db
 class TestGenerateConfigFromFilterObject:
     def test_generate_config_from_simple_filter_object(
         self, sample_filters, sample_rules, request_with_session, create_testing_tenant, sample_addresses
     ):
-        update_rule(request_with_session.user, request_with_session.tenant_id, sample_rules[0].id, filter=sample_filters[0])
+        update_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=sample_rules[0].id,
+            filter=sample_filters[0],
+        )
 
-
-        # Match the rule to the filter
         response = add_objects_to_rule(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
@@ -34,12 +36,13 @@ class TestGenerateConfigFromFilterObject:
             match_type="source",
             objects=[sample_addresses[0]],
         )
-
+        if response["error_count"] > 0:
+            logger.error(f"Error adding objects to rule: {response['errors']}")
         assert response["error_count"] == 0
         assert response["added_count"] > 0
         logger.info(f"Matched rule {sample_rules[0].id} to filter {sample_filters[0].id}, response:\n{response}")
+
         vendor = "juniper"
-        # Now generate the policy from the filter object
         policy = build_policy_from_filter(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
@@ -80,11 +83,12 @@ class TestGenerateConfigFromFilterObject:
                 tenant_id=request_with_session.tenant_id,
                 rule_id=rule_id,
                 filter=sample_filters[1],
-                rule_sequence=(i + 1) * 10,
+                rule_sequence=i + 1,
             )
             logger.info(
-                f"Added rule {rule_id} to filter {filter_id} with rule_sequence {(i + 1) * 10}, respone:\n{update_rule.__name__}"
+                f"Added rule {rule_id} to filter {filter_id} with rule_sequence {i + 1}, response:\n{update_rule.__name__}"
             )
+
         responses = [
             add_objects_to_rule(
                 actor=request_with_session.user,
@@ -118,7 +122,6 @@ class TestGenerateConfigFromFilterObject:
         assert all(response["error_count"] == 0 for response in responses)
 
         vendor = "juniper"
-        # Now generate the policy from the filter object
         policy = build_policy_from_filter(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
@@ -140,7 +143,6 @@ class TestGenerateConfigFromFilterObject:
         sample_rules_with_objects,
         sample_filters,
     ):
-
         new_filter = create_filter(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
@@ -152,7 +154,7 @@ class TestGenerateConfigFromFilterObject:
             tenant_id=request_with_session.tenant_id,
             rule_id=sample_rules_with_objects[1].id,
             filter=new_filter,
-            rule_sequence=10,
+            rule_sequence=1,
         )
 
         interfaces = []
@@ -214,14 +216,16 @@ class TestGenerateConfigFromFilterObject:
             assert len(policies) == 2
             assert policies[0].policy_sequence == 10
             assert policies[1].policy_sequence == 20
+
             YAML1 = policies[0].YAMLConfig
             YAML2 = policies[1].YAMLConfig
             terms1 = YAML1["filters"][0]["terms"]
             terms2 = YAML2["filters"][0]["terms"]
+
             assert len(terms1) == 1
             assert len(terms2) == 1
-            assert terms1[0]["name"] == f"seq10-{sample_rules_with_objects[1].name}"
-            assert terms2[0]["name"] == f"seq20-{sample_rules_with_objects[2].name}"
+            assert terms1[0]["name"] == sample_rules_with_objects[1].name.replace(" ", "_")[:62]
+            assert terms2[0]["name"] == sample_rules_with_objects[2].name.replace(" ", "_")[:62]
 
             merged_policy = merge_policies(policies, name=None)
             assert merged_policy is not None
@@ -229,6 +233,7 @@ class TestGenerateConfigFromFilterObject:
                 "Generated policy YAML:\n%s",
                 yaml.dump(merged_policy.YAMLConfig, sort_keys=False, default_flow_style=False),
             )
+
             config = generate_multi_policy_config(policies)
             logger.info(
                 "config.keys(): %s",

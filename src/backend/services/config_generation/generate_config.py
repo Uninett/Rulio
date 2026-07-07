@@ -31,6 +31,7 @@ class RuleBuildResult:
 class PolicyRuleMember:
     """
     Represents a single object attached to a PolicyRule.
+    Essentially a "Rule_match" from the ER diagram
 
     A member can be one of:
     - Address
@@ -91,6 +92,7 @@ class PolicyRuleMember:
 class PolicyRule:
     """
     Represents a single logical rule in a policy.
+    Basically a "Rule" from the ER diagram, but with all its RuleMatch objects converted into PolicyRuleMember objects.
 
     A PolicyRule has:
     - one action
