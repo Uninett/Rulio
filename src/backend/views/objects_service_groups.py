@@ -6,8 +6,6 @@ from backend.utils.logger import set_up_logger
 
 from backend.views.modal import get_item_options_view
 
-from backend.objects.attributes.service_group_member import ServiceGroupMember
-
 from backend.services.attribute_objects.create_attribute_objects import create_service_group
 from backend.services.attribute_objects.get_service_objects import get_service_group_members
 from backend.services.membership import add_services_to_group, remove_service_from_group
