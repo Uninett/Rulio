@@ -129,6 +129,8 @@ Form Layout
     min-height: 3.5rem;
     padding: 0.65rem;
     resize: vertical;
+    font-family: inherit;
+    font-size: 0.8rem;
 }
 
 
