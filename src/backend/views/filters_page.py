@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 
 from backend.views.session import get_tenant_context
 
+from backend.views.search import get_search_view
+
 from backend.services.get import (
     get_all_filters_with_tags_from_tenant,
 )
@@ -26,6 +28,7 @@ def get_filters_page(request):
             "object_type": "filters",
             "add_button_label": "Add Filter",
             "filters": get_filters_view(request),  # Address data for the page
+            "search_results": get_search_view(request),
             **get_tenant_context(request),
         },
     )

@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from backend.utils.logger import set_up_logger
 
+from backend.views.search import get_search_view
 from backend.views.session import get_tenant_context
 from backend.views.objects_helpers import get_objects_toolbar_context
 from backend.views.objects_addresses import get_addresses_view
@@ -46,6 +47,11 @@ def get_objects_page(request):
             "object_type": object_type,
             **toolbar_context,  # Render the Objects page with Addresses as the default tab.
             **content_context,  # Address data for the page
+            "page_title": "Addresses",
+            "object_type": "addresses",
+            **get_objects_toolbar_context("addresses"),  # Render the Objects page with Addresses as the default tab.
+            "addresses": get_addresses_view(request),  # Address data for the page
+            "search_results": get_search_view(request),
             **get_tenant_context(request),
         },
     )
