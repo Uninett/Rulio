@@ -7,17 +7,29 @@
 
 <p class="form-help">Choose any addresses you want to add to this address group.</p>
 
-<div class="group-checkbox-list">
-    {% for address in item_options %}
-    <label class="checkbox-label">
-        {% if address.id in selected_address_ids %}
-        <input type="checkbox" name="address_ids" value="{{ address.id }}" checked>
-        {% else %}
-        <input type="checkbox" name="address_ids" value="{{ address.id }}">
-        {% endif %}
-        <span>{{ address.name }}</span>
-    </label>
-    {% empty %}
-    <p>No addresses available.</p>
-    {% endfor %}
+<div class="membership-selector" data-input-name="address_ids">
+    <div class="membership-column">
+        <div class="membership-list membership-list-available" data-list-type="available">
+            {% for address in item_options %}
+            {% if address.id not in selected_address_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ address.id }}">
+                {{ address.name }}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="membership-column">
+        <div class="membership-list membership-list-selected" data-list-type="selected">
+            {% for address in item_options %}
+            {% if address.id in selected_address_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ address.id }}">
+                {{ address.name }}
+                <input type="hidden" name="address_ids" value="{{ address.id }}">
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
 </div>

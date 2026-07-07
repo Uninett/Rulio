@@ -54,3 +54,93 @@ function prepareAddressForm(event) {
         return;
     }
 }
+
+function initializeMembershipSelectors(root = document) {
+    root.querySelectorAll(".membership-selector").forEach((selector) => {
+        const inputName = selector.dataset.inputName;
+        const availableList = selector.querySelector('.membership-list-available');
+        const selectedList = selector.querySelector('.membership-list-selected');
+
+        let draggedItem = null;
+
+        selector.querySelectorAll(".membership-list-item").forEach(setupDraggableItem);
+
+        function setupDraggableItem(item) {
+            item.addEventListener("dragstart", () => {
+                draggedItem = item;
+                item.classList.add("dragging");
+            });
+
+            item.addEventListener("dragend", () => {
+                item.classList.remove("dragging");
+                draggedItem = null;
+            });
+        }
+
+        function ensureHiddenInput(item, shouldExist) {
+            let hiddenInput = item.querySelector(`input[type="hidden"][name="${inputName}"]`);
+
+            if (shouldExist && !hiddenInput) {
+                hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = inputName;
+                hiddenInput.value = item.dataset.id;
+                item.appendChild(hiddenInput);
+            }
+
+            if (!shouldExist && hiddenInput) {
+                hiddenInput.remove();
+            }
+        }
+
+        function moveItem(targetList) {
+            if (!draggedItem) return;
+
+            const alreadyExists = Array.from(targetList.querySelectorAll(".membership-list-item"))
+                .some(item => item.dataset.id === draggedItem.dataset.id);
+
+            if (alreadyExists) return;
+
+            targetList.appendChild(draggedItem);
+
+            if (targetList === selectedList) {
+                ensureHiddenInput(draggedItem, true);
+            } else {
+                ensureHiddenInput(draggedItem, false);
+            }
+        }
+
+        [availableList, selectedList].forEach((list) => {
+            list.addEventListener("dragover", (event) => {
+                event.preventDefault();
+            });
+
+            list.addEventListener("drop", (event) => {
+                event.preventDefault();
+                moveItem(list);
+            });
+        });
+
+        selector.querySelectorAll(".membership-list-item").forEach((item) => {
+            item.addEventListener("dblclick", () => {
+                const currentList = item.parentElement;
+                if (currentList === availableList) {
+                    draggedItem = item;
+                    moveItem(selectedList);
+                } else {
+                    draggedItem = item;
+                    moveItem(availableList);
+                }
+                draggedItem = null;
+            });
+        });
+    });
+}
+
+document.body.addEventListener("htmx:afterSwap", function (event) {
+    initializeMembershipSelectors(event.target);
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    initializeMembershipSelectors(document);
+});
