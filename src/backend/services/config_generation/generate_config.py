@@ -21,12 +21,14 @@ from constants import DIRECTION_CHOICES
 
 logger = set_up_logger(__name__)
 
+
 @dataclass
 class RuleBuildResult:
     terms: list[dict]
     networks: dict[str, dict]
     services: dict[str, list[dict]]
     warnings: list[str] = field(default_factory=list)
+
 
 class PolicyRuleMember:
     """
@@ -58,14 +60,10 @@ class PolicyRuleMember:
         normalized_direction = direction.lower().strip()
 
         if normalized_type not in self.VALID_TYPES:
-            raise ValueError(
-                f"Invalid obj_type: {obj_type}. Must be one of {sorted(self.VALID_TYPES)}"
-            )
+            raise ValueError(f"Invalid obj_type: {obj_type}. Must be one of {sorted(self.VALID_TYPES)}")
 
         if normalized_direction not in DIRECTION_CHOICES:
-            raise ValueError(
-                f"Invalid direction: {direction}. Must be one of {DIRECTION_CHOICES}"
-            )
+            raise ValueError(f"Invalid direction: {direction}. Must be one of {DIRECTION_CHOICES}")
 
         expected_class = DJANGO_MODEL_MAPPING.get(normalized_type)
         if expected_class is None:
@@ -81,12 +79,12 @@ class PolicyRuleMember:
         self.direction = normalized_direction
         self.object = object
 
-        def __repr__(self) -> str:
-            return (
-                f"PolicyRuleMember(type={self.type!r}, "
-                f"direction={self.direction!r}, "
-                f"object={getattr(self.object, 'name', self.object)!r})"
-            )
+    def __repr__(self) -> str:
+        return (
+            f"PolicyRuleMember(type={self.type!r}, "
+            f"direction={self.direction!r}, "
+            f"object={getattr(self.object, 'name', self.object)!r})"
+        )
 
 
 class PolicyRule:
@@ -234,9 +232,7 @@ class PolicyRule:
         reverse_destination_addresses = self._dedupe_preserve_order(reverse_destination_addresses)
 
         for protocol in list(all_protocols):
-            source_ports_by_protocol[protocol] = self._dedupe_preserve_order(
-                source_ports_by_protocol.get(protocol, [])
-            )
+            source_ports_by_protocol[protocol] = self._dedupe_preserve_order(source_ports_by_protocol.get(protocol, []))
             destination_ports_by_protocol[protocol] = self._dedupe_preserve_order(
                 destination_ports_by_protocol.get(protocol, [])
             )
@@ -310,25 +306,13 @@ class PolicyRule:
             term["protocol"] = sorted_protocols[0] if len(sorted_protocols) == 1 else sorted_protocols
 
             shared_source_ports = self._dedupe_preserve_order(
-                [
-                    port
-                    for protocol in sorted_protocols
-                    for port in source_ports_by_protocol.get(protocol, [])
-                ]
+                [port for protocol in sorted_protocols for port in source_ports_by_protocol.get(protocol, [])]
             )
             shared_destination_ports = self._dedupe_preserve_order(
-                [
-                    port
-                    for protocol in sorted_protocols
-                    for port in destination_ports_by_protocol.get(protocol, [])
-                ]
+                [port for protocol in sorted_protocols for port in destination_ports_by_protocol.get(protocol, [])]
             )
             shared_reverse_source_ports = self._dedupe_preserve_order(
-                [
-                    port
-                    for protocol in sorted_protocols
-                    for port in reverse_source_ports_by_protocol.get(protocol, [])
-                ]
+                [port for protocol in sorted_protocols for port in reverse_source_ports_by_protocol.get(protocol, [])]
             )
             shared_reverse_destination_ports = self._dedupe_preserve_order(
                 [
@@ -556,7 +540,7 @@ class Policy:
         name: str,
         rules: list[PolicyRule],
         vendor: str,
-        policy_type: str = "",
+        target_spec: str | list[str] | None = None,
         policy_sequence: int = 0,
     ):
         if rules is None:
@@ -567,7 +551,7 @@ class Policy:
         self.name = name.strip().replace(" ", "_")
         self.vendor = vendor.lower()
         self.rules = rules
-        self.policy_type = policy_type
+        self.target_spec = target_spec if target_spec not in ("", []) else None
         self.policy_sequence = policy_sequence
         self.warnings: list[str] = []
 
@@ -590,39 +574,30 @@ class Policy:
             for term in result.terms:
                 term_name = term["name"]
                 if term_name in used_term_names:
-                    raise ValueError(
-                        f"Duplicate rendered term name generated in policy '{self.name}': {term_name}"
-                    )
+                    raise ValueError(f"Duplicate rendered term name generated in policy '{self.name}': {term_name}")
                 used_term_names.add(term_name)
 
             self._merge_networks(result.networks)
             self._merge_services(result.services)
             self.YAMLConfig["filters"][0]["terms"].extend(result.terms)
 
-    def _build_base_yaml(self) -> dict:
-        # Palo Alto does not support name in target header
-        if self.vendor == "paloalto":
-            return {
-                "filename": self.name,
-                "filters": [
-                    {
-                        "header": {
-                            "targets": {self.vendor: self.policy_type},
-                            "comment": f"Generated by Rulio for {self.vendor}",
-                        },
-                        "terms": [],
-                    },
-                ],
-            }
+    def _build_filter_header(self) -> dict:
+        if self.target_spec is None:
+            target_value = self.name
+        else:
+            target_value = self.target_spec
 
+        return {
+            "targets": {self.vendor: target_value},
+            "comment": f"Generated by Rulio for {self.vendor}",
+        }
+
+    def _build_base_yaml(self) -> dict:
         return {
             "filename": self.name,
             "filters": [
                 {
-                    "header": {
-                        "targets": {self.vendor: f"{self.name} {self.policy_type}"},
-                        "comment": f"Generated by Rulio for {self.vendor}",
-                    },
+                    "header": self._build_filter_header(),
                     "terms": [],
                 },
             ],
@@ -640,8 +615,7 @@ class Policy:
 
         if actual != expected:
             raise ValueError(
-                f"rule_sequence values must be contiguous and 1-indexed. "
-                f"Expected {expected}, got {actual}"
+                f"rule_sequence values must be contiguous and 1-indexed. Expected {expected}, got {actual}"
             )
 
     @staticmethod
@@ -666,6 +640,19 @@ class Policy:
             if name in self.services["services"] and self.services["services"][name] != value:
                 raise ValueError(f"Duplicate service definition with different values: {name}")
             self.services["services"][name] = value
+
+    def set_vendor(self, new_vendor: str, target_spec: str | list[str] | None = None) -> None:
+        """
+        Update the vendor and target specification used in filter headers.
+
+        This rewrites the header of each filter in YAMLConfig without changing
+        terms, networks, or services.
+        """
+        self.vendor = new_vendor.lower()
+        self.target_spec = target_spec if target_spec not in ("", []) else None
+
+        for filter_config in self.YAMLConfig["filters"]:
+            filter_config["header"] = self._build_filter_header()
 
 
 def merge_policies(policies: list[Policy], name: str = None) -> Policy:
@@ -701,7 +688,12 @@ def merge_policies(policies: list[Policy], name: str = None) -> Policy:
         merged_policy.name = normalized_name
         merged_policy.YAMLConfig["filename"] = normalized_name
 
+    for filter_config in merged_policy.YAMLConfig["filters"]:
+        if merged_policy.target_spec is None:
+            filter_config["header"] = merged_policy._build_filter_header()
+
     return merged_policy
+
 
 def generate_config(policy: Policy) -> str:
     """

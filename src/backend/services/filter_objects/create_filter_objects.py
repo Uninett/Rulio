@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth.models import User
 
+
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.versionControl import VersionControl
@@ -24,14 +25,17 @@ def create_rule(
     action: str,
     enable: bool,
     log_type: str,
-    rule_sequence: int,
     hit_count: int,
+    rule_sequence: int = 0,
 ) -> Rule:
     require_write_tenant(actor, tenant_id)
     tenant = get_tenant_by_id(tenant_id)
     now = datetime.now(timezone.utc)
     try:
         with transaction.atomic():
+            if rule_sequence == 0:
+                # If rule_sequence is 0, we will append the new rule to the end of the sequence.
+                rule_sequence = Rule.objects.filter(filter=filter, tenant=tenant).count() + 1
             rule = Rule(
                 name=name,
                 description=description,
@@ -41,6 +45,7 @@ def create_rule(
                 enable=enable,
                 log_type=log_type,
                 hit_count=hit_count,
+                rule_sequence=rule_sequence,
                 date_created=now,
                 date_changed=now,
                 created_by=actor.id,

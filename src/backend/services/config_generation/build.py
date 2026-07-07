@@ -21,9 +21,7 @@ def build_policy_rule_member_from_rule_match(*, rule_match: RuleMatch) -> Policy
     """
     obj = rule_match.object
     if not obj:
-        raise ValueError(
-            f"Object with ID {rule_match.object_id} does not exist for rule with ID {rule_match.rule.id}."
-        )
+        raise ValueError(f"Object with ID {rule_match.object_id} does not exist for rule with ID {rule_match.rule.id}.")
 
     model_name = rule_match.object_type.model
     if model_name not in {"address", "service", "addressgroup", "servicegroup"}:
@@ -63,10 +61,7 @@ def build_policy_rule_from_rule(
     if not rule_matches.exists():
         raise ValueError(f"No rule matches found for rule with ID {rule.id}.")
 
-    members = [
-        build_policy_rule_member_from_rule_match(rule_match=rule_match)
-        for rule_match in rule_matches
-    ]
+    members = [build_policy_rule_member_from_rule_match(rule_match=rule_match) for rule_match in rule_matches]
 
     return PolicyRule(
         actor=actor,
@@ -85,7 +80,7 @@ def build_policy_from_filter(
     filter_id: int,
     policy_sequence: int,
     vendor: str,
-    policy_type: str = "",
+    target_spec: str = "",
 ) -> Policy:
     """
     Build a Policy from a Filter and its enabled Rule rows.
@@ -118,7 +113,7 @@ def build_policy_from_filter(
         name=filter_obj.name,
         rules=policy_rules,
         vendor=vendor,
-        policy_type=policy_type,
+        target_spec=target_spec,
         policy_sequence=policy_sequence,
     )
 
@@ -129,7 +124,7 @@ def build_policies_for_interface(
     tenant_id: int,
     interface_id: int,
     direction: str,
-    policy_type: str = "",
+    target_spec: str = "",
 ) -> list[Policy]:
     """
     Build Policy objects for all enabled filters attached to an interface direction.
@@ -172,7 +167,7 @@ def build_policies_for_interface(
             filter_id=filter_obj.id,
             policy_sequence=filter_interface.policy_sequence,
             vendor=vendor,
-            policy_type=policy_type,
+            target_spec=target_spec,
         )
         policies.append(policy)
 
