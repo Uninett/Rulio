@@ -1,0 +1,108 @@
+<style>
+    #myInput {
+        box-sizing: border-box;
+        font-size: 16px;
+        border: none;
+        border-bottom: 1px solid #ddd;
+        min-height: 2.5rem;
+        min-width: 14rem;
+        padding: 0 0.75;
+        border: 1px solid #767676;
+        border-radius: 10px;
+    }
+
+    #myInput:focus {
+        outline: 3px solid #ddd;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f6f6f6;
+        min-width: 230px;
+        overflow: auto;
+        border: 1px solid #ddd;
+        z-index: 1;
+    }
+
+    .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+    }
+
+    .dropdown a:hover {
+        background-color: #ddd;
+    }
+</style>
+<section class="dropdown" id="dropdownWrapper">
+    <input type="text" placeholder="Search..." id="myInput" onkeyup="filterFunction()" />
+
+    <section id="myDropdown" class="dropdown-content">
+        <!--{% for item in search_results.results %}
+        <a href="#">
+            {{ item }}
+        </a>
+        {% endfor %}-->
+        <a href="/devices/">Devices</a>
+        <a href="/tags/">Tags</a>
+        <a href="/filters/">Filters</a>
+        <a href="/objects/">Objects</a>
+    </section>
+</section>
+
+<script>
+
+
+    document.addEventListener("click", function (event) {
+        const dropdown = document.getElementById("dropdownWrapper");
+        const menu = document.getElementById("myDropdown");
+
+        if (!dropdown.contains(event.target)) {
+            menu.style.display = "none";
+        }
+    });
+
+    function filterFunction() {
+        const input = document.getElementById("myInput");
+        const filter = input.value.toUpperCase();
+        const section = document.getElementById("myDropdown");
+        const a = section.getElementsByTagName("a");
+
+        let hasMatch = false;
+
+        for (let i = 0; i < a.length; i++) {
+            const txtValue = a[i].textContent || a[i].innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                a[i].style.display = "";
+                hasMatch = true
+            } else {
+                a[i].style.display = "none";
+            }
+        }
+
+        if (hasMatch) {
+            section.style.display = "block";
+        } else {
+            section.style.display = "none";
+        }
+    }
+
+    document.getElementById("myInput").addEventListener("click", function () {
+        this.select();
+        filterFunction();
+    });
+
+    document.querySelectorAll("#myDropdown a").forEach(function (item) {
+        item.addEventListener("click", function () {
+            document.getElementById("myInput").value = this.textContent.trim();
+        });
+    });
+
+</script>

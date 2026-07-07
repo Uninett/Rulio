@@ -40,7 +40,8 @@
                 </button>
             </form>
 
-            <input class="form-control" type="search" name="search" placeholder="Search...">
+            {% include "partials/search/_search.html" with search_results=search_results %}
+
 
             <div class="form-group tenant-form-group">
                 <label for="tenant" class="tenant-label">Tenant</label>
