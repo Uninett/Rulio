@@ -35,12 +35,14 @@ Objects Page: Service
 @login_required(login_url="login")
 def get_objects_services(request):
     request.session["active_page"] = "objects"
+    request.session["objects_active_tool"] = "services"
+    object_type = "services"
     return render(
         request,
         "partials/_page_content.html",
         {
             "title": "Services",
-            "object_type": "services",
+            "object_type": object_type,
             "services": get_services_view(request),  # Service data for the page
             **get_objects_toolbar_context(
                 "services", add_button_label="Add Service"

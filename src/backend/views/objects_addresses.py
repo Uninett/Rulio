@@ -36,6 +36,7 @@ Objects Page: Address
 @login_required(login_url="login")
 def get_objects_addresses(request):
     request.session["active_page"] = "objects"
+    request.session["objects_active_tool"] = "addresses"
     object_type = "addresses"
     return render(
         request,
