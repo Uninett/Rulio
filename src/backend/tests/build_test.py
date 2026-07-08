@@ -1,6 +1,7 @@
 import pytest
 import yaml
 
+from backend.services.attribute_objects.create_attribute_objects import create_service
 from backend.services.config_generation.build import build_policies_for_interface, build_policy_from_filter
 from backend.services.config_generation.generate_config import (
     generate_config,
@@ -256,6 +257,154 @@ class TestBuildPolicyFromObjects:
             config,
             filepath,
             filedir,
+            "juniper",
+            __name__,
+            generated_by="build_test",
+            log_for_vendors=["juniper"],
+        )
+
+    def test_protocol_term_split(
+        self,
+        request_with_session,
+        sample_rules,
+    ):
+        split_filter = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Protocol_Split_Filter",
+            description="Filter to test protocol term splitting",
+        )
+        split_rule = create_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Protocol_Split_Rule",
+            filter=split_filter,
+            rule_sequence=1,
+            enable=True,
+            description="This term should be split into multiple terms based on protocol",
+            action="accept",
+            log_type="all",
+            hit_count=0,
+        )
+
+        # Add a service that has multiple protocols (e.g., TCP and UDP)
+        service_tcp_80 = create_service(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test_Service_TCP",
+            description="Test service with TCP protocol",
+            protocol="tcp",
+            port_start=80,
+            port_end=80,
+        )
+        service_udp_53 = create_service(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test_Service_UDP",
+            description="Test service with UDP protocol",
+            protocol="udp",
+            port_start=53,
+            port_end=53,
+        )
+
+        icmp_service = create_service(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test_Service_ICMP",
+            description="Test service with ICMP protocol",
+            protocol="icmp",
+        )
+
+        add_objects_to_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=split_rule.id,
+            match_type="destination",
+            objects=[service_tcp_80, service_udp_53, icmp_service],
+        )
+        single_term_filter = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Single_Term_Filter",
+            description="Filter to test single term",
+        )
+
+        single_term_rule = create_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Single_Term_Rule",
+            filter=single_term_filter,
+            rule_sequence=1,
+            enable=True,
+            description="This term should remain as a single term",
+            action="accept",
+            log_type="all",
+            hit_count=0,
+        )
+        service_udp_80 = create_service(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test_Service_UDP_80",
+            description="Test service with UDP protocol on port 80",
+            protocol="udp",
+            port_start=80,
+            port_end=80,
+        )
+        add_objects_to_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=single_term_rule.id,
+            match_type="destination",
+            objects=[service_udp_80, service_tcp_80],
+        )
+
+        policy_split_term = build_policy_from_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=split_filter.id,
+            policy_sequence=10,
+            vendor="juniper",
+            target_spec=None,
+        )
+
+        policy_single_term = build_policy_from_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=single_term_filter.id,
+            policy_sequence=20,
+            vendor="juniper",
+            target_spec=None,
+        )
+
+        # Check that the split term policy has multiple terms for the same rule
+        split_terms = policy_split_term.YAMLConfig["filters"][0]["terms"]
+        assert len(split_terms) == 3  # Should be split into TCP, UDP, and ICMP terms
+        protocols_split = {term["protocol"] for term in split_terms}
+        assert protocols_split == {"tcp", "udp", "icmp"}
+
+        # Check that the single term policy has only one term for the rule
+        single_terms = policy_single_term.YAMLConfig["filters"][0]["terms"]
+        assert len(single_terms) == 1  # Should remain as a single term
+        assert single_terms[0]["protocol"] == ["udp", "tcp"] or single_terms[0]["protocol"] == [
+            "tcp",
+            "udp",
+        ]  # Should include both protocols in one term
+
+        config_split = generate_config(policy_split_term)
+        config_single = generate_config(policy_single_term)
+        write_configuration_to_file(
+            config_split,
+            TEST_LOGPATH / "build_from_filter" / "JUNIPER_split_term_policy.yaml",
+            TEST_LOGPATH / "build_from_filter",
+            "juniper",
+            __name__,
+            generated_by="build_test",
+            log_for_vendors=["juniper"],
+        )
+        write_configuration_to_file(
+            config_single,
+            TEST_LOGPATH / "build_from_filter" / "JUNIPER_single_term_policy.yaml",
+            TEST_LOGPATH / "build_from_filter",
             "juniper",
             __name__,
             generated_by="build_test",

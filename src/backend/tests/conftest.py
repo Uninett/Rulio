@@ -189,6 +189,14 @@ def sample_services(create_testing_tenant):
             tenant_id=create_testing_tenant.id,
             protocol="gre",
         ),
+        Service(
+            name="Test_Service7",
+            description="This tests a second protocol on the same port (TCP 53)",
+            tenant_id=create_testing_tenant.id,
+            protocol="tcp",
+            port_start=53,
+            port_end=53,
+        ),
     ]
 
     for service in services:
@@ -946,6 +954,20 @@ def built_combined_policy(sample_addresses, sample_services, request_with_sessio
         rule_id=rule_2.id,
         match_type="destination",
         objects=[sample_services[1]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_2.id,
+        match_type="destination",
+        objects=[sample_services[6]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule_2.id,
+        match_type="destination",
+        objects=[sample_services[5]],
     )
 
     return build_policy_from_filter(

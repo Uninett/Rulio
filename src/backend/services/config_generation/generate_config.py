@@ -10,8 +10,6 @@ from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
-
-
 from backend.services.attribute_objects.get_address_objects import get_address_group_members
 from backend.services.attribute_objects.get_service_objects import get_service_group_members
 from backend.services.get import DJANGO_MODEL_MAPPING
@@ -163,10 +161,17 @@ class PolicyRule:
         reverse_source_addresses: list[str] = []
         reverse_destination_addresses: list[str] = []
 
+        # Service object names used in rendered terms.
         source_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         destination_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_source_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_destination_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
+
+        # Actual port values used only for split-decision logic.
+        source_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
+        destination_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
+        reverse_source_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
+        reverse_destination_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
 
         all_protocols: set[str] = set()
 
@@ -195,8 +200,11 @@ class PolicyRule:
                     )
 
                 case "service":
-                    service_name, protocol, is_port_based = self._add_service_definition(services, member.object)
+                    service_name, protocol, is_port_based, port_value = self._add_service_definition(
+                        services, member.object
+                    )
                     all_protocols.add(protocol)
+
                     self._append_ports_by_direction_and_protocol(
                         direction=member.direction,
                         protocol=protocol,
@@ -208,10 +216,22 @@ class PolicyRule:
                         append_ports=is_port_based,
                     )
 
+                    self._append_ports_by_direction_and_protocol(
+                        direction=member.direction,
+                        protocol=protocol,
+                        source_dict=source_port_values_by_protocol,
+                        destination_dict=destination_port_values_by_protocol,
+                        reverse_source_dict=reverse_source_port_values_by_protocol,
+                        reverse_destination_dict=reverse_destination_port_values_by_protocol,
+                        value=port_value,
+                        append_ports=is_port_based and port_value is not None,
+                    )
+
                 case "servicegroup":
                     service_entries = self._add_service_group_definition(services, member.object)
-                    for service_name, protocol, is_port_based in service_entries:
+                    for service_name, protocol, is_port_based, port_value in service_entries:
                         all_protocols.add(protocol)
+
                         self._append_ports_by_direction_and_protocol(
                             direction=member.direction,
                             protocol=protocol,
@@ -221,6 +241,17 @@ class PolicyRule:
                             reverse_destination_dict=reverse_destination_ports_by_protocol,
                             value=service_name,
                             append_ports=is_port_based,
+                        )
+
+                        self._append_ports_by_direction_and_protocol(
+                            direction=member.direction,
+                            protocol=protocol,
+                            source_dict=source_port_values_by_protocol,
+                            destination_dict=destination_port_values_by_protocol,
+                            reverse_source_dict=reverse_source_port_values_by_protocol,
+                            reverse_destination_dict=reverse_destination_port_values_by_protocol,
+                            value=port_value,
+                            append_ports=is_port_based and port_value is not None,
                         )
 
                 case _:
@@ -243,12 +274,25 @@ class PolicyRule:
                 reverse_destination_ports_by_protocol.get(protocol, [])
             )
 
+            source_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
+                source_port_values_by_protocol.get(protocol, [])
+            )
+            destination_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
+                destination_port_values_by_protocol.get(protocol, [])
+            )
+            reverse_source_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
+                reverse_source_port_values_by_protocol.get(protocol, [])
+            )
+            reverse_destination_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
+                reverse_destination_port_values_by_protocol.get(protocol, [])
+            )
+
         if self._requires_protocol_split(
             all_protocols=all_protocols,
-            source_ports_by_protocol=source_ports_by_protocol,
-            destination_ports_by_protocol=destination_ports_by_protocol,
-            reverse_source_ports_by_protocol=reverse_source_ports_by_protocol,
-            reverse_destination_ports_by_protocol=reverse_destination_ports_by_protocol,
+            source_ports_by_protocol=source_port_values_by_protocol,
+            destination_ports_by_protocol=destination_port_values_by_protocol,
+            reverse_source_ports_by_protocol=reverse_source_port_values_by_protocol,
+            reverse_destination_ports_by_protocol=reverse_destination_port_values_by_protocol,
         ):
             warnings.append(
                 f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) was split into "
@@ -356,7 +400,7 @@ class PolicyRule:
             return False
 
         protocols = sorted(all_protocols)
-        signatures = []
+        first_signature = None
 
         for protocol in protocols:
             signature = (
@@ -365,9 +409,15 @@ class PolicyRule:
                 tuple(reverse_source_ports_by_protocol.get(protocol, [])),
                 tuple(reverse_destination_ports_by_protocol.get(protocol, [])),
             )
-            signatures.append(signature)
 
-        return len(set(signatures)) > 1
+            if first_signature is None:
+                first_signature = signature
+                continue
+
+            if signature != first_signature:
+                return True
+
+        return False
 
     @staticmethod
     def _build_base_term(
@@ -425,7 +475,7 @@ class PolicyRule:
         destination_dict: dict[str, list[str]],
         reverse_source_dict: dict[str, list[str]],
         reverse_destination_dict: dict[str, list[str]],
-        value: str,
+        value: str | None,
         append_ports: bool,
     ) -> None:
         if not append_ports:
@@ -433,6 +483,9 @@ class PolicyRule:
             destination_dict.setdefault(protocol, [])
             reverse_source_dict.setdefault(protocol, [])
             reverse_destination_dict.setdefault(protocol, [])
+            return
+
+        if value is None:
             return
 
         if direction == "source":
@@ -479,7 +532,7 @@ class PolicyRule:
         self,
         services: dict[str, list[dict]],
         service: Service,
-    ) -> tuple[str, str, bool]:
+    ) -> tuple[str, str, bool, str | None]:
         service_name = service.name
         protocol = service.get_protocol()
         port_value = service.get_ports()
@@ -490,13 +543,13 @@ class PolicyRule:
             entry["port"] = port_value
 
         services[service_name] = [entry]
-        return service_name, protocol, is_port_based
+        return service_name, protocol, is_port_based, port_value
 
     def _add_service_group_definition(
         self,
         services: dict[str, list[dict]],
         service_group: ServiceGroup,
-    ) -> list[tuple[str, str, bool]]:
+    ) -> list[tuple[str, str, bool, str | None]]:
         service_entries = []
 
         for service in get_service_group_members(
@@ -514,7 +567,7 @@ class PolicyRule:
                 entry["port"] = port_value
 
             services[service_name] = [entry]
-            service_entries.append((service_name, protocol, is_port_based))
+            service_entries.append((service_name, protocol, is_port_based, port_value))
 
         return service_entries
 
