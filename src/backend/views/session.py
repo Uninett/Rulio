@@ -80,14 +80,14 @@ Tenant
 # Gets the list of tenants from the backend
 def get_tenants_view(request):
     if is_superadmin(request.user):
-        tenants = Tenant.objects.all()
+        tenants = Tenant.objects.all().order_by("id")
     else:
         tenant_ids = list(TenantUserMember.objects.filter(user=request.user).values_list("tenant_id", flat=True))
 
         if GLOBAL_TENANT_ID not in tenant_ids:
             tenant_ids.append(GLOBAL_TENANT_ID)
 
-        tenants = Tenant.objects.filter(id__in=tenant_ids)
+        tenants = Tenant.objects.filter(id__in=tenant_ids).order_by("id")
 
     return [
         {
