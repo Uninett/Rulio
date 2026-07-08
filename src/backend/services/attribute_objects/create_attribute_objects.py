@@ -169,7 +169,7 @@ def create_service(
         name=name,
         description=description,
         tenant_id=tenant_id,
-        protocol=protocol,
+        protocol=protocol.upper(),
         port_start=port_start,
         port_end=port_end,
     )
