@@ -192,7 +192,6 @@ def update_service_view(request, object_id):
     protocol = request.POST.get("protocol", "")
     port_start = request.POST.get("port_start") or None
     port_end = request.POST.get("port_end") or None
-    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
     port_start = int(port_start) if port_start is not None else None
     port_end = int(port_end) if port_end is not None else None
