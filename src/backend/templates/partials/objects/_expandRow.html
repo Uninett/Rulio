@@ -8,12 +8,11 @@
             <div class="detail-block">
                 <p><strong>{{ field.label }}:</strong></p>
                 {% for value in field.value %}
-                <div class="group-member-row hover-item" hx-get="{% url 'modal-update' value.row_id %}"
-                    hx-trigger="dblclick" hx-target="#modal-container" hx-swap="innerHTML"
-                    title="{{ value.hover_text }}">
+                <div hx-get="{% url 'modal-update' value.row_id %}" hx-trigger="dblclick" hx-target="#modal-container"
+                    hx-swap="innerHTML" title="{{ value.hover_text }}">
                     {{ value.name }}
 
-                    <div class="hover-popup">
+                    <div>
                         {% if value.description %}
                         <div><strong>Description:</strong> {{ value.description }}</div>
                         {% endif %}
