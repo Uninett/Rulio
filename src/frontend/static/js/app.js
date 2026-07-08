@@ -184,3 +184,26 @@ document.body.addEventListener("htmx:afterSwap", function (event) {
 document.addEventListener("DOMContentLoaded", function () {
     initializeMembershipSelectors(document);
 });
+
+
+// Toggle the visibility of the user menu dropdown when the profile button is clicked.
+function toggleUserMenu(event) {
+    event.stopPropagation();
+
+    const dropdown = document.getElementById("user-menu-dropdown");
+    if (!dropdown) return;
+
+    dropdown.classList.toggle("hidden");
+}
+
+document.addEventListener("click", function (event) {
+    const menu = document.querySelector(".user-menu");
+    if (!menu) return;
+
+    const dropdown = document.getElementById("user-menu-dropdown");
+    if (!dropdown) return;
+
+    if (!menu.contains(event.target)) {
+        dropdown.classList.add("hidden");
+    }
+});
