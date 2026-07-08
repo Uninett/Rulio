@@ -101,6 +101,81 @@ button.logged-in-user:hover {
     display: inline;
 }
 
+.user-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.user-menu-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 1px solid #767676;
+    background: #ffffff;
+    color: #000000;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.user-menu-trigger:hover {
+    background: #ffffff;
+}
+
+.user-menu-dropdown {
+    position: absolute;
+    right: calc(100% + 0.75rem);
+    top: 0;
+    min-width: 14rem;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 0.75rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 100;
+}
+
+.user-menu-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid #E0E0E0;
+}
+
+.user-menu-info p {
+    margin: 0;
+    padding: 0;
+}
+
+.user-menu-logout {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0.5rem;
+    color: #000000;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.user-menu-logout:hover {
+    background: #F3F1FE;
+    border: none;
+    border-radius: 0;
+}
+
+.hidden {
+    display: none;
+}
+
 /*
 ====================================================================
 Navigation
