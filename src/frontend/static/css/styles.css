@@ -155,6 +155,9 @@ button.logged-in-user:hover {
 }
 
 .user-menu-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     width: 100%;
     text-align: left;
     background: none;

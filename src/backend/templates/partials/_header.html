@@ -80,6 +80,7 @@
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}
                         <button type="submit" class="user-menu-logout">
+                            <img class="btn-icon" src="{% static 'images/signout.svg' %}" alt="" aria-hidden="true">
                             Log out
                         </button>
                     </form>
