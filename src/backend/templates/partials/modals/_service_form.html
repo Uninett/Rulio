@@ -62,27 +62,3 @@
         <input id="port_end" name="port_end" value="{{ object_data.port_end }}" type="number">
     </div>
 </div>
-
-<hr>
-
-<!-- List all services groups as a checkbox dropdown -->
-<div class="modal-header">
-    <h2 class="checkbox-header">Service Groups</h2>
-</div>
-
-<p class="form-help">Choose any service groups you want to add this service to.</p>
-
-<div class="group-checkbox-list">
-    {% for group in group_options %}
-    <label class="checkbox-label">
-        {% if group.id in selected_group_ids %}
-        <input type="checkbox" name="group_ids" value="{{ group.id }}" checked>
-        {% else %}
-        <input type="checkbox" name="group_ids" value="{{ group.id }}">
-        {% endif %}
-        <span>{{ group.name }}</span>
-    </label>
-    {% empty %}
-    <p>No service groups available.</p>
-    {% endfor %}
-</div>

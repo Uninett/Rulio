@@ -5,16 +5,9 @@ from django.http import HttpResponse
 from backend.utils.logger import set_up_logger
 
 from backend.views.objects_helpers import get_objects_toolbar_context
-from backend.views.modal import get_group_options_view
-
-from backend.objects.attributes.service_group_member import ServiceGroupMember
 
 from backend.services.attribute_objects.create_attribute_objects import (
     create_service,
-)
-
-from backend.services.membership import (
-    add_service_to_group,
 )
 
 from backend.services.attribute_objects.get_service_objects import (
@@ -140,8 +133,6 @@ def post_service_view(request):
     protocol = request.POST.get("protocol", "")
     port_start = int(request.POST.get("port_start")) if request.POST.get("port_start") else None
     port_end = int(request.POST.get("port_end")) if request.POST.get("port_end") else None
-    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
-
     try:
         created_service = create_service(
             actor=request.user,
@@ -152,14 +143,6 @@ def post_service_view(request):
             port_start=port_start,
             port_end=port_end,
         )
-
-        for group_id in group_ids:
-            add_service_to_group(
-                actor=request.user,
-                tenant_id=tenant_id,
-                service_group_id=group_id,
-                service_id=created_service.id,
-            )
 
     except Exception as e:
         return render(
@@ -176,7 +159,6 @@ def post_service_view(request):
                     "group": "Group",
                 },
                 "error_message": f"Could not create service: {e}",
-                "group_options": get_group_options_view(request, "services"),
             },
             status=400,
         )
@@ -219,7 +201,6 @@ def update_service_view(request, object_id):
         "protocol": protocol,
         "port_start": port_start,
         "port_end": port_end,
-        "service_groups": [{"id": group_id} for group_id in group_ids],
     }
 
     if not tenant_id:
@@ -242,15 +223,13 @@ def update_service_view(request, object_id):
                 "modal_submit_handler": None,
                 "modal_refresh_url": reverse("objects-services"),
                 "object_data": object_data,
-                "group_options": get_group_options_view(request, "services"),
-                "selected_group_ids": group_ids,
                 "error_message": "No tenant selected.",
             },
             status=400,
         )
 
     try:
-        updated_service = update_service(
+        update_service(
             actor=request.user,
             tenant_id=tenant_id,
             service_id=object_id,
@@ -260,16 +239,6 @@ def update_service_view(request, object_id):
             port_start=port_start,
             port_end=port_end,
         )
-
-        ServiceGroupMember.objects.filter(service_id=updated_service.id).delete()
-
-        for group_id in group_ids:
-            add_service_to_group(
-                actor=request.user,
-                tenant_id=tenant_id,
-                service_group_id=group_id,
-                service_id=updated_service.id,
-            )
 
     except Exception as e:
         return render(
@@ -291,8 +260,6 @@ def update_service_view(request, object_id):
                 "modal_submit_handler": None,
                 "modal_refresh_url": reverse("objects-services"),
                 "object_data": object_data,
-                "group_options": get_group_options_view(request, "services"),
-                "selected_group_ids": group_ids,
                 "error_message": f"Could not update service: {e}",
             },
             status=400,
