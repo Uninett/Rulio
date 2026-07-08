@@ -154,7 +154,7 @@ button.logged-in-user:hover {
     padding: 0;
 }
 
-.user-menu-logout {
+.user-menu-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -169,7 +169,7 @@ button.logged-in-user:hover {
     cursor: pointer;
 }
 
-.user-menu-logout:hover {
+.user-menu-btn:hover {
     background: #F3F1FE;
     border: none;
     border-radius: 0;

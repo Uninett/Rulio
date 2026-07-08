@@ -77,9 +77,14 @@
                         {% endif %}
                     </div>
 
+                    <button type="button" class="user-menu-btn user-menu-settings">
+                        <img class="btn-icon" src="{% static 'images/settings.svg' %}" alt="" aria-hidden="true">
+                        Settings
+                    </button>
+
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}
-                        <button type="submit" class="user-menu-logout">
+                        <button type="submit" class="user-menu-btn user-menu-logout">
                             <img class="btn-icon" src="{% static 'images/signout.svg' %}" alt="" aria-hidden="true">
                             Log out
                         </button>
