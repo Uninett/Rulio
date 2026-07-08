@@ -565,8 +565,8 @@ def seed_rules(
     if all(created_flags):
         logger.info("All default rules were created. No duplicates existed.")
     elif any(created_flags):
-        logger.warning("Some default rules already existed. Missing rules were created.")
+        logger.info("Some default rules already existed. Missing rules were created.")
     else:
-        logger.warning("No default rules were created because they already all existed.")
+        logger.info("No default rules were created because they already all existed.")
 
     return default_rules_count, default_rules

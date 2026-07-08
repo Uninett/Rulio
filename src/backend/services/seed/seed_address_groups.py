@@ -154,8 +154,8 @@ def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[AddressGr
     if all(created_flags):
         logger.info("All default address groups were created. No duplicates existed.")
     elif any(created_flags):
-        logger.warning("Some default address groups already existed. Missing address groups were created.")
+        logger.info("Some default address groups already existed. Missing address groups were created.")
     else:
-        logger.warning("No default address groups were created because they already all existed.")
+        logger.info("No default address groups were created because they already all existed.")
 
     return len(default_address_groups), default_address_groups

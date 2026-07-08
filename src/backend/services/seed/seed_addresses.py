@@ -288,7 +288,7 @@ def seed_addresses(*, actor: User, tenant_id: int) -> tuple[int, list[Address]]:
     if all(created_flags):
         logger.info("All default addresses were created. No duplicates existed.")
     elif any(created_flags):
-        logger.warning("Some default addresses already existed. Missing addresses were created.")
+        logger.info("Some default addresses already existed. Missing addresses were created.")
     else:
-        logger.warning("No default addresses were created because they already all existed.")
+        logger.info("No default addresses were created because they already all existed.")
     return len(default_addresses), default_addresses

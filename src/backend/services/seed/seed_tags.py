@@ -167,9 +167,9 @@ def seed_tags(actor: User, tenant_id: int) -> tuple[int, list[Tag]]:
     if created_count == len(default_tags):
         logger.info("All default tags were created. No duplicates existed.")
     elif created_count > 0:
-        logger.warning("Some default tags already existed. Missing tags were created.")
+        logger.info("Some default tags already existed. Missing tags were created.")
     else:
-        logger.warning("No default tags were created because they already all existed.")
+        logger.info("No default tags were created because they already all existed.")
 
     return len(default_tags), created_tags
 

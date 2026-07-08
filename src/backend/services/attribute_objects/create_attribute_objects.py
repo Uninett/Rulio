@@ -148,7 +148,7 @@ def get_or_create_address(
     if created:
         logger.info(f"Created {address} for tenant={address.tenant_id}")
     else:
-        logger.warning(f"Address already exists: {address} for tenant={address.tenant_id}")
+        logger.info(f"Address already exists: {address} for tenant={address.tenant_id}")
     return address, address.id, created
 
 
@@ -241,7 +241,7 @@ def get_or_create_service(
     if created:
         logger.info(f"Created {service} for tenant={service.tenant_id}")
     else:
-        logger.warning(f"Service already exists: {service} for tenant={service.tenant_id}")
+        logger.info(f"Service already exists: {service} for tenant={service.tenant_id}")
     return service, service.id, created
 
 
@@ -320,7 +320,7 @@ def get_or_create_service_group(
             )
             logger.info(f"Added members to {service_group}: {members}")
     else:
-        logger.warning(f"Service Group already exists: {service_group} for tenant={service_group.tenant_id}")
+        logger.info(f"Service Group already exists: {service_group} for tenant={service_group.tenant_id}")
         if members:
             add_services_to_group(
                 actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members
@@ -406,7 +406,7 @@ def get_or_create_address_group(
             )
             logger.info(f"Added members to {address_group}: {members}")
     else:
-        logger.warning(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
+        logger.info(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
         if members:
             add_addresses_to_group(
                 actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members
@@ -448,7 +448,7 @@ def get_or_create_tag(*, actor: User, tenant_id: int, name: str, description: st
     if created:
         logger.info(f"Created {tag} for tenant={tag.tenant_id}")
     else:
-        logger.warning(f"Tag already exists: {tag} for tenant={tag.tenant_id}")
+        logger.info(f"Tag already exists: {tag} for tenant={tag.tenant_id}")
     return tag, created
 
 

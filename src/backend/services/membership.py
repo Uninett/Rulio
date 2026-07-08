@@ -280,7 +280,7 @@ def add_objects_to_rule(
                     }
                 )
             else:
-                logger.warning(f"RuleMatch already exists: {rule_match}")
+                logger.info(f"RuleMatch already exists: {rule_match}")
                 already_exists.append(
                     {
                         "object_id": obj.id,
@@ -367,7 +367,7 @@ def add_filter_to_interface(
         filter_interface.policy_sequence = policy_sequence
         filter_interface.enable = enable
         filter_interface.save()
-        logger.warning(
+        logger.info(
             f"Updated Filter {filter.id} on Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}"
         )
     else:
@@ -423,7 +423,7 @@ def add_tag_to_object(*, actor: User, tenant_id: int, tag: Tag, obj: object):
     if TagConnection.objects.filter(
         tag=tag, content_type=ContentType.objects.get_for_model(obj), object_id=obj.id
     ).exists():
-        logger.warning(f"Tag {tag.id} is already associated with object {obj}.")
+        logger.info(f"Tag {tag.id} is already associated with object {obj}.")
         return
     TagConnection.objects.create(tag=tag, content_object=obj)
     logger.info(f"Added tag {tag.id} to object {obj}.")

@@ -50,8 +50,8 @@ def seed_filters(
     if all(created_flags):
         logger.info("All default filters were created. No duplicates existed.")
     elif any(created_flags):
-        logger.warning("Some default filters already existed. Missing filters were created.")
+        logger.info("Some default filters already existed. Missing filters were created.")
     else:
-        logger.warning("No default filters were created because they already all existed.")
+        logger.info("No default filters were created because they already all existed.")
 
     return default_filter_count, default_filters

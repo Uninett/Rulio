@@ -286,8 +286,8 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
     if all(created_flags):
         logger.info("All default service groups were created. No duplicates existed.")
     elif any(created_flags):
-        logger.warning("Some default service groups already existed. Missing service groups were created.")
+        logger.info("Some default service groups already existed. Missing service groups were created.")
     else:
-        logger.warning("No default service groups were created because they already all existed.")
+        logger.info("No default service groups were created because they already all existed.")
 
     return len(default_service_groups), default_service_groups
