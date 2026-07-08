@@ -81,6 +81,32 @@ def build_member_hover_text(member):
     return " | ".join(parts)
 
 
+def build_IPv4_row_text(member):
+    ipv4_network = getattr(member, "ipv4Network", None)
+    ipv4_start = getattr(member, "ipv4Address_start", None)
+    ipv4_end = getattr(member, "ipv4Address_end", None)
+
+    if ipv4_network:
+        return f"{ipv4_network}"
+    elif ipv4_start and ipv4_end:
+        return f"{ipv4_start} - {ipv4_end}"
+    else:
+        return ""
+
+
+def build_IPv6_row_text(member):
+    ipv6_network = getattr(member, "ipv6Network", None)
+    ipv6_start = getattr(member, "ipv6Address_start", None)
+    ipv6_end = getattr(member, "ipv6Address_end", None)
+
+    if ipv6_network:
+        return f"{ipv6_network}"
+    elif ipv6_start and ipv6_end:
+        return f"{ipv6_start} - {ipv6_end}"
+    else:
+        return ""
+
+
 # Fetch addresses from backend and map them to data.
 def get_addresses_view(request):
     tenant_id = request.session.get("current_tenant_id")
@@ -104,6 +130,7 @@ def get_addresses_view(request):
             "rows": [],
         }
 
+    # Sort the addresses, the key can be dependent on a switch case to allow for different sorting methods in the future.
     addresses = sorted(addresses, key=lambda a: (getattr(a, "name", "") or "").lower())
     address_groups = sorted(address_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
 
@@ -205,8 +232,8 @@ def get_addresses_view(request):
                     getattr(address, "addr_type", "") or "",
                     getattr(address, "name", "") or "",
                     getattr(address, "description", "") or "",
-                    getattr(address, "ipv4Network", "") or "",
-                    getattr(address, "ipv6Network", "") or "",
+                    build_IPv4_row_text(address),
+                    build_IPv6_row_text(address),
                     tag_names,
                 ],
                 "expand": expand,
@@ -217,63 +244,6 @@ def get_addresses_view(request):
         "headers": headers,
         "rows": rows,
     }
-
-    # for item in addresses:
-    #     item_type = item.get("type", "")
-    #     is_group = item_type == "AddressGroup"
-
-    #     tags_value = [tag.get("name", "") for tag in item.get("tags", [])]
-    #     addresses_value = [address.get("name", "") for address in item.get("addresses", [])]
-
-    #     if is_group:
-    #         expand = [
-    #             {
-    #                 "label": "Addresses",
-    #                 "value": [
-    #                     {
-    #                         "row_id": f"address-{address.get('id')}",
-    #                         "name": address.get("name", ""),
-    #                     }
-    #                     for address in item.get("addresses", [])
-    #                 ],
-    #                 "modal_on_dblclick": True,
-    #             },
-    #             {
-    #                 "label": "Tags",
-    #                 "value": tags_value,
-    #             },
-    #         ]
-    #     else:
-    #         expand = [
-    #             {"label": "IPv4 Type", "value": item.get("ipv4_type", "")},
-    #             {"label": "IPv6 Type", "value": item.get("ipv6_type", "")},
-    #             {"label": "IPv4 Start", "value": item.get("ipv4Address_start", "")},
-    #             {"label": "IPv4 End", "value": item.get("ipv4Address_end", "")},
-    #             {"label": "IPv6 Start", "value": item.get("ipv6Address_start", "")},
-    #             {"label": "IPv6 End", "value": item.get("ipv6Address_end", "")},
-    #             {"label": "Tags", "value": tags_value},
-    #         ]
-
-    #     rows.append(
-    #         {
-    #             "id": f"{item.get('type', '').lower()}-{item.get('id')}",
-    #             "is_group": is_group,
-    #             "cells": [
-    #                 "Group" if item.get("type") == "AddressGroup" else item.get("type", ""),
-    #                 item.get("name", ""),
-    #                 item.get("description", ""),
-    #                 item.get("ipv4Network") or "",
-    #                 item.get("ipv6Network") or "",
-    #                 tags_value,
-    #             ],
-    #             "expand": expand,
-    #         }
-    #     )
-
-    # return {
-    #     "headers": headers,
-    #     "rows": rows,
-    # }
 
 
 # Parse the IP input value and return a dictionary with the parsed data.

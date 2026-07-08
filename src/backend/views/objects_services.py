@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
+from backend.services.get import get_all_tags_from_object
 from backend.utils.logger import set_up_logger
 
 from backend.views.objects_helpers import get_objects_toolbar_context
@@ -12,6 +13,7 @@ from backend.services.attribute_objects.create_attribute_objects import (
 
 from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
+    get_service_group_members,
 )
 
 from backend.services.update import (
@@ -61,7 +63,7 @@ def get_services_view(request):
         }
 
     try:
-        services, _, _ = get_all_services_and_groups_with_tags_from_tenant(
+        service_dict, services, service_groups = get_all_services_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
             include_global_tenant=True,
@@ -72,47 +74,112 @@ def get_services_view(request):
             "rows": [],
         }
 
+    services = sorted(services, key=lambda s: (getattr(s, "name", "") or "").lower())
+    service_groups = sorted(service_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
+
     headers = ["Type", "Name", "Description", "Protocol", "Port Start", "Port End", "Tags"]
 
     rows = []
 
-    for item in services:
-        item_type = item.get("type", "")
-        is_group = item_type == "ServiceGroup"
+    for group in service_groups:
+        try:
+            service_group_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=int(tenant_id),
+                object_type="servicegroup",
+                object_id=group.id,
+            )
+            service_group_tag_names = [tag.name for tag in service_group_tags]
+        except Exception:
+            service_group_tag_names = []
 
-        tags_value = [tag.get("name", "") for tag in item.get("tags", [])]
-        services_value = [service.get("name", "") for service in item.get("services", [])]
-
-        if is_group:
-            expand = [
-                {"label": "Services", "value": services_value},
-                {"label": "Tags", "value": tags_value},
-            ]
-        else:
-            expand = [
-                {
-                    "label": "Tags",
-                    "value": tags_value,
-                },
-            ]
+        try:
+            service_group_members = get_service_group_members(
+                actor=request.user,
+                tenant_id=int(tenant_id),
+                service_group_id=group.id,
+            )
+        except Exception:
+            service_group_members = []
 
         rows.append(
             {
-                "id": f"{item.get('type', '').lower()}-{item.get('id')}",
-                "is_group": is_group,
+                "id": f"servicegroup-{group.id}",
+                "is_group": True,
                 "cells": [
-                    "Group" if item.get("type") == "ServiceGroup" else item.get("type", ""),
-                    item.get("name", ""),
-                    item.get("description", ""),
-                    item.get("protocol") or "",
-                    item.get("port_start") or "",
-                    item.get("port_end") or "",
-                    tags_value,
+                    "Group",
+                    getattr(group, "name", ""),
+                    getattr(group, "description", ""),
+                    "",
+                    "",
+                    "",
+                    service_group_tag_names,
                 ],
-                "expand": expand,
+                "expand": [
+                    {
+                        "label": "Services",
+                        "value": [
+                            {
+                                "row_id": f"service-{member.id}",
+                                "name": getattr(member, "name", "") or "",
+                            }
+                            for member in service_group_members
+                        ],
+                        "modal_on_dblclick": True,
+                    },
+                    {
+                        "label": "Tags",
+                        "value": service_group_tag_names,
+                    },
+                ],
             }
         )
 
+    for service in services:
+        try:
+            service_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=int(tenant_id),
+                object_type="service",
+                object_id=service.id,
+            )
+            service_tag_names = [tag.name for tag in service_tags]
+        except Exception:
+            service_tag_names = []
+
+        rows.append(
+            {
+                "id": f"service-{service.id}",
+                "is_group": False,
+                "cells": [
+                    "Service",
+                    getattr(service, "name", ""),
+                    getattr(service, "description", ""),
+                    getattr(service, "protocol", ""),
+                    getattr(service, "port_start", "") or "",
+                    getattr(service, "port_end", "") or "",
+                    service_tag_names,
+                ],
+                "expand": [
+                    {
+                        "label": "Protocol",
+                        "value": getattr(service, "protocol", "") or "",
+                    },
+                    {
+                        "label": "Port Start",
+                        "value": getattr(service, "port_start", "") or "",
+                    },
+                    {
+                        "label": "Port End",
+                        "value": getattr(service, "port_end", "") or "",
+                    },
+                    {
+                        "label": "Tags",
+                        "value": service_tag_names,
+                    },
+                ],
+            }
+        )
     return {
         "headers": headers,
         "rows": rows,
