@@ -155,7 +155,7 @@ Address Form Layout
     grid-template-columns: auto minmax(0, 1fr);
     gap: 0.5rem 1rem;
     min-width: 0;
-    margin: 0;
+    margin-bottom: 0.2rem;
 }
 
 .form-group.ip-input input {
@@ -197,40 +197,6 @@ Modal Type Switch
     font-weight: 600;
     color: #000000;
     border: none;
-}
-
-/*
-====================================================================
-Checkbox Lists
-====================================================================
-*/
-
-.group-checkbox-list {
-    max-height: 20vh;
-    overflow-y: auto;
-    border: 1px solid #d9d9d9;
-    border-radius: 6px;
-    padding: 0.5rem;
-    background: white;
-    font-size: 0.85rem;
-}
-
-.group-checkbox-list input[type="checkbox"] {
-    width: auto;
-    height: auto;
-    padding: 0;
-    margin: 0;
-    flex-shrink: 0;
-}
-
-.modal .group-checkbox-list label.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.1rem 0;
-    padding-top: 0;
-    cursor: pointer;
-    font-weight: normal;
 }
 
 /*
