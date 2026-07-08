@@ -5,16 +5,9 @@ from django.http import HttpResponse
 from backend.utils.logger import set_up_logger
 
 from backend.views.objects_helpers import get_objects_toolbar_context
-from backend.views.modal import get_group_options_view
-
-from backend.objects.attributes.address_group_member import AddressGroupMember
 
 from backend.services.attribute_objects.create_attribute_objects import (
     create_address,
-)
-
-from backend.services.membership import (
-    add_address_to_group,
 )
 
 from backend.services.attribute_objects.get_address_objects import (
@@ -195,7 +188,6 @@ def post_address_view(request):
     ipv4Address_end = ipv4_parsed["end"]
     ipv6Address_start = ipv6_parsed["start"]
     ipv6Address_end = ipv6_parsed["end"]
-    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
 
     if not ipv4_type and not ipv6_type:
         return render(
@@ -219,7 +211,6 @@ def post_address_view(request):
                     "ipv6_input": ipv6_input,
                 },
                 "error_message": "At least one of IPv4 or IPv6 must be selected.",
-                "group_options": get_group_options_view(request, "addresses"),
             },
             status=400,
         )
@@ -241,14 +232,6 @@ def post_address_view(request):
             ipv6Address_end=ipv6Address_end,
         )
 
-        for group_id in group_ids:
-            add_address_to_group(
-                actor=request.user,
-                tenant_id=tenant_id,
-                address_group_id=group_id,
-                address_id=created_address.id,
-            )
-
     except Exception as e:
         return render(
             request,
@@ -264,7 +247,6 @@ def post_address_view(request):
                     "group": "Group",
                 },
                 "error_message": f"Could not create address: {e}",
-                "group_options": get_group_options_view(request, "addresses"),
             },
             status=400,
         )
@@ -329,15 +311,12 @@ def update_address_view(request, object_id):
     elif ipv6_type == "custom_range":
         ipv6Network = ""
 
-    group_ids = [int(group_id) for group_id in request.POST.getlist("group_ids") if group_id]
-
     object_data = {
         "name": name,
         "description": description,
         "addr_type": addr_type,
         "ipv4_input": ipv4_input,
         "ipv6_input": ipv6_input,
-        "address_groups": [{"id": group_id} for group_id in group_ids],
     }
 
     if not ipv4_input.strip() and not ipv6_input.strip():
@@ -360,14 +339,12 @@ def update_address_view(request, object_id):
                 "modal_submit_handler": "prepareAddressForm",
                 "modal_refresh_url": reverse("objects-addresses"),
                 "object_data": object_data,
-                "group_options": get_group_options_view(request, "addresses"),
-                "selected_group_ids": group_ids,
                 "error_message": "At least one of IPv4 or IPv6 must be selected.",
             },
         )
 
     try:
-        updated_address = update_address(
+        update_address(
             actor=request.user,
             tenant_id=tenant_id,
             address_id=object_id,
@@ -383,16 +360,6 @@ def update_address_view(request, object_id):
             ipv6Address_start=ipv6Address_start,
             ipv6Address_end=ipv6Address_end,
         )
-
-        AddressGroupMember.objects.filter(address_id=updated_address.id).delete()
-
-        for group_id in group_ids:
-            add_address_to_group(
-                actor=request.user,
-                tenant_id=tenant_id,
-                address_group_id=group_id,
-                address_id=updated_address.id,
-            )
 
     except Exception as e:
         return render(
@@ -414,8 +381,6 @@ def update_address_view(request, object_id):
                 "modal_submit_handler": "prepareAddressForm",
                 "modal_refresh_url": reverse("objects-addresses"),
                 "object_data": object_data,
-                "group_options": get_group_options_view(request, "addresses"),
-                "selected_group_ids": group_ids,
                 "error_message": f"Could not update address: {e}",
             },
             status=400,
