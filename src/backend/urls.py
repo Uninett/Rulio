@@ -46,6 +46,9 @@ from .views.objects_addresses import (
     post_address_view,
     update_address_view,
     delete_address_view,
+)
+
+from .views.objects_address_groups import (
     post_address_group_view,
     update_address_group_view,
     delete_address_group_view,
@@ -56,6 +59,9 @@ from .views.objects_services import (
     post_service_view,
     update_service_view,
     delete_service_view,
+)
+
+from .views.objects_service_groups import (
     post_service_group_view,
     update_service_group_view,
     delete_service_group_view,

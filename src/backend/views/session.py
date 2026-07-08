@@ -3,8 +3,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 
+from constants import GLOBAL_TENANT_ID
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+from backend.services.helper_user_tenant import is_superadmin
+
 
 """
 ====================================================================
@@ -76,10 +79,15 @@ Tenant
 
 # Gets the list of tenants from the backend
 def get_tenants_view(request):
-    if not request.user.is_superuser:
-        return []
+    if is_superadmin(request.user):
+        tenants = Tenant.objects.all().order_by("id")
+    else:
+        tenant_ids = list(TenantUserMember.objects.filter(user=request.user).values_list("tenant_id", flat=True))
 
-    tenants = Tenant.objects.all()
+        if GLOBAL_TENANT_ID not in tenant_ids:
+            tenant_ids.append(GLOBAL_TENANT_ID)
+
+        tenants = Tenant.objects.filter(id__in=tenant_ids).order_by("id")
 
     return [
         {

@@ -87,6 +87,7 @@ Modal Form Content
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    overflow-x: hidden;
 }
 
 
@@ -103,6 +104,7 @@ Form Layout
     align-items: start;
     margin-right: 0.25rem;
     margin-top: 0.25rem;
+    min-width: 0;
 }
 
 .modal .form-group label {
@@ -129,6 +131,8 @@ Form Layout
     min-height: 3.5rem;
     padding: 0.65rem;
     resize: vertical;
+    font-family: inherit;
+    font-size: 0.8rem;
 }
 
 
@@ -153,7 +157,7 @@ Address Form Layout
     grid-template-columns: auto minmax(0, 1fr);
     gap: 0.5rem 1rem;
     min-width: 0;
-    margin: 0;
+    margin-bottom: 0.2rem;
 }
 
 .form-group.ip-input input {
@@ -199,36 +203,53 @@ Modal Type Switch
 
 /*
 ====================================================================
-Checkbox Lists
+Membership Selection
 ====================================================================
 */
 
-.group-checkbox-list {
-    max-height: 20vh;
-    overflow-y: auto;
-    border: 1px solid #d9d9d9;
-    border-radius: 6px;
-    padding: 0.5rem;
-    background: white;
-    font-size: 0.85rem;
+.membership-selector {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-wrap: anywhere;
 }
 
-.group-checkbox-list input[type="checkbox"] {
-    width: auto;
-    height: auto;
-    padding: 0;
-    margin: 0;
-    flex-shrink: 0;
-}
-
-.modal .group-checkbox-list label.checkbox-label {
+.membership-column {
     display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.1rem 0;
-    padding-top: 0;
-    cursor: pointer;
-    font-weight: normal;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.membership-list {
+    height: 20rem;
+    overflow-y: auto;
+    background: #ffffff;
+}
+
+.membership-list-item {
+    padding: 0.6rem;
+    cursor: grab;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.membership-list-item:hover {
+    background-color: #F3F1FE;
+}
+
+.membership-list-item:last-child {
+    margin-bottom: 0;
+}
+
+.membership-list-item.dragging {
+    opacity: 0.5;
 }
 
 /*

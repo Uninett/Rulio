@@ -1,23 +1,35 @@
 <hr>
 
-<!-- List all services  as a checkbox dropdown -->
+<!-- List all services  as a dual list selection with drag and drop -->
 <div class="modal-header">
-    <h2 class="checkbox-header">Services</h2>
+    <h2 class="membership-header">Services</h2>
 </div>
 
 <p class="form-help">Choose any services you want to add to this service group.</p>
 
-<div class="group-checkbox-list">
-    {% for service in item_options %}
-    <label class="checkbox-label">
-        {% if service.id in selected_service_ids %}
-        <input type="checkbox" name="service_ids" value="{{ service.id }}" checked>
-        {% else %}
-        <input type="checkbox" name="service_ids" value="{{ service.id }}">
-        {% endif %}
-        <span>{{ service.name }}</span>
-    </label>
-    {% empty %}
-    <p>No services available.</p>
-    {% endfor %}
+<div class="membership-selector" data-input-name="service_ids">
+    <div class="membership-column">
+        <div class="membership-list membership-list-available" data-list-type="available">
+            {% for service in item_options %}
+            {% if service.id not in selected_service_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ service.id }}">
+                {{ service.name }}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="membership-column">
+        <div class="membership-list membership-list-selected" data-list-type="selected">
+            {% for service in item_options %}
+            {% if service.id in selected_service_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ service.id }}">
+                {{ service.name }}
+                <input type="hidden" name="service_ids" value="{{ service.id }}">
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
 </div>
