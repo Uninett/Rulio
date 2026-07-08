@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
+from backend.services.get import get_all_tags_from_object
 from backend.utils.logger import set_up_logger
 
 from backend.views.objects_helpers import get_objects_toolbar_context
@@ -11,6 +12,7 @@ from backend.services.attribute_objects.create_attribute_objects import (
 )
 
 from backend.services.attribute_objects.get_address_objects import (
+    get_address_group_members,
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
 
@@ -52,6 +54,59 @@ def get_objects_addresses(request):
     )
 
 
+def build_member_hover_text(member):
+    parts = []
+
+    ipv4_network = getattr(member, "ipv4Network", None)
+    ipv6_network = getattr(member, "ipv6Network", None)
+
+    ipv4_start = getattr(member, "ipv4Address_start", None)
+    ipv4_end = getattr(member, "ipv4Address_end", None)
+
+    ipv6_start = getattr(member, "ipv6Address_start", None)
+    ipv6_end = getattr(member, "ipv6Address_end", None)
+
+    if ipv4_network:
+        parts.append(f"IPv4: {ipv4_network}")
+
+    if ipv6_network:
+        parts.append(f"IPv6: {ipv6_network}")
+
+    if ipv4_start and ipv4_end:
+        parts.append(f"IPv4 Range: {ipv4_start} - {ipv4_end}")
+
+    if ipv6_start and ipv6_end:
+        parts.append(f"IPv6 Range: {ipv6_start} - {ipv6_end}")
+
+    return " | ".join(parts)
+
+
+def build_IPv4_row_text(member):
+    ipv4_network = getattr(member, "ipv4Network", None)
+    ipv4_start = getattr(member, "ipv4Address_start", None)
+    ipv4_end = getattr(member, "ipv4Address_end", None)
+
+    if ipv4_network:
+        return f"{ipv4_network}"
+    elif ipv4_start and ipv4_end:
+        return f"{ipv4_start} - {ipv4_end}"
+    else:
+        return ""
+
+
+def build_IPv6_row_text(member):
+    ipv6_network = getattr(member, "ipv6Network", None)
+    ipv6_start = getattr(member, "ipv6Address_start", None)
+    ipv6_end = getattr(member, "ipv6Address_end", None)
+
+    if ipv6_network:
+        return f"{ipv6_network}"
+    elif ipv6_start and ipv6_end:
+        return f"{ipv6_start} - {ipv6_end}"
+    else:
+        return ""
+
+
 # Fetch addresses from backend and map them to data.
 def get_addresses_view(request):
     tenant_id = request.session.get("current_tenant_id")
@@ -61,8 +116,10 @@ def get_addresses_view(request):
             "rows": [],
         }
 
+    tenant_id = int(tenant_id)
+
     try:
-        addresses, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
+        _, addresses, address_groups = get_all_addresses_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
             include_global_tenant=True,
@@ -73,44 +130,111 @@ def get_addresses_view(request):
             "rows": [],
         }
 
-    headers = ["Type", "Name", "Description", "IPv4", "IPv6", "Tags"]
+    # Sort the addresses, the key can be dependent on a switch case to allow for different sorting methods in the future.
+    addresses = sorted(addresses, key=lambda a: (getattr(a, "name", "") or "").lower())
+    address_groups = sorted(address_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
 
+    headers = ["Type", "Name", "Description", "IPv4", "IPv6", "Tags"]
     rows = []
 
-    for item in addresses:
-        item_type = item.get("type", "")
-        is_group = item_type == "AddressGroup"
+    for address_group in address_groups:
+        try:
+            address_group_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_type="addressgroup",
+                object_id=address_group.id,
+            )
+            address_group_tag_names = [tag.name for tag in address_group_tags]
+        except Exception:
+            address_group_tag_names = []
 
-        tags_value = [tag.get("name", "") for tag in item.get("tags", [])]
-        addresses_value = [address.get("name", "") for address in item.get("addresses", [])]
-
-        if is_group:
-            expand = [
-                {"label": "Addresses", "value": addresses_value},
-                {"label": "Tags", "value": tags_value},
-            ]
-        else:
-            expand = [
-                {"label": "IPv4 Type", "value": item.get("ipv4_type", "")},
-                {"label": "IPv6 Type", "value": item.get("ipv6_type", "")},
-                {"label": "IPv4 Start", "value": item.get("ipv4Address_start", "")},
-                {"label": "IPv4 End", "value": item.get("ipv4Address_end", "")},
-                {"label": "IPv6 Start", "value": item.get("ipv6Address_start", "")},
-                {"label": "IPv6 End", "value": item.get("ipv6Address_end", "")},
-                {"label": "Tags", "value": tags_value},
-            ]
+        try:
+            address_group_members = get_address_group_members(
+                actor=request.user,
+                tenant_id=tenant_id,
+                address_group_id=address_group.id,
+            )
+        except Exception:
+            address_group_members = []
 
         rows.append(
             {
-                "id": f"{item.get('type', '').lower()}-{item.get('id')}",
-                "is_group": is_group,
+                "id": f"addressgroup-{address_group.id}",
+                "is_group": True,
                 "cells": [
-                    "Group" if item.get("type") == "AddressGroup" else item.get("type", ""),
-                    item.get("name", ""),
-                    item.get("description", ""),
-                    item.get("ipv4Network") or "",
-                    item.get("ipv6Network") or "",
-                    tags_value,
+                    "Group",
+                    getattr(address_group, "name", "") or "",
+                    getattr(address_group, "description", "") or "",
+                    "",
+                    "",
+                    address_group_tag_names,
+                ],
+                "expand": [
+                    {
+                        "label": "Addresses",
+                        "value": [
+                            {
+                                "row_id": f"address-{member.id}",
+                                "name": getattr(member, "name", "") or "",
+                                "hover_text": build_member_hover_text(member),
+                            }
+                            for member in address_group_members
+                        ],
+                        "modal_on_dblclick": True,
+                    },
+                    {
+                        "label": "Tags",
+                        "value": address_group_tag_names,
+                    },
+                ],
+            }
+        )
+
+    for address in addresses:
+        try:
+            address_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_type="address",
+                object_id=address.id,
+            )
+            tag_names = [tag.name for tag in address_tags]
+        except Exception:
+            tag_names = []
+
+        expand = []
+
+        field_map = [
+            ("IPv4 Type", "ipv4_type"),
+            ("IPv6 Type", "ipv6_type"),
+            ("IPv4 Network", "ipv4Network"),
+            ("IPv6 Network", "ipv6Network"),
+            ("IPv4 Start", "ipv4Address_start"),
+            ("IPv4 End", "ipv4Address_end"),
+            ("IPv6 Start", "ipv6Address_start"),
+            ("IPv6 End", "ipv6Address_end"),
+        ]
+
+        for label, attr in field_map:
+            value = getattr(address, attr, None)
+            if value:
+                expand.append({"label": label, "value": value})
+
+        if tag_names:
+            expand.append({"label": "Tags", "value": tag_names})
+
+        rows.append(
+            {
+                "id": f"address-{address.id}",
+                "is_group": False,
+                "cells": [
+                    getattr(address, "addr_type", "") or "",
+                    getattr(address, "name", "") or "",
+                    getattr(address, "description", "") or "",
+                    build_IPv4_row_text(address),
+                    build_IPv6_row_text(address),
+                    tag_names,
                 ],
                 "expand": expand,
             }
