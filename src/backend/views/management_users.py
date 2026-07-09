@@ -24,7 +24,7 @@ def get_management_users(request):
 
 
 def get_users_view(request):
-    headers = ["Username", "", "Last login", "Date joined", "Actions"]
+    headers = ["Username", "Last login", "Date joined", ""]
     rows = []
 
     for user in User.objects.all().order_by("username"):
@@ -32,6 +32,9 @@ def get_users_view(request):
             {
                 "id": user.id,
                 "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
                 "is_superuser": user.is_superuser,
                 "last_login": user.last_login,
                 "date_joined": user.date_joined,

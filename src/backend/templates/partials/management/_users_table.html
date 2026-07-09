@@ -1,30 +1,65 @@
-<section class="table-container">
+{% load static %}
+
+
+<section class="management-table-container table-container">
     <table>
         <thead>
-            <tr>
+            <tr class="management-header users-header">
                 {% for header in table_data.headers %}
                 <th>{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
-        <tbody id="users-table">
+        <tbody id="management-table users-table">
             {% for row in table_data.rows %}
             <tr>
-                <td>{{ row.username }}</td>
-                <td>
-                    {% if row.is_superuser %}
-                    Superuser
-                    {% endif %}
+                <td class="user-column">
+                    <div class="user-cell">
+                        <button type="button" class="user-icon">
+                            {% if row.first_name and row.last_name %}
+                            {{ row.first_name|slice:":1"|upper }}{{ row.last_name|slice:":1"|upper }}
+                            {% elif row.first_name %}
+                            {{ row.first_name|slice:":1"|upper }}
+                            {% else %}
+                            {{ row.username|slice:":1"|upper }}
+                            {% endif %}
+                        </button>
+
+                        <div class="user-info">
+                            <div class="user-info-top">
+                                {% if row.first_name or row.last_name %}
+                                <span class="user-full-name">
+                                    {{ row.first_name }} {{ row.last_name }}
+                                </span>
+                                {% endif %}
+                                <span class="user-username">{{ row.username }}</span>
+                            </div>
+
+                            <div class="user-info-bottom">
+                                <span class="user-email">{{ row.email }}</span>
+                            </div>
+                        </div>
+
+                        {% if row.is_superuser %}
+                        <span class="user-role">
+                            <p class="user-superuser">Superuser</p>
+                        </span>
+                        {% endif %}
+                    </div>
                 </td>
-                <td>
+                <td class="last-login-column">
                     {% if row.last_login %}
                     {{ row.last_login|date:"Y-m-d" }}
                     {% else %}
                     Never
                     {% endif %}
                 </td>
-                <td>{{ row.date_joined|date:"Y-m-d" }}</td>
-                <td>Actions</td>
+                <td class="date-joined-column">{{ row.date_joined|date:"Y-m-d" }}</td>
+                <td class="actions-column">
+                    <button type="submit" class="actions-btn">
+                        <img class="btn-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
+                    </button>
+                </td>
             </tr>
             {% empty %}
             <tr>

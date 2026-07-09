@@ -1,19 +1,25 @@
-<section class="table-container">
+{% load static %}
+
+
+<section class="management-table-container table-container">
     <table>
         <thead>
-            <tr>
+            <tr class="management-header tenants-header">
                 {% for header in table_data.headers %}
                 <th>{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
-        <tbody id="tenants-table">
+        <tbody id="management-table tenants-table">
             {% for row in table_data.rows %}
             <tr>
-                <td>{{ row.name }}</td>
-                <td>{{ row.members }}</td>
-                <td>{{ row.member_count }}</td>
-                <td>Actions</td>
+                <td class="tenant-name-column">{{ row.name }}</td>
+                <td class="tenant-members-column">{{ row.members }} ({{ row.member_count }})</td>
+                <td class="actions-column">
+                    <button type="submit" class="actions-btn">
+                        <img class="btn-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
+                    </button>
+                </td>
             </tr>
             {% empty %}
             <tr>

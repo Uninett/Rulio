@@ -80,7 +80,8 @@ Header
     margin-left: auto;
 }
 
-.user-menu-trigger {
+.user-menu-trigger,
+.user-icon {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
@@ -94,6 +95,11 @@ Header
     align-items: center;
     justify-content: center;
     padding: 0;
+}
+
+.user-icon:hover {
+    background: #ffffff;
+    border: 1px solid #767676;
 }
 
 .user-menu-trigger:hover {

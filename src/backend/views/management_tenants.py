@@ -26,7 +26,7 @@ def get_management_tenants(request):
 def get_tenants_view(request):
     tenants = Tenant.objects.all().order_by("id")
 
-    headers = ["Tenant", "Members", "Member Count", "Actions"]
+    headers = ["Tenant", "Members", ""]
     rows = []
 
     for tenant in tenants:
@@ -34,13 +34,14 @@ def get_tenants_view(request):
 
         member_count = memberships.count()
 
-        member_labels = [f"{membership.user.username} ({membership.role})" for membership in memberships]
+        member_names = [membership.user.username for membership in memberships]
+        members_display = ", ".join(member_names)
 
         rows.append(
             {
                 "id": tenant.id,
                 "name": tenant.tenant_name,
-                "members": member_labels,
+                "members": members_display,
                 "member_count": member_count,
             }
         )
