@@ -29,6 +29,10 @@ from .views.session import (
     set_tenant_view,
 )
 
+from .views.management_page import (
+    get_management_page,
+)
+
 from .views.devices_page import (
     get_devices_page,
 )
@@ -86,6 +90,7 @@ urlpatterns = [
     path("login/", get_login_page, name="login"),
     path("logout/", logout_view, name="logout"),
     path("set-tenant/", set_tenant_view, name="set-tenant"),
+    path("management/", get_management_page, name="management-page"),
     # Device Page
     path("devices/", get_devices_page, name="devices"),
     # Filters Page

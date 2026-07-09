@@ -77,10 +77,12 @@
                         {% endif %}
                     </div>
 
-                    <button type="button" class="user-menu-btn user-menu-settings">
-                        <img class="btn-icon" src="{% static 'images/settings.svg' %}" alt="" aria-hidden="true">
-                        Settings
-                    </button>
+                    {% if request.user.is_superuser %}
+                    <a href="{% url 'management-page' %}" class="user-menu-btn management-menu-settings">
+                        <img class="btn-icon" src="{% static 'images/user.svg' %}" alt="" aria-hidden="true">
+                        Management
+                    </a>
+                    {% endif %}
 
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}

@@ -73,34 +73,6 @@ Header
     flex-wrap: wrap;
 }
 
-button.logged-in-user {
-    background-color: transparent;
-    border: 2px solid transparent;
-    border-bottom: 2px solid #7351FB;
-    border-radius: 0;
-    color: #000000;
-    width: 11rem;
-}
-
-.logged-in-user .hover-text {
-    display: none;
-}
-
-button.logged-in-user:hover {
-    background-color: #7351FB;
-    border: 2px solid #7351FB;
-    border-radius: 0;
-    color: #FFFFFF;
-}
-
-.logged-in-user:hover .default-text {
-    display: none;
-}
-
-.logged-in-user:hover .hover-text {
-    display: inline;
-}
-
 .user-menu {
     position: relative;
     display: flex;
@@ -154,25 +126,40 @@ button.logged-in-user:hover {
     padding: 0;
 }
 
-.user-menu-btn {
-    display: inline-flex;
+.user-menu-dropdown form {
+    margin: 0;
+    width: 100%;
+}
+
+.user-menu-dropdown a.user-menu-btn,
+.user-menu-dropdown button.user-menu-btn {
+    display: flex;
     align-items: center;
     gap: 0.4rem;
     width: 100%;
+    box-sizing: border-box;
     text-align: left;
     background: none;
     border: none;
     border-radius: 0;
     padding: 0.5rem;
     color: #000000;
+    font: inherit;
     font-size: 0.85rem;
+    line-height: 1.2;
+    text-decoration: none;
     cursor: pointer;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
-.user-menu-btn:hover {
+.user-menu-dropdown a.user-menu-btn:hover,
+.user-menu-dropdown button.user-menu-btn:hover {
     background: #F3F1FE;
     border: none;
     border-radius: 0;
+    text-decoration: none;
 }
 
 .hidden {
