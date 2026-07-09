@@ -17,32 +17,24 @@ def get_management_users(request):
         {
             "title": "User management",
             "object_type": object_type,
-            "users_data": get_users_view(request),
+            "table_data": get_users_view(request),
             **get_management_toolbar_context("users", add_button_label="Create User"),
         },
     )
 
 
 def get_users_view(request):
-    users = User.objects.all().order_by("username")
-
-    headers = ["Name", "Username", "Email", "Memberships", "Actions"]
+    headers = ["Username", "", "Last login", "Date joined", "Actions"]
     rows = []
 
-    for user in users:
-        display_name = f"{user.first_name} {user.last_name}".strip() or user.username
-
-        memberships = TenantUserMember.objects.filter(user=user).select_related("tenant").order_by("tenant__id")
-
-        membership_labels = [f"{membership.tenant.tenant_name} ({membership.role})" for membership in memberships]
-
+    for user in User.objects.all().order_by("username"):
         rows.append(
             {
                 "id": user.id,
-                "name": display_name,
                 "username": user.username,
-                "email": user.email,
-                "memberships": membership_labels,
+                "is_superuser": user.is_superuser,
+                "last_login": user.last_login,
+                "date_joined": user.date_joined,
             }
         )
 

@@ -20,9 +20,9 @@
     {% include "partials/tags/_tagsTable.html" %}
 
     {% elif title == "User management" %}
-    <p>User</p>
+    {% include "partials/management/_users_table.html" %}
     {% elif title == "Tenant management" %}
-    <p>Tenant</p>
+    {% include "partials/management/_tenants_table.html" %}
     {% else %}
     <p>No content available.</p>
     {% endif %}

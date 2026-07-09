@@ -17,7 +17,7 @@ def get_management_tenants(request):
         {
             "title": "Tenant management",
             "object_type": object_type,
-            "tenants_data": get_tenants_view(request),
+            "table_data": get_tenants_view(request),
             **get_management_toolbar_context("tenants", add_button_label="Create Tenant"),
         },
     )
@@ -26,14 +26,13 @@ def get_management_tenants(request):
 def get_tenants_view(request):
     tenants = Tenant.objects.all().order_by("id")
 
-    headers = ["Tenant", "Members", "Admins", "Actions"]
+    headers = ["Tenant", "Members", "Member Count", "Actions"]
     rows = []
 
     for tenant in tenants:
         memberships = TenantUserMember.objects.filter(tenant=tenant).select_related("user").order_by("user__username")
 
         member_count = memberships.count()
-        admin_count = memberships.filter(role=TenantUserMember.TenantRole.ADMIN).count()
 
         member_labels = [f"{membership.user.username} ({membership.role})" for membership in memberships]
 
@@ -41,9 +40,8 @@ def get_tenants_view(request):
             {
                 "id": tenant.id,
                 "name": tenant.tenant_name,
-                "member_count": member_count,
-                "admin_count": admin_count,
                 "members": member_labels,
+                "member_count": member_count,
             }
         )
 

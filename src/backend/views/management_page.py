@@ -34,14 +34,14 @@ def get_management_page(request):
         page_title = "Tenant management"
         object_type = "tenants"
         content_context = {
-            "tenants_data": get_tenants_view(request),
+            "table_data": get_tenants_view(request),
         }
         toolbar_context = get_management_toolbar_context("tenants", add_button_label="Create tenant")
     else:
         page_title = "User management"
         object_type = "users"
         content_context = {
-            "users_data": get_users_view(request),
+            "table_data": get_users_view(request),
         }
         toolbar_context = get_management_toolbar_context("users", add_button_label="Create user")
 

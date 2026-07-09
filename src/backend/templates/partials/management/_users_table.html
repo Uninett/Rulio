@@ -1,0 +1,36 @@
+<section class="table-container">
+    <table>
+        <thead>
+            <tr>
+                {% for header in table_data.headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="users-table">
+            {% for row in table_data.rows %}
+            <tr>
+                <td>{{ row.username }}</td>
+                <td>
+                    {% if row.is_superuser %}
+                    Superuser
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.last_login %}
+                    {{ row.last_login|date:"Y-m-d" }}
+                    {% else %}
+                    Never
+                    {% endif %}
+                </td>
+                <td>{{ row.date_joined|date:"Y-m-d" }}</td>
+                <td>Actions</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{{ table_data.headers|length }}">No users found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
