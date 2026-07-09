@@ -1,6 +1,3 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-
 from django.urls import reverse
 
 
@@ -35,8 +32,8 @@ def get_address_search_results(request, query):
     matches = []
 
     for item in result:
-        searchable_text = " ".join(str(value).lower() for value in item.values()).lower()
-        print(f"Searching for '{query}' in '{searchable_text}'")
+        searchable_text = " ".join(str(value).lower() for key, value in item.items() if key != "description")
+
         row_id = f"{item.get('type', '').lower()}-{item.get('id')}"
 
         if query in searchable_text:
@@ -72,8 +69,8 @@ def get_service_search_results(request, query):
     matches = []
 
     for item in services:
-        searchable_text = " ".join(str(value).lower() for value in item.values()).lower()
-        print(f"Searching for '{query}' in '{searchable_text}'")
+        searchable_text = " ".join(str(value).lower() for key, value in item.items() if key != "description")
+
         row_id = f"{item.get('type', '').lower()}-{item.get('id')}"
 
         if query in searchable_text:
@@ -102,7 +99,6 @@ def get_tags_search_results(request, query):
 
     for item in tags:
         searchable_text = f"{item.id} {item.name} {item.tenant_id}".lower()
-        print(f"Searching for '{query}' in '{searchable_text}'")
 
         row_id = f"tag-{item.id}"
 
