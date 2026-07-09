@@ -1,0 +1,139 @@
+<style>
+    #myInput {
+        box-sizing: border-box;
+        font-size: 16px;
+        border: none;
+        border-bottom: 1px solid #ddd;
+        min-height: 2.5rem;
+        min-width: 14rem;
+        padding: 0 0.75;
+        border: 1px solid #767676;
+        border-radius: 10px;
+    }
+
+    #myInput:focus {
+        outline: 3px solid #ddd;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f6f6f6;
+        min-width: 230px;
+        overflow: auto;
+        border: 1px solid #ddd;
+        z-index: 3;
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+    .dropdown-content a {
+        color: black;
+        padding: 4px 4px;
+        text-decoration: none;
+        display: block;
+    }
+
+    .dropdown a:hover {
+        background-color: #ddd;
+    }
+
+    .search-result-name {
+        font-weight: 300;
+    }
+
+    .search-result-type {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 2px;
+    }
+</style>
+<section class="dropdown" id="dropdownWrapper">
+    <input type="text" placeholder="Search..." id="myInput" onkeyup="filterFunction()" />
+
+    <section id="myDropdown" class="dropdown-content">
+        {% for item in search_results.results %}
+        <a href="{{ item.url }}" data-search="{{ item.search_text|default:item.name|lower }}">
+            <div class="search-result-name">{{ item.name }}</div>
+            <div class="search-result-type">{{ item.type }}</div>
+        </a>
+        {% endfor %}
+    </section>
+</section>
+
+<script>
+
+    document.addEventListener("click", function (event) {
+        const dropdown = document.getElementById("dropdownWrapper");
+        const menu = document.getElementById("myDropdown");
+
+        if (!dropdown.contains(event.target)) {
+            menu.style.display = "none";
+        }
+    });
+
+    function filterFunction() {
+        const input = document.getElementById("myInput");
+        const filter = input.value.toUpperCase();
+        const section = document.getElementById("myDropdown");
+        const a = section.getElementsByTagName("a");
+
+        let matches = [];
+
+        // if input is too short, then the styling is none, and links are hidden
+        if (filter.length < 2) {
+            a.forEach(link => link.style.display = "none");
+            section.style.display = "none";
+            return;
+        }
+
+        //To make match on name be the most valueble
+        for (let i = 0; i < a.length; i++) { //goes through each element in a
+            const nameElement = a[i].querySelector(".search-result-name"); //looks inside the current element for a child with this class name
+            const nameText = (nameElement ? nameElement.textContent : a[i].textContent || "").toUpperCase(); //if the child exists, use its text ior else use the full text. Uppercase for case-insensitive matching
+            const searchText = (a[i].dataset.search || a[i].textContent || "").toUpperCase(); //use a[i].dataset.search if it exists, else use element text's content. 
+
+            let score = -1;
+
+            if (nameText.startsWith(filter)) {
+                score = 3;
+            } else if (nameText.indexOf(filter) > -1) {
+                score = 2;
+            } else if (searchText.indexOf(filter) > -1) { //only appears in extra searchable text
+                score = 1;
+            }
+
+            if (score > 0) {
+                matches.push({ element: a[i], score: score }); //add to matches
+                a[i].style.display = "";
+            } else {
+                a[i].style.display = "none";
+            }
+        }
+
+        matches.sort((a, b) => b.score - a.score); //sort by best score
+
+        matches.forEach(match => {
+            section.appendChild(match.element);
+        });
+
+        section.style.display = matches.length > 0 ? "block" : "none";
+    }
+
+    document.querySelectorAll("#myDropdown a").forEach(function (item) {
+        item.addEventListener("click", function () { //adds click handler for each link
+            document.getElementById("myInput").value = this.textContent.trim(); //when link is clicked, take that links text and trim. and put in input field. 
+        });
+    });
+
+    document.getElementById("myInput").addEventListener("click", function () {
+        this.select();
+        filterFunction();
+    });
+
+</script>

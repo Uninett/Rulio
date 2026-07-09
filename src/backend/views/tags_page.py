@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from backend.utils.logger import set_up_logger
 
+from backend.views.search import get_global_search_results
 from backend.views.session import get_tenant_context
 
 from backend.services.get import (
@@ -30,6 +31,7 @@ def get_tags_page(request):
             "object_type": "tags",
             "add_button_label": "Add Tag",
             "tags": get_tags_view(request),
+            "search_results": get_global_search_results(request),
             **get_tenant_context(request),
         },
     )

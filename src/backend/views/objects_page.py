@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from backend.utils.logger import set_up_logger
 
+from backend.views.search import get_global_search_results
 from backend.views.session import get_tenant_context
 from backend.views.objects_helpers import get_objects_toolbar_context
 from backend.views.objects_addresses import get_addresses_view
@@ -20,7 +21,18 @@ Objects Page
 @login_required(login_url="login")
 def get_objects_page(request):
     request.session["active_page"] = "objects"
-    active_tool = request.session.get("objects_active_tool", "addresses")
+
+    active_tool = request.GET.get("object_type") or request.session.get("objects_active_tool", "addresses")
+
+    if active_tool not in {"addresses", "services"}:
+        active_tool = "addresses"
+
+    request.session["objects_active_tool"] = active_tool
+
+    # object_type = request.GET.get("object_type", active_tool)
+
+    expand_id = request.GET.get("expand_id")
+    focus_id = request.GET.get("focus_id")
 
     if active_tool == "services":
         page_title = "Services"
@@ -44,6 +56,9 @@ def get_objects_page(request):
             "active_page": "objects",
             "page_title": page_title,
             "object_type": object_type,
+            "expand_id": expand_id,
+            "focus_id": focus_id,
+            "search_results": get_global_search_results(request),
             **toolbar_context,  # Render the Objects page with Addresses as the default tab.
             **content_context,  # Address data for the page
             **get_tenant_context(request),

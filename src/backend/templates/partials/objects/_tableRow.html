@@ -23,4 +23,44 @@
             openedRow.classList.add("expanded-row");
         }
     }
+
+    function focusAndExpandFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const rowId = params.get("expand_id"); //get expand id
+        if (!rowId) return;
+
+        let attempts = 0;
+        const maxAttempts = 30;
+
+        const interval = setInterval(function () {
+            const row = document.getElementById(`row-${rowId}`); //get row
+            const detailsRow = document.getElementById(`details-${rowId}`); //get detail row
+
+            if (row && detailsRow) { //if both exists
+                if (window.getComputedStyle(detailsRow).display !== "table-row") { //if not currently visible
+                    expandRow(rowId); //expand
+                }
+
+                setTimeout(function () {
+                    row.scrollIntoView({ //scroll to the row
+                        behavior: "smooth",
+                        block: "center"
+                    });
+                }, 200); // waits 200ms, than scroll row into view
+
+                clearInterval(interval); //stop when found
+
+                window.history.replaceState({}, "", window.location.pathname); //clean URL to pathname
+            }
+
+            attempts++;
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+            }
+        }, 200);
+    }
+
+    document.addEventListener("DOMContentLoaded", focusAndExpandFromUrl);
+    document.body.addEventListener("htmx:afterSwap", focusAndExpandFromUrl);
+    document.body.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
 </script>

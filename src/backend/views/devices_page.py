@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 
 from backend.views.session import get_tenant_context
 
+from backend.views.search import get_global_search_results
+
 """
 ====================================================================
 Device Page
@@ -21,6 +23,7 @@ def get_devices_page(request):
             "page_title": "Devices",
             "object_type": "devices",
             "add_button_label": "Add Device",
+            "search_results": get_global_search_results(request),
             **get_tenant_context(request),
         },
     )
