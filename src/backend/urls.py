@@ -33,6 +33,9 @@ from .views.management_page import (
     get_management_page,
 )
 
+from .views.management_users import get_management_users
+from .views.management_tenants import get_management_tenants
+
 from .views.devices_page import (
     get_devices_page,
 )
@@ -91,6 +94,8 @@ urlpatterns = [
     path("logout/", logout_view, name="logout"),
     path("set-tenant/", set_tenant_view, name="set-tenant"),
     path("management/", get_management_page, name="management-page"),
+    path("management/users/", get_management_users, name="management-users"),
+    path("management/tenants/", get_management_tenants, name="management-tenants"),
     # Device Page
     path("devices/", get_devices_page, name="devices"),
     # Filters Page
