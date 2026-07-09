@@ -17,6 +17,24 @@ Modal Partial: Add Modal
 # Return modal configuration for each object type.
 def get_add_modal_config(object_type):
     configs = {
+        "users": {
+            "title": "Add User",
+            "supports_types": False,
+            "form_partial": "partials/modals/_user_form.html",
+            "post_url": reverse("post-user-view"),
+            "target": "#management-content",
+            "swap": "innerHTML",
+            "refresh_url": reverse("management-users"),
+        },
+        "tenants": {
+            "title": "Add Tenant",
+            "supports_types": False,
+            "form_partial": "partials/modals/_tenant_form.html",
+            "post_url": reverse("post-tenant-view"),
+            "target": "#management-content",
+            "swap": "innerHTML",
+            "refresh_url": reverse("management-tenants"),
+        },
         "devices": {
             "title": "Add Device",
             "supports_types": True,
