@@ -101,7 +101,7 @@ def get_tags_search_results(request, query):
     matches = []
 
     for item in tags:
-        searchable_text = f"{item.id} {item.name} {item.description} {item.tenant_id}".lower()
+        searchable_text = f"{item.id} {item.name} {item.tenant_id}".lower()
         print(f"Searching for '{query}' in '{searchable_text}'")
 
         row_id = f"tag-{item.id}"
@@ -112,7 +112,7 @@ def get_tags_search_results(request, query):
                     "id": item.id,
                     "name": item.name,
                     "type": "Tag",
-                    "display": item.description,
+                    "display": item.name,
                     "search_text": searchable_text,
                     "url": f"{reverse('tags')}?object_type=tags&expand_id={row_id}",
                 }
