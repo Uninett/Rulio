@@ -1,0 +1,16 @@
+<section class="table-container">
+    <table>
+        <thead>
+            <tr>
+                {% for header in devices.headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="addresses-table">
+            {% for row in devices.rows %}
+            {% include "partials/objects/_tableRow.html" with row=row headers=devices.headers%}
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
