@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Filters | Rulio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/objects.css' %}" />
+{% endblock %}
+
+{% block content %}
+
+<div id="filters-content">
+    {% include "partials/_page_content.html" with title=page_title rules=rules object_type=object_type %}
+</div>
+{% endblock %}

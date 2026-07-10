@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 
 from backend.views.session import get_tenant_context
 
@@ -81,6 +82,7 @@ def get_filters_view(request):
             {
                 "id": f"filter-{filter_obj.id}",
                 "is_group": False,
+                    "inspect_url": reverse("rules-page") + f"?filter_id={filter_obj.id}&filter_name={filter_obj.name}",
                 "cells": [
                     "▶",
                     getattr(filter_obj, "name", "") or "",

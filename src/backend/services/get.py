@@ -23,6 +23,9 @@ from backend.services.helper_user_tenant import is_superadmin, require_read_tena
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
 
+from collections import defaultdict
+from django.contrib.contenttypes.models import ContentType
+
 
 # Setup logger
 logger = set_up_logger(__name__)
@@ -81,7 +84,79 @@ def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[
     return result
 
 
-# def get_rules_from_filter(actor: User, tenant_id: int, filter_id: int) -> QuerySet[Rule]:
+def get_all_rules_with_objects_from_filter(actor: User, tenant_id: int, filter_id: int) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
+
+    try:
+        filter_obj = Filter.objects.get(id=filter_id, tenant_id=tenant_id)
+    except Filter.DoesNotExist:
+        raise ObjectDoesNotExist(f"Filter with ID {filter_id} does not exist in tenant {tenant_id}.")
+
+    rules = list(
+        filter_obj.rules.filter(tenant_id=tenant_id)
+        .prefetch_related("matches__object_type")
+        .order_by("rule_sequence", "id")
+    )
+
+    matches_by_type = defaultdict(set)
+    all_matches = []
+
+    for rule in rules:
+        for match in rule.matches.all():
+            matches_by_type[match.object_type_id].add(match.object_id)
+            all_matches.append(match)
+
+    object_cache = {}
+
+    for object_type_id, object_ids in matches_by_type.items():
+        content_type = ContentType.objects.get_for_id(object_type_id)
+        model_class = content_type.model_class()
+
+        if model_class is None:
+            continue
+
+        objects = model_class.objects.filter(id__in=object_ids)
+        object_cache[object_type_id] = {obj.id: obj for obj in objects}
+
+    result = []
+
+    for rule in rules:
+        serialized_objects = []
+
+        for match in rule.matches.all():
+            obj = object_cache.get(match.object_type_id, {}).get(match.object_id)
+
+            if obj is not None:
+                serialized_objects.append(
+                    {
+                        "object_type": obj.__class__.__name__,
+                        "object_id": obj.id,
+                        "object_name": getattr(obj, "name", None),
+                        "match_type": match.match,
+                    }
+                )
+
+        result.append(
+            {
+                "rule_id": rule.id,
+                "rule_name": rule.name,
+                "rule_description": rule.description,
+                "rule_tenant_id": rule.tenant_id,
+                "rule_filter_id": rule.filter_id,
+                "rule_action": rule.action,
+                "rule_log_type": rule.log_type,
+                "rule_hit_count": rule.hit_count,
+                "rule_date_created": rule.date_created,
+                "rule_date_changed": rule.date_changed,
+                "rule_created_by": rule.created_by,
+                "rule_changed_by": rule.changed_by,
+                "rule_enable": rule.enable,
+                "rule_sequence": rule.rule_sequence,
+                "objects": serialized_objects,
+            }
+        )
+
+    return result
 
 
 def get_all_objects_from_rule(actor: User, tenant_id: int, rule_id: int) -> list[dict]:
