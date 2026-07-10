@@ -7,6 +7,7 @@ from backend.views.search import get_global_search_results
 from backend.services.get import get_all_device_groups_and_devices_with_tags_from_tenant
 from backend.services.get import get_device_group_members
 from backend.services.get import get_all_tags_from_object
+from backend.services.get import get_all_interfaces_from_device
 
 
 """
@@ -98,6 +99,25 @@ def get_devices_view(request):
                             {
                                 "row_id": f"device-{member.id}",
                                 "name": getattr(member, "name", "") or "",
+                                "description": getattr(member, "description", "") or "",
+                                "platform": getattr(member, "platform", "") or "",
+                                "type": getattr(member, "type", "") or "",
+                                "tags": getattr(member, "tags", "") or "",
+                                "interfaces": [
+                                    {
+                                        "id": interface.id,
+                                        "name": interface.name,
+                                        "description": interface.description,
+                                        "device_id": interface.device_id,
+                                        "type": interface.type,
+                                        "VRF": interface.VRF,
+                                    }
+                                    for interface in get_all_interfaces_from_device(
+                                        actor=request.user,
+                                        tenant_id=int(tenant_id),
+                                        device_id=member.id,
+                                    )
+                                ],
                             }
                             for member in device_group_members
                         ],

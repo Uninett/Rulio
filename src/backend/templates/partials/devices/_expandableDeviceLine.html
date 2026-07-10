@@ -1,0 +1,138 @@
+<style>
+    .nested-device-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 1.2px;
+        table-layout: fixed;
+        margin-left: 0;
+    }
+
+    .nested-device-table tr {
+        background-color: white;
+    }
+
+    .nested-device-table tr:hover {
+        background-color: #E8E8E8;
+        cursor: pointer;
+    }
+
+    .nested-device-table td {
+        font-family: "Haffer", sans-serif;
+        text-align: left;
+        border: none;
+        border-top: 1px solid #E0E0E0;
+        border-bottom: 1px solid #E0E0E0;
+        position: relative;
+        font-size: small;
+        padding: 2px 6px;
+        vertical-align: top;
+    }
+
+    .nested-device-table td:first-child {
+        border-left: 4px solid #D1CDFF;
+    }
+
+    .device-main-row.expanded-row {
+        background-color: #E0E0E0;
+    }
+
+    .inline-device-details {
+        display: none;
+    }
+
+
+    .inline-device-detailstd {
+        background-color: #fffcfc;
+    }
+
+    .device-interfaces-inline,
+    .device-tags-inline {
+        padding-left: 20px;
+        line-height: 1.3;
+    }
+
+    .interface-line {
+        margin-top: 6px;
+    }
+
+    .interface-line span {
+        display: inline-block;
+        margin-right: 16px;
+    }
+
+    .nested-device-table td:nth-child(1),
+    .nested-device-table th:nth-child(1) {
+        width: 28%;
+        white-space: nowrap;
+    }
+
+    .nested-device-table td:nth-child(2),
+    .nested-device-table th:nth-child(2) {
+        width: 42%;
+    }
+
+    .nested-device-table td:nth-child(3),
+    .nested-device-table th:nth-child(3) {
+        width: 15%;
+    }
+
+    .nested-device-table td:nth-child(4),
+    .nested-device-table th:nth-child(4) {
+        width: 15%;
+    }
+
+    .inline-device-details td:first-child {
+        border-left: 4px solid lightgray;
+    }
+</style>
+<div class="detail-block">
+
+    <table class="nested-device-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Platform</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr class="expandable-device-line" onclick="toggleInlineDeviceDetails('{{ device.row_id }}')">
+                <td>{{ device.name|default:"None" }}</td>
+                <td>{{ device.type|default:"None" }}</td>
+                <td>{{ device.platform|default:"None" }}</td>
+                <td>{{ device.description|default:"None" }}</td>
+            </tr>
+
+            {% if device.interfaces %}
+            <tr class="inline-device-details inline-details-{{ device.row_id }}" style="display: none;">
+                <th>Name</th>
+                <th>Type</th>
+                <th>VRF</th>
+                <th>Description</th>
+            </tr>
+            {% for interface in device.interfaces %}
+            <tr class="inline-device-details inline-details-{{ device.row_id }}" style="display: none;">
+                <td>{{ interface.name|default:"Interface" }}</td>
+                <td>{{ interface.type|default:"None" }}</td>
+                <td>{{ interface.vrf|default:"None" }}</td>
+                <td>{{ interface.description|default:"None" }}</td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+            {% endfor %}
+
+        </tbody>
+    </table>
+</div>
+{% block extra_js %}
+<script>
+    function toggleInlineDeviceDetails(rowId) {
+        const rows = document.querySelectorAll('.inline-details-' + rowId);
+        rows.forEach(row => {
+            row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+        });
+    }
+</script>
+{% endblock %}
