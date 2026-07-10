@@ -24,14 +24,17 @@ function closeModal(event = null) {
 }
 
 // Close the modal and refresh the objects content area. If a refresh URL is provided, reload the relevant page content with HTMX.
-function closeModalAndRefresh(url) {
-    document.getElementById('modal-container').innerHTML = '';
+function closeModalAndRefresh(url, target) {
+    const modalContainer = document.getElementById("modal-container");
+    if (modalContainer) {
+        modalContainer.innerHTML = "";
+    }
 
-    if (!url) return;
+    if (!url || !target) return;
 
-    htmx.ajax('GET', url, {
-        target: '#objects-content',
-        swap: 'innerHTML'
+    htmx.ajax("GET", url, {
+        target: target,
+        swap: "innerHTML"
     });
 }
 
@@ -183,4 +186,27 @@ document.body.addEventListener("htmx:afterSwap", function (event) {
 // Initialize membership selectors on the initial page load.
 document.addEventListener("DOMContentLoaded", function () {
     initializeMembershipSelectors(document);
+});
+
+
+// Toggle the visibility of the user menu dropdown when the profile button is clicked.
+function toggleUserMenu(event) {
+    event.stopPropagation();
+
+    const dropdown = document.getElementById("user-menu-dropdown");
+    if (!dropdown) return;
+
+    dropdown.classList.toggle("hidden");
+}
+
+document.addEventListener("click", function (event) {
+    const menu = document.querySelector(".user-menu");
+    if (!menu) return;
+
+    const dropdown = document.getElementById("user-menu-dropdown");
+    if (!dropdown) return;
+
+    if (!menu.contains(event.target)) {
+        dropdown.classList.add("hidden");
+    }
 });

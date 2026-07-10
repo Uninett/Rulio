@@ -4,6 +4,10 @@ from django.urls import reverse
 from django.http import HttpResponse
 from backend.utils.logger import set_up_logger
 
+from django.contrib.auth.models import User
+from backend.objects.tenant_objects.tenant import Tenant
+from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+
 from backend.views.modal import get_group_options_view, get_item_options_view
 from backend.views.objects_addresses import build_ip_input
 
@@ -28,6 +32,28 @@ Modal Partial: Update Modal
 # Return modal configuration for each object type.
 def get_update_modal_config(object_type):
     configs = {
+        "user": {
+            "title": "Update User",
+            "modal_object_type": "users",
+            "modal_type": None,
+            "content_partial": "partials/management/_user_form.html",
+            "post_url_name": "update-user-view",
+            "delete_url_name": "delete-user-view",
+            "refresh_url_name": "management-users",
+            "modal_refresh_target": "#management-content",
+            "submit_handler": None,
+        },
+        "tenant": {
+            "title": "Update Tenant",
+            "modal_object_type": "tenants",
+            "modal_type": None,
+            "content_partial": "partials/management/_tenant_form.html",
+            "post_url_name": "update-tenant-view",
+            "delete_url_name": "delete-tenant-view",
+            "refresh_url_name": "management-tenants",
+            "modal_refresh_target": "#management-content",
+            "submit_handler": None,
+        },
         "devices": {
             "title": "Update Device",
             "modal_object_type": "devices",
@@ -48,6 +74,7 @@ def get_update_modal_config(object_type):
             "post_url_name": "update-address-view",
             "delete_url_name": "delete-address-view",
             "refresh_url_name": "objects-addresses",
+            "modal_refresh_target": "#objects-content",
             "submit_handler": "prepareAddressForm",
         },
         "addressgroup": {
@@ -58,6 +85,7 @@ def get_update_modal_config(object_type):
             "post_url_name": "update-address-group-view",
             "delete_url_name": "delete-address-group-view",
             "refresh_url_name": "objects-addresses",
+            "modal_refresh_target": "#objects-content",
             "submit_handler": None,
         },
         "service": {
@@ -68,6 +96,7 @@ def get_update_modal_config(object_type):
             "post_url_name": "update-service-view",
             "delete_url_name": "delete-service-view",
             "refresh_url_name": "objects-services",
+            "modal_refresh_target": "#objects-content",
             "submit_handler": None,
         },
         "servicegroup": {
@@ -78,6 +107,7 @@ def get_update_modal_config(object_type):
             "post_url_name": "update-service-group-view",
             "delete_url_name": "delete-service-group-view",
             "refresh_url_name": "objects-services",
+            "modal_refresh_target": "#objects-content",
             "submit_handler": None,
         },
         "tags": {
@@ -96,7 +126,6 @@ def get_update_modal(request, row_id):
     try:
         object_type, object_id = row_id.split("-", 1)
         object_id = int(object_id)
-        tenant_id = int(tenant_id)
     except (ValueError, TypeError):
         return HttpResponse("Invalid row id.", status=400)
 
@@ -108,7 +137,43 @@ def get_update_modal(request, row_id):
     options_context = {}
     selected_ids = []
 
-    if object_type in ["address", "addressgroup"]:
+    if object_type == "user":
+        user = User.objects.filter(id=object_id).first()
+
+        if user:
+            object_data = {
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "is_superuser": user.is_superuser,
+            }
+            options_context["tenant_options"] = [
+                {"id": tenant.id, "name": tenant.tenant_name}
+                for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
+            ]
+
+    elif object_type == "tenant":
+        tenant = Tenant.objects.filter(id=object_id).first()
+
+        if tenant:
+            object_data = {
+                "tenant_name": tenant.tenant_name,
+            }
+
+            options_context["user_options"] = [
+                {"id": user.id, "name": user.username} for user in User.objects.all().order_by("username")
+            ]
+
+            selected_ids = list(TenantUserMember.objects.filter(tenant=tenant).values_list("user_id", flat=True))
+            options_context["selected_user_ids"] = selected_ids
+
+    elif object_type in ["address", "addressgroup"]:
+        if tenant_id is None:
+            return HttpResponse("No tenant selected.", status=400)
+
+        tenant_id = int(tenant_id)
+
         objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=tenant_id,
@@ -150,6 +215,11 @@ def get_update_modal(request, row_id):
                 options_context["selected_address_ids"] = selected_ids
 
     elif object_type in ["service", "servicegroup"]:
+        if tenant_id is None:
+            return HttpResponse("No tenant selected.", status=400)
+
+        tenant_id = int(tenant_id)
+
         objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=tenant_id,
@@ -197,6 +267,7 @@ def get_update_modal(request, row_id):
         "modal_swap": "innerHTML",
         "modal_submit_handler": config["submit_handler"],
         "modal_refresh_url": reverse(config["refresh_url_name"]),
+        "modal_refresh_target": config["modal_refresh_target"],
         "object_data": object_data,
         **options_context,
     }

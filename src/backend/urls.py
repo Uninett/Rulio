@@ -29,6 +29,13 @@ from .views.session import (
     set_tenant_view,
 )
 
+from .views.management_page import (
+    get_management_page,
+)
+
+from .views.management_users import get_management_users, post_user_view, update_user_view, delete_user_view
+from .views.management_tenants import get_management_tenants, post_tenant_view, update_tenant_view, delete_tenant_view
+
 from .views.devices_page import (
     get_devices_page,
 )
@@ -86,6 +93,16 @@ urlpatterns = [
     path("login/", get_login_page, name="login"),
     path("logout/", logout_view, name="logout"),
     path("set-tenant/", set_tenant_view, name="set-tenant"),
+    # Management
+    path("management/", get_management_page, name="management-page"),
+    path("management/users/", get_management_users, name="management-users"),
+    path("management/users/create/", post_user_view, name="post-user-view"),
+    path("management/users/<int:object_id>/update/", update_user_view, name="update-user-view"),
+    path("management/users/<int:object_id>/delete/", delete_user_view, name="delete-user-view"),
+    path("management/tenants/", get_management_tenants, name="management-tenants"),
+    path("management/tenants/create/", post_tenant_view, name="post-tenant-view"),
+    path("management/tenants/<int:object_id>/update/", update_tenant_view, name="update-tenant-view"),
+    path("management/tenants/<int:object_id>/delete/", delete_tenant_view, name="delete-tenant-view"),
     # Device Page
     path("devices/", get_devices_page, name="devices"),
     # Filters Page

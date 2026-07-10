@@ -2,10 +2,10 @@
 {% if modal_submit_handler %}
 <form class="modal-form" hx-post="{{ modal_post_url }}" hx-target="{{ modal_target }}" hx-swap="{{ modal_swap }}"
     onsubmit="{{ modal_submit_handler }}(event)"
-    hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}')">
+    hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}', '{{ modal_refresh_target }}')">
     {% else %}
     <form class="modal-form" hx-post="{{ modal_post_url }}" hx-target="{{ modal_target }}" hx-swap="{{ modal_swap }}"
-        hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}')">
+        hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}', '{{ modal_refresh_target }}')">
         {% endif %}
         {% else %}
         <form class="modal-form">
@@ -14,6 +14,7 @@
 
             <div id="modal-form-content" class="modal-form-content">
 
+                {% if modal_object_type != "users" and modal_object_type != "tenants" %}
                 <div class="form-group">
                     <label for="name">Name<span class="required"> *</span></label>
                     <input id="name" name="name" value="{{ object_data.name|default:'' }}" type="text" required>
@@ -23,6 +24,7 @@
                     <label for="description">Description</label>
                     <textarea id="description" name="description">{{ object_data.description|default:'' }}</textarea>
                 </div>
+                {% endif %}
 
 
                 {% if modal_supports_types %}
@@ -39,7 +41,7 @@
                         hx-target="#modal-container" hx-swap="innerHTML"
                         hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                         hx-confirm="Are you sure you want to delete this object?"
-                        hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}')">
+                        hx-on::after-request="if(event.detail.successful && event.detail.elt === this) closeModalAndRefresh('{{ modal_refresh_url }}', '{{ modal_refresh_target }}')">
                         Delete
                     </button>
                     {% endif %}

@@ -1,0 +1,32 @@
+{% load static %}
+
+
+<section class="management-table-container table-container">
+    <table>
+        <thead>
+            <tr class="management-header tenants-header">
+                {% for header in table_data.headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="management-table tenants-table">
+            {% for row in table_data.rows %}
+            <tr>
+                <td class="tenant-name-column">{{ row.name }}</td>
+                <td class="tenant-members-column">{{ row.members }} ({{ row.member_count }})</td>
+                <td class="actions-column">
+                    <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.row_id %}"
+                        hx-target="#modal-container" hx-swap="innerHTML">
+                        <img class="btn-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{{ table_data.headers|length }}">No tenants found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>

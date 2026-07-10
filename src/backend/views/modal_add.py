@@ -3,6 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from backend.utils.logger import set_up_logger
 
+from backend.objects.tenant_objects.tenant import Tenant
+from django.contrib.auth.models import User
+
 from backend.views.modal import get_group_options_view, get_item_options_view
 
 logger = set_up_logger(__name__)
@@ -17,6 +20,26 @@ Modal Partial: Add Modal
 # Return modal configuration for each object type.
 def get_add_modal_config(object_type):
     configs = {
+        "users": {
+            "title": "Create User",
+            "supports_types": False,
+            "form_partial": "partials/management/_user_form.html",
+            "post_url": reverse("post-user-view"),
+            "target": "#management-content",
+            "swap": "innerHTML",
+            "refresh_url": reverse("management-users"),
+            "modal_refresh_target": "#management-content",
+        },
+        "tenants": {
+            "title": "Create Tenant",
+            "supports_types": False,
+            "form_partial": "partials/management/_tenant_form.html",
+            "post_url": reverse("post-tenant-view"),
+            "target": "#management-content",
+            "swap": "innerHTML",
+            "refresh_url": reverse("management-tenants"),
+            "modal_refresh_target": "#management-content",
+        },
         "devices": {
             "title": "Add Device",
             "supports_types": True,
@@ -57,6 +80,7 @@ def get_add_modal_config(object_type):
             "swap": "beforeend",
             "submit_handler": "prepareAddressForm",
             "refresh_url": reverse("objects-addresses"),
+            "modal_refresh_target": "#objects-content",
         },
         "services": {
             "title": "Add Service",
@@ -78,6 +102,7 @@ def get_add_modal_config(object_type):
             "target": "#services-table",
             "swap": "beforeend",
             "refresh_url": reverse("objects-services"),
+            "modal_refresh_target": "#objects-content",
         },
         "tags": {
             "title": "Add Tag",
@@ -119,6 +144,7 @@ def get_add_modal(request, object_type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": config.get("submit_handler"),
         "modal_refresh_url": config.get("refresh_url"),
+        "modal_refresh_target": config.get("modal_refresh_target"),
         "object_data": {},
         "selected_group_ids": [],
         "selected_address_ids": [],
@@ -129,6 +155,18 @@ def get_add_modal(request, object_type):
     if object_type in ["addresses", "services"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
+
+    if object_type == "users":
+        context["tenant_options"] = [
+            {"id": tenant.id, "name": tenant.tenant_name}
+            for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
+        ]
+
+    if object_type == "tenants":
+        context["user_options"] = [
+            {"id": user.id, "name": user.username} for user in User.objects.all().order_by("username")
+        ]
+        context["selected_user_ids"] = []
 
     return render(request, "partials/_modal.html", context)
 
@@ -158,6 +196,7 @@ def get_add_modal_form_content(request, object_type, type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": modal_submit_handler,
         "modal_refresh_url": config.get("refresh_url"),
+        "modal_refresh_target": config.get("modal_refresh_target"),
         "object_data": {
             "name": request.GET.get("name", ""),
             "description": request.GET.get("description", ""),

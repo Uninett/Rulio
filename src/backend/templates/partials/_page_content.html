@@ -18,6 +18,11 @@
 
     {% elif title == "Tags" %}
     {% include "partials/tags/_tagsTable.html" %}
+
+    {% elif title == "User management" %}
+    {% include "partials/management/_users_table.html" %}
+    {% elif title == "Tenant management" %}
+    {% include "partials/management/_tenants_table.html" %}
     {% else %}
     <p>No content available.</p>
     {% endif %}

@@ -6,13 +6,12 @@
         {% if toggle_items %}
         {% for item in toggle_items %}
         <button class="btn-toggle {% if active_tool == item.key %}active{% endif %}" type="button"
-            hx-get="{{ item.url }}" hx-target="#objects-content" hx-swap="innerHTML" data-tool-key="{{ item.key }}">
+            hx-get="{{ item.url }}" hx-target="{{ toggle_target }}" hx-swap="innerHTML" data-tool-key="{{ item.key }}">
             {{ item.label }}
         </button>
         {% endfor %}
         {% endif %}
     </div>
-
 
     {% if add_button_label %}
     <button class="btn-add" type="button" hx-get="{% url 'modal-add' object_type %}" hx-target="#modal-container"

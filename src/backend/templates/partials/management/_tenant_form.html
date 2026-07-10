@@ -1,0 +1,43 @@
+<div class="form-group">
+    <label for="id_tenant_name">Name<span class="required"> *</span></label>
+    <input type="text" id="id_tenant_name" name="tenant_name" value="{{ object_data.tenant_name|default:'' }}" required>
+</div>
+
+<div class="modal-header">
+    <h2 class="membership-header">Users</h2>
+</div>
+
+<p class="form-help">Choose any users you want to add to this tenant.</p>
+
+<div class="membership-selector" data-input-name="user_ids">
+    <div class="membership-column">
+        <div class="membership-list membership-list-available" data-list-type="available">
+            {% for user in user_options %}
+            {% if user.id not in selected_user_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ user.id }}">
+                {{ user.name }}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="membership-column">
+        <div class="membership-list membership-list-selected" data-list-type="selected">
+            {% for user in user_options %}
+            {% if user.id in selected_user_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ user.id }}">
+                {{ user.name }}
+                <input type="hidden" name="user_ids" value="{{ user.id }}">
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% if error_message %}
+<div class="form-error">
+    {{ error_message }}
+</div>
+{% endif %}

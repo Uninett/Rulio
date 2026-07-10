@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Management | Rulio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/management.css' %}" />
+{% endblock %}
+
+
+{% block content %}
+
+<div id="management-content">
+    {% include "partials/_page_content.html" with title=page_title %}
+</div>
+
+{% endblock %}

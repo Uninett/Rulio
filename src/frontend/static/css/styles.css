@@ -73,32 +73,103 @@ Header
     flex-wrap: wrap;
 }
 
-button.logged-in-user {
-    background-color: transparent;
-    border: 2px solid transparent;
-    border-bottom: 2px solid #7351FB;
-    border-radius: 0;
+.user-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.user-menu-trigger,
+.user-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 1px solid #767676;
+    background: #ffffff;
     color: #000000;
-    width: 11rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
-.logged-in-user .hover-text {
-    display: none;
+.user-icon:hover {
+    background: #ffffff;
+    border: 1px solid #767676;
 }
 
-button.logged-in-user:hover {
-    background-color: #7351FB;
-    border: 2px solid #7351FB;
+.user-menu-trigger:hover {
+    background: #ffffff;
+}
+
+.user-menu-dropdown {
+    position: absolute;
+    right: calc(100% + 0.75rem);
+    top: 0;
+    min-width: 14rem;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 0.75rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 100;
+}
+
+.user-menu-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid #E0E0E0;
+}
+
+.user-menu-info p {
+    margin: 0;
+    padding: 0;
+}
+
+.user-menu-dropdown form {
+    margin: 0;
+    width: 100%;
+}
+
+.user-menu-dropdown a.user-menu-btn,
+.user-menu-dropdown button.user-menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    background: none;
+    border: none;
     border-radius: 0;
-    color: #FFFFFF;
+    padding: 0.5rem;
+    color: #000000;
+    font: inherit;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
-.logged-in-user:hover .default-text {
+.user-menu-dropdown a.user-menu-btn:hover,
+.user-menu-dropdown button.user-menu-btn:hover {
+    background: #F3F1FE;
+    border: none;
+    border-radius: 0;
+    text-decoration: none;
+}
+
+.hidden {
     display: none;
-}
-
-.logged-in-user:hover .hover-text {
-    display: inline;
 }
 
 /*
