@@ -10,6 +10,10 @@
     {% elif title == "Filters" %}
     {% include "partials/filters/_filterTable.html" %}
 
+     <!--This page cannot have routing dependent on the title, this may be necessary to refactor in every case-->
+    {% elif object_type == "rules" %}
+    {% include "partials/filters/_rulesTable.html" %}
+
     <!--Insert table here, with type of table depending on the title (i.e. title == "Addresses" -> address table, title == "Services" -> service table)-->
     {% elif title == "Addresses" %}
     {% include "partials/objects/_addressesTable.html" %}

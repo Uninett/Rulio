@@ -1,19 +1,43 @@
 {% for cell in row.cells %}
 <td class="{% if forloop.first %}first-column-cell{% if object_type == 'filters' %} inspect-column{% endif %}{% endif %} col-{{ forloop.counter }}">
-    {% if forloop.last %}
+
+    {% if forloop.first and object_type == "filters" %}
+        <a href="{{ row.inspect_url }}" class="inspect-link" onclick="event.stopPropagation();">▸</a>
+
+    {% elif forloop.last %}
         {% if object_type == "addresses" or object_type == "services" or object_type == "devices" or object_type == "filters" %}
             <div class="tag-list-container">
                 {% for item in cell %}
                     {% if item %}
-                        <span class="cell-text tag-item" style="--tag-color: {{ item.color }};" title="{{ item.name }}">
+                        <span class="cell-text tag-item"
+                              style="--tag-color: {{ item.color }};"
+                              title="{{ item.name }}">
                             {{ item.name }}
                         </span>
                     {% endif %}
                 {% endfor %}
             </div>
+
+        {% elif object_type == "rules" %}
+            <div class="tag-list-container">
+                {% for item in cell %}
+                    {% if item %}
+                        <span class="cell-text tag-item tag-item-default" title="{{ item }}">
+                            {{ item }}
+                        </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
         {% else %}
             <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
         {% endif %}
+
+    {% elif object_type == "rules" and forloop.counter == 2 or object_type == "rules" and forloop.counter == 3 or object_type == "rules" and forloop.counter == 4 %}
+        {% for item in cell %}
+            <div class="cell-text" title="{{ item }}">{{ item }}</div>
+        {% endfor %}
+
     {% else %}
         <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
     {% endif %}

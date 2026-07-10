@@ -326,6 +326,7 @@ Specific table layout
     width: 65%;
 }
 
+
 /*
 ====================================================================
 Global Rows
@@ -344,4 +345,70 @@ Global Rows
 .objects-table .details-row.readonly-row .details-content {
     background-color: var(--sds-color-layout-surface-2);
     color: var(--sds-color-text-secondary);
+}
+
+/*
+====================================================================
+Filters table layout
+====================================================================
+*/
+
+.filters-table th:nth-child(2),
+.filters-table td:nth-child(2) {
+    text-align: left;
+    padding-left: 4px;
+}
+
+/*
+====================================================================
+Rules table layout
+====================================================================
+*/
+
+.rules-table th:nth-child(1),
+.rules-table td:nth-child(1) {
+    width: 14%;
+}
+
+.rules-table th:nth-child(2),
+.rules-table td:nth-child(2),
+.rules-table th:nth-child(3),
+.rules-table td:nth-child(3),
+.rules-table th:nth-child(4),
+.rules-table td:nth-child(4) {
+    width: 10%;
+}
+
+.rules-table th:nth-child(5),
+.rules-table td:nth-child(5),
+.rules-table th:nth-child(6),
+.rules-table td:nth-child(6),
+.rules-table th:nth-child(7),
+.rules-table td:nth-child(7) {
+    width: 5%;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.rules-table th:nth-child(8),
+.rules-table td:nth-child(8) {
+    width: 18%;
+}
+
+.rules-table th:nth-child(9),
+.rules-table td:nth-child(9),
+.rules-table th:nth-child(10),
+.rules-table td:nth-child(10) {
+    width: 9%;
+    white-space: nowrap;
+}
+
+.rules-table th:nth-child(11),
+.rules-table td:nth-child(11) {
+    width: 10%;
+}
+
+.rules-table td,
+.rules-table th {
+    vertical-align: top;
 }
