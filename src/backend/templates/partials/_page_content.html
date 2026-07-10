@@ -5,7 +5,7 @@
     </div>
 
     {% if title == "Devices" %}
-    No devices to display.
+    {% include "partials/devices/_devicesTable.html" %}
 
     {% elif title == "Filters" %}
     No filters to display.

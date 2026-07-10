@@ -1,11 +1,15 @@
 {% for cell in row.cells %}
 <td>
-    {% if forloop.last and object_type == "addresses" or forloop.last and object_type == "services" %}
+    {% if forloop.last %}
+    {% if object_type == "addresses" or object_type == "services" or object_type == "devices" %}
     <div class="tag-list-container">
         {% for item in cell %}
         <span class="cell-text tag-item">{{ item }}</span>
         {% endfor %}
     </div>
+    {% else %}
+    <span class="cell-text" title="{{cell}}">{{cell}}</span>
+    {% endif %}
     {% else %}
     <span class="cell-text" title="{{cell}}">{{cell}}</span>
     {% endif %}
