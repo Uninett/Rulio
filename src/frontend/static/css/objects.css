@@ -17,6 +17,10 @@ td:first-child {
     border-left: 4px solid #D1CDFF;
 }
 
+tr.group-row td:first-child {
+    border-left: 4px solid #A79BFF;
+}
+
 tr:hover {
     background-color: #E8E8E8;
     cursor: pointer;
@@ -86,7 +90,6 @@ td:nth-child(1) {
 th:nth-child(2),
 td:nth-child(2) {
     width: 15%;
-    text-align: center;
 }
 
 th:nth-child(4),
