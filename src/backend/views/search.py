@@ -16,7 +16,7 @@ from backend.services.get import (
 def get_address_search_results(request, query):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
-        return {{"results": []}}
+        return {"results": []}
 
     try:
         result, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
@@ -25,7 +25,7 @@ def get_address_search_results(request, query):
             include_global_tenant=False,
         )
     except Exception:
-        return {{"results": []}}
+        return {"results": []}
 
     query = query.lower()
 
@@ -54,7 +54,7 @@ def get_address_search_results(request, query):
 def get_service_search_results(request, query):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
-        return {{"results": []}}
+        return {"results": []}
 
     try:
         services, _, _ = get_all_services_and_groups_with_tags_from_tenant(
@@ -63,7 +63,7 @@ def get_service_search_results(request, query):
             include_global_tenant=False,
         )
     except Exception:
-        return {{"results": []}}
+        return {"results": []}
 
     query = query.lower()
     matches = []
