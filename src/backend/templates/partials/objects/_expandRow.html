@@ -5,56 +5,66 @@
             {% for field in row.expand %}
 
             {% if field.modal_on_dblclick %}
+            {% if field.label == "Devices" %}
             <div class="detail-block">
-                <p><strong>{{ field.label }}:</strong></p>
-                {% for value in field.value %}
-                <div hx-get="{% url 'modal-update' value.row_id %}" hx-trigger="dblclick" hx-target="#modal-container"
-                    hx-swap="innerHTML" title="{{ value.hover_text }}">
-                    {{ value.name }}
 
-                    <div>
-                        {% if value.description %}
-                        <div><strong>Description:</strong> {{ value.description }}</div>
-                        {% endif %}
-                        {% if value.ipv4 %}
-                        <div><strong>IPv4:</strong> {{ value.ipv4 }}</div>
-                        {% endif %}
-                        {% if value.ipv6 %}
-                        <div><strong>IPv6:</strong> {{ value.ipv6 }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+                <strong>Devices:</strong>
+                {% include "partials/devices/_expandableDeviceLine.html" with devices=field.value %}
 
-            {% elif field.label == "Tags" %}
-            {% include "partials/objects/_stylingTags.html" with row=row field=field %}
 
-            {% else %}
-            <div class="detail-block">
-                <p><strong>{{ field.label }}:</strong></p>
-                {% if field.special_style == True %}
-                {% for value in field.value %}
-                <div class="tagsElipse" title="{{ value }}">{{ value }}</div>
-                {% endfor %}
-                {% else %}
-                {% for value in field.value %}
-                <div>{{ value }}</div>
-                {% endfor %}
                 {% endif %}
-            </div>
-            {% endif %}
+                {% if field.label != "Devices" %}
+                <div class="detail-block">
+                    <p><strong>{{ field.label }}:</strong></p>
+                    {% for value in field.value %}
+                    <div hx-get="{% url 'modal-update' value.row_id %}" hx-trigger="dblclick"
+                        hx-target="#modal-container" hx-swap="innerHTML" title="{{ value.hover_text }}">
+                        {{ value.name }}
 
+                        <div>
+                            {% if value.description %}
+                            <div><strong>Description:</strong> {{ value.description }}</div>
+                            {% endif %}
+                            {% if value.ipv4 %}
+                            <div><strong>IPv4:</strong> {{ value.ipv4 }}</div>
+                            {% endif %}
+                            {% if value.ipv6 %}
+                            <div><strong>IPv6:</strong> {{ value.ipv6 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% elif field.label == "Tags" %}
+                {% include "partials/objects/_stylingTags.html" with row=row field=field %}
+
+                {% else %}
+                <div class="detail-block">
+                    <p><strong>{{ field.label }}:</strong></p>
+                    {% if field.special_style == True %}
+                    {% for value in field.value %}
+                    <div class="tagsElipse" title="{{ value }}">{{ value }}</div>
+                    {% endfor %}
+                    {% else %}
+                    {% for value in field.value %}
+                    <div>{{ value }}</div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% endfor %}
+            </div>
+            {% else %}
+            {% for field in row.expand %}
+            {% if field.label == "Tags" %}
+            {% include "partials/objects/_stylingTags.html" with row=row field=field %}
+            {% else %}
+            <p><strong>{{ field.label }}:</strong> {{ field.value }}</p>
+            {% endif %}
             {% endfor %}
-        </div>
-        {% else %}
-        {% for field in row.expand %}
-        {% if field.label == "Tags" %}
-        {% include "partials/objects/_stylingTags.html" with row=row field=field %}
-        {% else %}
-        <p><strong>{{ field.label }}:</strong> {{ field.value }}</p>
-        {% endif %}
-        {% endfor %}
-        {% endif %}
+            {% endif %}
     </section>
 </td>
