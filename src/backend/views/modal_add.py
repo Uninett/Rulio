@@ -28,7 +28,7 @@ def get_add_modal_config(object_type):
             "target": "#management-content",
             "swap": "innerHTML",
             "refresh_url": reverse("management-users"),
-            "refresh_target": "#management-content",
+            "modal_refresh_target": "#management-content",
         },
         "tenants": {
             "title": "Create Tenant",
@@ -38,7 +38,7 @@ def get_add_modal_config(object_type):
             "target": "#management-content",
             "swap": "innerHTML",
             "refresh_url": reverse("management-tenants"),
-            "refresh_target": "#management-content",
+            "modal_refresh_target": "#management-content",
         },
         "devices": {
             "title": "Add Device",
@@ -144,6 +144,7 @@ def get_add_modal(request, object_type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": config.get("submit_handler"),
         "modal_refresh_url": config.get("refresh_url"),
+        "modal_refresh_target": config.get("modal_refresh_target"),
         "object_data": {},
         "selected_group_ids": [],
         "selected_address_ids": [],
@@ -195,6 +196,7 @@ def get_add_modal_form_content(request, object_type, type):
         "modal_swap": config.get("swap"),
         "modal_submit_handler": modal_submit_handler,
         "modal_refresh_url": config.get("refresh_url"),
+        "modal_refresh_target": config.get("modal_refresh_target"),
         "object_data": {
             "name": request.GET.get("name", ""),
             "description": request.GET.get("description", ""),
