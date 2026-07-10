@@ -221,3 +221,27 @@ def update_user_view(request, object_id):
         return HttpResponse(f"Could not update user: {e}", status=400)
 
     return HttpResponse(status=204)
+
+
+@login_required(login_url="login")
+def delete_user_view(request, object_id):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Forbidden")
+
+    user = User.objects.filter(id=object_id).first()
+    if not user:
+        return HttpResponse("User not found.", status=404)
+
+    if user.id == request.user.id:
+        return HttpResponse("You cannot delete your own user.", status=400)
+
+    if user.is_superuser and User.objects.filter(is_superuser=True).count() <= 1:
+        return HttpResponse("You cannot delete the last superuser.", status=400)
+
+    try:
+        TenantUserMember.objects.filter(user=user).delete()
+        user.delete()
+    except Exception as e:
+        return HttpResponse(f"Could not delete user: {e}", status=400)
+
+    return HttpResponse(status=204)

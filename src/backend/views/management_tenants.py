@@ -188,3 +188,24 @@ def update_tenant_view(request, object_id):
         return HttpResponse(f"Could not update tenant: {e}", status=400)
 
     return HttpResponse(status=204)
+
+
+@login_required(login_url="login")
+def delete_tenant_view(request, object_id):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Forbidden")
+
+    tenant = Tenant.objects.filter(id=object_id).first()
+    if not tenant:
+        return HttpResponse("Tenant not found.", status=404)
+
+    if tenant.id == 1:
+        return HttpResponse("Global tenant cannot be deleted.", status=400)
+
+    try:
+        TenantUserMember.objects.filter(tenant=tenant).delete()
+        tenant.delete()
+    except Exception as e:
+        return HttpResponse(f"Could not delete tenant: {e}", status=400)
+
+    return HttpResponse(status=204)
