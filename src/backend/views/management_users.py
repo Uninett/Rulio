@@ -57,7 +57,7 @@ def get_users_view(request):
 
 def get_user_modal_context(object_data=None, selected_permissions=None, error_message=None):
     return {
-        "modal_title": "Add User",
+        "modal_title": "Create User",
         "modal_mode": "add",
         "modal_object_type": "users",
         "modal_type": None,

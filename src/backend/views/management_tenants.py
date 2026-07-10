@@ -62,7 +62,7 @@ def get_tenants_view(request):
 
 def get_tenant_modal_context(object_data=None, selected_user_ids=None, error_message=None):
     return {
-        "modal_title": "Add Tenant",
+        "modal_title": "Create Tenant",
         "modal_mode": "add",
         "modal_object_type": "tenants",
         "modal_type": None,

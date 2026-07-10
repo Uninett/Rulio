@@ -21,7 +21,7 @@ Modal Partial: Add Modal
 def get_add_modal_config(object_type):
     configs = {
         "users": {
-            "title": "Add User",
+            "title": "Create User",
             "supports_types": False,
             "form_partial": "partials/management/_user_form.html",
             "post_url": reverse("post-user-view"),
@@ -31,7 +31,7 @@ def get_add_modal_config(object_type):
             "refresh_target": "#management-content",
         },
         "tenants": {
-            "title": "Add Tenant",
+            "title": "Create Tenant",
             "supports_types": False,
             "form_partial": "partials/management/_tenant_form.html",
             "post_url": reverse("post-tenant-view"),
