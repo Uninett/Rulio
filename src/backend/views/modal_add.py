@@ -4,7 +4,7 @@ from django.urls import reverse
 from backend.utils.logger import set_up_logger
 
 from backend.objects.tenant_objects.tenant import Tenant
-from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+from django.contrib.auth.models import User
 
 from backend.views.modal import get_group_options_view, get_item_options_view
 
@@ -26,13 +26,21 @@ def get_add_modal_config(object_type):
             "form_partial": "partials/management/_user_form.html",
             "post_url": reverse("post-user-view"),
             "target": "#management-content",
-            "swap": "outerHTML",
+            "swap": "innerHTML",
             "refresh_url": reverse("management-users"),
+            "after_success": "close",
+            "refresh_target": "#management-content",
         },
         "tenants": {
             "title": "Add Tenant",
             "supports_types": False,
-            "form_partial": "partials/modals/management/_tenant_form.html",
+            "form_partial": "partials/management/_tenant_form.html",
+            "post_url": reverse("post-tenant-view"),
+            "target": "#management-content",
+            "swap": "innerHTML",
+            "refresh_url": reverse("management-tenants"),
+            "after_success": "close",
+            "refresh_target": "#management-content",
         },
         "devices": {
             "title": "Add Device",
@@ -152,6 +160,12 @@ def get_add_modal(request, object_type):
             {"id": tenant.id, "name": tenant.tenant_name}
             for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
         ]
+
+    if object_type == "tenants":
+        context["user_options"] = [
+            {"id": user.id, "name": user.username} for user in User.objects.all().order_by("username")
+        ]
+        context["selected_user_ids"] = []
 
     return render(request, "partials/_modal.html", context)
 
