@@ -14,6 +14,7 @@ from backend.objects.attributes.tag_connection import TagConnection
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.device_group import DeviceGroup
 
@@ -76,6 +77,35 @@ def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[
                 )
 
         result.append(rule_dict)
+
+    return result
+
+
+# def get_rules_from_filter(actor: User, tenant_id: int, filter_id: int) -> QuerySet[Rule]:
+
+
+def get_all_objects_from_rule(actor: User, tenant_id: int, rule_id: int) -> list[dict]:
+    require_read_tenant(actor, tenant_id)
+    try:
+        rule = Rule.objects.get(id=rule_id)
+    except Rule.DoesNotExist:
+        raise ObjectDoesNotExist(f"Rule with ID {rule_id} does not exist.")
+
+    if rule.tenant_id != tenant_id and not is_superadmin(actor):
+        raise PermissionDenied(f"Rule with ID {rule_id} does not belong to tenant {tenant_id}.")
+
+    result = []
+    for match in rule.matches.all():
+        obj = match.content_object
+        if obj:
+            result.append(
+                {
+                    "object_type": obj.__class__.__name__,
+                    "object_id": obj.id,
+                    "object_name": getattr(obj, "name", None),
+                    "match_type": match.match,
+                }
+            )
 
     return result
 
@@ -299,6 +329,84 @@ def get_all_filters_with_tags_from_tenant(actor: User, tenant_id: int, include_g
         )
 
     return result, requested_filters
+
+
+def get_filters_with_rules_with_tags_from_tenant(
+    actor: User,
+    tenant_id: int,
+    include_global_tenant: bool = True,
+) -> tuple[list[dict], QuerySet[Filter], QuerySet[Rule], QuerySet[Tag]]:
+    require_read_tenant(actor, tenant_id)
+
+    if include_global_tenant:
+        filters = Filter.objects.filter(tenant_id__in=[tenant_id, 1])
+        rules = Rule.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("matches")
+    else:
+        filters = Filter.objects.filter(tenant_id=tenant_id)
+        rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("matches")
+
+    result = []
+    group_map = {}
+    tag_ids = set()
+
+    for filter_obj in filters:
+        filter_tags = list(filter_obj.get_tags())
+        tag_ids.update(tag.id for tag in filter_tags)
+
+        filter_dict = {
+            "filter_id": filter_obj.id,
+            "filter_name": filter_obj.name,
+            "filter_description": filter_obj.description,
+            "filter_enable": filter_obj.enable,
+            "filter_tenant_id": filter_obj.tenant_id,
+            "tags": [
+                {
+                    "tag_id": tag.id,
+                    "tag_name": tag.name,
+                    "tag_tenant_id": tag.tenant_id,
+                }
+                for tag in filter_tags
+            ],
+            "rules": [],
+        }
+        result.append(filter_dict)
+        group_map[filter_obj.id] = filter_dict
+
+    for rule in rules:
+        if rule.filter_id not in group_map:
+            continue
+
+        rule_tags = list(rule.get_tags())
+        tag_ids.update(tag.id for tag in rule_tags)
+
+        group_map[rule.filter_id]["rules"].append(
+            {
+                "rule_id": rule.id,
+                "rule_name": rule.name,
+                "rule_description": rule.description,
+                "rule_action": rule.action,
+                "rule_log_type": rule.log_type,
+                "rule_hit_count": rule.hit_count,
+                "rule_date_created": rule.date_created,
+                "rule_date_changed": rule.date_changed,
+                "rule_created_by": rule.created_by,
+                "rule_changed_by": rule.changed_by,
+                "rule_enable": rule.enable,
+                "rule_tenant_id": rule.tenant_id,
+                "tags": [
+                    {
+                        "tag_id": tag.id,
+                        "tag_name": tag.name,
+                        "tag_tenant_id": tag.tenant_id,
+                    }
+                    for tag in rule_tags
+                ],
+            }
+        )
+
+    tags = Tag.objects.filter(id__in=tag_ids)
+
+    return result, filters, rules, tags
 
 
 def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:

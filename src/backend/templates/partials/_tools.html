@@ -28,4 +28,12 @@
     </button>
     {% endif %}
     {% endif %}
+
+    {% if add_extra_button_label %}
+    <button class="btn-add" type="button" hx-get="{% url 'modal-add' object_extra_type %}" hx-target="#modal-container"
+        hx-swap="innerHTML">
+        {{ add_extra_button_label }}
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+    </button>
+    {% endif %}
 </div>
