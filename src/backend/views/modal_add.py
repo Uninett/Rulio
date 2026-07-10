@@ -3,6 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from backend.utils.logger import set_up_logger
 
+from backend.objects.tenant_objects.tenant import Tenant
+from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+
 from backend.views.modal import get_group_options_view, get_item_options_view
 
 logger = set_up_logger(__name__)
@@ -20,20 +23,16 @@ def get_add_modal_config(object_type):
         "users": {
             "title": "Add User",
             "supports_types": False,
-            "form_partial": "partials/modals/_user_form.html",
+            "form_partial": "partials/management/_user_form.html",
             "post_url": reverse("post-user-view"),
             "target": "#management-content",
-            "swap": "innerHTML",
+            "swap": "outerHTML",
             "refresh_url": reverse("management-users"),
         },
         "tenants": {
             "title": "Add Tenant",
             "supports_types": False,
-            "form_partial": "partials/modals/_tenant_form.html",
-            "post_url": reverse("post-tenant-view"),
-            "target": "#management-content",
-            "swap": "innerHTML",
-            "refresh_url": reverse("management-tenants"),
+            "form_partial": "partials/modals/management/_tenant_form.html",
         },
         "devices": {
             "title": "Add Device",
@@ -147,6 +146,12 @@ def get_add_modal(request, object_type):
     if object_type in ["addresses", "services"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
+
+    if object_type == "users":
+        context["tenant_options"] = [
+            {"id": tenant.id, "name": tenant.tenant_name}
+            for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
+        ]
 
     return render(request, "partials/_modal.html", context)
 
