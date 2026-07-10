@@ -15,6 +15,7 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.device_group import DeviceGroup
 
 from backend.services.helper_user_tenant import is_superadmin, require_read_tenant
 from backend.utils.logger import set_up_logger
@@ -28,6 +29,9 @@ DJANGO_MODEL_MAPPING = {
     "addressgroup": AddressGroup,
     "service": Service,
     "servicegroup": ServiceGroup,
+    "device": Device,
+    "devicegroup": DeviceGroup,
+    "interface": Interface,
     "rule": Rule,
     "tag": Tag,
     "addressgroupmember": AddressGroupMember,
@@ -178,6 +182,28 @@ def get_all_devices_with_tags_from_tenant(actor: User, tenant_id: int, include_g
         )
 
     return result, requested_devices
+
+
+def get_all_device_groups_and_devices_with_tags_from_tenant(actor: User, tenant_id: int):
+    require_read_tenant(actor, tenant_id)
+
+    device_groups = DeviceGroup.objects.filter(tenant_id=tenant_id).prefetch_related(
+        "tag_objects__tag",
+        "devicegroupmember_set__device",
+    )
+
+    devices = Device.objects.filter(tenant_id=tenant_id).prefetch_related(
+        "tag_objects__tag",
+    )
+
+    return device_groups, devices
+
+
+def get_device_group_members(actor: User, tenant_id: int, device_group_id: int) -> QuerySet[Device]:
+    require_read_tenant(actor, tenant_id)
+    if not DeviceGroup.objects.filter(id=device_group_id, tenant_id=tenant_id).exists():
+        raise PermissionDenied(f"Device group with ID {device_group_id} does not exist in tenant {tenant_id}.")
+    return Device.objects.filter(tenant_id=tenant_id, devicegroupmember__device_group_id=device_group_id)
 
 
 def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) -> QuerySet[Interface]:
