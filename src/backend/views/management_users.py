@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib.auth.models import User
-from django.http import HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 
 from backend.objects.tenant_objects.tenant import Tenant
@@ -38,6 +38,7 @@ def get_users_view(request):
         rows.append(
             {
                 "id": user.id,
+                "row_id": f"user-{user.id}",
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
@@ -66,7 +67,7 @@ def get_user_modal_context(object_data=None, selected_permissions=None, error_me
         "modal_content_partial": "partials/management/_user_form.html",
         "modal_post_url": reverse("post-user-view"),
         "modal_target": "#management-content",
-        "modal_swap": "outerHTML",
+        "modal_swap": "innerHTML",
         "modal_refresh_url": reverse("management-users"),
         "object_data": object_data or {},
         "tenant_options": [
@@ -189,3 +190,34 @@ def post_user_view(request):
             **get_management_toolbar_context("users", add_button_label="Create User"),
         },
     )
+
+
+@login_required(login_url="login")
+def update_user_view(request, object_id):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Forbidden")
+
+    user = User.objects.filter(id=object_id).first()
+    if not user:
+        return HttpResponse("User not found.", status=404)
+
+    first_name = request.POST.get("first_name", "").strip()
+    last_name = request.POST.get("last_name", "").strip()
+    email = request.POST.get("email", "").strip()
+    password = request.POST.get("password", "").strip()
+    is_superuser = request.POST.get("is_superuser") == "on"
+
+    try:
+        user.first_name = first_name
+        user.last_name = last_name
+        user.email = email
+        user.is_superuser = is_superuser
+        user.is_staff = is_superuser
+        if password:
+            user.set_password(password)
+
+        user.save()
+    except Exception as e:
+        return HttpResponse(f"Could not update user: {e}", status=400)
+
+    return HttpResponse(status=204)

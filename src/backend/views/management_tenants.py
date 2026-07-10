@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
 from django.contrib.auth.models import User
 from django.urls import reverse
 
@@ -47,6 +47,7 @@ def get_tenants_view(request):
         rows.append(
             {
                 "id": tenant.id,
+                "row_id": f"tenant-{tenant.id}",
                 "name": tenant.tenant_name,
                 "members": members_display,
                 "member_count": member_count,
@@ -71,7 +72,7 @@ def get_tenant_modal_context(object_data=None, selected_user_ids=None, error_mes
         "modal_content_partial": "partials/management/_tenant_form.html",
         "modal_post_url": reverse("post-tenant-view"),
         "modal_target": "#management-content",
-        "modal_swap": "outerHTML",
+        "modal_swap": "innerHTML",
         "modal_refresh_url": reverse("management-tenants"),
         "object_data": object_data or {},
         "user_options": [{"id": user.id, "name": user.username} for user in User.objects.all().order_by("username")],
@@ -156,3 +157,34 @@ def post_tenant_view(request):
             **get_management_toolbar_context("tenants", add_button_label="Create Tenant"),
         },
     )
+
+
+@login_required(login_url="login")
+def update_tenant_view(request, object_id):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Forbidden")
+
+    tenant = Tenant.objects.filter(id=object_id).first()
+    if not tenant:
+        return HttpResponse("Tenant not found.", status=404)
+
+    tenant_name = request.POST.get("tenant_name", "").strip()
+    user_ids = request.POST.getlist("user_ids")
+
+    try:
+        tenant.tenant_name = tenant_name
+        tenant.save()
+
+        TenantUserMember.objects.filter(tenant=tenant).exclude(user_id__in=[int(uid) for uid in user_ids]).delete()
+
+        for user_id in user_ids:
+            TenantUserMember.objects.get_or_create(
+                tenant=tenant,
+                user_id=int(user_id),
+                defaults={"role": TenantUserMember.TenantRole.MEMBER},
+            )
+
+    except Exception as e:
+        return HttpResponse(f"Could not update tenant: {e}", status=400)
+
+    return HttpResponse(status=204)

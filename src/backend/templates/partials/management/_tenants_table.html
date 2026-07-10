@@ -16,7 +16,8 @@
                 <td class="tenant-name-column">{{ row.name }}</td>
                 <td class="tenant-members-column">{{ row.members }} ({{ row.member_count }})</td>
                 <td class="actions-column">
-                    <button type="submit" class="actions-btn">
+                    <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.row_id %}"
+                        hx-target="#modal-container" hx-swap="innerHTML">
                         <img class="btn-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
                     </button>
                 </td>
