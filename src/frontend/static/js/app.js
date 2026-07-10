@@ -24,14 +24,17 @@ function closeModal(event = null) {
 }
 
 // Close the modal and refresh the objects content area. If a refresh URL is provided, reload the relevant page content with HTMX.
-function closeModalAndRefresh(url) {
-    document.getElementById('modal-container').innerHTML = '';
+function closeModalAndRefresh(url, target) {
+    const modalContainer = document.getElementById("modal-container");
+    if (modalContainer) {
+        modalContainer.innerHTML = "";
+    }
 
-    if (!url) return;
+    if (!url || !target) return;
 
-    htmx.ajax('GET', url, {
-        target: '#objects-content',
-        swap: 'innerHTML'
+    htmx.ajax("GET", url, {
+        target: target,
+        swap: "innerHTML"
     });
 }
 

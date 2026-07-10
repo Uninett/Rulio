@@ -28,7 +28,6 @@ def get_add_modal_config(object_type):
             "target": "#management-content",
             "swap": "innerHTML",
             "refresh_url": reverse("management-users"),
-            "after_success": "close",
             "refresh_target": "#management-content",
         },
         "tenants": {
@@ -39,7 +38,6 @@ def get_add_modal_config(object_type):
             "target": "#management-content",
             "swap": "innerHTML",
             "refresh_url": reverse("management-tenants"),
-            "after_success": "close",
             "refresh_target": "#management-content",
         },
         "devices": {
@@ -82,6 +80,7 @@ def get_add_modal_config(object_type):
             "swap": "beforeend",
             "submit_handler": "prepareAddressForm",
             "refresh_url": reverse("objects-addresses"),
+            "modal_refresh_target": "#objects-content",
         },
         "services": {
             "title": "Add Service",
@@ -103,6 +102,7 @@ def get_add_modal_config(object_type):
             "target": "#services-table",
             "swap": "beforeend",
             "refresh_url": reverse("objects-services"),
+            "modal_refresh_target": "#objects-content",
         },
         "tags": {
             "title": "Add Tag",
