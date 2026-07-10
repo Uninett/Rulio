@@ -5,6 +5,38 @@ Objects Table Container
 */
 
 .objects-table-container {
+    font-family: "Haffer", sans-serif;
+    /* color-layut-background-strong */
+    text-align: left;
+    border: none;
+    border-top: 1px solid #E0E0E0;
+    border-bottom: 1px solid #E0E0E0;
+    position: relative;
+    line-height: auto;
+    font-size: smaller;
+
+}
+
+td:first-child {
+    border-left: 4px solid #D1CDFF;
+}
+
+tr.group-row td:first-child {
+    border-left: 4px solid #A79BFF;
+}
+
+tr:hover {
+    background-color: #E8E8E8;
+    cursor: pointer;
+}
+
+th {
+
+    font-family: "Haffer", sans-serif;
+
+}
+
+table {
     width: 100%;
     height: 80vh;
     margin: 2vh auto;
@@ -50,13 +82,7 @@ Objects Table Container
 }
 
 .objects-table-container table,
-.objects-table {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: #ffffff;
-    border-radius: 0.5rem;
-    table-layout: fixed;
-}
+
 
 .objects-table tbody tr {
     position: relative;
