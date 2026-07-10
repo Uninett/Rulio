@@ -1,25 +1,26 @@
-<hr>
-
 <input type="hidden" id="initial_is_superuser" value="{{ object_data.is_superuser|default:'' }}">
 
-<div class="form-group">
-    <label for="id_username">Username</label>
-    <input type="text" id="id_username" name="username" value="{{ object_data.username|default:'' }}" required>
-</div>
+<div class="form-row">
+    <div class="form-group form-group-username">
+        <label for="id_username">Username</label>
+        <input type="text" id="id_username" name="username" value="{{ object_data.username|default:'' }}" required>
+    </div>
 
-<div class="form-group">
-    <label for="id_is_superuser">Superuser</label>
-    <input type="checkbox" id="id_is_superuser" name="is_superuser">
+    <div class="form-group form-group-superuser">
+        <div class="superuser-control">
+            <span class="superuser-text">Superuser</span>
+            <input type="checkbox" id="id_is_superuser" name="is_superuser">
+        </div>
+    </div>
 </div>
-
 <div class="form-group">
-    <label for="id_first_name">First name</label>
-    <input type="text" id="id_first_name" name="first_name" value="{{ object_data.first_name|default:'' }}">
-</div>
-
-<div class="form-group">
-    <label for="id_last_name">Last name</label>
-    <input type="text" id="id_last_name" name="last_name" value="{{ object_data.last_name|default:'' }}">
+    <label for="id_first_name">Name</label>
+    <div class="form-row">
+        <input type="text" id="id_first_name" name="first_name" value="{{ object_data.first_name|default:'' }}"
+            placeholder="First name">
+        <input type="text" id="id_last_name" name="last_name" value="{{ object_data.last_name|default:'' }}"
+            placeholder="Last name">
+    </div>
 </div>
 
 <div class="form-group">
@@ -32,7 +33,7 @@
     <input type="password" id="id_password" name="password" required>
 </div>
 
-<div class="form-group" id="tenant-group">
+<div class="form-group form-group-tenant" id="tenant-group">
     <label for="id_tenant_id">Tenant</label>
     <select id="id_tenant_id" name="tenant_id">
         <option value="">Select tenant</option>

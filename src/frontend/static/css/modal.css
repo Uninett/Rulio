@@ -18,7 +18,7 @@ Modal
     background: #F3F1FE;
     border-radius: 1rem;
     padding: 2rem;
-    width: 60rem;
+    width: 40rem;
     max-width: 60vw;
     max-height: 90vh;
     display: flex;
@@ -54,7 +54,7 @@ Modal Header
 }
 
 .modal p {
-    font-size: 0.85rem;
+    font-size: smaller;
     margin: 0;
     padding: 0;
 }
@@ -107,8 +107,14 @@ Form Layout
     min-width: 0;
 }
 
+.form-row {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+}
+
 .modal .form-group label {
-    font-size: 0.85rem;
+    font-size: smaller;
     font-weight: 400;
     margin: 0;
     padding-top: 0.55rem;
@@ -132,7 +138,7 @@ Form Layout
     padding: 0.65rem;
     resize: vertical;
     font-family: inherit;
-    font-size: 0.8rem;
+    font-size: smaller;
 }
 
 
@@ -185,7 +191,7 @@ Modal Type Switch
     border: none;
     padding: 0;
     font: inherit;
-    font-size: 0.85rem;
+    font-size: smaller;
     color: #444444;
     cursor: pointer;
 }
@@ -233,7 +239,7 @@ Membership Selection
     padding: 0.6rem;
     cursor: grab;
     margin-bottom: 0.4rem;
-    font-size: 0.85rem;
+    font-size: smaller;
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -304,7 +310,7 @@ Modal Actions
 .modal-actions .form-error {
     margin: 0;
     color: #B60203;
-    font-size: 0.85rem;
+    font-size: smaller;
 }
 
 .btn-cancel {

@@ -88,6 +88,46 @@ User table
 
 /*
 ====================================================================
+User Modal
+====================================================================
+*/
+
+.form-group-username {
+    flex: 2;
+}
+
+.form-group-superuser {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.superuser-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.superuser-text {
+    margin: 0;
+    font-family: inherit;
+    font-size: smaller;
+}
+
+.superuser-control input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: #7351FB;
+}
+
+.form-group-tenant {
+    padding-bottom: 0.5rem;
+}
+
+/*
+====================================================================
 Tenant Table
 ====================================================================
 */
