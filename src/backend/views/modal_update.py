@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
 from backend.utils.logger import set_up_logger
-
+from constants import GLOBAL_TENANT_ID
 from django.contrib.auth.models import User
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
@@ -150,7 +150,7 @@ def get_update_modal(request, row_id):
             }
             options_context["tenant_options"] = [
                 {"id": tenant.id, "name": tenant.tenant_name}
-                for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
+                for tenant in Tenant.objects.exclude(id=GLOBAL_TENANT_ID).order_by("tenant_name")
             ]
 
     elif object_type == "tenant":

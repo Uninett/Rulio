@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from backend.utils.logger import set_up_logger
-
-from backend.objects.tenant_objects.tenant import Tenant
 from django.contrib.auth.models import User
 
+from backend.objects.tenant_objects.tenant import Tenant
+from backend.utils.logger import set_up_logger
+from constants import GLOBAL_TENANT_ID
 from backend.views.modal import get_group_options_view, get_item_options_view
 
 logger = set_up_logger(__name__)
@@ -159,7 +159,7 @@ def get_add_modal(request, object_type):
     if object_type == "users":
         context["tenant_options"] = [
             {"id": tenant.id, "name": tenant.tenant_name}
-            for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
+            for tenant in Tenant.objects.exclude(id=GLOBAL_TENANT_ID).order_by("tenant_name")
         ]
 
     if object_type == "tenants":

@@ -18,6 +18,7 @@ from backend.objects.tenant_objects.interface import Interface
 
 from backend.services.helper_user_tenant import is_superadmin, require_read_tenant
 from backend.utils.logger import set_up_logger
+from constants import GLOBAL_TENANT_ID
 
 
 # Setup logger
@@ -76,7 +77,7 @@ def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[
 def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
-        rules = Rule.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+        rules = Rule.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related("tag_objects__tag")
     else:
         rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
@@ -133,7 +134,7 @@ def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, obj
     except model.DoesNotExist:
         raise ObjectDoesNotExist(f"{model.__name__} with ID {object_id} does not exist.")
 
-    if obj.tenant_id != int(tenant_id) and not is_superadmin(actor):
+    if obj.tenant_id != int(tenant_id) and obj.tenant_id != GLOBAL_TENANT_ID and not is_superadmin(actor):
         raise PermissionDenied(f"Object with ID {object_id} does not belong to tenant {tenant_id}.")
 
     return obj
@@ -154,7 +155,9 @@ def get_all_devices_from_tenant(actor: User, tenant_id: int) -> QuerySet[Device]
 def get_all_devices_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
-        requested_devices = Device.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+        requested_devices = Device.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related(
+            "tag_objects__tag"
+        )
     else:
         requested_devices = Device.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
@@ -221,7 +224,9 @@ def get_all_filters_from_tenant(actor: User, tenant_id: int) -> QuerySet[Filter]
 def get_all_filters_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
-        requested_filters = Filter.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+        requested_filters = Filter.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related(
+            "tag_objects__tag"
+        )
     else:
         requested_filters = Filter.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
@@ -267,7 +272,7 @@ def get_all_objects_with_certain_tag(
 ) -> tuple[list[dict], dict[str, list]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
-        tag = Tag.objects.filter(id=tag_id, tenant_id__in=[tenant_id, 1]).first()
+        tag = Tag.objects.filter(id=tag_id, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).first()
     else:
         tag = Tag.objects.filter(id=tag_id, tenant_id=tenant_id).first()
 
