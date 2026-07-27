@@ -356,11 +356,7 @@ def add_tags_to_default_services(
         service = services_by_name[service_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=service,
-                request_type="seeding"
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=service, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default services.")
@@ -443,11 +439,7 @@ def add_tags_to_default_address_groups(
         address_group = address_groups_by_name[address_group_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=address_group,
-                request_type="seeding"
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=address_group, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default address groups.")
@@ -577,11 +569,7 @@ def add_tags_to_default_service_groups(
         service_group = service_groups_by_name[service_group_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=service_group,
-                request_type="seeding"
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=service_group, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default service groups.")
@@ -765,11 +753,7 @@ def add_tags_to_default_rules(
         rule = rules_by_name[rule_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=rule,
-                request_type="seeding"
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=rule, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default rules.")
@@ -838,11 +822,7 @@ def add_tags_to_default_filters(
         filter_obj = filters_by_name[filter_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=filter_obj,
-                request_type="seeding"
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=filter_obj, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default filters.")

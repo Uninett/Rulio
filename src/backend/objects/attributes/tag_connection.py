@@ -18,7 +18,11 @@ class TagConnection(models.Model):
     def clean(self):
         if self.content_object and hasattr(self.content_object, "tenant_id"):
             if self.tag.tenant_id != self.content_object.tenant_id and self.tag.tenant_id != GLOBAL_TENANT_ID:
-                raise ValidationError("Tag and tagged object must belong to the same tenant. Tag belongs to tenant_id {}, but tagged object belongs to tenant_id {}.".format(self.tag.tenant_id, self.content_object.tenant_id))
+                raise ValidationError(
+                    "Tag and tagged object must belong to the same tenant. Tag belongs to tenant_id {}, but tagged object belongs to tenant_id {}.".format(
+                        self.tag.tenant_id, self.content_object.tenant_id
+                    )
+                )
 
     def save(self, *args, **kwargs):
         self.full_clean()

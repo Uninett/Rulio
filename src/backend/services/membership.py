@@ -63,7 +63,9 @@ def add_service_to_group(actor: User, tenant_id: int, service_group_id: int, ser
     )
 
 
-def add_addresses_to_group(actor: User, tenant_id: int, address_group_id: int, address_ids: list[int], request_type: str | None = "standard") -> dict:
+def add_addresses_to_group(
+    actor: User, tenant_id: int, address_group_id: int, address_ids: list[int], request_type: str | None = "standard"
+) -> dict:
     require_write_tenant(actor, tenant_id)
 
     if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
@@ -146,7 +148,9 @@ def remove_address_from_group(actor: User, tenant_id: int, address_group_id: int
         logger.warning(f"Address id={address_id} is not a member of address group id={address_group_id}.")
 
 
-def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, service_ids: list[int], request_type: str | None = "standard") -> dict:
+def add_services_to_group(
+    actor: User, tenant_id: int, service_group_id: int, service_ids: list[int], request_type: str | None = "standard"
+) -> dict:
     """
     Adds a list of services to a service group.
 
@@ -235,13 +239,7 @@ def remove_service_from_group(actor: User, tenant_id: int, service_group_id: int
 
 
 def add_objects_to_rule(
-    *,
-    actor: User,
-    tenant_id: int,
-    rule_id: int,
-    match_type: str,
-    objects: list,
-    request_type: str | None = "standard"
+    *, actor: User, tenant_id: int, rule_id: int, match_type: str, objects: list, request_type: str | None = "standard"
 ):
     require_write_tenant(actor, tenant_id)
     if not Rule.objects.filter(id=rule_id, tenant_id=tenant_id).exists():

@@ -332,10 +332,14 @@ def get_or_create_service_group(
             logger.info(f"Created {service_group} for tenant={service_group.tenant_id}")
         if members:
             add_services_to_group(
-                actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members, request_type=request_type
+                actor=actor,
+                tenant_id=tenant_id,
+                service_group_id=service_group.id,
+                service_ids=members,
+                request_type=request_type,
             )
             if request_type != "seeding":
-               logger.info(f"Added members to {service_group}: {members}")
+                logger.info(f"Added members to {service_group}: {members}")
     else:
         if request_type == "seeding":
             pass
@@ -343,7 +347,11 @@ def get_or_create_service_group(
             logger.info(f"Service Group already exists: {service_group} for tenant={service_group.tenant_id}")
         if members:
             add_services_to_group(
-                actor=actor, tenant_id=tenant_id, service_group_id=service_group.id, service_ids=members, request_type=request_type
+                actor=actor,
+                tenant_id=tenant_id,
+                service_group_id=service_group.id,
+                service_ids=members,
+                request_type=request_type,
             )
             if request_type != "seeding":
                 logger.info(f"Added members to existing {service_group}: {members}")
@@ -401,7 +409,13 @@ def create_address_group_and_add_addresses(
     )
 
     if members:
-        add_addresses_to_group(actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members, request_type=request_type)
+        add_addresses_to_group(
+            actor=actor,
+            tenant_id=tenant_id,
+            address_group_id=address_group.id,
+            address_ids=members,
+            request_type=request_type,
+        )
         logger.info(f"Added members to {address_group}: {members}")
 
     return address_group
@@ -432,7 +446,11 @@ def get_or_create_address_group(
             logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
             if members:
                 add_addresses_to_group(
-                    actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members, request_type=request_type
+                    actor=actor,
+                    tenant_id=tenant_id,
+                    address_group_id=address_group.id,
+                    address_ids=members,
+                    request_type=request_type,
                 )
                 logger.info(f"Added members to {address_group}: {members}")
     else:
@@ -442,7 +460,11 @@ def get_or_create_address_group(
             logger.info(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
             if members:
                 add_addresses_to_group(
-                    actor=actor, tenant_id=tenant_id, address_group_id=address_group.id, address_ids=members, request_type=request_type
+                    actor=actor,
+                    tenant_id=tenant_id,
+                    address_group_id=address_group.id,
+                    address_ids=members,
+                    request_type=request_type,
                 )
                 logger.info(f"Added members to existing {address_group}: {members}")
 
@@ -474,7 +496,9 @@ def create_tag(
     return tag
 
 
-def get_or_create_tag(*, actor: User, tenant_id: int, name: str, description: str, request_type: str = "standard") -> tuple[Tag, int, bool]:
+def get_or_create_tag(
+    *, actor: User, tenant_id: int, name: str, description: str, request_type: str = "standard"
+) -> tuple[Tag, int, bool]:
 
     require_write_tenant(actor, tenant_id)
 
