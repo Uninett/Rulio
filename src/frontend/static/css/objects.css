@@ -141,13 +141,14 @@ Objects Details Row
 .objects-table .details-content {
     text-align: left;
     padding: 0.5rem 1rem;
-    line-height: 1.4;
+    line-height: 1.2;
     background-color: #FCFCFF;
+    font-size: small;
 }
 
 .objects-table .details-content p {
     display: inline-block;
-    margin: 0 2rem 0.5rem 0;
+    margin: 0.1rem 0;
 }
 
 .objects-table .details-content span {
@@ -181,7 +182,7 @@ Objects Tags
     display: inline-block;
     padding: 0.1rem 0.5rem;
     height: auto;
-    font-size: inherit;
+    font-size: x-small;
 }
 
 .objects-table .tag-list-container {
@@ -196,7 +197,7 @@ Objects Tags
     color: black;
     border-radius: 20px;
     display: inline-block;
-    font-size: inherit;
+    font-size: x-small;
     width: auto;
     padding-left: 0.4rem;
     padding-right: 0.4rem;
