@@ -16,7 +16,8 @@
         cursor: pointer;
     }
 
-    .nested-device-table td {
+    .nested-device-table td,
+    .nested-device-table th {
         font-family: "Haffer", sans-serif;
         text-align: left;
         border: none;
@@ -24,71 +25,77 @@
         border-bottom: 1px solid #E0E0E0;
         position: relative;
         font-size: small;
-        padding: 2px 6px;
+        padding: 4px 6px;
         vertical-align: top;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    .nested-device-table td:first-child {
+    .nested-device-table td:first-child,
+    .nested-device-table th:first-child {
         border-left: 4px solid #D1CDFF;
     }
 
-    .device-main-row.expanded-row {
-        background-color: #E0E0E0;
-    }
-
-    .inline-device-details {
+    .inline-device-details,
+    .inline-interface-details {
         display: none;
-    }
-
-
-    .inline-device-detailstd {
-        background-color: #fffcfc;
-    }
-
-    .device-interfaces-inline,
-    .device-tags-inline {
-        padding-left: 20px;
-        line-height: 1.3;
-    }
-
-    .interface-line {
-        margin-top: 6px;
-    }
-
-    .interface-line span {
-        display: inline-block;
-        margin-right: 16px;
     }
 
     .nested-device-table td:nth-child(1),
     .nested-device-table th:nth-child(1) {
-        width: 28%;
-        white-space: nowrap;
+        width: 30%;
     }
 
     .nested-device-table td:nth-child(2),
     .nested-device-table th:nth-child(2) {
-        width: 42%;
+        width: 20%;
     }
 
     .nested-device-table td:nth-child(3),
     .nested-device-table th:nth-child(3) {
-        width: 15%;
+        width: 10%;
     }
 
     .nested-device-table td:nth-child(4),
     .nested-device-table th:nth-child(4) {
-        width: 15%;
+        width: 40%;
     }
 
-    .inline-device-details td:first-child {
+    .inline-device-details td:first-child,
+    .inline-device-details th:first-child {
         border-left: 4px solid lightgray;
+        padding-left: 20px;
+    }
+
+    .inline-interface-details td:first-child,
+    .inline-interface-details th:first-child {
+        border-left: 4px solid #bdbdbd;
+        padding-left: 40px;
+    }
+
+    .filter-group-row td:first-child {
+        padding-left: 60px;
+        font-weight: bold;
+    }
+
+    .filter-row td:first-child {
+        padding-left: 80px;
+    }
+
+    .filter-row td:nth-child(1) {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 </style>
-<div class="detail-block">
 
+<div class="detail-block">
     <table class="nested-device-table">
         <thead>
+            <tr class="section-label-row">
+                <th colspan="4">Devices</th>
+            </tr>
             <tr>
                 <th>Name</th>
                 <th>Type</th>
@@ -98,13 +105,17 @@
         </thead>
         <tbody>
             {% for device in devices %}
-            <tr class="expandable-device-line" onclick="toggleInlineDeviceDetails('{{ device.row_id }}')">
+            <tr class="expandable-device-line" onclick="toggleInlineRows('{{ device.row_id }}')">
                 <td>{{ device.name|default:"None" }}</td>
                 <td>{{ device.type|default:"None" }}</td>
                 <td>{{ device.platform|default:"None" }}</td>
                 <td>{{ device.description|default:"None" }}</td>
             </tr>
 
+            <tr class="inline-device-details inline-details-{{ device.row_id }} section-label-row"
+                style="display: none;">
+                <td colspan="4"><strong>Interfaces:</strong></td>
+            </tr>
             {% if device.interfaces %}
             <tr class="inline-device-details inline-details-{{ device.row_id }}" style="display: none;">
                 <th>Name</th>
@@ -112,27 +123,80 @@
                 <th>VRF</th>
                 <th>Description</th>
             </tr>
+
             {% for interface in device.interfaces %}
-            <tr class="inline-device-details inline-details-{{ device.row_id }}" style="display: none;">
+
+            <tr class="inline-device-details inline-details-{{ device.row_id }}" style="display: none;"
+                onclick="event.stopPropagation(); toggleInlineRows('{{ interface.row_id }}')">
                 <td>{{ interface.name|default:"Interface" }}</td>
                 <td>{{ interface.type|default:"None" }}</td>
                 <td>{{ interface.vrf|default:"None" }}</td>
                 <td>{{ interface.description|default:"None" }}</td>
             </tr>
+
+            {% if interface.filters.ingoing or interface.filters.outgoing %}
+            <tr class="inline-interface-details inline-details-{{ interface.row_id }}" style="display: none;">
+                <td colspan="4"><strong>Filters</strong></td>
+            </tr>
+            <tr class="inline-interface-details inline-details-{{ interface.row_id }}" style="display: none;">
+                <th>Filter Name</th>
+                <th>Direction</th>
+                <th>Policy Sequence</th>
+                <th>Description</th>
+            </tr>
+
+            {% if interface.filters.ingoing %}
+            <tr class="inline-interface-details filter-group-row inline-details-{{ interface.row_id }}"
+                style="display: none;">
+                <td colspan="4">Ingoing Filters</td>
+            </tr>
+
+            {% for filter in interface.filters.ingoing %}
+            <tr class="inline-interface-details filter-row inline-details-{{ interface.row_id }}"
+                style="display: none;">
+                <td>{{ filter.name|default:"None" }}</td>
+                <td>Ingoing</td>
+                <td>{{ filter.policy_sequence|default:"None" }}</td>
+                <td>{{ filter.description|default:"None" }}</td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+
+            {% if interface.filters.outgoing %}
+            <tr class="inline-interface-details filter-group-row inline-details-{{ interface.row_id }}"
+                style="display: none;">
+                <td colspan="4">Outgoing Filters</td>
+            </tr>
+
+            {% for filter in interface.filters.outgoing %}
+            <tr class="inline-interface-details filter-row inline-details-{{ interface.row_id }}"
+                style="display: none;">
+                <td>{{ filter.name|default:"None" }}</td>
+                <td>Outgoing</td>
+                <td>{{ filter.policy_sequence|default:"None" }}</td>
+                <td>{{ filter.description|default:"None" }}</td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+            {% else %}
+            <tr class="inline-interface-details inline-details-{{ interface.row_id }}" style="display: none;">
+                <td colspan="4"><em>No filters</em></td>
+            </tr>
+            {% endif %}
             {% endfor %}
             {% endif %}
             {% endfor %}
-
         </tbody>
     </table>
 </div>
-{% block extra_js %}
+
 <script>
-    function toggleInlineDeviceDetails(rowId) {
+    function toggleInlineRows(rowId) {
         const rows = document.querySelectorAll('.inline-details-' + rowId);
+
         rows.forEach(row => {
-            row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+            const currentDisplay = window.getComputedStyle(row).display;
+            row.style.display = currentDisplay === 'none' ? 'table-row' : 'none';
         });
     }
 </script>
-{% endblock %}
