@@ -7,10 +7,11 @@ Objects Table Container
 .objects-table-container {
     width: 100%;
     height: 80vh;
-    padding-top: 2vh;
-    margin: 0 auto;
+    margin: 2vh auto;
     overflow-y: auto;
     overflow-x: hidden;
+    background-color: #ffffff;
+    position: relative;
 }
 
 .objects-table-container table {
@@ -37,12 +38,13 @@ Objects Table Container
 
 .objects-table th,
 .objects-table td {
-    padding: 0.5rem 1rem;
+    padding: 0.2rem 1rem;
     text-align: left;
     vertical-align: middle;
     font-family: inherit;
-    font-size: small;
+    font-size: smaller;
     min-width: 0;
+    width: 100%;
 }
 
 .objects-table thead th {
@@ -81,7 +83,7 @@ Objects Main Rows
 }
 
 .objects-table .main-row.expanded-row {
-    background-color: #F3F1FE;
+    background-color: #EBE6FE;
 }
 
 
@@ -114,40 +116,6 @@ Objects Cells
     text-overflow: ellipsis;
 }
 
-
-/*
-====================================================================
-Objects Actions
-====================================================================
-*/
-
-.objects-table th:last-child,
-.objects-table td:last-child,
-.objects-table .actions-column {
-    width: 3rem;
-    white-space: nowrap;
-    text-align: right;
-}
-
-.objects-table .actions-btn {
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-    cursor: pointer;
-}
-
-.objects-table .actions-btn:hover,
-.objects-table .actions-btn:focus,
-.objects-table .actions-btn:active {
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    outline: none;
-}
-
-
 /*
 ====================================================================
 Objects Details Row
@@ -168,7 +136,7 @@ Objects Details Row
 
 .objects-table .details-content {
     text-align: left;
-    padding: 0.75rem 1rem 1rem 1.25rem;
+    padding: 0.5rem 1rem;
     line-height: 1.4;
     background-color: #FCFCFF;
 }
