@@ -302,3 +302,34 @@ Generic Elements
 hr {
     opacity: 0.5;
 }
+
+/*
+====================================================================
+Actions
+====================================================================
+*/
+
+.actions-column {
+    width: 5%;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.actions-btn {
+    background-color: #ffffff;
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+
+.actions-btn:hover,
+.actions-btn:focus,
+.actions-btn:active {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
