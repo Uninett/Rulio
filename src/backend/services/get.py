@@ -287,6 +287,7 @@ def get_all_objects_with_certain_tag(
         "rule": [],
         "filter": [],
         "device": [],
+        "devicegroup": [],
         "interface": [],
     }
     for tagged_object in tagged_objects:
