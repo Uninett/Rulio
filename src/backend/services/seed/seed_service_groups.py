@@ -101,6 +101,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["ICMP_RFC792"],
                 service_ids_by_name["ICMPv6_RFC4443"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Commonly Allowed Web Access Services
@@ -117,6 +118,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["HTTP_Alternate_TCP"],
                 service_ids_by_name["HTTPS_Alternate_TCP"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Restricted Administrative Access Services
@@ -134,6 +136,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["WinRM_HTTP_TCP"],
                 service_ids_by_name["WinRM_HTTPS_TCP"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Restricted Internal Identity Services
@@ -153,6 +156,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["RADIUS_Auth_UDP_RFC2865"],
                 service_ids_by_name["RADIUS_Acct_UDP_RFC2866"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Restricted Internal File Sharing Services
@@ -168,6 +172,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["NFS_TCP_RFC7530"],
                 service_ids_by_name["NFS_UDP"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Restricted Database Services
@@ -184,6 +189,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["PostgreSQL_TCP"],
                 service_ids_by_name["MSSQL_TCP"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Restricted Monitoring and Logging Services
@@ -203,6 +209,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["Prometheus_TCP"],
                 service_ids_by_name["Grafana_TCP"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Commonly Denied Legacy Insecure Services
@@ -225,6 +232,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["NetBIOS_DGM_UDP"],
                 service_ids_by_name["NetBIOS_SSN_TCP"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Commonly Denied Tunneling and VPN Services
@@ -247,6 +255,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["OpenVPN_UDP"],
                 service_ids_by_name["WireGuard_UDP"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Commonly Denied Voice and Signaling Services
@@ -263,6 +272,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["SIP_UDP_RFC3261"],
                 service_ids_by_name["SIPS_TCP_RFC3261"],
             ],
+            request_type="seeding",
         ),
         # ---------------------------------------------------------------------
         # ACL - Commonly Denied Local Link Resolution Services
@@ -277,6 +287,7 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
             members=[
                 service_ids_by_name["MDNS_UDP_RFC6762"],
             ],
+            request_type="seeding",
         ),
     ]
 

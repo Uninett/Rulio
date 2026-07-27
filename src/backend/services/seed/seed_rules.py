@@ -37,6 +37,7 @@ def seed_rules(
         rule_sequence=1,
         log_type="none",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -44,6 +45,7 @@ def seed_rules(
         rule_id=rule_1.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -51,6 +53,7 @@ def seed_rules(
         rule_id=rule_1.id,
         match_type="destination",
         objects=[service_groups_by_name["Common_Infrastructure_Client_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_1, created_1))
 
@@ -65,6 +68,7 @@ def seed_rules(
         rule_sequence=1,
         log_type="none",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -72,6 +76,7 @@ def seed_rules(
         rule_id=rule_2.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -79,6 +84,7 @@ def seed_rules(
         rule_id=rule_2.id,
         match_type="destination",
         objects=[service_groups_by_name["Common_Web_Access_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_2, created_2))
 
@@ -93,6 +99,7 @@ def seed_rules(
         rule_sequence=1,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -100,6 +107,7 @@ def seed_rules(
         rule_id=rule_3.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -107,6 +115,7 @@ def seed_rules(
         rule_id=rule_3.id,
         match_type="destination",
         objects=[service_groups_by_name["Restricted_Administrative_Access_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_3, created_3))
 
@@ -121,6 +130,7 @@ def seed_rules(
         rule_sequence=2,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -128,6 +138,7 @@ def seed_rules(
         rule_id=rule_4.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -135,6 +146,7 @@ def seed_rules(
         rule_id=rule_4.id,
         match_type="destination",
         objects=[service_groups_by_name["Restricted_Internal_Identity_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_4, created_4))
 
@@ -149,6 +161,7 @@ def seed_rules(
         rule_sequence=2,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -156,6 +169,7 @@ def seed_rules(
         rule_id=rule_5.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -163,6 +177,7 @@ def seed_rules(
         rule_id=rule_5.id,
         match_type="destination",
         objects=[service_groups_by_name["Restricted_Internal_File_Sharing_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_5, created_5))
 
@@ -177,6 +192,7 @@ def seed_rules(
         rule_sequence=2,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -184,6 +200,7 @@ def seed_rules(
         rule_id=rule_6.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -191,6 +208,7 @@ def seed_rules(
         rule_id=rule_6.id,
         match_type="destination",
         objects=[service_groups_by_name["Restricted_Database_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_6, created_6))
 
@@ -205,6 +223,7 @@ def seed_rules(
         rule_sequence=3,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -212,6 +231,7 @@ def seed_rules(
         rule_id=rule_7.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -219,6 +239,7 @@ def seed_rules(
         rule_id=rule_7.id,
         match_type="destination",
         objects=[service_groups_by_name["Restricted_Monitoring_And_Logging_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_7, created_7))
 
@@ -233,6 +254,7 @@ def seed_rules(
         rule_sequence=3,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -240,6 +262,7 @@ def seed_rules(
         rule_id=rule_8.id,
         match_type="source",
         objects=[address_groups_by_name["Invalid_Transit_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -247,6 +270,7 @@ def seed_rules(
         rule_id=rule_8.id,
         match_type="destination",
         objects=[services_by_name["Any_TCP"]],
+        request_type="seeding",
     )
     default_rules.append((rule_8, created_8))
 
@@ -261,6 +285,7 @@ def seed_rules(
         rule_sequence=3,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -268,6 +293,7 @@ def seed_rules(
         rule_id=rule_9.id,
         match_type="source",
         objects=[address_groups_by_name["Invalid_Transit_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -275,6 +301,7 @@ def seed_rules(
         rule_id=rule_9.id,
         match_type="destination",
         objects=[services_by_name["Any_UDP"]],
+        request_type="seeding",
     )
     default_rules.append((rule_9, created_9))
 
@@ -289,6 +316,7 @@ def seed_rules(
         rule_sequence=4,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -296,6 +324,7 @@ def seed_rules(
         rule_id=rule_10.id,
         match_type="source",
         objects=[address_groups_by_name["Documentation_And_Test_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -303,6 +332,7 @@ def seed_rules(
         rule_id=rule_10.id,
         match_type="destination",
         objects=[services_by_name["Any_TCP"]],
+        request_type="seeding",
     )
     default_rules.append((rule_10, created_10))
 
@@ -317,6 +347,7 @@ def seed_rules(
         rule_sequence=4,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -324,6 +355,7 @@ def seed_rules(
         rule_id=rule_11.id,
         match_type="source",
         objects=[address_groups_by_name["Documentation_And_Test_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -331,6 +363,7 @@ def seed_rules(
         rule_id=rule_11.id,
         match_type="destination",
         objects=[services_by_name["Any_UDP"]],
+        request_type="seeding",
     )
     default_rules.append((rule_11, created_11))
 
@@ -345,6 +378,7 @@ def seed_rules(
         rule_sequence=4,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -352,6 +386,7 @@ def seed_rules(
         rule_id=rule_12.id,
         match_type="destination",
         objects=[address_groups_by_name["Multicast_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -359,6 +394,7 @@ def seed_rules(
         rule_id=rule_12.id,
         match_type="destination",
         objects=[services_by_name["Any_TCP"]],
+        request_type="seeding",
     )
     default_rules.append((rule_12, created_12))
 
@@ -373,6 +409,7 @@ def seed_rules(
         rule_sequence=5,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -380,6 +417,7 @@ def seed_rules(
         rule_id=rule_13.id,
         match_type="destination",
         objects=[address_groups_by_name["Multicast_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -387,6 +425,7 @@ def seed_rules(
         rule_id=rule_13.id,
         match_type="destination",
         objects=[services_by_name["Any_UDP"]],
+        request_type="seeding",
     )
     default_rules.append((rule_13, created_13))
 
@@ -401,6 +440,7 @@ def seed_rules(
         rule_sequence=5,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -408,6 +448,7 @@ def seed_rules(
         rule_id=rule_14.id,
         match_type="destination",
         objects=[address_groups_by_name["IPv6_Transition_And_Translation_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -415,6 +456,7 @@ def seed_rules(
         rule_id=rule_14.id,
         match_type="destination",
         objects=[services_by_name["Any_TCP"]],
+        request_type="seeding",
     )
     default_rules.append((rule_14, created_14))
 
@@ -429,6 +471,7 @@ def seed_rules(
         rule_sequence=5,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -436,6 +479,7 @@ def seed_rules(
         rule_id=rule_15.id,
         match_type="destination",
         objects=[address_groups_by_name["IPv6_Transition_And_Translation_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -443,6 +487,7 @@ def seed_rules(
         rule_id=rule_15.id,
         match_type="destination",
         objects=[services_by_name["Any_UDP"]],
+        request_type="seeding",
     )
     default_rules.append((rule_15, created_15))
 
@@ -457,6 +502,7 @@ def seed_rules(
         rule_sequence=6,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -464,6 +510,7 @@ def seed_rules(
         rule_id=rule_16.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -471,6 +518,7 @@ def seed_rules(
         rule_id=rule_16.id,
         match_type="destination",
         objects=[service_groups_by_name["Deny_Legacy_Insecure_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_16, created_16))
 
@@ -485,6 +533,7 @@ def seed_rules(
         rule_sequence=6,
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -492,6 +541,7 @@ def seed_rules(
         rule_id=rule_17.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -499,6 +549,7 @@ def seed_rules(
         rule_id=rule_17.id,
         match_type="destination",
         objects=[service_groups_by_name["Deny_Tunneling_And_VPN_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_17, created_17))
 
@@ -513,6 +564,7 @@ def seed_rules(
         action="deny",
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -520,6 +572,7 @@ def seed_rules(
         rule_id=rule_18.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -527,6 +580,7 @@ def seed_rules(
         rule_id=rule_18.id,
         match_type="destination",
         objects=[service_groups_by_name["Deny_Voice_And_Signaling_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_18, created_18))
 
@@ -541,6 +595,7 @@ def seed_rules(
         action="deny",
         log_type="flow",
         hit_count=0,
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -548,6 +603,7 @@ def seed_rules(
         rule_id=rule_19.id,
         match_type="source",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
+        request_type="seeding",
     )
     add_objects_to_rule(
         actor=actor,
@@ -555,6 +611,7 @@ def seed_rules(
         rule_id=rule_19.id,
         match_type="destination",
         objects=[service_groups_by_name["Deny_Local_Link_Resolution_Services"]],
+        request_type="seeding",
     )
     default_rules.append((rule_19, created_19))
 

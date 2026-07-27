@@ -75,6 +75,7 @@ def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[AddressGr
                 address_ids_by_name["ULA_Local_IPv6_RFC4193"],
                 address_ids_by_name["LinkLocal_IPv6_RFC4291"],
             ],
+            request_type="seeding"
         ),
         # ---------------------------------------------------------------------
         # ACL - Invalid Transit Addresses
@@ -94,6 +95,7 @@ def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[AddressGr
                 address_ids_by_name["Unspecified_IPv6_RFC4291"],
                 address_ids_by_name["Loopback_IPv6_RFC4291"],
             ],
+            request_type="seeding"
         ),
         # ---------------------------------------------------------------------
         # ACL - Documentation and Test Addresses
@@ -111,6 +113,7 @@ def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[AddressGr
                 address_ids_by_name["TEST_NET_2_RFC5737"],
                 address_ids_by_name["TEST_NET_3_RFC5737"],
             ],
+            request_type="seeding"
         ),
         # ---------------------------------------------------------------------
         # ACL - Multicast Addresses
@@ -129,6 +132,7 @@ def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[AddressGr
                 address_ids_by_name["All_Nodes_Multicast_IPv6_RFC4291"],
                 address_ids_by_name["All_Routers_Multicast_IPv6_RFC4291"],
             ],
+            request_type="seeding"
         ),
         # ---------------------------------------------------------------------
         # ACL - IPv6 Transition and Translation Addresses
@@ -146,6 +150,7 @@ def seed_addressgroups(actor: User, tenant_id: int) -> tuple[int, list[AddressGr
                 address_ids_by_name["6to4_IPv6_RFC3056"],
                 address_ids_by_name["Teredo_IPv6_RFC4380"],
             ],
+            request_type="seeding"
         ),
     ]
 

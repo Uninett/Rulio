@@ -247,6 +247,7 @@ def add_tags_to_default_addresses(
                 tenant_id=tenant_id,
                 tag=tags_by_name[tag_name],
                 obj=address,
+                request_type="seeding",
             )
 
     logger.info("Added tags to all seeded default addresses.")
@@ -358,6 +359,7 @@ def add_tags_to_default_services(
                 tenant_id=tenant_id,
                 tag=tags_by_name[tag_name],
                 obj=service,
+                request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default services.")
@@ -444,6 +446,7 @@ def add_tags_to_default_address_groups(
                 tenant_id=tenant_id,
                 tag=tags_by_name[tag_name],
                 obj=address_group,
+                request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default address groups.")
@@ -577,6 +580,7 @@ def add_tags_to_default_service_groups(
                 tenant_id=tenant_id,
                 tag=tags_by_name[tag_name],
                 obj=service_group,
+                request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default service groups.")
@@ -764,6 +768,7 @@ def add_tags_to_default_rules(
                 tenant_id=tenant_id,
                 tag=tags_by_name[tag_name],
                 obj=rule,
+                request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default rules.")
@@ -836,6 +841,7 @@ def add_tags_to_default_filters(
                 tenant_id=tenant_id,
                 tag=tags_by_name[tag_name],
                 obj=filter_obj,
+                request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default filters.")
