@@ -206,10 +206,21 @@ def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: l
 
 def get_address_group_members(actor: User, tenant_id: int, address_group_id: int) -> QuerySet[Address]:
     require_read_tenant(actor, tenant_id)
-    if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
-    return Address.objects.filter(addressgroupmember__group_id=address_group_id)
 
+    allowed_tenant_ids = [tenant_id, 1]
+
+    if not AddressGroup.objects.filter(id=address_group_id, tenant_id__in=allowed_tenant_ids).exists():
+        raise PermissionDenied(
+            f"Address group with ID {address_group_id} does not exist in accessible tenants for tenant {tenant_id}."
+        )
+
+    address_ids = AddressGroupMember.objects.filter(
+        group_id=address_group_id,
+        group__tenant_id__in=allowed_tenant_ids,
+        address__tenant_id__in=allowed_tenant_ids,
+    ).values_list("address_id", flat=True)
+
+    return Address.objects.filter(id__in=address_ids).distinct()
 
 def get_all_addresses_with_certain_tags_from_tenant(
     actor: User, tenant_id: int, tag_names: list[str]
