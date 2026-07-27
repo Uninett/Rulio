@@ -10,6 +10,10 @@
         <tbody id="tags-table">
             {% for row in tags.rows %}
             {% include "partials/objects/_tableRow.html" with row=row headers=tags.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ tags.headers|length }}">No tags found.</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>

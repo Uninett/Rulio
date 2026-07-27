@@ -10,6 +10,10 @@
         <tbody id="services-table">
             {% for row in services.rows %}
             {% include "partials/objects/_tableRow.html" with row=row headers=services.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ services.headers|length }}">No services found.</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>

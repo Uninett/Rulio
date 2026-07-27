@@ -10,6 +10,10 @@
         <tbody id="addresses-table">
             {% for row in addresses.rows %}
             {% include "partials/objects/_tableRow.html" with row=row headers=addresses.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ addresses.headers|length }}">No addresses found.</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
