@@ -9,6 +9,7 @@ from backend.objects.attributes.address_group_member import AddressGroupMember
 
 from backend.services.helper_user_tenant import require_read_tenant
 from backend.utils.logger import set_up_logger
+from constants import GLOBAL_TENANT_ID
 
 
 # Setup logger
@@ -21,8 +22,8 @@ def get_address_groups_and_addresses_from_tenant(
     require_read_tenant(actor, tenant_id)
 
     if include_global_tenant:
-        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1])
-        addresses = Address.objects.filter(tenant_id__in=[tenant_id, 1])
+        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+        addresses = Address.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
     else:
         address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
         addresses = Address.objects.filter(tenant_id=tenant_id)
@@ -40,8 +41,8 @@ def get_address_groups_and_addresses_from_tenant(
         group_map[group.id] = group_dict
 
     memberships = AddressGroupMember.objects.filter(
-        group__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
-        address__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
+        group__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id],
+        address__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id],
     ).select_related("group", "address")
 
     for membership in memberships:
@@ -72,7 +73,9 @@ def get_all_addresss_groups_with_tags_from_tenant(
 ) -> tuple[list[dict], QuerySet[AddressGroup]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
-        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related(
+            "tag_objects__tag"
+        )
     else:
         address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
@@ -102,15 +105,19 @@ def get_all_addresses_and_groups_with_tags_from_tenant(
 ) -> tuple[list[dict], QuerySet[Address], QuerySet[AddressGroup]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
-        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
-        addresses = Address.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+        address_groups = AddressGroup.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related(
+            "tag_objects__tag"
+        )
+        addresses = Address.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related(
+            "tag_objects__tag"
+        )
     else:
         address_groups = AddressGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
         addresses = Address.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     memberships = AddressGroupMember.objects.filter(
-        group__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
-        address__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
+        group__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id],
+        address__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id],
     ).select_related("group", "address")
 
     addresses_by_group = {}
@@ -206,9 +213,21 @@ def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: l
 
 def get_address_group_members(actor: User, tenant_id: int, address_group_id: int) -> QuerySet[Address]:
     require_read_tenant(actor, tenant_id)
-    if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
-    return Address.objects.filter(addressgroupmember__group_id=address_group_id)
+
+    allowed_tenant_ids = [tenant_id, GLOBAL_TENANT_ID]
+
+    if not AddressGroup.objects.filter(id=address_group_id, tenant_id__in=allowed_tenant_ids).exists():
+        raise PermissionDenied(
+            f"Address group with ID {address_group_id} does not exist in accessible tenants for tenant {tenant_id}."
+        )
+
+    address_ids = AddressGroupMember.objects.filter(
+        group_id=address_group_id,
+        group__tenant_id__in=allowed_tenant_ids,
+        address__tenant_id__in=allowed_tenant_ids,
+    ).values_list("address_id", flat=True)
+
+    return Address.objects.filter(id__in=address_ids).distinct()
 
 
 def get_all_addresses_with_certain_tags_from_tenant(

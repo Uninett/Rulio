@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
-
+from constants import GLOBAL_TENANT_ID
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.utils.logger import set_up_logger
@@ -72,7 +72,7 @@ def get_user_modal_context(object_data=None, selected_permissions=None, error_me
         "object_data": object_data or {},
         "tenant_options": [
             {"id": tenant.id, "name": tenant.tenant_name}
-            for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
+            for tenant in Tenant.objects.exclude(id=GLOBAL_TENANT_ID).order_by("tenant_name")
         ],
         "selected_permissions": selected_permissions or [],
         "selected_group_ids": [],

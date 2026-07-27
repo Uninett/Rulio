@@ -8,6 +8,7 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.service import Service
 from backend.services.helper_user_tenant import require_read_tenant
 from backend.utils.logger import set_up_logger
+from constants import GLOBAL_TENANT_ID
 
 
 # Setup logger
@@ -25,10 +26,12 @@ def get_service_groups_and_services_from_tenant(
 ) -> list[dict] | tuple[QuerySet[Service], QuerySet[ServiceGroup]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
-        service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, 1])
+        service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
     else:
         service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
-    services = Service.objects.filter(tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id])
+    services = Service.objects.filter(
+        tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id]
+    )
 
     result = []
     group_map = {}
@@ -43,8 +46,8 @@ def get_service_groups_and_services_from_tenant(
         group_map[group.id] = group_dict
 
     memberships = ServiceGroupMember.objects.filter(
-        group__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
-        service__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
+        group__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id],
+        service__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id],
     ).select_related("group", "service")
 
     for membership in memberships:
@@ -70,15 +73,19 @@ def get_all_services_and_groups_with_tags_from_tenant(
 ) -> tuple[list[dict], QuerySet[Service], QuerySet[ServiceGroup]]:
     require_read_tenant(actor, tenant_id)
     if include_global_tenant:
-        service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
-        services = Service.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("tag_objects__tag")
+        service_groups = ServiceGroup.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related(
+            "tag_objects__tag"
+        )
+        services = Service.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related(
+            "tag_objects__tag"
+        )
     else:
         service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
         services = Service.objects.filter(tenant_id=tenant_id).prefetch_related("tag_objects__tag")
 
     memberships = ServiceGroupMember.objects.filter(
-        group__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
-        service__tenant_id__in=[tenant_id, 1] if include_global_tenant else [tenant_id],
+        group__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id],
+        service__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID] if include_global_tenant else [tenant_id],
     ).select_related("group", "service")
 
     services_by_group = {}
@@ -162,9 +169,21 @@ def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: li
 
 def get_service_group_members(actor: User, tenant_id: int, service_group_id: int) -> QuerySet[Service]:
     require_read_tenant(actor, tenant_id)
-    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
-    return Service.objects.filter(servicegroupmember__group_id=service_group_id)
+
+    allowed_tenant_ids = [tenant_id, GLOBAL_TENANT_ID]
+
+    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id__in=allowed_tenant_ids).exists():
+        raise PermissionDenied(
+            f"Service group with ID {service_group_id} does not exist in accessible tenants for tenant {tenant_id}."
+        )
+
+    service_ids = ServiceGroupMember.objects.filter(
+        group_id=service_group_id,
+        group__tenant_id__in=allowed_tenant_ids,
+        service__tenant_id__in=allowed_tenant_ids,
+    ).values_list("service_id", flat=True)
+
+    return Service.objects.filter(id__in=service_ids).distinct()
 
 
 def get_all_services_with_certain_tags_from_tenant(
