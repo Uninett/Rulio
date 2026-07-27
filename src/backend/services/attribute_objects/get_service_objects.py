@@ -162,9 +162,21 @@ def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: li
 
 def get_service_group_members(actor: User, tenant_id: int, service_group_id: int) -> QuerySet[Service]:
     require_read_tenant(actor, tenant_id)
-    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id=tenant_id).exists():
-        raise PermissionDenied(f"Service group with ID {service_group_id} does not exist in tenant {tenant_id}.")
-    return Service.objects.filter(servicegroupmember__group_id=service_group_id)
+
+    allowed_tenant_ids = [tenant_id, 1]
+
+    if not ServiceGroup.objects.filter(id=service_group_id, tenant_id__in=allowed_tenant_ids).exists():
+        raise PermissionDenied(
+            f"Service group with ID {service_group_id} does not exist in accessible tenants for tenant {tenant_id}."
+        )
+
+    service_ids = ServiceGroupMember.objects.filter(
+        group_id=service_group_id,
+        group__tenant_id__in=allowed_tenant_ids,
+        service__tenant_id__in=allowed_tenant_ids,
+    ).values_list("service_id", flat=True)
+
+    return Service.objects.filter(id__in=service_ids).distinct()
 
 
 def get_all_services_with_certain_tags_from_tenant(
