@@ -57,7 +57,7 @@ def get_tags_view(request):
             "rows": [],
         }
 
-    headers = ["Name", "Description"]
+    headers = ["Name", "Description", ""]
 
     rows = []
 

@@ -134,7 +134,7 @@ def get_addresses_view(request):
     addresses = sorted(addresses, key=lambda a: (getattr(a, "name", "") or "").lower())
     address_groups = sorted(address_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
 
-    headers = ["Type", "Name", "Description", "IPv4", "IPv6", "Tags"]
+    headers = ["Type", "Name", "Description", "IPv4", "IPv6", "Tags", ""]
     rows = []
 
     for address_group in address_groups:
@@ -398,7 +398,15 @@ def post_address_view(request):
         ],
     }
 
-    return render(request, "partials/objects/_tableRow.html", {"row": row})
+    return render(
+        request,
+        "partials/objects/_tableRow.html",
+        {
+            "row": row,
+            "headers": ["Type", "Name", "Description", "IPv4", "IPv6", "Tags", ""],
+            "object_type": "addresses",
+        },
+    )
 
 
 # Handles updating an existing address from modal form submission.

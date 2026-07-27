@@ -77,7 +77,7 @@ def get_services_view(request):
     services = sorted(services, key=lambda s: (getattr(s, "name", "") or "").lower())
     service_groups = sorted(service_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
 
-    headers = ["Type", "Name", "Description", "Protocol", "Port Start", "Port End", "Tags"]
+    headers = ["Type", "Name", "Description", "Protocol", "Port Start", "Port End", "Tags", ""]
 
     rows = []
 
@@ -246,7 +246,15 @@ def post_service_view(request):
         "raw": created_service,
     }
 
-    return render(request, "partials/objects/_tableRow.html", {"row": row})
+    return render(
+        request,
+        "partials/objects/_tableRow.html",
+        {
+            "row": row,
+            "headers": ["Type", "Name", "Description", "Protocol", "Port Start", "Port End", "Tags", ""],
+            "object_type": "services",
+        },
+    )
 
 
 # Handles updating an existing service from modal form submission.
