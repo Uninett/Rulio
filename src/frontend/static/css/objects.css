@@ -12,6 +12,7 @@ Objects Table Container
     overflow-x: hidden;
     background-color: #ffffff;
     position: relative;
+    border-radius: 0.5rem;
 }
 
 .objects-table-container table {
@@ -100,7 +101,7 @@ Objects Cells
 .objects-table .first-column-cell::before {
     content: "";
     position: absolute;
-    left: 0;
+    left: 0.4rem;
     top: 0.2rem;
     bottom: 0.2rem;
     width: 3px;
