@@ -1,5 +1,4 @@
 import copy
-import logging
 import pytest
 
 from backend.services.config_generation.generate_config import (
@@ -47,13 +46,15 @@ class TestGenerateConfig:
             vendor_policy = copy.deepcopy(policy)
             vendor_policy.set_vendor(vendor, target_spec)
 
-            config = generate_config(vendor_policy)
-            generated_text = self._extract_generated_text(config)
+            result = generate_config(vendor_policy)
+            assert result.success, [error.message for error in result.errors]
+
+            generated_text = self._extract_generated_text(result.config)
 
             filepath = TEST_LOGPATH / output_subdir / f"{vendor.upper()}_{output_prefix}_generated_config.txt"
             filedir = TEST_LOGPATH / output_subdir
             write_configuration_to_file(
-                config,
+                result.config,
                 filepath,
                 filedir,
                 vendor,
@@ -197,13 +198,15 @@ class TestGenerateConfig:
             for policy in vendor_policies:
                 policy.set_vendor(vendor, target_spec)
 
-            config = generate_multi_policy_config(vendor_policies)
-            generated_text = self._extract_generated_text(config)
+            result = generate_multi_policy_config(vendor_policies)
+            assert result.success, [error.message for error in result.errors]
+
+            generated_text = self._extract_generated_text(result.config)
 
             filepath = TEST_LOGPATH / "multi" / f"{vendor.upper()}_multi_generated_config.txt"
             filedir = TEST_LOGPATH / "multi"
             write_configuration_to_file(
-                config,
+                result.config,
                 filepath,
                 filedir,
                 vendor,
@@ -220,11 +223,13 @@ class TestGenerateConfig:
         assert merged_policy is not None
         assert len(merged_policy.YAMLConfig["filters"]) == len(built_interface_policies)
 
-        config = generate_config(merged_policy)
-        generated_text = self._extract_generated_text(config)
+        result = generate_config(merged_policy)
+        assert result.success, [error.message for error in result.errors]
+
+        generated_text = self._extract_generated_text(result.config)
 
         write_configuration_to_file(
-            config,
+            result.config,
             TEST_LOGPATH / "merged" / "MERGED_generated_config.txt",
             TEST_LOGPATH / "merged",
             merged_policy.vendor,
@@ -235,13 +240,16 @@ class TestGenerateConfig:
 
         assert generated_text
 
-    def test_shading_check(self, built_shading_policy, caplog):
-        caplog.set_level(logging.WARNING)
+    def test_shading_check(self, built_shading_policy):
+        result = generate_config(built_shading_policy)
 
-        config = generate_config(built_shading_policy)
+        assert result.success, [error.message for error in result.errors]
 
-        assert config is not None
+        shading_warnings = [warning for warning in result.warnings if warning.code == "shading"]
+
+        assert shading_warnings, f"Expected shading warning, got: {result.warnings}"
+        assert any("is shaded by" in warning.message for warning in shading_warnings)
         assert any(
-            record.levelno == logging.WARNING and "is shaded by" in record.message
-            for record in caplog.records
-        ), f"Expected shading warning to be logged, got: {[record.message for record in caplog.records]}"
+            warning.term_name is not None and warning.shaded_by_name is not None
+            for warning in shading_warnings
+        )
