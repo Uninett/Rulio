@@ -107,6 +107,10 @@ Objects Cells
     background-color: #D1CDFF;
 }
 
+.objects-table .group-row .first-column-cell::before {
+    background-color: #7351FB;
+}
+
 .objects-table .cell-text {
     display: block;
     width: 100%;
