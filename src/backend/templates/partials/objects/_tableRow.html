@@ -7,7 +7,7 @@
     <td class="actions-column">
         <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.id %}" hx-target="#modal-container"
             hx-swap="innerHTML" onclick="event.stopPropagation()">
-            <img class="btn-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
+            <img class="btn-icon actions-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
         </button>
     </td>
 </tr>

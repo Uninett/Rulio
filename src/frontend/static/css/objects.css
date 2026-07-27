@@ -181,7 +181,7 @@ Objects Tags
     display: inline-block;
     padding: 0.1rem 0.5rem;
     height: auto;
-    font-size: smaller;
+    font-size: inherit;
 }
 
 .objects-table .tag-list-container {
@@ -196,7 +196,7 @@ Objects Tags
     color: black;
     border-radius: 20px;
     display: inline-block;
-    font-size: smaller;
+    font-size: inherit;
     width: auto;
     padding-left: 0.4rem;
     padding-right: 0.4rem;
@@ -210,7 +210,7 @@ Objects Tags
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-size: smaller;
+    font-size: inherit;
 }
 
 @media (min-width: 2000px) {

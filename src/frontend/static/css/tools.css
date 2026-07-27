@@ -80,17 +80,3 @@ Add Button
     align-items: center;
     gap: 0.5rem;
 }
-
-
-/*
-====================================================================
-Button Icon
-====================================================================
-*/
-
-.btn-icon {
-    width: 1rem;
-    height: 1rem;
-    object-fit: contain;
-    flex-shrink: 0;
-}
