@@ -13,6 +13,95 @@ document.addEventListener("click", function (event) {
     button.classList.add("active"); // Marks the clicked button as active.
 });
 
+(function () {
+    let activeDrag = null;
+    let suppressBackdropClick = false;
+
+    function makeModalDraggable(modalId, headerId) {
+        const modal = document.getElementById(modalId);
+        const header = document.getElementById(headerId);
+
+        if (!modal || !header || header.dataset.dragBound === 'true') return;
+        header.dataset.dragBound = 'true';
+
+        header.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const rect = modal.getBoundingClientRect();
+
+            activeDrag = {
+                modal,
+                offsetX: e.clientX - rect.left,
+                offsetY: e.clientY - rect.top
+            };
+
+            modal.style.left = `${rect.left}px`;
+            modal.style.top = `${rect.top}px`;
+            modal.style.transform = 'none';
+
+            document.body.style.userSelect = 'none';
+        });
+
+        header.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+    }
+
+    document.addEventListener('mousemove', function (e) {
+        if (!activeDrag) return;
+
+        const { modal, offsetX, offsetY } = activeDrag;
+        const rect = modal.getBoundingClientRect();
+
+        let newLeft = e.clientX - offsetX;
+        let newTop = e.clientY - offsetY;
+
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        newTop = Math.max(0, Math.min(newTop, maxTop));
+
+        modal.style.left = `${newLeft}px`;
+        modal.style.top = `${newTop}px`;
+
+        suppressBackdropClick = true;
+    });
+
+    document.addEventListener('mouseup', function () {
+        if (!activeDrag) return;
+
+        activeDrag = null;
+        document.body.style.userSelect = '';
+
+        setTimeout(() => {
+            suppressBackdropClick = false;
+        }, 0);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!suppressBackdropClick) return;
+
+        const backdrop = e.target.closest('.modal-backdrop');
+        if (backdrop) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+
+    function initDraggableModal() {
+        makeModalDraggable('draggable-modal', 'draggable-modal-header');
+    }
+
+    document.addEventListener('DOMContentLoaded', initDraggableModal);
+    document.addEventListener('htmx:afterSwap', initDraggableModal);
+
+    window.initDraggableModal = initDraggableModal;
+})();
+
 // Close the modal, and ask for confirmation before clearing the modal content.
 function closeModal(event = null) {
     if (event && event.target !== event.currentTarget) return;

@@ -1,7 +1,7 @@
 <div class="modal-backdrop" onclick="closeModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
+    <div id="draggable-modal" class="modal" onclick="event.stopPropagation()">
 
-        <div class="modal-header">
+        <div id="draggable-modal-header" class="modal-header" onclick="event.stopPropagation()">
             <h2>{{ modal_title }}</h2>
         </div>
 
