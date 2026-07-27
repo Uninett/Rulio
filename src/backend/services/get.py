@@ -39,7 +39,8 @@ DJANGO_MODEL_MAPPING = {
 
 def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[dict]:
     require_read_tenant(actor, tenant_id)
-    rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("matches")
+    allowed_tenant_ids = [tenant_id, GLOBAL_TENANT_ID]
+    rules = Rule.objects.filter(tenant_id__in=allowed_tenant_ids).prefetch_related("matches")
     result = []
     for rule in rules:
         rule_dict = {
