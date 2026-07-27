@@ -5,6 +5,7 @@ from backend.objects.filters.rule import Rule
 from backend.services.attribute_objects.get_address_objects import get_address_group_members
 from backend.services.attribute_objects.get_service_objects import get_service_group_members
 from backend.views.session import get_tenant_context
+from django.urls import reverse
 
 from backend.services.get import get_filters_with_rules_with_tags_from_tenant, get_all_rules_with_objects_from_filter
 
@@ -36,10 +37,7 @@ def get_rule_page(request):
 def get_rules_view(request):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
-        return {
-            "headers": [],
-            "rows": [],
-        }
+        return {"headers": [], "rows": []}
 
     tenant_id = int(tenant_id)
 
@@ -59,10 +57,7 @@ def get_rules_view(request):
 
     filter_id = request.GET.get("filter_id")
     if not filter_id:
-        return {
-            "headers": headers,
-            "rows": [],
-        }
+        return {"headers": headers, "rows": []}
 
     try:
         rules = get_all_rules_with_objects_from_filter(
@@ -72,10 +67,7 @@ def get_rules_view(request):
         )
     except Exception as e:
         print(f"Error fetching rules with objects for filter {filter_id}: {e}")
-        return {
-            "headers": headers,
-            "rows": [],
-        }
+        return {"headers": headers, "rows": []}
 
     rows = []
 
@@ -87,51 +79,38 @@ def get_rules_view(request):
             print(f"Error fetching tags for rule {rule['rule_id']}: {e}")
             rule_tag_names = []
 
-        address_source = []
-        address_destination = []
-        services = []
+        source_objects = []
+        destination_objects = []
+        service_objects = []
 
-        try:
-            for obj in rule["objects"]:
-                object_type = (obj.get("object_type") or "").lower()
+        for obj in rule["objects"]:
+            object_type = (obj.get("object_type") or "").lower()
+            object_id = obj.get("object_id")
+            object_name = obj.get("object_name") or ""
+            row_id = f"{object_type}-{object_id}" if object_type and object_id else ""
 
-                match object_type:
-                    case "address":
-                        if obj["match_type"] == "source":
-                            address_source.append(obj["object_name"])
-                        elif obj["match_type"] == "destination":
-                            address_destination.append(obj["object_name"])
+            navigate_url = ""
+            if object_type in ["address", "addressgroup"]:
+                navigate_url = reverse("objects") + f"?object_type=addresses&expand_id={row_id}"
+            elif object_type in ["service", "servicegroup"]:
+                navigate_url = reverse("objects") + f"?object_type=services&expand_id={row_id}"
 
-                    case "service":
-                        services.append(obj["object_name"])
+            item = {
+                "name": object_name,
+                "row_id": row_id,
+                "navigate_url": navigate_url,
+                "hover_text": object_name,
+            }
 
-                    case "addressgroup":
-                        if obj["match_type"] == "source":
-                            addresses = get_address_group_members(
-                                request.user,
-                                tenant_id,
-                                obj["object_id"],
-                            )
-                            address_source.extend([address.name for address in addresses])
+            match object_type:
+                case "address" | "addressgroup":
+                    if obj["match_type"] == "source":
+                        source_objects.append(item)
+                    elif obj["match_type"] == "destination":
+                        destination_objects.append(item)
 
-                        elif obj["match_type"] == "destination":
-                            addresses = get_address_group_members(
-                                request.user,
-                                tenant_id,
-                                obj["object_id"],
-                            )
-                            address_destination.extend([address.name for address in addresses])
-
-                    case "servicegroup":
-                        servicegroup = get_service_group_members(
-                            request.user,
-                            tenant_id,
-                            obj["object_id"],
-                        )
-                        services.extend([service.name for service in servicegroup])
-
-        except Exception as e:
-            print(f"Error fetching objects for rule {rule['rule_id']}: {e}")
+                case "service" | "servicegroup":
+                    service_objects.append(item)
 
         rows.append(
             {
@@ -139,15 +118,15 @@ def get_rules_view(request):
                 "is_group": False,
                 "cells": [
                     rule["rule_name"],
-                    address_source,
-                    address_destination,
-                    services,
+                    source_objects,
+                    destination_objects,
+                    service_objects,
                     rule["rule_action"],
                     rule["rule_log_type"],
-                    rule["rule_hit_count"],
+                    str(rule["rule_hit_count"]),
                     rule["rule_description"] or "",
-                    rule["rule_date_created"] or "",
-                    rule["rule_date_changed"] or "",
+                    rule["rule_date_created"].strftime("%Y-%m-%d %H:%M") if rule["rule_date_created"] else "",
+                    rule["rule_date_changed"].strftime("%Y-%m-%d %H:%M") if rule["rule_date_changed"] else "",
                     rule_tag_names,
                 ],
             }

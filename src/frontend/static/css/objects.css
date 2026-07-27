@@ -412,3 +412,18 @@ Rules table layout
 .rules-table th {
     vertical-align: top;
 }
+
+.rule-object-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+}
+
+.rule-object-item {
+    display: block;
+    width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
