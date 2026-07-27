@@ -1,5 +1,5 @@
-<section class="table-container">
-    <table>
+<section class="objects-table-container table-container">
+    <table class="objects-table">
         <thead>
             <tr>
                 {% for header in addresses.headers %}
@@ -9,7 +9,7 @@
         </thead>
         <tbody id="addresses-table">
             {% for row in addresses.rows %}
-            {% include "partials/objects/_tableRow.html" with row=row headers=headers%}
+            {% include "partials/objects/_tableRow.html" with row=row headers=addresses.headers %}
             {% endfor %}
         </tbody>
     </table>
