@@ -1,4 +1,5 @@
 import copy
+import logging
 import pytest
 
 from backend.services.config_generation.generate_config import (
@@ -233,3 +234,14 @@ class TestGenerateConfig:
         )
 
         assert generated_text
+
+    def test_shading_check(self, built_shading_policy, caplog):
+        caplog.set_level(logging.WARNING)
+
+        config = generate_config(built_shading_policy)
+
+        assert config is not None
+        assert any(
+            record.levelno == logging.WARNING and "is shaded by" in record.message
+            for record in caplog.records
+        ), f"Expected shading warning to be logged, got: {[record.message for record in caplog.records]}"

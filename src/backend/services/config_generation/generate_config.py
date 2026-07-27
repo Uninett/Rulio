@@ -768,7 +768,7 @@ def generate_config(policy: Policy) -> str:
 
     definitions.ParseDefinitionsObject(definitions_obj, policy.name)
 
-    configs = aerleon_api.Generate([policy.YAMLConfig], definitions)
+    configs = aerleon_api.Generate([policy.YAMLConfig], definitions, shade_check=True)
     return configs
 
 
@@ -793,5 +793,5 @@ def generate_multi_policy_config(policies: list[Policy], name: str = None) -> st
 
     definitions.ParseDefinitionsObject(definitions_obj, merged_policy.name)
 
-    configs = aerleon_api.Generate([merged_policy.YAMLConfig], definitions)
+    configs = aerleon_api.Generate([merged_policy.YAMLConfig], definitions, shade_check=True)
     return configs
