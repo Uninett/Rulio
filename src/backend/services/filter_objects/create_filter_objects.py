@@ -78,6 +78,7 @@ def get_or_create_rule(
     log_type: str,
     hit_count: int,
     rule_sequence: int,
+    request_type: str | None = "standard",
 ) -> tuple[Rule, bool]:
     require_write_tenant(actor, tenant_id)
     rule, created = Rule.objects.get_or_create(
@@ -100,9 +101,11 @@ def get_or_create_rule(
     if created:
         rule.full_clean()
         update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule_sequence)
-        logger.info(f"Created {rule} for tenant={rule.tenant_id}")
+        if request_type != "seeding":
+            logger.info(f"Created {rule} for tenant={rule.tenant_id}")
     else:
-        logger.info(f"Found existing {rule} for tenant={rule.tenant_id}")
+        if request_type != "seeding":
+            logger.info(f"Found existing {rule} for tenant={rule.tenant_id}")
     return rule, created
 
 
@@ -137,6 +140,7 @@ def get_or_create_filter(
     tenant_id: int,
     name: str,
     description: str,
+    request_type: str | None = "standard",
 ) -> tuple[Filter, bool]:
     require_write_tenant(actor, tenant_id)
     filter_obj, created = Filter.objects.get_or_create(
@@ -148,9 +152,11 @@ def get_or_create_filter(
     )
     if created:
         filter_obj.full_clean()
-        logger.info(f"Created {filter_obj} for tenant={filter_obj.tenant_id}")
+        if request_type != "seeding":
+            logger.info(f"Created {filter_obj} for tenant={filter_obj.tenant_id}")
     else:
-        logger.info(f"Found existing {filter_obj} for tenant={filter_obj.tenant_id}")
+        if request_type != "seeding":
+            logger.info(f"Found existing {filter_obj} for tenant={filter_obj.tenant_id}")
     return filter_obj, created
 
 

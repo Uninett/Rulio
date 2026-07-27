@@ -160,6 +160,7 @@ def seed_tags(actor: User, tenant_id: int) -> tuple[int, list[Tag]]:
                 tenant_id=tenant_id,
                 name=tag_data["name"],
                 description=tag_data["description"],
+                request_type="seeding",
             )
         )
         created_count += 1
@@ -167,9 +168,9 @@ def seed_tags(actor: User, tenant_id: int) -> tuple[int, list[Tag]]:
     if created_count == len(default_tags):
         logger.info("All default tags were created. No duplicates existed.")
     elif created_count > 0:
-        logger.warning("Some default tags already existed. Missing tags were created.")
+        logger.info("Some default tags already existed. Missing tags were created.")
     else:
-        logger.warning("No default tags were created because they already all existed.")
+        logger.info("No default tags were created because they already all existed.")
 
     return len(default_tags), created_tags
 
@@ -247,6 +248,7 @@ def add_tags_to_default_addresses(
                 tenant_id=tenant_id,
                 tag=tags_by_name[tag_name],
                 obj=address,
+                request_type="seeding",
             )
 
     logger.info("Added tags to all seeded default addresses.")
@@ -354,10 +356,7 @@ def add_tags_to_default_services(
         service = services_by_name[service_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=service,
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=service, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default services.")
@@ -440,10 +439,7 @@ def add_tags_to_default_address_groups(
         address_group = address_groups_by_name[address_group_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=address_group,
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=address_group, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default address groups.")
@@ -573,10 +569,7 @@ def add_tags_to_default_service_groups(
         service_group = service_groups_by_name[service_group_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=service_group,
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=service_group, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default service groups.")
@@ -760,10 +753,7 @@ def add_tags_to_default_rules(
         rule = rules_by_name[rule_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=rule,
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=rule, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default rules.")
@@ -832,10 +822,7 @@ def add_tags_to_default_filters(
         filter_obj = filters_by_name[filter_name]
         for tag_name in tag_names:
             add_tag_to_object(
-                actor=actor,
-                tenant_id=tenant_id,
-                tag=tags_by_name[tag_name],
-                obj=filter_obj,
+                actor=actor, tenant_id=tenant_id, tag=tags_by_name[tag_name], obj=filter_obj, request_type="seeding"
             )
 
     logger.info("Added tags to all seeded default filters.")

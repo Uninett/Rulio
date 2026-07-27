@@ -63,7 +63,9 @@ def add_service_to_group(actor: User, tenant_id: int, service_group_id: int, ser
     )
 
 
-def add_addresses_to_group(actor: User, tenant_id: int, address_group_id: int, address_ids: list[int]) -> dict:
+def add_addresses_to_group(
+    actor: User, tenant_id: int, address_group_id: int, address_ids: list[int], request_type: str | None = "standard"
+) -> dict:
     require_write_tenant(actor, tenant_id)
 
     if not AddressGroup.objects.filter(id=address_group_id, tenant_id=tenant_id).exists():
@@ -110,14 +112,14 @@ def add_addresses_to_group(actor: User, tenant_id: int, address_group_id: int, a
     returned_already_present_address_ids = [
         address_id for address_id in address_ids if address_id in (set(address_ids) - set(added_address_ids))
     ]
-
-    logger.info(
-        "Group %s: added=%s, already_present=%s, not_found=%s",
-        address_group.id,
-        added_address_ids,
-        returned_already_present_address_ids,
-        [],
-    )
+    if request_type != "seeding":
+        logger.info(
+            "Group %s: added=%s, already_present=%s, not_found=%s",
+            address_group.id,
+            added_address_ids,
+            returned_already_present_address_ids,
+            [],
+        )
 
     return {
         "address_group_id": address_group.id,
@@ -146,7 +148,9 @@ def remove_address_from_group(actor: User, tenant_id: int, address_group_id: int
         logger.warning(f"Address id={address_id} is not a member of address group id={address_group_id}.")
 
 
-def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, service_ids: list[int]) -> dict:
+def add_services_to_group(
+    actor: User, tenant_id: int, service_group_id: int, service_ids: list[int], request_type: str | None = "standard"
+) -> dict:
     """
     Adds a list of services to a service group.
 
@@ -198,13 +202,14 @@ def add_services_to_group(actor: User, tenant_id: int, service_group_id: int, se
             added_service_ids.append(service_id)
             existing_member_ids.add(service_id)
 
-    logger.info(
-        "Group %s: added=%s, already_present=%s, not_found=%s",
-        service_group_id,
-        added_service_ids,
-        already_present_service_ids,
-        [],
-    )
+    if request_type != "seeding":
+        logger.info(
+            "Group %s: added=%s, already_present=%s, not_found=%s",
+            service_group_id,
+            added_service_ids,
+            already_present_service_ids,
+            [],
+        )
 
     return {
         "service_group_id": service_group_id,
@@ -234,12 +239,7 @@ def remove_service_from_group(actor: User, tenant_id: int, service_group_id: int
 
 
 def add_objects_to_rule(
-    *,
-    actor: User,
-    tenant_id: int,
-    rule_id: int,
-    match_type: str,
-    objects: list,
+    *, actor: User, tenant_id: int, rule_id: int, match_type: str, objects: list, request_type: str | None = "standard"
 ):
     require_write_tenant(actor, tenant_id)
     if not Rule.objects.filter(id=rule_id, tenant_id=tenant_id).exists():
@@ -271,7 +271,8 @@ def add_objects_to_rule(
             )
 
             if created:
-                logger.info(f"Created RuleMatch: {rule_match}")
+                if request_type != "seeding":
+                    logger.info(f"Created RuleMatch: {rule_match}")
                 added.append(
                     {
                         "object_id": obj.id,
@@ -280,7 +281,8 @@ def add_objects_to_rule(
                     }
                 )
             else:
-                logger.warning(f"RuleMatch already exists: {rule_match}")
+                if request_type != "seeding":
+                    logger.info(f"RuleMatch already exists: {rule_match}")
                 already_exists.append(
                     {
                         "object_id": obj.id,
@@ -367,7 +369,7 @@ def add_filter_to_interface(
         filter_interface.policy_sequence = policy_sequence
         filter_interface.enable = enable
         filter_interface.save()
-        logger.warning(
+        logger.info(
             f"Updated Filter {filter.id} on Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}"
         )
     else:
@@ -416,14 +418,16 @@ def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, d
     }
 
 
-def add_tag_to_object(*, actor: User, tenant_id: int, tag: Tag, obj: object):
+def add_tag_to_object(*, actor: User, tenant_id: int, tag: Tag, obj: object, request_type: str | None = "standard"):
     require_write_tenant(actor, tenant_id)
     if not Tag.objects.filter(id=tag.id, tenant_id=tenant_id).exists() and not is_superadmin(actor):
         raise PermissionDenied(f"Tag with ID {tag.id} does not exist in tenant {tenant_id}.")
     if TagConnection.objects.filter(
         tag=tag, content_type=ContentType.objects.get_for_model(obj), object_id=obj.id
     ).exists():
-        logger.warning(f"Tag {tag.id} is already associated with object {obj}.")
+        if request_type != "seeding":
+            logger.info(f"Tag {tag.id} is already associated with object {obj}.")
         return
     TagConnection.objects.create(tag=tag, content_object=obj)
-    logger.info(f"Added tag {tag.id} to object {obj}.")
+    if request_type != "seeding":
+        logger.info(f"Added tag {tag.id} to object {obj}.")

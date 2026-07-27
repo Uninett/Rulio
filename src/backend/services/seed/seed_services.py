@@ -15,6 +15,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="ICMP_RFC792",
             description="Internet Control Message Protocol for IPv4 diagnostic and error reporting messages, as defined by RFC792.",
             protocol="icmp",
@@ -22,6 +23,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="ICMPv6_RFC4443",
             description="Internet Control Message Protocol for IPv6 diagnostic and error reporting messages, as defined by RFC4443.",
             protocol="icmpv6",
@@ -29,6 +31,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="GRE_RFC2784",
             description="Generic Routing Encapsulation used for tunneling packets across IP networks, as defined by RFC2784.",
             protocol="gre",
@@ -36,6 +39,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="ESP_RFC4303",
             description="Encapsulating Security Payload used by IPsec to provide confidentiality, integrity, and authentication, as defined by RFC4303.",
             protocol="esp",
@@ -43,6 +47,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="AH_RFC4302",
             description="Authentication Header used by IPsec to provide packet integrity and authentication, as defined by RFC4302.",
             protocol="ah",
@@ -50,6 +55,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="IP_RFC791",
             description="Internet Protocol service object that matches any IP protocol, based on IPv4 as defined by RFC791.",
             protocol="ip",
@@ -60,6 +66,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="HTTP_TCP_RFC2616_RFC9110",
             description="Hypertext Transfer Protocol over TCP, as defined by RFC2616 and updated by RFC9110.",
             protocol="tcp",
@@ -69,6 +76,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="HTTPS_TCP_RFC2818_RFC9110",
             description="Hypertext Transfer Protocol Secure over TCP using TLS for encrypted web traffic, as defined by RFC2818 and updated by RFC9110.",
             protocol="tcp",
@@ -78,6 +86,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="HTTP_Alternate_TCP",
             description="Alternate HTTP service commonly used for web proxies and alternate web applications.",
             protocol="tcp",
@@ -87,6 +96,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="HTTPS_Alternate_TCP",
             description="Alternate HTTPS service commonly used for secure web applications and management interfaces.",
             protocol="tcp",
@@ -99,6 +109,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="DNS_UDP_RFC1034_RFC1035",
             description="Domain Name System over UDP, as defined by RFC1034 and RFC1035.",
             protocol="udp",
@@ -108,6 +119,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="DNS_TCP_RFC1034_RFC1035",
             description="Domain Name System over TCP, as defined by RFC1034 and RFC1035.",
             protocol="tcp",
@@ -117,6 +129,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="MDNS_UDP_RFC6762",
             description="Multicast DNS used for local network name resolution, as defined by RFC6762.",
             protocol="udp",
@@ -129,6 +142,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SSH_TCP_RFC4251",
             description="Secure Shell for encrypted remote login and command execution, as defined by RFC4251.",
             protocol="tcp",
@@ -138,6 +152,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Telnet_TCP_RFC854",
             description="Telnet for unencrypted remote terminal access, as defined by RFC854.",
             protocol="tcp",
@@ -147,6 +162,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="RDP_TCP",
             description="Remote Desktop Protocol for graphical remote access to systems.",
             protocol="tcp",
@@ -156,6 +172,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="WinRM_HTTP_TCP",
             description="Windows Remote Management over HTTP for remote administration.",
             protocol="tcp",
@@ -165,6 +182,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="WinRM_HTTPS_TCP",
             description="Windows Remote Management over HTTPS for encrypted remote administration.",
             protocol="tcp",
@@ -177,6 +195,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="FTP_Control_TCP_RFC959",
             description="File Transfer Protocol control channel, as defined by RFC959.",
             protocol="tcp",
@@ -186,6 +205,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="FTP_Data_TCP_RFC959",
             description="File Transfer Protocol data channel, as defined by RFC959.",
             protocol="tcp",
@@ -195,6 +215,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SFTP_TCP",
             description="SSH File Transfer Protocol transported over SSH, commonly used for secure file transfer.",
             protocol="tcp",
@@ -204,6 +225,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="TFTP_UDP_RFC1350",
             description="Trivial File Transfer Protocol, as defined by RFC1350.",
             protocol="udp",
@@ -216,6 +238,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SMTP_TCP_RFC5321",
             description="Simple Mail Transfer Protocol for email transport, as defined by RFC5321.",
             protocol="tcp",
@@ -225,6 +248,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SMTP_Submission_TCP_RFC6409",
             description="Mail submission service for client message submission, as defined by RFC6409.",
             protocol="tcp",
@@ -234,6 +258,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SMTPS_TCP",
             description="Implicit TLS mail submission service for secure email transport.",
             protocol="tcp",
@@ -243,6 +268,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="POP3_TCP_RFC1939",
             description="Post Office Protocol version 3 for email retrieval, as defined by RFC1939.",
             protocol="tcp",
@@ -252,6 +278,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="POP3S_TCP",
             description="Secure Post Office Protocol version 3 for encrypted email retrieval.",
             protocol="tcp",
@@ -261,6 +288,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="IMAP_TCP_RFC3501",
             description="Internet Message Access Protocol for email retrieval and mailbox access, as defined by RFC3501.",
             protocol="tcp",
@@ -270,6 +298,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="IMAPS_TCP",
             description="Secure Internet Message Access Protocol for encrypted mailbox access.",
             protocol="tcp",
@@ -282,6 +311,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="LDAP_TCP_RFC4511",
             description="Lightweight Directory Access Protocol, as defined by RFC4511.",
             protocol="tcp",
@@ -291,6 +321,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="LDAPS_TCP",
             description="Lightweight Directory Access Protocol over TLS for secure directory access.",
             protocol="tcp",
@@ -300,6 +331,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Kerberos_TCP_RFC4120",
             description="Kerberos authentication service over TCP, as defined by RFC4120.",
             protocol="tcp",
@@ -309,6 +341,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Kerberos_UDP_RFC4120",
             description="Kerberos authentication service over UDP, as defined by RFC4120.",
             protocol="udp",
@@ -318,6 +351,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="RADIUS_Auth_UDP_RFC2865",
             description="Remote Authentication Dial-In User Service for authentication, as defined by RFC2865.",
             protocol="udp",
@@ -327,6 +361,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="RADIUS_Acct_UDP_RFC2866",
             description="Remote Authentication Dial-In User Service for accounting, as defined by RFC2866.",
             protocol="udp",
@@ -339,6 +374,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="DHCP_Server_UDP_RFC2131",
             description="Dynamic Host Configuration Protocol server service, as defined by RFC2131.",
             protocol="udp",
@@ -348,6 +384,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="DHCP_Client_UDP_RFC2131",
             description="Dynamic Host Configuration Protocol client service, as defined by RFC2131.",
             protocol="udp",
@@ -357,6 +394,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="NTP_UDP_RFC5905",
             description="Network Time Protocol for time synchronization, as defined by RFC5905.",
             protocol="udp",
@@ -366,6 +404,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SNMP_UDP_RFC3411",
             description="Simple Network Management Protocol for device monitoring and management, as defined by RFC3411.",
             protocol="udp",
@@ -375,6 +414,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SNMP_Trap_UDP_RFC3411",
             description="Simple Network Management Protocol trap service for asynchronous event notifications, as defined by RFC3411.",
             protocol="udp",
@@ -384,6 +424,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Syslog_UDP_RFC5424",
             description="Syslog service for log message transport, as defined by RFC5424.",
             protocol="udp",
@@ -393,6 +434,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Syslog_TCP_RFC6587",
             description="Syslog over TCP for reliable log message transport, as defined by RFC6587.",
             protocol="tcp",
@@ -405,6 +447,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SMB_TCP",
             description="Server Message Block for file and printer sharing in Microsoft networks.",
             protocol="tcp",
@@ -414,6 +457,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="NetBIOS_NS_UDP",
             description="NetBIOS Name Service used for name registration and resolution in legacy Microsoft networks.",
             protocol="udp",
@@ -423,6 +467,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="NetBIOS_DGM_UDP",
             description="NetBIOS Datagram Service used for connectionless communication in legacy Microsoft networks.",
             protocol="udp",
@@ -432,6 +477,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="NetBIOS_SSN_TCP",
             description="NetBIOS Session Service used for session-based communication in legacy Microsoft networks.",
             protocol="tcp",
@@ -441,6 +487,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="NFS_TCP_RFC7530",
             description="Network File System for remote file access, as defined by RFC7530.",
             protocol="tcp",
@@ -450,6 +497,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="NFS_UDP",
             description="Network File System over UDP for remote file access, historically used in some deployments.",
             protocol="udp",
@@ -462,6 +510,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="MySQL_TCP",
             description="MySQL database service for client-server database communication.",
             protocol="tcp",
@@ -471,6 +520,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="PostgreSQL_TCP",
             description="PostgreSQL database service for client-server database communication.",
             protocol="tcp",
@@ -480,6 +530,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="MSSQL_TCP",
             description="Microsoft SQL Server database service for client-server database communication.",
             protocol="tcp",
@@ -492,6 +543,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="IKE_UDP_RFC7296",
             description="Internet Key Exchange used for negotiating IPsec security associations, as defined by RFC7296.",
             protocol="udp",
@@ -501,6 +553,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="IPsec_NAT_T_UDP_RFC3948",
             description="IPsec NAT Traversal service used to carry IPsec traffic through NAT devices, as defined by RFC3948.",
             protocol="udp",
@@ -510,6 +563,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="L2TP_UDP_RFC2661",
             description="Layer Two Tunneling Protocol used for VPN tunneling, as defined by RFC2661.",
             protocol="udp",
@@ -519,6 +573,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="OpenVPN_TCP",
             description="OpenVPN service over TCP for secure remote connectivity.",
             protocol="tcp",
@@ -528,6 +583,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="OpenVPN_UDP",
             description="OpenVPN service over UDP for secure remote connectivity.",
             protocol="udp",
@@ -537,6 +593,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="WireGuard_UDP",
             description="WireGuard VPN service for secure modern tunneling.",
             protocol="udp",
@@ -549,6 +606,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SIP_TCP_RFC3261",
             description="Session Initiation Protocol over TCP for signaling in voice and multimedia sessions, as defined by RFC3261.",
             protocol="tcp",
@@ -558,6 +616,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SIP_UDP_RFC3261",
             description="Session Initiation Protocol over UDP for signaling in voice and multimedia sessions, as defined by RFC3261.",
             protocol="udp",
@@ -567,6 +626,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="SIPS_TCP_RFC3261",
             description="Secure Session Initiation Protocol over TLS for encrypted signaling, as defined by RFC3261.",
             protocol="tcp",
@@ -579,6 +639,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Prometheus_TCP",
             description="Prometheus metrics service commonly used for monitoring and observability.",
             protocol="tcp",
@@ -588,6 +649,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Grafana_TCP",
             description="Grafana web service commonly used for dashboards and observability.",
             protocol="tcp",
@@ -600,6 +662,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Any_TCP",
             description="Matches any TCP port.",
             protocol="tcp",
@@ -609,6 +672,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,
+            request_type="seeding",
             name="Any_UDP",
             description="Matches any UDP port.",
             protocol="udp",
@@ -622,7 +686,7 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
     if all(created_flags):
         logger.info("All default services were created. No duplicates existed.")
     elif any(created_flags):
-        logger.warning("Some default services already existed. Missing services were created.")
+        logger.info("Some default services already existed. Missing services were created.")
     else:
-        logger.warning("No default services were created because they already all existed.")
+        logger.info("No default services were created because they already all existed.")
     return len(default_services), default_services

@@ -21,6 +21,7 @@ def seed_filters(
         tenant_id=tenant_id,
         name="Baseline_Internal_Client_Policy",
         description="Baseline internal client policy allowing common business traffic and denying risky categories.",
+        request_type="seeding",
     )
 
     default_filters.append((filter_1, created_1))
@@ -30,6 +31,7 @@ def seed_filters(
         tenant_id=tenant_id,
         name="Internal_Server_Policy",
         description="Internal server policy allowing management, identity, database, file sharing, and monitoring services for private networks.",
+        request_type="seeding",
     )
 
     default_filters.append((filter_2, created_2))
@@ -39,6 +41,7 @@ def seed_filters(
         tenant_id=tenant_id,
         name="Strict_Egress_Policy",
         description="Strict egress policy for private address space allowing only core infrastructure and web access while denying common risky categories.",
+        request_type="seeding",
     )
 
     default_filters.append((filter_3, created_3))
@@ -50,8 +53,8 @@ def seed_filters(
     if all(created_flags):
         logger.info("All default filters were created. No duplicates existed.")
     elif any(created_flags):
-        logger.warning("Some default filters already existed. Missing filters were created.")
+        logger.info("Some default filters already existed. Missing filters were created.")
     else:
-        logger.warning("No default filters were created because they already all existed.")
+        logger.info("No default filters were created because they already all existed.")
 
     return default_filter_count, default_filters
