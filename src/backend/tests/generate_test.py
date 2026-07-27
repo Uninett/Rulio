@@ -249,7 +249,4 @@ class TestGenerateConfig:
 
         assert shading_warnings, f"Expected shading warning, got: {result.warnings}"
         assert any("is shaded by" in warning.message for warning in shading_warnings)
-        assert any(
-            warning.term_name is not None and warning.shaded_by_name is not None
-            for warning in shading_warnings
-        )
+        assert any(warning.term_name is not None and warning.shaded_by_name is not None for warning in shading_warnings)

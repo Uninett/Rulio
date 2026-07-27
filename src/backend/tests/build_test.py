@@ -68,7 +68,7 @@ class TestBuildPolicyFromObjects:
         assert policy.vendor == "juniper"
         assert policy.target_spec is None
         assert policy.policy_sequence == 10
-        assert policy.warnings == []
+        assert policy.build_warnings == []
 
         yaml_config = policy.YAMLConfig
         assert yaml_config["filename"] == filter_obj.name.replace(" ", "_")
@@ -92,11 +92,14 @@ class TestBuildPolicyFromObjects:
         assert policy.networks["networks"][sample_addresses[0].name]["values"] == ["192.168.1.0/24"]
         assert policy.services["services"] == {}
 
-        config = generate_config(policy)
+        result = generate_config(policy)
+        assert result.success, [error.message for error in result.errors]
+        assert result.config is not None
+
         filepath = TEST_LOGPATH / "build_from_filter" / "JUNIPER_simple_built_policy.yaml"
         filedir = TEST_LOGPATH / "build_from_filter"
         write_configuration_to_file(
-            config,
+            result.config,
             filepath,
             filedir,
             "juniper",
@@ -239,8 +242,8 @@ class TestBuildPolicyFromObjects:
         assert rule_4_tcp["destination-port"] == ["ACL_HTTP", "ACL_HTTPS", "ACL_DNS_TCP"]
         assert rule_4_udp["destination-port"] == ["ACL_DNS_UDP"]
 
-        assert len(policy.warnings) == 2
-        assert all("was split into multiple terms" in warning for warning in policy.warnings)
+        assert len(policy.build_warnings) == 2
+        assert all("was split into multiple terms" in warning for warning in policy.build_warnings)
 
         for address in realistic_acl_addresses:
             assert address.name in policy.networks["networks"]
@@ -250,11 +253,14 @@ class TestBuildPolicyFromObjects:
         for service in realistic_acl_services:
             assert service.name in policy.services["services"]
 
-        config = generate_config(policy)
+        result = generate_config(policy)
+        assert result.success, [error.message for error in result.errors]
+        assert result.config is not None
+
         filepath = TEST_LOGPATH / "build_from_filter" / "JUNIPER_complex_built_policy.yaml"
         filedir = TEST_LOGPATH / "build_from_filter"
         write_configuration_to_file(
-            config,
+            result.config,
             filepath,
             filedir,
             "juniper",
@@ -390,10 +396,16 @@ class TestBuildPolicyFromObjects:
             "udp",
         ]  # Should include both protocols in one term
 
-        config_split = generate_config(policy_split_term)
-        config_single = generate_config(policy_single_term)
+        result_split = generate_config(policy_split_term)
+        assert result_split.success, [error.message for error in result_split.errors]
+        assert result_split.config is not None
+
+        result_single = generate_config(policy_single_term)
+        assert result_single.success, [error.message for error in result_single.errors]
+        assert result_single.config is not None
+
         write_configuration_to_file(
-            config_split,
+            result_split.config,
             TEST_LOGPATH / "build_from_filter" / "JUNIPER_split_term_policy.yaml",
             TEST_LOGPATH / "build_from_filter",
             "juniper",
@@ -402,7 +414,7 @@ class TestBuildPolicyFromObjects:
             log_for_vendors=["juniper"],
         )
         write_configuration_to_file(
-            config_single,
+            result_single.config,
             TEST_LOGPATH / "build_from_filter" / "JUNIPER_single_term_policy.yaml",
             TEST_LOGPATH / "build_from_filter",
             "juniper",
@@ -530,15 +542,16 @@ class TestBuildPolicyFromObjects:
                 yaml.dump(merged_policy.YAMLConfig, sort_keys=False, default_flow_style=False),
             )
 
-            config = generate_multi_policy_config(policies)
-            assert config is not None
-            assert hasattr(config, "keys")
-            assert len(config.keys()) >= 1
+            result = generate_multi_policy_config(policies)
+            assert result.success, [error.message for error in result.errors]
+            assert result.config is not None
+            assert hasattr(result.config, "keys")
+            assert len(result.config.keys()) >= 1
 
             filepath = TEST_LOGPATH / "build_interface" / f"{interface.name}_built_policy.yaml"
             filedir = TEST_LOGPATH / "build_interface"
             write_configuration_to_file(
-                config,
+                result.config,
                 filepath,
                 filedir,
                 device.platform,

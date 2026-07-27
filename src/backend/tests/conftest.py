@@ -553,6 +553,7 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
     ]
     return sample_rules
 
+
 @pytest.fixture
 def shading_filter(request_with_session, create_testing_tenant):
     return create_filter(
@@ -561,6 +562,7 @@ def shading_filter(request_with_session, create_testing_tenant):
         name="Testing_Filter",
         description="This is an empty filter for testing.",
     )
+
 
 @pytest.fixture
 def sample_shading_rules(request_with_session, shading_filter, sample_addresses):
@@ -1232,6 +1234,7 @@ def built_interface_policies(sample_filters, sample_rules_with_objects, request_
         target_spec="",
         direction="in",
     )
+
 
 @pytest.fixture
 def built_shading_policy(shading_filter, sample_shading_rules, request_with_session):

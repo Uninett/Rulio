@@ -938,9 +938,7 @@ def generate_config(policy: Policy) -> ConfigGenerationResult:
     return _generate_from_policy(policy)
 
 
-def generate_multi_policy_config(
-    policies: list[Policy], name: str | None = None
-) -> ConfigGenerationResult:
+def generate_multi_policy_config(policies: list[Policy], name: str | None = None) -> ConfigGenerationResult:
     """
     Generates a configuration for the specified vendor based on the provided list of Policy objects.
 
