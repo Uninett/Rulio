@@ -68,6 +68,11 @@ def get_add_modal_config(object_type):
             "title": "Add Filter",
             "supports_types": False,
             "form_partial": "partials/modals/_filter_form.html",
+            "post_url": reverse("post-filter-view"),
+            "target": "#filters-content",
+            "swap": "innerHTML",
+            "refresh_url": reverse("filters"),
+            "modal_refresh_target": "#filters-content",
         },
         "addresses": {
             "title": "Add Address",

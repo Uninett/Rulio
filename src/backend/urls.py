@@ -53,6 +53,7 @@ from .views.device_groups import (
 
 from .views.filters_page import (
     get_filters_page,
+    post_filter_view,
 )
 
 from .views.objects_page import (
@@ -138,6 +139,7 @@ urlpatterns = [
     path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
+    path("filters/create/", post_filter_view, name="post-filter-view"),
     # Objects Page: Address
     path("objects/", get_objects_page, name="objects"),
     path("objects/addresses/", get_objects_addresses, name="objects-addresses"),
