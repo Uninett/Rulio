@@ -474,7 +474,7 @@ def create_tag(
     return tag
 
 
-def get_or_create_tag(*, actor: User, tenant_id: int, name: str, description: str, request_type: str | None = "standard") -> tuple[Tag, int, bool]:
+def get_or_create_tag(*, actor: User, tenant_id: int, name: str, description: str, request_type: str = "standard") -> tuple[Tag, int, bool]:
 
     require_write_tenant(actor, tenant_id)
 

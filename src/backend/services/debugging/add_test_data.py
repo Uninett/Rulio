@@ -120,7 +120,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
         ipv4Network="192.168.1.0/24",
     )
 
-    tag1, tag1_created = get_or_create_tag(
+    tag1, tag1_id, tag1_created = get_or_create_tag(
         actor=actor, tenant_id=tenant_id, name="web-servers", description="Tag for web servers."
     )
 
@@ -129,7 +129,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
     add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag1, obj=filter1)
     add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag1, obj=address)
 
-    tag2, tag2_created = get_or_create_tag(
+    tag2, tag2_id, tag2_created = get_or_create_tag(
         actor=actor, tenant_id=tenant_id, name="firewalls", description="Tag for firewall devices."
     )
 

@@ -160,6 +160,7 @@ def seed_tags(actor: User, tenant_id: int) -> tuple[int, list[Tag]]:
                 tenant_id=tenant_id,
                 name=tag_data["name"],
                 description=tag_data["description"],
+                request_type="seeding",
             )
         )
         created_count += 1
