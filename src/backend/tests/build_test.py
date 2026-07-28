@@ -423,7 +423,7 @@ class TestBuildPolicyFromObjects:
             log_for_vendors=["juniper"],
         )
 
-    def test_build_policies_for_interface_and_merge(
+    def test_build_policies_for_interface(
         self,
         request_with_session,
         sample_rules_with_objects,
@@ -533,15 +533,6 @@ class TestBuildPolicyFromObjects:
             assert terms_2[1]["protocol"] == "udp"
             assert terms_2[1]["destination-port"] == ["Test_Service2"]
 
-            merged_policy = merge_policies(policies, name=None)
-            assert merged_policy is not None
-            assert len(merged_policy.YAMLConfig["filters"]) == 2
-
-            logger.info(
-                "Generated merged policy YAML:\n%s",
-                yaml.dump(merged_policy.YAMLConfig, sort_keys=False, default_flow_style=False),
-            )
-
             result = generate_multi_policy_config(policies)
             assert result.success, [error.message for error in result.errors]
             assert result.config is not None
@@ -559,3 +550,71 @@ class TestBuildPolicyFromObjects:
                 generated_by="build_test",
                 log_for_vendors=["juniper", "cisco"],
             )
+
+    def test_merge_policies(
+        self,
+        request_with_session,
+        sample_filters,
+        sample_rules_with_objects,
+    ):
+        update_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=sample_rules_with_objects[0].id,
+            filter=sample_filters[0],
+            rule_sequence=1,
+        )
+        update_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=sample_rules_with_objects[2].id,
+            filter=sample_filters[1],
+            rule_sequence=1,
+        )
+        update_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=sample_rules_with_objects[3].id,
+            filter=sample_filters[1],
+            rule_sequence=2,
+        )
+
+        policy_1 = build_policy_from_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=sample_filters[0].id,
+            policy_sequence=10,
+            vendor="juniper",
+            target_spec=None,
+        )
+        policy_2 = build_policy_from_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=sample_filters[1].id,
+            policy_sequence=20,
+            vendor="juniper",
+            target_spec=None,
+        )
+
+        merged_policy = merge_policies([policy_1, policy_2], name=None)
+
+        assert merged_policy is not None
+        assert merged_policy.vendor == "juniper"
+        assert merged_policy.policy_sequence == policy_1.policy_sequence
+
+        merged_filters = merged_policy.YAMLConfig["filters"]
+        assert len(merged_filters) == 2
+
+        assert merged_filters[0]["terms"] == policy_1.YAMLConfig["filters"][0]["terms"]
+        assert merged_filters[1]["terms"] == policy_2.YAMLConfig["filters"][0]["terms"]
+
+        assert merged_filters[0]["header"]["comment"] == policy_1.YAMLConfig["filters"][0]["header"]["comment"]
+        assert merged_filters[1]["header"]["comment"] == policy_2.YAMLConfig["filters"][0]["header"]["comment"]
+
+        assert merged_filters[0]["header"]["targets"] == {"juniper": merged_policy.name}
+        assert merged_filters[1]["header"]["targets"] == {"juniper": merged_policy.name}
+
+        logger.info(
+            "Generated merged policy YAML:\n%s",
+            yaml.dump(merged_policy.YAMLConfig, sort_keys=False, default_flow_style=False),
+        )
