@@ -42,7 +42,11 @@
 
                         {% if row.is_superuser %}
                         <span class="user-role">
-                            <p class="user-superuser">Superuser</p>
+                            <p class="user-admin user-superuser">Superuser</p>
+                        </span>
+                        {% elif row.is_tenant_admin %}
+                        <span class="user-role">
+                            <p class="user-admin user-tenant-admin">Tenant Admin</p>
                         </span>
                         {% endif %}
                     </div>

@@ -35,6 +35,15 @@ def get_users_view(request):
     rows = []
 
     for user in User.objects.all().order_by("username"):
+        is_tenant_admin = (
+            TenantUserMember.objects.filter(
+                user=user,
+                role=TenantUserMember.TenantRole.ADMIN,
+            )
+            .exclude(tenant_id=GLOBAL_TENANT_ID)
+            .exists()
+        )
+
         rows.append(
             {
                 "id": user.id,
@@ -44,6 +53,7 @@ def get_users_view(request):
                 "last_name": user.last_name,
                 "email": user.email,
                 "is_superuser": user.is_superuser,
+                "is_tenant_admin": is_tenant_admin,
                 "last_login": user.last_login,
                 "date_joined": user.date_joined,
             }
