@@ -71,3 +71,78 @@ def get_unused_address_objects(
 
     return unused_addresses, unused_address_groups
         
+def get_unused_service_objects(
+        actor: User, tenant_id: int
+) -> tuple[QuerySet[Service], QuerySet[ServiceGroup]]:
+    """
+    Return service objects owned by the given tenant that are not used in any rules.
+
+    A service is considered used if it is:
+    - directly referenced by a RuleMatch, or
+    - included in a service group owned by the same tenant, where that group
+        is referenced by a RuleMatch.
+    """
+    require_read_tenant(actor, tenant_id)
+
+    service_ct = ContentType.objects.get_for_model(Service)
+    service_group_ct = ContentType.objects.get_for_model(ServiceGroup)
+
+    used_service_matches = RuleMatch.objects.filter(
+        object_type=service_ct,
+        object_id=OuterRef("pk"),
+    )
+
+    used_service_group_matches = RuleMatch.objects.filter(
+        object_type=service_group_ct,
+        object_id=OuterRef("pk"),
+    )
+
+    used_group_ids = RuleMatch.objects.filter(
+        object_type=service_group_ct,
+    ).values("object_id")
+
+    used_group_memberships = ServiceGroupMember.objects.filter(
+        service_id=OuterRef("pk"),
+        group__tenant_id=tenant_id,
+        group_id__in=used_group_ids,
+    )
+
+    unused_services = (
+        Service.objects.filter(tenant_id=tenant_id)
+        .annotate(
+            is_directly_used=Exists(used_service_matches),
+            is_used_via_group=Exists(used_group_memberships),
+        )
+        .filter(
+            is_directly_used=False,
+            is_used_via_group=False,
+        )
+    )
+
+    unused_service_groups = (
+        ServiceGroup.objects.filter(tenant_id=tenant_id)
+        .annotate(is_used=Exists(used_service_group_matches))
+        .filter(is_used=False)
+    )
+
+    return unused_services, unused_service_groups
+
+def get_unused_tag_objects(
+    actor: User, tenant_id: int
+) -> tuple[QuerySet[Tag], QuerySet[TagConnection]]:
+    """
+    Return tag objects owned by the given tenant that are not used in any rules.
+
+    A tag is considered used if it has any associated TagConnections.
+    """
+    require_read_tenant(actor, tenant_id)
+    unused_tags = Tag.objects.filter(tenant_id=tenant_id).annotate(
+        is_used=Exists(
+            TagConnection.objects.filter(
+                tag_id=OuterRef("pk"),
+                tenant_id=tenant_id,
+            )
+        )
+    ).filter(is_used=False)
+    return unused_tags
+
