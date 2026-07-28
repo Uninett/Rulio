@@ -18,7 +18,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from backend.views.rule_page import get_rule_page
+from backend.views.rule_page import (
+    get_rule_page,
+    get_rule_selector_modal,
+    post_rule_view,
+)
 
 
 from .api import (
@@ -166,5 +170,7 @@ urlpatterns = [
     path("modal/add/<str:object_type>/", get_add_modal, name="modal-add"),
     path("modal/add/<str:object_type>/<str:type>/form/", get_add_modal_form_content, name="modal-add-form-content"),
     path("modal/update/<str:row_id>/", get_update_modal, name="modal-update"),
+    path("modal/rule-selector/<str:selector_type>/", get_rule_selector_modal, name="rule-selector-modal"),
     path("rules/", get_rule_page, name="rules-page"),
+    path("rules/create/", post_rule_view, name="post-rule-view"),
 ]

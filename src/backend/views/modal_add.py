@@ -74,6 +74,16 @@ def get_add_modal_config(object_type):
             "refresh_url": reverse("filters"),
             "modal_refresh_target": "#filters-content",
         },
+        "rules": {
+            "title": "Add Rule",
+            "supports_types": False,
+            "form_partial": "partials/modals/_rule_form.html",
+            "post_url": reverse("post-rule-view"),
+            "target": "#rules-table",
+            "swap": "beforeend",
+            "refresh_url": reverse("rules-page") + f"?filter_id={{filter_id}}&filter_name={{filter_name}}",
+            "modal_refresh_target": "#rules-content",
+        },
         "addresses": {
             "title": "Add Address",
             "supports_types": True,
