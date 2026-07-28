@@ -174,13 +174,13 @@
             </tr>
 
             {% if interface.filters.ingoing %}
-            <tr class="inline-interface-details filter-group-row device-{{ device.row_id }} inline-details-{{ interface.row_id }}"
+            <tr class="inline-interface-details filter-group-row device-{{ device.row_id }} inline-details-{{ interface.row_id }} header-description"
                 style="display: none;">
                 <td colspan="4">Ingoing Filters</td>
             </tr>
 
             {% for filter in interface.filters.ingoing %}
-            <tr class="inline-interface-details filter-row device-{{ device.row_id }} inline-details-{{ interface.row_id }}"
+            <tr class="inline-interface-details filter-row device-{{ device.row_id }} inline-details-{{ interface.row_id }} "
                 style="display: none;">
                 <td>{{ filter.name|default:"None" }}</td>
                 <td>Ingoing</td>
@@ -191,7 +191,7 @@
             {% endif %}
 
             {% if interface.filters.outgoing %}
-            <tr class="inline-interface-details filter-group-row device-{{ device.row_id }} inline-details-{{ interface.row_id }}"
+            <tr class="inline-interface-details filter-group-row device-{{ device.row_id }} inline-details-{{ interface.row_id }} header-description"
                 style="display: none;">
                 <td colspan="4">Outgoing Filters</td>
             </tr>
