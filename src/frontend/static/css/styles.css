@@ -138,6 +138,16 @@ Header
     width: 100%;
 }
 
+.user-menu-contact {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.user-menu-contact p {
+    margin: 0;
+}
+
 .user-menu-dropdown a.user-menu-btn,
 .user-menu-dropdown button.user-menu-btn {
     display: flex;
