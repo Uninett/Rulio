@@ -242,7 +242,7 @@ class TestGenerateConfig:
 
     def test_shading_check(self, built_shading_policy):
         result = generate_config(built_shading_policy)
-
+        logger.info(f"Shading check result: {[warning.message for warning in result.warnings]}")
         assert result.success, [error.message for error in result.errors]
 
         shading_warnings = [warning for warning in result.warnings if warning.code == "shading"]
