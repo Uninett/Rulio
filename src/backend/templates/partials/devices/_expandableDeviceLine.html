@@ -103,6 +103,15 @@
     .section-label-row th,
     .section-label-row td {
         border-left: none !important;
+        border-top: none !important;
+        border-bottom: none !important;
+    }
+
+    .header-description th,
+    .header-description td {
+        border-left: none !important;
+        border-top: none !important;
+        border-bottom: none !important;
     }
 </style>
 
@@ -112,7 +121,7 @@
             <tr class="section-label-row">
                 <th colspan="4">Devices</th>
             </tr>
-            <tr class="">
+            <tr class="header-description">
                 <th>Name</th>
                 <th>Type</th>
                 <th>Platform</th>
@@ -121,19 +130,20 @@
         </thead>
         <tbody>
             {% for device in devices %}
-            <tr class="expandable-device-line" onclick="toggleInlineRows('{{ device.row_id }}')">
+            <tr class="expandable-device-line" onclick="toggleDeviceRows(this, '{{ device.row_id }}')">
                 <td>{{ device.name|default:"None" }}</td>
                 <td>{{ device.type|default:"None" }}</td>
                 <td>{{ device.platform|default:"None" }}</td>
                 <td>{{ device.description|default:"None" }}</td>
             </tr>
 
-            <tr class="inline-device-details inline-details-{{ device.row_id }} section-label-row"
+            <tr class="inline-device-details device-{{ device.row_id }} inline-details-{{ device.row_id }} section-label-row"
                 style="display: none;">
                 <td colspan="4"><strong>Interfaces</strong></td>
             </tr>
             {% if device.interfaces %}
-            <tr style="display: none;">
+            <tr class="inline-device-details device-{{ device.row_id }} inline-details-{{ device.row_id }} header-description"
+                style="display: none;">
                 <th>Name</th>
                 <th>Type</th>
                 <th>VRF</th>
@@ -142,8 +152,8 @@
 
             {% for interface in device.interfaces %}
 
-            <tr class="inline-device-details inline-details-{{ device.row_id }}" style="display: none;"
-                onclick="event.stopPropagation(); toggleInlineRows('{{ interface.row_id }}')">
+            <tr class="inline-device-details device-{{ device.row_id }} inline-details-{{ device.row_id }}"
+                style="display: none;" onclick="event.stopPropagation(); toggleInlineRows('{{ interface.row_id }}')">
                 <td>{{ interface.name|default:"Interface" }}</td>
                 <td>{{ interface.type|default:"None" }}</td>
                 <td>{{ interface.vrf|default:"None" }}</td>
@@ -151,10 +161,12 @@
             </tr>
 
             {% if interface.filters.ingoing or interface.filters.outgoing %}
-            <tr class="inline-interface-details inline-details-{{ interface.row_id }} section-label-row">
+            <tr class="inline-interface-details device-{{ device.row_id }} inline-details-{{ interface.row_id }} section-label-row"
+                style="display: none;">
                 <td colspan="4"><strong>Filters</strong></td>
             </tr>
-            <tr style="display: none;">
+            <tr class="inline-interface-details device-{{ device.row_id }} inline-details-{{ interface.row_id }} header-description"
+                style="display: none;">
                 <th>Filter Name</th>
                 <th>Direction</th>
                 <th>Policy Sequence</th>
@@ -162,13 +174,13 @@
             </tr>
 
             {% if interface.filters.ingoing %}
-            <tr class="inline-interface-details filter-group-row inline-details-{{ interface.row_id }}"
+            <tr class="inline-interface-details filter-group-row device-{{ device.row_id }} inline-details-{{ interface.row_id }}"
                 style="display: none;">
                 <td colspan="4">Ingoing Filters</td>
             </tr>
 
             {% for filter in interface.filters.ingoing %}
-            <tr class="inline-interface-details filter-row inline-details-{{ interface.row_id }}"
+            <tr class="inline-interface-details filter-row device-{{ device.row_id }} inline-details-{{ interface.row_id }}"
                 style="display: none;">
                 <td>{{ filter.name|default:"None" }}</td>
                 <td>Ingoing</td>
@@ -179,13 +191,13 @@
             {% endif %}
 
             {% if interface.filters.outgoing %}
-            <tr class="inline-interface-details filter-group-row inline-details-{{ interface.row_id }}"
+            <tr class="inline-interface-details filter-group-row device-{{ device.row_id }} inline-details-{{ interface.row_id }}"
                 style="display: none;">
                 <td colspan="4">Outgoing Filters</td>
             </tr>
 
             {% for filter in interface.filters.outgoing %}
-            <tr class="inline-interface-details filter-row inline-details-{{ interface.row_id }}"
+            <tr class="inline-interface-details filter-row device-{{ device.row_id }} inline-details-{{ interface.row_id }}"
                 style="display: none;">
                 <td>{{ filter.name|default:"None" }}</td>
                 <td>Outgoing</td>
@@ -209,10 +221,37 @@
 <script>
     function toggleInlineRows(rowId) {
         const rows = document.querySelectorAll('.inline-details-' + rowId);
+        if (!rows.length) return;
+
+        const isOpen = window.getComputedStyle(rows[0]).display !== 'none';
 
         rows.forEach(row => {
-            const currentDisplay = window.getComputedStyle(row).display;
-            row.style.display = currentDisplay === 'none' ? 'table-row' : 'none';
+            row.style.display = isOpen ? 'none' : 'table-row';
         });
+    }
+
+    function toggleDeviceRows(deviceRow, rowId) {
+        const directRows = document.querySelectorAll('.inline-device-details.inline-details-' + rowId);
+        const allDeviceRows = document.querySelectorAll('.device-' + rowId);
+
+        if (!directRows.length) return;
+
+        const isOpen = window.getComputedStyle(directRows[0]).display !== 'none';
+
+        if (isOpen) {
+            allDeviceRows.forEach(row => {
+                row.style.display = 'none';
+            });
+        } else {
+            directRows.forEach(row => {
+                row.style.display = 'table-row';
+            });
+
+            allDeviceRows.forEach(row => {
+                if (!row.classList.contains('inline-device-details')) {
+                    row.style.display = 'none';
+                }
+            });
+        }
     }
 </script>
