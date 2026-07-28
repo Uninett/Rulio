@@ -1,4 +1,3 @@
-
 from django.contrib.auth.models import User
 from django.db.models import Exists, OuterRef, QuerySet
 from django.contrib.contenttypes.models import ContentType
@@ -11,13 +10,13 @@ from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.tag import Tag
 from backend.objects.attributes.tag_connection import TagConnection
+from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule_match import RuleMatch
+from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.services.helper_user_tenant import require_read_tenant
 
 
-def get_unused_address_objects(
-    actor: User, tenant_id: int
-) -> tuple[QuerySet[Address], QuerySet[AddressGroup]]:
+def get_unused_address_objects(actor: User, tenant_id: int) -> tuple[QuerySet[Address], QuerySet[AddressGroup]]:
     """
     Return address objects owned by the given tenant that are not used in any rules.
 
@@ -70,10 +69,9 @@ def get_unused_address_objects(
     )
 
     return unused_addresses, unused_address_groups
-        
-def get_unused_service_objects(
-        actor: User, tenant_id: int
-) -> tuple[QuerySet[Service], QuerySet[ServiceGroup]]:
+
+
+def get_unused_service_objects(actor: User, tenant_id: int) -> tuple[QuerySet[Service], QuerySet[ServiceGroup]]:
     """
     Return service objects owned by the given tenant that are not used in any rules.
 
@@ -127,22 +125,40 @@ def get_unused_service_objects(
 
     return unused_services, unused_service_groups
 
-def get_unused_tag_objects(
-    actor: User, tenant_id: int
-) -> tuple[QuerySet[Tag], QuerySet[TagConnection]]:
-    """
-    Return tag objects owned by the given tenant that are not used in any rules.
 
-    A tag is considered used if it has any associated TagConnections.
+def get_unused_tag_objects(actor: User, tenant_id: int) -> QuerySet[Tag]:
+    """
+    Return tag objects owned by the given tenant that don't tag any objects.
     """
     require_read_tenant(actor, tenant_id)
-    unused_tags = Tag.objects.filter(tenant_id=tenant_id).annotate(
-        is_used=Exists(
-            TagConnection.objects.filter(
-                tag_id=OuterRef("pk"),
-                tenant_id=tenant_id,
+    unused_tags = (
+        Tag.objects.filter(tenant_id=tenant_id)
+        .annotate(
+            is_used=Exists(
+                TagConnection.objects.filter(
+                    tag_id=OuterRef("pk"),
+                )
             )
         )
-    ).filter(is_used=False)
+        .filter(is_used=False)
+    )
     return unused_tags
 
+
+def get_unused_filters(actor: User, tenant_id: int) -> QuerySet[Filter]:
+    """
+    Return filter objects owned by the given tenant that are not applied to any interfaces
+    """
+    require_read_tenant(actor, tenant_id)
+    unused_filters = (
+        Filter.objects.filter(tenant_id=tenant_id)
+        .annotate(
+            is_used=Exists(
+                FilterInterface.objects.filter(
+                    filter_id=OuterRef("pk"),
+                )
+            )
+        )
+        .filter(is_used=False)
+    )
+    return unused_filters
