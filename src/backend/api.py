@@ -1462,15 +1462,59 @@ def generate_config_for_interface(request, interface_id: int, direction: str):
         logger.info(f"Policies for interface id={interface_id}: {[policy.YAMLConfig for policy in policies]}")
         logger.info(f"Networks for interface id={interface_id}: {[policy.networks for policy in policies]}")
         logger.info(f"Services for interface id={interface_id}: {[policy.services for policy in policies]}")
-        config = generate_multi_policy_config(policies)
-        logger.info(f"Generated configuration for interface id={interface_id}: {config}")
+
+        result = generate_multi_policy_config(policies)
+
+        warning_payload = [
+            {
+                "source": warning.source,
+                "level": warning.level,
+                "code": warning.code,
+                "message": warning.message,
+                "term_name": warning.term_name,
+                "shaded_by_name": warning.shaded_by_name,
+            }
+            for warning in result.warnings
+        ]
+        error_payload = [
+            {
+                "source": error.source,
+                "level": error.level,
+                "code": error.code,
+                "message": error.message,
+                "term_name": error.term_name,
+                "shaded_by_name": error.shaded_by_name,
+            }
+            for error in result.errors
+        ]
+
+        if not result.success:
+            logger.warning(
+                f"Configuration generation failed for interface id={interface_id}: "
+                f"{[error['message'] for error in error_payload]}"
+            )
+            return Status(
+                404,
+                {
+                    "status": "error",
+                    "message": f"Configuration generation failed for interface id={interface_id}",
+                    "policies": [policy.YAMLConfig for policy in policies],
+                    "config": None,
+                    "warnings": warning_payload,
+                    "errors": error_payload,
+                },
+            )
+
+        logger.info(f"Generated configuration for interface id={interface_id}: {result.config}")
         return Status(
             200,
             {
                 "status": "success",
                 "message": f"Configuration generated for interface id={interface_id}",
                 "policies": [policy.YAMLConfig for policy in policies],
-                "config": str(config),
+                "config": result.config,
+                "warnings": warning_payload,
+                "errors": error_payload,
             },
         )
     except ValueError as e:

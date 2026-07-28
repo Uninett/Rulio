@@ -555,6 +555,55 @@ def sample_rules(request_with_session, sample_addresses, sample_services, create
 
 
 @pytest.fixture
+def shading_filter(request_with_session, create_testing_tenant):
+    return create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Testing_Filter",
+        description="This is an empty filter for testing.",
+    )
+
+
+@pytest.fixture
+def sample_shading_rules(request_with_session, shading_filter, sample_addresses):
+    rules = [
+        create_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Shading_Rule_1",
+            filter=shading_filter,
+            rule_sequence=1,
+            enable=True,
+            description="This is a sample shading rule for testing.",
+            action="accept",
+            log_type="all",
+            hit_count=0,
+        ),
+        create_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Sample_Shading_Rule_2",
+            filter=shading_filter,
+            rule_sequence=2,
+            enable=True,
+            description="This is another sample shading rule for testing.",
+            action="accept",
+            log_type="all",
+            hit_count=0,
+        ),
+    ]
+    for rule in rules:
+        add_objects_to_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=rule.id,
+            match_type="source",
+            objects=[sample_addresses[0]],
+        )
+    return rules
+
+
+@pytest.fixture
 def sample_rules_with_objects(request_with_session, sample_rules, sample_addresses, sample_services):
     # Add objects to the rules
     add_objects_to_rule(
@@ -1184,4 +1233,22 @@ def built_interface_policies(sample_filters, sample_rules_with_objects, request_
         interface_id=interface.id,
         target_spec="",
         direction="in",
+    )
+
+
+@pytest.fixture
+def built_shading_policy(shading_filter, sample_shading_rules, request_with_session):
+
+    for i, rule in enumerate(sample_shading_rules):
+        rule.filter = shading_filter
+        rule.rule_sequence = i + 1
+        rule.save()
+
+    return build_policy_from_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        filter_id=shading_filter.id,
+        policy_sequence=10,
+        vendor="juniper",
+        target_spec=None,
     )

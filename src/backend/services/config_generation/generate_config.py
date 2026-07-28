@@ -1,6 +1,8 @@
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 import copy
+import logging
+import re
 
 from aerleon.lib import naming
 from aerleon import api as aerleon_api
@@ -19,6 +21,29 @@ from constants import DIRECTION_CHOICES
 
 logger = set_up_logger(__name__)
 
+SHADING_WARNING_PATTERN = re.compile(r"^(?P<term>.+?) is shaded by (?P<shaded_by>.+)$")
+
+
+@dataclass(frozen=True)
+class GenerationDiagnostic:
+    source: str
+    level: str
+    code: str
+    message: str
+    term_name: str | None = None
+    shaded_by_name: str | None = None
+
+
+@dataclass
+class ConfigGenerationResult:
+    config: dict | None
+    warnings: list[GenerationDiagnostic] = field(default_factory=list)
+    errors: list[GenerationDiagnostic] = field(default_factory=list)
+
+    @property
+    def success(self) -> bool:
+        return not self.errors
+
 
 @dataclass
 class RuleBuildResult:
@@ -26,6 +51,15 @@ class RuleBuildResult:
     networks: dict[str, dict]
     services: dict[str, list[dict]]
     warnings: list[str] = field(default_factory=list)
+
+
+class _AerleonLogCaptureHandler(logging.Handler):
+    def __init__(self) -> None:
+        super().__init__()
+        self.records: list[logging.LogRecord] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.records.append(record)
 
 
 class PolicyRuleMember:
@@ -606,7 +640,7 @@ class Policy:
         self.rules = rules
         self.target_spec = target_spec if target_spec not in ("", []) else None
         self.policy_sequence = policy_sequence
-        self.warnings: list[str] = []
+        self.build_warnings: list[str] = []
 
         self._validate_rule_sequences(rules)
         self._validate_rendered_rule_names_unique(rules)
@@ -621,7 +655,7 @@ class Policy:
             result = rule.build()
 
             for warning in result.warnings:
-                self.warnings.append(warning)
+                self.build_warnings.append(warning)
                 logger.warning(warning)
 
             for term in result.terms:
@@ -708,7 +742,149 @@ class Policy:
             filter_config["header"] = self._build_filter_header()
 
 
-def merge_policies(policies: list[Policy], name: str = None) -> Policy:
+def _build_warning_diagnostics(policy: Policy) -> list[GenerationDiagnostic]:
+    return [
+        GenerationDiagnostic(
+            source="rulio",
+            level="warning",
+            code="build_warning",
+            message=warning,
+        )
+        for warning in policy.build_warnings
+    ]
+
+
+def _log_records_to_diagnostics(
+    records: list[logging.LogRecord],
+) -> tuple[list[GenerationDiagnostic], list[GenerationDiagnostic]]:
+    warnings: list[GenerationDiagnostic] = []
+    errors: list[GenerationDiagnostic] = []
+
+    for record in records:
+        if record.levelno < logging.WARNING:
+            continue
+
+        message = record.getMessage().strip()
+
+        if record.levelno >= logging.ERROR:
+            errors.append(
+                GenerationDiagnostic(
+                    source="aerleon",
+                    level="error",
+                    code="aerleon_error",
+                    message=message,
+                )
+            )
+            continue
+
+        match = SHADING_WARNING_PATTERN.match(message)
+        if match:
+            warnings.append(
+                GenerationDiagnostic(
+                    source="aerleon",
+                    level="warning",
+                    code="shading",
+                    message=message,
+                    term_name=match.group("term").strip(),
+                    shaded_by_name=match.group("shaded_by").strip(),
+                )
+            )
+            continue
+
+        warnings.append(
+            GenerationDiagnostic(
+                source="aerleon",
+                level="warning",
+                code="aerleon_warning",
+                message=message,
+            )
+        )
+
+    return warnings, errors
+
+
+def _exception_to_diagnostic(exc: Exception) -> GenerationDiagnostic:
+    return GenerationDiagnostic(
+        source="aerleon",
+        level="error",
+        code="aerleon_error",
+        message=str(exc).strip() or exc.__class__.__name__,
+    )
+
+
+def _dedupe_diagnostics(diagnostics: list[GenerationDiagnostic]) -> list[GenerationDiagnostic]:
+    seen: set[tuple[str, str, str, str, str | None, str | None]] = set()
+    deduped: list[GenerationDiagnostic] = []
+
+    for diagnostic in diagnostics:
+        key = (
+            diagnostic.source,
+            diagnostic.level,
+            diagnostic.code,
+            diagnostic.message,
+            diagnostic.term_name,
+            diagnostic.shaded_by_name,
+        )
+        if key in seen:
+            continue
+
+        seen.add(key)
+        deduped.append(diagnostic)
+
+    return deduped
+
+
+def _generate_from_policy(policy: Policy) -> ConfigGenerationResult:
+    warnings = _build_warning_diagnostics(policy)
+    errors: list[GenerationDiagnostic] = []
+
+    definitions = naming.Naming()
+    definitions_obj = {
+        "networks": policy.networks.get("networks", {}),
+        "services": policy.services.get("services", {}),
+    }
+
+    capture_handler = _AerleonLogCaptureHandler()
+    capture_handler.setLevel(logging.WARNING)
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(capture_handler)
+
+    try:
+        definitions.ParseDefinitionsObject(definitions_obj, policy.name)
+        config = aerleon_api.Generate([policy.YAMLConfig], definitions, shade_check=True)
+    except Exception as exc:
+        logged_warnings, logged_errors = _log_records_to_diagnostics(capture_handler.records)
+        warnings.extend(logged_warnings)
+        errors.extend(logged_errors)
+        errors.append(_exception_to_diagnostic(exc))
+
+        warnings = _dedupe_diagnostics(warnings)
+        errors = _dedupe_diagnostics(errors)
+
+        return ConfigGenerationResult(
+            config=None,
+            warnings=warnings,
+            errors=errors,
+        )
+    finally:
+        root_logger.removeHandler(capture_handler)
+
+    logged_warnings, logged_errors = _log_records_to_diagnostics(capture_handler.records)
+    warnings.extend(logged_warnings)
+    errors.extend(logged_errors)
+
+    warnings = _dedupe_diagnostics(warnings)
+    errors = _dedupe_diagnostics(errors)
+
+    return ConfigGenerationResult(
+        config=config,
+        warnings=warnings,
+        errors=errors,
+    )
+
+
+def merge_policies(policies: list[Policy], name: str | None = None) -> Policy:
     if not policies:
         raise ValueError("No policies provided for merging.")
 
@@ -734,7 +910,7 @@ def merge_policies(policies: list[Policy], name: str = None) -> Policy:
 
         filter_config = copy.deepcopy(policy.YAMLConfig["filters"][0])
         merged_policy.YAMLConfig["filters"].append(filter_config)
-        merged_policy.warnings.extend(policy.warnings)
+        merged_policy.build_warnings.extend(policy.build_warnings)
 
     if name:
         normalized_name = name.strip().replace(" ", "_")
@@ -748,7 +924,7 @@ def merge_policies(policies: list[Policy], name: str = None) -> Policy:
     return merged_policy
 
 
-def generate_config(policy: Policy) -> str:
+def generate_config(policy: Policy) -> ConfigGenerationResult:
     """
     Generates a configuration for the specified vendor based on the provided policy.
 
@@ -757,22 +933,12 @@ def generate_config(policy: Policy) -> str:
             configuration and object definitions.
 
     Returns:
-        str: The generated configuration as a string.
+        ConfigGenerationResult: Generated configuration and any collected warnings/errors.
     """
-    definitions = naming.Naming()
-
-    definitions_obj = {
-        "networks": policy.networks.get("networks", {}),
-        "services": policy.services.get("services", {}),
-    }
-
-    definitions.ParseDefinitionsObject(definitions_obj, policy.name)
-
-    configs = aerleon_api.Generate([policy.YAMLConfig], definitions)
-    return configs
+    return _generate_from_policy(policy)
 
 
-def generate_multi_policy_config(policies: list[Policy], name: str = None) -> str:
+def generate_multi_policy_config(policies: list[Policy], name: str | None = None) -> ConfigGenerationResult:
     """
     Generates a configuration for the specified vendor based on the provided list of Policy objects.
 
@@ -781,17 +947,7 @@ def generate_multi_policy_config(policies: list[Policy], name: str = None) -> st
         name (str | None): Optional name to assign to the merged policy.
 
     Returns:
-        str: The generated configuration as a string.
+        ConfigGenerationResult: Generated configuration and any collected warnings/errors.
     """
-    definitions = naming.Naming()
-
     merged_policy = merge_policies(policies, name)
-    definitions_obj = {
-        "networks": merged_policy.networks.get("networks", {}),
-        "services": merged_policy.services.get("services", {}),
-    }
-
-    definitions.ParseDefinitionsObject(definitions_obj, merged_policy.name)
-
-    configs = aerleon_api.Generate([merged_policy.YAMLConfig], definitions)
-    return configs
+    return _generate_from_policy(merged_policy)
