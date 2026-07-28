@@ -935,7 +935,7 @@ def built_service_group_policy(sample_services, request_with_session):
         actor=request_with_session.user,
         tenant_id=request_with_session.tenant_id,
         rule_id=rule.id,
-        match_type="destination",
+        match_type="any",
         objects=[service_group],
     )
 

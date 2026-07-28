@@ -252,7 +252,7 @@ def add_objects_to_rule(
 
     for obj in objects:
         try:
-            if obj.tenant_id not in (0, rule.tenant_id):
+            if obj.tenant_id not in (GLOBAL_TENANT_ID, rule.tenant_id):
                 errors.append(
                     {
                         "object_id": obj.id,

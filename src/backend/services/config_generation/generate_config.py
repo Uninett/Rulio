@@ -14,6 +14,7 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.services.attribute_objects.get_address_objects import get_address_group_members
 from backend.services.attribute_objects.get_service_objects import get_service_group_members
+from backend.services.config_generation.platform_capabilities import vendor_supports
 from backend.services.get import DJANGO_MODEL_MAPPING
 from backend.utils.logger import set_up_logger
 from constants import DIRECTION_CHOICES
@@ -78,6 +79,7 @@ class PolicyRuleMember:
     - destination
     - reverse_source
     - reverse_destination
+    - any
     """
 
     VALID_TYPES = {"address", "addressgroup", "service", "servicegroup"}
@@ -179,9 +181,10 @@ class PolicyRule:
         max_base_length = 62 - len(suffix_part)
         return f"{self.name[:max_base_length]}{suffix_part}"
 
-    def build(self) -> RuleBuildResult:
+    def build(self, vendor: str) -> RuleBuildResult:
         """
-        Build Aerleon term(s) and required network/service definitions for this rule.
+        Build Aerleon term(s) and required network/service definitions for this rule
+        for a specific vendor/platform.
 
         Normally returns a single term. If protocol-specific port mappings differ
         across protocols, returns one term per protocol and emits a warning.
@@ -195,17 +198,17 @@ class PolicyRule:
         reverse_source_addresses: list[str] = []
         reverse_destination_addresses: list[str] = []
 
-        # Service object names used in rendered terms.
         source_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         destination_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_source_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_destination_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
+        any_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
 
-        # Actual port values used only for split-decision logic.
         source_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
         destination_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_source_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_destination_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
+        any_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
 
         all_protocols: set[str] = set()
 
@@ -246,6 +249,7 @@ class PolicyRule:
                         destination_dict=destination_ports_by_protocol,
                         reverse_source_dict=reverse_source_ports_by_protocol,
                         reverse_destination_dict=reverse_destination_ports_by_protocol,
+                        any_dict=any_ports_by_protocol,
                         value=service_name,
                         append_ports=is_port_based,
                     )
@@ -257,6 +261,7 @@ class PolicyRule:
                         destination_dict=destination_port_values_by_protocol,
                         reverse_source_dict=reverse_source_port_values_by_protocol,
                         reverse_destination_dict=reverse_destination_port_values_by_protocol,
+                        any_dict=any_port_values_by_protocol,
                         value=port_value,
                         append_ports=is_port_based and port_value is not None,
                     )
@@ -273,6 +278,7 @@ class PolicyRule:
                             destination_dict=destination_ports_by_protocol,
                             reverse_source_dict=reverse_source_ports_by_protocol,
                             reverse_destination_dict=reverse_destination_ports_by_protocol,
+                            any_dict=any_ports_by_protocol,
                             value=service_name,
                             append_ports=is_port_based,
                         )
@@ -284,6 +290,7 @@ class PolicyRule:
                             destination_dict=destination_port_values_by_protocol,
                             reverse_source_dict=reverse_source_port_values_by_protocol,
                             reverse_destination_dict=reverse_destination_port_values_by_protocol,
+                            any_dict=any_port_values_by_protocol,
                             value=port_value,
                             append_ports=is_port_based and port_value is not None,
                         )
@@ -307,6 +314,7 @@ class PolicyRule:
             reverse_destination_ports_by_protocol[protocol] = self._dedupe_preserve_order(
                 reverse_destination_ports_by_protocol.get(protocol, [])
             )
+            any_ports_by_protocol[protocol] = self._dedupe_preserve_order(any_ports_by_protocol.get(protocol, []))
 
             source_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
                 source_port_values_by_protocol.get(protocol, [])
@@ -320,6 +328,9 @@ class PolicyRule:
             reverse_destination_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
                 reverse_destination_port_values_by_protocol.get(protocol, [])
             )
+            any_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
+                any_port_values_by_protocol.get(protocol, [])
+            )
 
         if self._requires_protocol_split(
             all_protocols=all_protocols,
@@ -327,6 +338,7 @@ class PolicyRule:
             destination_ports_by_protocol=destination_port_values_by_protocol,
             reverse_source_ports_by_protocol=reverse_source_port_values_by_protocol,
             reverse_destination_ports_by_protocol=reverse_destination_port_values_by_protocol,
+            any_ports_by_protocol=any_port_values_by_protocol,
         ):
             warnings.append(
                 f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) was split into "
@@ -347,19 +359,18 @@ class PolicyRule:
                 term["protocol"] = protocol
 
                 if protocol in self.PORT_BASED_PROTOCOLS:
-                    source_ports = source_ports_by_protocol.get(protocol, [])
-                    destination_ports = destination_ports_by_protocol.get(protocol, [])
-                    reverse_source_ports = reverse_source_ports_by_protocol.get(protocol, [])
-                    reverse_destination_ports = reverse_destination_ports_by_protocol.get(protocol, [])
-
-                    if source_ports:
-                        term["source-port"] = source_ports
-                    if destination_ports:
-                        term["destination-port"] = destination_ports
-                    if reverse_source_ports:
-                        term["reverse-source-port"] = reverse_source_ports
-                    if reverse_destination_ports:
-                        term["reverse-destination-port"] = reverse_destination_ports
+                    should_include = self._add_port_fields_to_term(
+                        term=term,
+                        vendor=vendor,
+                        source_ports=source_ports_by_protocol.get(protocol, []),
+                        destination_ports=destination_ports_by_protocol.get(protocol, []),
+                        reverse_source_ports=reverse_source_ports_by_protocol.get(protocol, []),
+                        reverse_destination_ports=reverse_destination_ports_by_protocol.get(protocol, []),
+                        any_ports=any_ports_by_protocol.get(protocol, []),
+                        warnings=warnings,
+                    )
+                    if not should_include:
+                        continue
 
                 terms.append(term)
 
@@ -378,6 +389,8 @@ class PolicyRule:
             reverse_source_addresses=reverse_source_addresses,
             reverse_destination_addresses=reverse_destination_addresses,
         )
+
+        should_include_term = True
 
         if all_protocols:
             sorted_protocols = sorted(all_protocols)
@@ -399,19 +412,24 @@ class PolicyRule:
                     for port in reverse_destination_ports_by_protocol.get(protocol, [])
                 ]
             )
+            shared_any_ports = self._dedupe_preserve_order(
+                [port for protocol in sorted_protocols for port in any_ports_by_protocol.get(protocol, [])]
+            )
 
             if any(protocol in self.PORT_BASED_PROTOCOLS for protocol in sorted_protocols):
-                if shared_source_ports:
-                    term["source-port"] = shared_source_ports
-                if shared_destination_ports:
-                    term["destination-port"] = shared_destination_ports
-                if shared_reverse_source_ports:
-                    term["reverse-source-port"] = shared_reverse_source_ports
-                if shared_reverse_destination_ports:
-                    term["reverse-destination-port"] = shared_reverse_destination_ports
+                should_include_term = self._add_port_fields_to_term(
+                    term=term,
+                    vendor=vendor,
+                    source_ports=shared_source_ports,
+                    destination_ports=shared_destination_ports,
+                    reverse_source_ports=shared_reverse_source_ports,
+                    reverse_destination_ports=shared_reverse_destination_ports,
+                    any_ports=shared_any_ports,
+                    warnings=warnings,
+                )
 
         return RuleBuildResult(
-            terms=[term],
+            terms=[term] if should_include_term else [],
             networks=networks,
             services=services,
             warnings=warnings,
@@ -424,6 +442,7 @@ class PolicyRule:
         destination_ports_by_protocol: dict[str, list[str]],
         reverse_source_ports_by_protocol: dict[str, list[str]],
         reverse_destination_ports_by_protocol: dict[str, list[str]],
+        any_ports_by_protocol: dict[str, list[str]],
     ) -> bool:
         """
         Split only when multiple protocols have different port mappings.
@@ -442,6 +461,7 @@ class PolicyRule:
                 tuple(destination_ports_by_protocol.get(protocol, [])),
                 tuple(reverse_source_ports_by_protocol.get(protocol, [])),
                 tuple(reverse_destination_ports_by_protocol.get(protocol, [])),
+                tuple(any_ports_by_protocol.get(protocol, [])),
             )
 
             if first_signature is None:
@@ -498,6 +518,9 @@ class PolicyRule:
             reverse_source_list.append(value)
         elif direction == "reverse_destination":
             reverse_destination_list.append(value)
+        elif direction == "any":
+            source_list.append(value)
+            destination_list.append(value)
         else:
             raise ValueError(f"Unsupported rule direction: {direction}")
 
@@ -509,6 +532,7 @@ class PolicyRule:
         destination_dict: dict[str, list[str]],
         reverse_source_dict: dict[str, list[str]],
         reverse_destination_dict: dict[str, list[str]],
+        any_dict: dict[str, list[str]],
         value: str | None,
         append_ports: bool,
     ) -> None:
@@ -517,6 +541,7 @@ class PolicyRule:
             destination_dict.setdefault(protocol, [])
             reverse_source_dict.setdefault(protocol, [])
             reverse_destination_dict.setdefault(protocol, [])
+            any_dict.setdefault(protocol, [])
             return
 
         if value is None:
@@ -530,8 +555,58 @@ class PolicyRule:
             reverse_source_dict[protocol].append(value)
         elif direction == "reverse_destination":
             reverse_destination_dict[protocol].append(value)
+        elif direction == "any":
+            any_dict[protocol].append(value)
         else:
             raise ValueError(f"Unsupported rule direction: {direction}")
+
+    @staticmethod
+    def _extend_deduped(target: list[str], values: list[str]) -> list[str]:
+        return list(dict.fromkeys([*target, *values]))
+
+    def _add_port_fields_to_term(
+        self,
+        *,
+        term: dict,
+        vendor: str,
+        source_ports: list[str],
+        destination_ports: list[str],
+        reverse_source_ports: list[str],
+        reverse_destination_ports: list[str],
+        any_ports: list[str],
+        warnings: list[str],
+    ) -> bool:
+        if source_ports:
+            term["source-port"] = source_ports
+        if destination_ports:
+            term["destination-port"] = destination_ports
+        if reverse_source_ports:
+            term["reverse-source-port"] = reverse_source_ports
+        if reverse_destination_ports:
+            term["reverse-destination-port"] = reverse_destination_ports
+
+        if not any_ports:
+            return True
+
+        if vendor_supports(vendor, "supports_neutral_port"):
+            term["port"] = any_ports
+            return True
+
+        if vendor_supports(vendor, "supports_source_port"):
+            existing_source_ports = term.get("source-port", [])
+            existing_destination_ports = term.get("destination-port", [])
+
+            term["source-port"] = self._extend_deduped(existing_source_ports, any_ports)
+            term["destination-port"] = self._extend_deduped(existing_destination_ports, any_ports)
+            return True
+
+        term_name = term.get("name", self.name)
+        warnings.append(
+            f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) contains service direction 'any', "
+            f"but vendor '{vendor}' does not support either neutral 'port' or 'source-port'. "
+            f"Skipping term '{term_name}' for this vendor."
+        )
+        return False
 
     def _add_address_definition(self, networks: dict[str, dict], address: Address) -> None:
         values = []
@@ -644,15 +719,18 @@ class Policy:
 
         self._validate_rule_sequences(rules)
         self._validate_rendered_rule_names_unique(rules)
+        self._rebuild_policy_contents()
 
+    def _rebuild_policy_contents(self) -> None:
         self.YAMLConfig = self._build_base_yaml()
         self.networks = {"networks": {}}
         self.services = {"services": {}}
+        self.build_warnings = []
 
         used_term_names: set[str] = set()
 
-        for rule in sorted(rules, key=lambda r: r.rule_sequence):
-            result = rule.build()
+        for rule in sorted(self.rules, key=lambda r: r.rule_sequence):
+            result = rule.build(vendor=self.vendor)
 
             for warning in result.warnings:
                 self.build_warnings.append(warning)
@@ -732,14 +810,11 @@ class Policy:
         """
         Update the vendor and target specification used in filter headers.
 
-        This rewrites the header of each filter in YAMLConfig without changing
-        terms, networks, or services.
+        Because term rendering is vendor-aware, this rebuilds the policy contents.
         """
         self.vendor = new_vendor.lower()
         self.target_spec = target_spec if target_spec not in ("", []) else None
-
-        for filter_config in self.YAMLConfig["filters"]:
-            filter_config["header"] = self._build_filter_header()
+        self._rebuild_policy_contents()
 
 
 def _build_warning_diagnostics(policy: Policy) -> list[GenerationDiagnostic]:

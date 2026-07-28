@@ -93,7 +93,7 @@ def build_policy_from_filter(
     if not rules.exists():
         raise ValueError(f"No rules found for filter with ID {filter_id}.")
 
-    policy_rules = []
+    policy_rules: list[PolicyRule] = []
     for rule in rules:
         if rule.enable is False:
             logger.info(f"Skipping disabled rule with ID {rule.id} for filter with ID {filter_id}.")
@@ -150,7 +150,7 @@ def build_policies_for_interface(
     if not filter_interfaces.exists():
         raise ValueError(f"No filters found for interface with ID {interface_id} for direction '{direction}'.")
 
-    policies = []
+    policies: list[Policy] = []
     for filter_interface in filter_interfaces:
         if filter_interface.enable is False:
             logger.info(
