@@ -88,6 +88,22 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+
+    .section-label-row {
+        padding: 8px 12px 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #666;
+        background-color: "fafafa";
+        border-bottom: 1px solid "ddd";
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .section-label-row th,
+    .section-label-row td {
+        border-left: none !important;
+    }
 </style>
 
 <div class="detail-block">
@@ -96,7 +112,7 @@
             <tr class="section-label-row">
                 <th colspan="4">Devices</th>
             </tr>
-            <tr>
+            <tr class="">
                 <th>Name</th>
                 <th>Type</th>
                 <th>Platform</th>
@@ -114,10 +130,10 @@
 
             <tr class="inline-device-details inline-details-{{ device.row_id }} section-label-row"
                 style="display: none;">
-                <td colspan="4"><strong>Interfaces:</strong></td>
+                <td colspan="4"><strong>Interfaces</strong></td>
             </tr>
             {% if device.interfaces %}
-            <tr class="inline-device-details inline-details-{{ device.row_id }}" style="display: none;">
+            <tr style="display: none;">
                 <th>Name</th>
                 <th>Type</th>
                 <th>VRF</th>
@@ -135,10 +151,10 @@
             </tr>
 
             {% if interface.filters.ingoing or interface.filters.outgoing %}
-            <tr class="inline-interface-details inline-details-{{ interface.row_id }}" style="display: none;">
+            <tr class="inline-interface-details inline-details-{{ interface.row_id }} section-label-row">
                 <td colspan="4"><strong>Filters</strong></td>
             </tr>
-            <tr class="inline-interface-details inline-details-{{ interface.row_id }}" style="display: none;">
+            <tr style="display: none;">
                 <th>Filter Name</th>
                 <th>Direction</th>
                 <th>Policy Sequence</th>
