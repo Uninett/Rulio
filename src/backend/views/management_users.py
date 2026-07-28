@@ -146,7 +146,6 @@ def post_user_view(request):
         user.first_name = first_name
         user.last_name = last_name
         user.is_superuser = is_superuser
-        user.is_staff = is_superuser
         user.save()
 
         global_role = TenantUserMember.TenantRole.ADMIN if is_superuser else TenantUserMember.TenantRole.MEMBER
@@ -213,7 +212,6 @@ def update_user_view(request, object_id):
         user.last_name = last_name
         user.email = email
         user.is_superuser = is_superuser
-        user.is_staff = is_superuser
 
         user.save()
     except Exception as e:
