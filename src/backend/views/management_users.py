@@ -205,7 +205,6 @@ def update_user_view(request, object_id):
     first_name = request.POST.get("first_name", "").strip()
     last_name = request.POST.get("last_name", "").strip()
     email = request.POST.get("email", "").strip()
-    password = request.POST.get("password", "").strip()
     is_superuser = request.POST.get("is_superuser") == "on"
 
     try:
@@ -215,8 +214,6 @@ def update_user_view(request, object_id):
         user.email = email
         user.is_superuser = is_superuser
         user.is_staff = is_superuser
-        if password:
-            user.set_password(password)
 
         user.save()
     except Exception as e:
