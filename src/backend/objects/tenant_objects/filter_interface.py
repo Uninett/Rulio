@@ -11,3 +11,10 @@ class FilterInterface(models.Model):
 
     def __str__(self):
         return f"FilterInterface(interface_direction_id={self.interface_direction_id}, filter_id={self.filter_id}, direction='{self.direction}', policy_sequence={self.policy_sequence}, enable={self.enable})"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["interface_direction", "filter", "direction"], name="unique_filter_interface"
+            )
+        ]

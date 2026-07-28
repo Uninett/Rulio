@@ -7,3 +7,6 @@ class AddressGroupMember(models.Model):
 
     def __str__(self):
         return f"AddressGroupMember(group_id={self.group_id}, address_id={self.address_id})"
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["group", "address"], name="unique_group_address")]

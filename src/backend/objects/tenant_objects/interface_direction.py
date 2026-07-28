@@ -8,3 +8,6 @@ class InterfaceDirection(TaggableMixin, models.Model):
 
     def __str__(self):
         return f"InterfaceDirection(interface_id={self.interface_id}, direction='{self.direction}')"
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["interface", "direction"], name="unique_interface_direction")]
