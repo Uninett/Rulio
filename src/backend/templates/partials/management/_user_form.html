@@ -29,15 +29,10 @@
     <input type="email" id="id_email" name="email" value="{{ object_data.email|default:'' }}">
 </div>
 
+{% if modal_mode == "add" %}
 <div class="form-group">
     <label for="id_password">Password<span class="required"> *</span></label>
     <input type="password" id="id_password" name="password" autocomplete="new-password" required>
-</div>
-
-{% if modal_mode == "update" %}
-<div class="form-group">
-    <label></label>
-    <p class="form-help">Leave blank to keep current password.</p>
 </div>
 {% endif %}
 
@@ -65,12 +60,19 @@
         const tenantGroup = document.getElementById("tenant-group");
         const tenantSelect = document.getElementById("id_tenant_id");
         const initialValue = document.getElementById("initial_is_superuser");
+        const usernameInput = document.getElementById("id_username");
 
         function isTruthy(value) {
             if (!value) return false;
             const normalized = value.toString().toLowerCase();
             return normalized === "true" || normalized === "1" || normalized === "on";
         }
+
+        function normalizeUsername() {
+            if (!usernameInput) return;
+            usernameInput.value = usernameInput.value.toLowerCase();
+        }
+
 
         function toggleTenantField() {
             if (!checkbox || !tenantGroup || !tenantSelect) return;
@@ -85,6 +87,12 @@
 
         if (checkbox && initialValue) {
             checkbox.checked = isTruthy(initialValue.value);
+        }
+
+        if (usernameInput) {
+            usernameInput.addEventListener("input", normalizeUsername);
+            usernameInput.addEventListener("blur", normalizeUsername);
+            normalizeUsername();
         }
 
         if (checkbox) {
