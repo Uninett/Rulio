@@ -76,6 +76,9 @@ from .views.objects_service_groups import (
 
 from .views.tags_page import (
     get_tags_page,
+    post_tag_view,
+    update_tag_view,
+    delete_tag_view,
 )
 
 from .views.modal_add import (
@@ -126,6 +129,9 @@ urlpatterns = [
     path("service-groups/<int:object_id>/delete/", delete_service_group_view, name="delete-service-group-view"),
     # Tags Page
     path("tags/", get_tags_page, name="tags"),
+    path("tags/create/", post_tag_view, name="post-tag-view"),
+    path("tags/<int:object_id>/update/", update_tag_view, name="update-tag-view"),
+    path("tags/<int:object_id>/delete/", delete_tag_view, name="delete-tag-view"),
     # Modal Partial
     path("modal/add/<str:object_type>/", get_add_modal, name="modal-add"),
     path("modal/add/<str:object_type>/<str:type>/form/", get_add_modal_form_content, name="modal-add-form-content"),

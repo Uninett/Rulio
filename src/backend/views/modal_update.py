@@ -7,6 +7,7 @@ from constants import GLOBAL_TENANT_ID
 from django.contrib.auth.models import User
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+from backend.objects.attributes.tag import Tag
 
 from backend.views.modal import get_group_options_view, get_item_options_view
 from backend.views.objects_addresses import build_ip_input
@@ -110,9 +111,16 @@ def get_update_modal_config(object_type):
             "modal_refresh_target": "#objects-content",
             "submit_handler": None,
         },
-        "tags": {
+        "tag": {
             "title": "Update Tag",
             "modal_object_type": "tags",
+            "modal_type": None,
+            "content_partial": "partials/modals/_tag_form.html",
+            "post_url_name": "update-tag-view",
+            "delete_url_name": "delete-tag-view",
+            "refresh_url_name": "tags",
+            "modal_refresh_target": "#tags-content",
+            "submit_handler": None,
         },
     }
     return configs.get(object_type)
@@ -131,6 +139,8 @@ def get_update_modal(request, row_id):
 
     # Get the modal configuration for the object type
     config = get_update_modal_config(object_type)
+    if not config:
+        return HttpResponse("Unsupported object type.", status=400)
 
     # Prepare placeholders for object data and options context
     object_data = None
@@ -245,6 +255,19 @@ def get_update_modal(request, row_id):
                 options_context["item_options"] = get_item_options_view(request, "services")
                 selected_ids = [int(item["id"]) for item in object_data.get("services", [])]
                 options_context["selected_service_ids"] = selected_ids
+
+    elif object_type == "tag":
+        if tenant_id is None:
+            return HttpResponse("No tenant selected.", status=400)
+
+        try:
+            tag = Tag.objects.get(id=object_id, tenant_id=tenant_id)
+            object_data = {
+                "name": tag.name,
+                "description": tag.description,
+            }
+        except Tag.DoesNotExist:
+            object_data = None
 
     if not object_data:
         return HttpResponse("Object not found.", status=404)
