@@ -151,13 +151,18 @@ def get_update_modal(request, row_id):
         user = User.objects.filter(id=object_id).first()
 
         if user:
+            membership = TenantUserMember.objects.filter(user=user).exclude(tenant_id=GLOBAL_TENANT_ID).first()
+
             object_data = {
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "email": user.email,
                 "is_superuser": user.is_superuser,
+                "tenant_id": membership.tenant_id if membership else "",
+                "is_tenant_admin": (membership.role == TenantUserMember.TenantRole.ADMIN if membership else False),
             }
+
             options_context["tenant_options"] = [
                 {"id": tenant.id, "name": tenant.tenant_name}
                 for tenant in Tenant.objects.exclude(id=GLOBAL_TENANT_ID).order_by("tenant_name")
