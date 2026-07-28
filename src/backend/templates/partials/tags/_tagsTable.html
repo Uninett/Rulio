@@ -1,15 +1,19 @@
-<section class="table-container">
-    <table>
+<section class="objects-table-container table-container">
+    <table class="objects-table objects-table--tags">
         <thead>
             <tr>
                 {% for header in tags.headers %}
-                <th>{{ header }}</th>
+                <th class="col-{{ forloop.counter }}">{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
-        <tbody id="addresses-table">
+        <tbody id="tags-table">
             {% for row in tags.rows %}
-            {% include "partials/objects/_tableRow.html" with row=row headers=tags.headers%}
+            {% include "partials/objects/_tableRow.html" with row=row headers=tags.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ tags.headers|length }}">No tags found.</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>

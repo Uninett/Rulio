@@ -1,15 +1,19 @@
-<section class="table-container">
-    <table>
+<section class="objects-table-container table-container">
+    <table class="objects-table objects-table--services">
         <thead>
             <tr>
                 {% for header in services.headers %}
-                <th>{{ header }}</th>
+                <th class="col-{{ forloop.counter }}">{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody id="services-table">
             {% for row in services.rows %}
-            {% include "partials/objects/_tableRow.html" with row=row headers=services.headers%}
+            {% include "partials/objects/_tableRow.html" with row=row headers=services.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ services.headers|length }}">No services found.</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>

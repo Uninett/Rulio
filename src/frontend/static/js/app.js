@@ -1,5 +1,10 @@
-// Handle clicks on toggle buttons.
-document.addEventListener("click", function (event) {
+/*
+====================================================================
+Toggle Buttons
+====================================================================
+*/
+
+function handleToggleButtonClick(event) {
     const button = event.target.closest(".btn-toggle");
     if (!button) return;
 
@@ -7,23 +12,28 @@ document.addEventListener("click", function (event) {
     if (!container) return;
 
     container.querySelectorAll(".btn-toggle").forEach((btn) => {
-        btn.classList.remove("active"); // Removes the active state from sibling buttons
+        btn.classList.remove("active");
     });
 
-    button.classList.add("active"); // Marks the clicked button as active.
-});
+    button.classList.add("active");
+}
 
-// Close the modal, and ask for confirmation before clearing the modal content.
+
+/*
+====================================================================
+Modal
+====================================================================
+*/
+
 function closeModal(event = null) {
     if (event && event.target !== event.currentTarget) return;
 
     const shouldClose = confirm("Are you sure you want to cancel? \n Your changes will be lost.");
     if (!shouldClose) return;
 
-    document.getElementById('modal-container').innerHTML = '';
+    document.getElementById("modal-container").innerHTML = "";
 }
 
-// Close the modal and refresh the objects content area. If a refresh URL is provided, reload the relevant page content with HTMX.
 function closeModalAndRefresh(url, target) {
     const modalContainer = document.getElementById("modal-container");
     if (modalContainer) {
@@ -38,61 +48,160 @@ function closeModalAndRefresh(url, target) {
     });
 }
 
-// Validate the address form before submit. At least one of IPv4 or IPv6 must be selected.
+
+/*
+====================================================================
+Draggable Modal
+====================================================================
+*/
+
+const draggableModalState = {
+    activeDrag: null,
+    suppressBackdropClick: false
+};
+
+function makeModalDraggable(modalId, headerId) {
+    const modal = document.getElementById(modalId);
+    const header = document.getElementById(headerId);
+
+    if (!modal || !header || header.dataset.dragBound === "true") return;
+    header.dataset.dragBound = "true";
+
+    header.addEventListener("mousedown", function (e) {
+        if (e.button !== 0) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rect = modal.getBoundingClientRect();
+
+        draggableModalState.activeDrag = {
+            modal,
+            offsetX: e.clientX - rect.left,
+            offsetY: e.clientY - rect.top
+        };
+
+        modal.style.left = `${rect.left}px`;
+        modal.style.top = `${rect.top}px`;
+        modal.style.transform = "none";
+
+        document.body.style.userSelect = "none";
+    });
+
+    header.addEventListener("click", function (e) {
+        e.stopPropagation();
+    });
+}
+
+function initDraggableModal() {
+    makeModalDraggable("draggable-modal", "draggable-modal-header");
+}
+
+function handleModalMouseMove(e) {
+    if (!draggableModalState.activeDrag) return;
+
+    const { modal, offsetX, offsetY } = draggableModalState.activeDrag;
+
+    let newLeft = e.clientX - offsetX;
+    let newTop = e.clientY - offsetY;
+
+    modal.style.left = `${newLeft}px`;
+    modal.style.top = `${newTop}px`;
+
+    draggableModalState.suppressBackdropClick = true;
+}
+
+function handleModalMouseUp() {
+    if (!draggableModalState.activeDrag) return;
+
+    draggableModalState.activeDrag = null;
+    document.body.style.userSelect = "";
+
+    setTimeout(() => {
+        draggableModalState.suppressBackdropClick = false;
+    }, 0);
+}
+
+function handleBackdropClickSuppression(e) {
+    if (!draggableModalState.suppressBackdropClick) return;
+
+    const backdrop = e.target.closest(".modal-backdrop");
+    if (backdrop) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+}
+
+
+/*
+====================================================================
+Address Form
+====================================================================
+*/
+
 function prepareAddressForm(event) {
     const form = event.target;
     const ipv4InputField = form.querySelector('[name="ipv4_input"]');
     const ipv6InputField = form.querySelector('[name="ipv6_input"]');
 
-    const ipv4Input = ipv4InputField?.value.trim() || '';
-    const ipv6Input = ipv6InputField?.value.trim() || '';
+    const ipv4Input = ipv4InputField?.value.trim() || "";
+    const ipv6Input = ipv6InputField?.value.trim() || "";
 
-    ipv4InputField?.setCustomValidity('');
-    ipv6InputField?.setCustomValidity('');
+    ipv4InputField?.setCustomValidity("");
+    ipv6InputField?.setCustomValidity("");
 
     if (!ipv4Input && !ipv6Input) {
         event.preventDefault();
-        ipv4InputField?.setCustomValidity('Please enter at least one IPv4 or IPv6 value.');
+        ipv4InputField?.setCustomValidity("Please enter at least one IPv4 or IPv6 value.");
         ipv4InputField?.reportValidity();
-        return;
     }
 }
 
-// Initialize all membership selector components inside the given root element.
-function initializeMembershipSelectors(root = document) {
 
-    // Find every membership selector component in the current root.
+/*
+====================================================================
+Membership Selectors
+====================================================================
+*/
+
+function initializeMembershipSelectors(root = document) {
     root.querySelectorAll(".membership-selector").forEach((selector) => {
         const inputName = selector.dataset.inputName;
-        const availableList = selector.querySelector('.membership-list-available');
-        const selectedList = selector.querySelector('.membership-list-selected');
+        const availableList = selector.querySelector(".membership-list-available");
+        const selectedList = selector.querySelector(".membership-list-selected");
 
         let draggedItem = null;
 
-        // Attach drag handlers to every existing item inside this selector.
         selector.querySelectorAll(".membership-list-item").forEach(setupDraggableItem);
 
-        // Add drag start/end behavior to one item.
         function setupDraggableItem(item) {
-            // When dragging starts, store the current item.
             item.addEventListener("dragstart", () => {
                 draggedItem = item;
                 item.classList.add("dragging");
             });
 
-            // When dragging ends, clear the stored item.
             item.addEventListener("dragend", () => {
                 item.classList.remove("dragging");
                 draggedItem = null;
             });
+
+            item.addEventListener("dblclick", () => {
+                const currentList = item.parentElement;
+                draggedItem = item;
+
+                if (currentList === availableList) {
+                    moveItem(selectedList);
+                } else {
+                    moveItem(availableList);
+                }
+
+                draggedItem = null;
+            });
         }
 
-        // Ensure that the dragged/selected item either has or does not have a hidden input.
         function ensureHiddenInput(item, shouldExist) {
-            // Look for an existing hidden input with the configured input name inside this item.
             let hiddenInput = item.querySelector(`input[type="hidden"][name="${inputName}"]`);
 
-            // If the input should exist but does not yet exist, create it.
             if (shouldExist && !hiddenInput) {
                 hiddenInput = document.createElement("input");
                 hiddenInput.type = "hidden";
@@ -101,95 +210,59 @@ function initializeMembershipSelectors(root = document) {
                 item.appendChild(hiddenInput);
             }
 
-            // If the input should not exist but does exist, remove it.
             if (!shouldExist && hiddenInput) {
                 hiddenInput.remove();
             }
         }
 
-        // Find the item before which the dragged element should be inserted, by compareing the current mouse Y position with the vertical midpoint of each item.
         function getDropTarget(list, y) {
-            // Get all items except the one currently being dragged.
             const items = [...list.querySelectorAll(".membership-list-item:not(.dragging)")];
 
-            // Return the first item whose midpoint is below the mouse position.
             return items.find((item) => {
                 const rect = item.getBoundingClientRect();
                 return y < rect.top + rect.height / 2;
             }) || null;
         }
 
-        // Move the dragged item into the target list. If a Y position is provided, insert the item at the dropped position.
         function moveItem(targetList, y = null) {
             if (!draggedItem) return;
 
-            // Prevent the same item from existing twice in the target list.
             const alreadyExists = Array.from(targetList.querySelectorAll(".membership-list-item"))
                 .some(item => item !== draggedItem && item.dataset.id === draggedItem.dataset.id);
 
             if (alreadyExists) return;
 
-            // If a drop position was provided, find the closest target item.
             const dropTarget = y !== null ? getDropTarget(targetList, y) : null;
 
-            // If there is a drop target, insert before it.
             if (dropTarget) {
-                targetList.insertBefore(draggedItem, dropTarget); // If there is a drop target, insert before it.
+                targetList.insertBefore(draggedItem, dropTarget);
             } else {
-                targetList.appendChild(draggedItem); // Otherwise, append to the end of the list.
+                targetList.appendChild(draggedItem);
             }
 
-            // If the item is now in the selected list, make sure it has a hidden input.
-            if (targetList === selectedList) {
-                ensureHiddenInput(draggedItem, true);
-            } else {
-                ensureHiddenInput(draggedItem, false); // If it is in the available list, remove the hidden input.
-            }
+            ensureHiddenInput(draggedItem, targetList === selectedList);
         }
 
-        // Enable dropping on both lists.
         [availableList, selectedList].forEach((list) => {
-            // Prevent the browser’s default handling so dropping is allowed.
             list.addEventListener("dragover", (event) => {
                 event.preventDefault();
             });
 
-            // When the item is dropped, move it into this list at the drop position.
             list.addEventListener("drop", (event) => {
                 event.preventDefault();
                 moveItem(list, event.clientY);
             });
         });
-
-        // Support double-click as a quicker alternative to drag-and-drop.
-        selector.querySelectorAll(".membership-list-item").forEach((item) => {
-            item.addEventListener("dblclick", () => {
-                const currentList = item.parentElement;
-                if (currentList === availableList) {
-                    draggedItem = item;
-                    moveItem(selectedList);
-                } else {
-                    draggedItem = item;
-                    moveItem(availableList);
-                }
-                draggedItem = null;
-            });
-        });
     });
 }
 
-// Re-initialize membership selectors after HTMX swaps new HTML into the page.
-document.body.addEventListener("htmx:afterSwap", function (event) {
-    initializeMembershipSelectors(event.target);
-});
 
-// Initialize membership selectors on the initial page load.
-document.addEventListener("DOMContentLoaded", function () {
-    initializeMembershipSelectors(document);
-});
+/*
+====================================================================
+User Menu
+====================================================================
+*/
 
-
-// Toggle the visibility of the user menu dropdown when the profile button is clicked.
 function toggleUserMenu(event) {
     event.stopPropagation();
 
@@ -199,7 +272,7 @@ function toggleUserMenu(event) {
     dropdown.classList.toggle("hidden");
 }
 
-document.addEventListener("click", function (event) {
+function closeUserMenuOnOutsideClick(event) {
     const menu = document.querySelector(".user-menu");
     if (!menu) return;
 
@@ -209,4 +282,88 @@ document.addEventListener("click", function (event) {
     if (!menu.contains(event.target)) {
         dropdown.classList.add("hidden");
     }
+}
+
+
+/*
+====================================================================
+Expandable Rows
+====================================================================
+*/
+
+function expandRow(rowId) {
+    const detailsRow = document.getElementById(`details-${rowId}`);
+    const openedRow = document.getElementById(`row-${rowId}`);
+
+    if (!detailsRow || !openedRow) return;
+
+    if (detailsRow.style.display === "table-row") {
+        detailsRow.style.display = "none";
+        openedRow.classList.remove("expanded-row");
+    } else {
+        detailsRow.style.display = "table-row";
+        openedRow.classList.add("expanded-row");
+    }
+}
+
+function focusAndExpandFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const rowId = params.get("expand_id");
+    if (!rowId) return;
+
+    let attempts = 0;
+    const maxAttempts = 30;
+
+    const interval = setInterval(function () {
+        const row = document.getElementById(`row-${rowId}`);
+        const detailsRow = document.getElementById(`details-${rowId}`);
+
+        if (row && detailsRow) {
+            if (window.getComputedStyle(detailsRow).display !== "table-row") {
+                expandRow(rowId);
+            }
+
+            setTimeout(function () {
+                row.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            }, 200);
+
+            clearInterval(interval);
+            window.history.replaceState({}, "", window.location.pathname);
+        }
+
+        attempts++;
+        if (attempts >= maxAttempts) {
+            clearInterval(interval);
+        }
+    }, 200);
+}
+
+
+/*
+====================================================================
+Event Listeners
+====================================================================
+*/
+
+document.addEventListener("click", handleToggleButtonClick);
+document.addEventListener("click", closeUserMenuOnOutsideClick);
+document.addEventListener("mousemove", handleModalMouseMove);
+document.addEventListener("mouseup", handleModalMouseUp);
+document.addEventListener("click", handleBackdropClickSuppression, true);
+
+document.addEventListener("DOMContentLoaded", function () {
+    initDraggableModal();
+    initializeMembershipSelectors(document);
+    focusAndExpandFromUrl();
 });
+
+document.addEventListener("htmx:afterSwap", function (event) {
+    initDraggableModal();
+    initializeMembershipSelectors(event.target);
+    focusAndExpandFromUrl();
+});
+
+document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);

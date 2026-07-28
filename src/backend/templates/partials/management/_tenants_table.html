@@ -10,7 +10,7 @@
                 {% endfor %}
             </tr>
         </thead>
-        <tbody id="management-table tenants-table">
+        <tbody class="management-table tenants-table">
             {% for row in table_data.rows %}
             <tr>
                 <td class="tenant-name-column">{{ row.name }}</td>
@@ -18,7 +18,8 @@
                 <td class="actions-column">
                     <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.row_id %}"
                         hx-target="#modal-container" hx-swap="innerHTML">
-                        <img class="btn-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
+                        <img class="btn-icon actions-icon" src="{% static 'images/actions.svg' %}" alt=""
+                            aria-hidden="true">
                     </button>
                 </td>
             </tr>

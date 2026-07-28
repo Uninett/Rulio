@@ -65,6 +65,7 @@ Toggle Buttons
 
 .btn-toggle:hover {
     background-color: #d6d6d6;
+    border: none;
 }
 
 
@@ -78,18 +79,4 @@ Add Button
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-}
-
-
-/*
-====================================================================
-Button Icon
-====================================================================
-*/
-
-.btn-icon {
-    width: 1rem;
-    height: 1rem;
-    object-fit: contain;
-    flex-shrink: 0;
 }

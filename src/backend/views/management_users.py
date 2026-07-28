@@ -201,6 +201,7 @@ def update_user_view(request, object_id):
     if not user:
         return HttpResponse("User not found.", status=404)
 
+    username = request.POST.get("username", "").strip()
     first_name = request.POST.get("first_name", "").strip()
     last_name = request.POST.get("last_name", "").strip()
     email = request.POST.get("email", "").strip()
@@ -208,6 +209,7 @@ def update_user_view(request, object_id):
     is_superuser = request.POST.get("is_superuser") == "on"
 
     try:
+        user.username = username
         user.first_name = first_name
         user.last_name = last_name
         user.email = email
