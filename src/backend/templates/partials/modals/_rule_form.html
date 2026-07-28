@@ -1,0 +1,56 @@
+<div class="form-group">
+    <label for="action">Action</label>
+    <select id="action" name="action">
+        {% if object_data.action == "allow" %}
+        <option value="allow" selected>Allow</option>
+        {% else %}
+        <option value="allow">Allow</option>
+        {% endif %}
+        {% if object_data.action == "deny" %}
+        <option value="deny" selected>Deny</option>
+        {% else %}
+        <option value="deny">Deny</option>
+        {% endif %}
+        {% if object_data.action == "reject" %}
+        <option value="reject" selected>Reject</option>
+        {% else %}
+        <option value="reject">Reject</option>
+        {% endif %}
+    </select>
+</div>
+
+<div class="form-group">
+    <label>Source objects</label>
+    <div id="rule-source-summary" class="selector-summary">
+        No source objects selected.
+    </div>
+    <input type="hidden" name="source_ids" id="rule-source-ids" value="">
+    <button type="button" class="btn-secondary" hx-get="{% url 'rule-selector-modal' 'source' %}"
+        hx-target="#modal-container" hx-swap="beforeend">
+        Edit Sources
+    </button>
+</div>
+
+<div class="form-group">
+    <label>Destination objects</label>
+    <div id="rule-destination-summary" class="selector-summary">
+        No destination objects selected.
+    </div>
+    <input type="hidden" name="destination_ids" id="rule-destination-ids" value="">
+    <button type="button" class="btn-secondary" hx-get="{% url 'rule-selector-modal' 'destination' %}"
+        hx-target="#modal-container" hx-swap="beforeend">
+        Edit Destinations
+    </button>
+</div>
+
+<div class="form-group">
+    <label>Services</label>
+    <div id="rule-services-summary" class="selector-summary">
+        No services selected.
+    </div>
+    <input type="hidden" name="service_ids" id="rule-service-ids" value="">
+    <button type="button" class="btn-secondary" hx-get="{% url 'rule-selector-modal' 'service' %}"
+        hx-target="#modal-container" hx-swap="beforeend">
+        Edit Services
+    </button>
+</div>
