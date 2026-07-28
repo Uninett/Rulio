@@ -45,7 +45,6 @@ Objects Table Container
     font-family: inherit;
     font-size: smaller;
     min-width: 0;
-    width: 100%;
 }
 
 .objects-table thead th {
@@ -220,4 +219,62 @@ Objects Tags
         font-size: small;
         max-width: 1500px;
     }
+}
+
+/*
+====================================================================
+Spectific table layout
+====================================================================
+*/
+
+
+/* Type */
+.objects-table--addresses .col-1,
+.objects-table--services .col-1 {
+    width: 3%;
+}
+
+/* Name */
+.objects-table--addresses .col-2,
+.objects-table--services .col-2 {
+    width: 12%;
+}
+
+/* Description */
+.objects-table--addresses .col-3,
+.objects-table--services .col-3 {
+    width: 30%;
+}
+
+/* IP Value */
+.objects-table--addresses .col-4,
+.objects-table--addresses .col-5 {
+    width: 10%;
+}
+
+/* Protocol */
+.objects-table--services .col-4 {
+    width: 4%;
+}
+
+/* Post start/end */
+.objects-table--services .col-5,
+.objects-table--services .col-6 {
+    width: 8%;
+}
+
+/* Tags */
+.objects-table--addresses .col-6,
+.objects-table--services .col-7 {
+    width: 20%;
+}
+
+/* Name */
+.objects-table--tags .col-1 {
+    width: 30%;
+}
+
+/* Description */
+.objects-table--tags .col-2 {
+    width: 65%;
 }

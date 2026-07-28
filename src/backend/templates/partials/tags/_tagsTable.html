@@ -1,9 +1,9 @@
 <section class="objects-table-container table-container">
-    <table class="objects-table">
+    <table class="objects-table objects-table--tags">
         <thead>
             <tr>
                 {% for header in tags.headers %}
-                <th>{{ header }}</th>
+                <th class="col-{{ forloop.counter }}">{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
