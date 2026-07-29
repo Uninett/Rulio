@@ -13,16 +13,8 @@ Objects Table Container
     border-bottom: 1px solid #E0E0E0;
     position: relative;
     line-height: auto;
-    font-size: smaller;
+    font-size: inherit;
 
-}
-
-td:first-child {
-    border-left: 4px solid #D1CDFF;
-}
-
-tr.group-row td:first-child {
-    border-left: 4px solid #A79BFF;
 }
 
 tr:hover {
