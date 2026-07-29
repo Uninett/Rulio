@@ -96,17 +96,13 @@ COMMON_ERROR_KEYWORDS = (
 def _assert_no_common_error_keywords(response_content: bytes) -> None:
     content = response_content.lower()
     for keyword in COMMON_ERROR_KEYWORDS:
-        assert keyword not in content, (
-            f"Found error keyword in response: "
-            f"{keyword.decode('utf-8', errors='ignore')}"
-        )
+        assert keyword not in content, f"Found error keyword in response: {keyword.decode('utf-8', errors='ignore')}"
 
 
 def _assert_template_used(response, expected_template_name: str) -> None:
     used_templates = [template.name for template in response.templates if template.name]
     assert expected_template_name in used_templates, (
-        f"Expected template '{expected_template_name}' to be used, "
-        f"but got {used_templates}"
+        f"Expected template '{expected_template_name}' to be used, but got {used_templates}"
     )
 
 
@@ -143,11 +139,9 @@ def _assert_basic_modal_health(response) -> None:
     content = response.content.lower()
     _assert_no_common_error_keywords(content)
 
-    assert (
-        b"modal" in content
-        or b"form" in content
-        or b"hx-" in content
-    ), "Expected modal/form fragment content to be present"
+    assert b"modal" in content or b"form" in content or b"hx-" in content, (
+        "Expected modal/form fragment content to be present"
+    )
 
 
 @pytest.mark.django_db
