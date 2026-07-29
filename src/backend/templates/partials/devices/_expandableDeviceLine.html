@@ -1,4 +1,147 @@
+<style>
+    .nested-device-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 1.2px;
+        table-layout: fixed;
+        margin-left: 0;
+    }
+
+    .detail-block {
+        width: 100%;
+        min-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .nested-device-table tr {
+        background-color: white;
+    }
+
+    .nested-device-table tr:hover {
+        background-color: #E8E8E8;
+        cursor: pointer;
+    }
+
+    .nested-device-table td,
+    .nested-device-table th {
+        font-family: "Haffer", sans-serif;
+        text-align: left;
+        border: none;
+        border-top: 1px solid #E0E0E0;
+        border-bottom: 1px solid #E0E0E0;
+        position: relative;
+        font-size: small;
+        padding: 4px 6px;
+        vertical-align: top;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .nested-device-table td:first-child,
+    .nested-device-table th:first-child {
+        border-left: 4px solid #D1CDFF;
+    }
+
+    .inline-device-details,
+    .inline-interface-details {
+        display: none;
+    }
+
+    .nested-device-table td:nth-child(1),
+    .nested-device-table th:nth-child(1) {
+        width: 30%;
+    }
+
+    .nested-device-table td:nth-child(2),
+    .nested-device-table th:nth-child(2) {
+        width: 20%;
+    }
+
+    .nested-device-table td:nth-child(3),
+    .nested-device-table th:nth-child(3) {
+        width: 10%;
+    }
+
+    .nested-device-table td:nth-child(4),
+    .nested-device-table th:nth-child(4) {
+        width: 40%;
+    }
+
+    .inline-device-details td:first-child,
+    .inline-device-details th:first-child {
+        border-left: 4px solid lightgray;
+        padding-left: 20px;
+    }
+
+    .inline-interface-details td:first-child,
+    .inline-interface-details th:first-child {
+        border-left: 4px solid #bdbdbd;
+        padding-left: 40px;
+    }
+
+    .filter-group-row td:first-child {
+        padding-left: 60px;
+        font-weight: bold;
+    }
+
+    .filter-row td:first-child {
+        padding-left: 80px;
+    }
+
+    .filter-row td:nth-child(1) {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .section-label-row {
+        padding: 8px 12px 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #666;
+        background-color: "fafafa";
+        border-bottom: 1px solid "ddd";
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .section-label-row th,
+    .section-label-row td {
+        border-left: none !important;
+        border-top: none !important;
+        border-bottom: none !important;
+    }
+
+    .header-description th,
+    .header-description td {
+        border-left: none !important;
+        border-top: none !important;
+        border-bottom: none !important;
+    }
+</style>
+
 <div class="detail-block">
+    <table class="nested-device-table">
+        <thead class="thead--expandableDeviceLine">
+            <tr class="section-label-row">
+                <th colspan="4">Devices</th>
+            </tr>
+            <tr class="header-description">
+                <th>Name</th>
+                <th>Type</th>
+                <th>Platform</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr class="expandable-device-line" onclick="toggleDeviceRows(this, '{{ device.row_id }}')">
+                <td>{{ device.name|default:"None" }}</td>
+                <td>{{ device.type|default:"None" }}</td>
+                <td>{{ device.platform|default:"None" }}</td>
+                <td>{{ device.description|default:"None" }}</td>
+            </tr>
 
     <div class="objects-interface-table">
         <div class="objects-interface-table-header-row">
