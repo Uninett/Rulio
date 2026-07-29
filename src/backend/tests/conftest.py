@@ -1252,3 +1252,60 @@ def built_shading_policy(shading_filter, sample_shading_rules, request_with_sess
         vendor="juniper",
         target_spec=None,
     )
+
+
+@pytest.fixture
+def built_icmp_policy(sample_addresses, request_with_session, create_testing_tenant):
+    filter_obj = create_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="ICMP_Test_Policy",
+        description="ICMP filter with explicit type and code",
+    )
+
+    icmp_service = Service(
+        name="Test_ICMP_Unreachable",
+        description="ICMP unreachable with explicit code",
+        tenant_id=create_testing_tenant.id,
+        protocol="icmp",
+        icmp_type=3,
+        icmp_code=3,
+    )
+    icmp_service.save()
+
+    rule = create_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        name="Allow_ICMP_Unreachable",
+        filter=filter_obj,
+        rule_sequence=1,
+        enable=True,
+        description="Allow ICMP unreachable",
+        action="accept",
+        log_type="all",
+        hit_count=0,
+    )
+
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule.id,
+        match_type="source",
+        objects=[sample_addresses[0]],
+    )
+    add_objects_to_rule(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        rule_id=rule.id,
+        match_type="destination",
+        objects=[sample_addresses[1], icmp_service],
+    )
+
+    return build_policy_from_filter(
+        actor=request_with_session.user,
+        tenant_id=request_with_session.tenant_id,
+        filter_id=filter_obj.id,
+        policy_sequence=10,
+        vendor="fixture_vendor",
+        target_spec=None,
+    )

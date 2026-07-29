@@ -152,6 +152,51 @@ class TestGenerateConfig:
         assert "destination-port 80;" in juniper_config
         assert "protocol tcp;" in juniper_config
 
+    def test_generate_icmp_service_config(self, built_icmp_policy):
+        for vendor, target_spec in self.vendor_target_spec_pairs:
+            vendor_policy = copy.deepcopy(built_icmp_policy)
+            vendor_policy.set_vendor(vendor, target_spec)
+
+            result = generate_config(vendor_policy)
+            capabilities = get_platform_capabilities(vendor)
+
+            if capabilities.supports_icmp_type and capabilities.supports_icmp_code:
+                assert result.success, [error.message for error in result.errors]
+
+                generated_text = self._extract_generated_text(result.config)
+
+                filepath = TEST_LOGPATH / "icmp" / f"{vendor.upper()}_icmp_generated_config.txt"
+                filedir = TEST_LOGPATH / "icmp"
+                write_configuration_to_file(
+                    result.config,
+                    filepath,
+                    filedir,
+                    vendor,
+                    __name__,
+                    generated_by=vendor,
+                    log_for_vendors=self.log_for_vendors,
+                )
+
+                if vendor == "juniper":
+                    assert "Allow_ICMP_Unreachable" in generated_text
+                    assert "protocol icmp;" in generated_text
+                    assert "icmp-type 3;" in generated_text
+                    assert "icmp-code 3;" in generated_text
+
+            elif capabilities.supports_icmp_type and not capabilities.supports_icmp_code:
+                assert not result.success
+                assert any("does not support ICMP code matching" in warning.message for warning in result.warnings)
+                assert any("no terms found" in error.message.lower() for error in result.errors)
+
+            else:
+                assert not result.success
+                assert any(
+                    "does not support ICMP type matching" in warning.message
+                    or "does not support ICMP code matching" in warning.message
+                    for warning in result.warnings
+                )
+                assert any("no terms found" in error.message.lower() for error in result.errors)
+
     def test_generate_service_group_config(self, built_service_group_policy):
         configs = self._generate_for_all_vendors(
             policy=built_service_group_policy,
@@ -168,10 +213,7 @@ class TestGenerateConfig:
                 continue
 
             self._assert_config_exists_only(config)
-            assert any(
-                "contains service direction 'any'" in warning.message
-                for warning in result.warnings
-            )
+            assert any("contains service direction 'any'" in warning.message for warning in result.warnings)
 
         juniper_config = configs["juniper"]["text"]
         assert "Test_Rule_for_Service_Group_1" in juniper_config
