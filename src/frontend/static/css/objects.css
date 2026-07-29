@@ -5,59 +5,14 @@ Objects Table Container
 */
 
 .objects-table-container {
-    font-family: "Haffer", sans-serif;
-    /* color-layut-background-strong */
-    text-align: left;
-    border: none;
-    border-top: 1px solid #E0E0E0;
-    border-bottom: 1px solid #E0E0E0;
-    position: relative;
-    line-height: auto;
-    font-size: smaller;
-
-}
-
-td:first-child {
-    border-left: 4px solid #D1CDFF;
-}
-
-tr.group-row td:first-child {
-    border-left: 4px solid #A79BFF;
-}
-
-tr:hover {
-    background-color: #E8E8E8;
-    cursor: pointer;
-}
-
-th {
-
-    font-family: "Haffer", sans-serif;
-
-}
-
-table {
     width: 100%;
-    height: 75vh;
+    height: 80vh;
     margin: 2vh auto;
     overflow-y: auto;
     overflow-x: hidden;
-    background-color: #ffffff;
+    background-color: var(--sds-color-layout-surface-1);
     position: relative;
-    line-height: auto;
-    font-size: inherit;
-
-}
-
-tr:hover {
-    background-color: #E8E8E8;
-    cursor: pointer;
-}
-
-th {
-
-    font-family: "Haffer", sans-serif;
-
+    border-radius: 0.5rem;
 }
 
 .objects-table-container table {
@@ -68,91 +23,7 @@ th {
     table-layout: fixed;
 }
 
-/*
-====================================================================
-Objects Table Container
-====================================================================
-*/
-
-.objects-table-container {
-    width: 100%;
-    height: 80vh;
-    margin: 2vh auto;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background-color: #ffffff;
-    position: relative;
-    border-radius: 0.5rem;
-}
-
-.table-container {
-    margin-top: 1rem;
-    height: 75vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-}
-
-
-thead th {
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 2;
-}
-
-
-table {
-    width: 90%;
-    border-collapse: seperate;
-    margin-left: 5%;
-}
-
-.cell-text {
-    display: block;
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.description-cell {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-
-th:nth-child(3),
-td:nth-child(3) {
-    width: 40%;
-}
-
-th:nth-child(1),
-td:nth-child(1) {
-    width: 6%;
-}
-
-th:nth-child(2),
-td:nth-child(2) {
-    width: 15%;
-}
-
-th:nth-child(4),
-td:nth-child(4),
-th:nth-child(5),
-td:nth-child(5) {
-    width: 10%;
-    padding-left: 4px;
-    text-align: center;
-}
-
-td:nth-child(1) {
-    text-align: center;
-}
-
-.add-btn-container {
+.objects-table tbody tr {
     position: relative;
 }
 
@@ -215,6 +86,7 @@ Objects Main Rows
     background-color: var(--sds-color-brand-primary-subtle);
 }
 
+
 /*
 ====================================================================
 Objects Cells
@@ -252,45 +124,6 @@ Objects Cells
     text-overflow: ellipsis;
 }
 
-.inspect-column {
-    width: 1%;
-    white-space: nowrap;
-    text-align: center;
-}
-
-.rule-name-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    min-width: 0;
-}
-
-.row-visibility-control {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.6rem;
-    height: 1.6rem;
-    border: none;
-    background: transparent;
-    padding: 0.15rem;
-    margin: 0;
-    border-radius: 999px;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.row-visibility-control:hover,
-.row-visibility-control:focus {
-    background: var(--sds-color-brand-primary-subtle);
-}
-
-.row-visibility-icon {
-    width: 1rem;
-    height: 1rem;
-    object-fit: contain;
-}
-
 /*
 ====================================================================
 Objects Details Row
@@ -307,7 +140,6 @@ Objects Details Row
 
 .objects-table .details-row td {
     padding: 0;
-    vertical-align: top;
 }
 
 .objects-table .details-content {
@@ -402,7 +234,7 @@ Objects Tags
 
 /*
 ====================================================================
-Specific table layout
+Spectific table layout
 ====================================================================
 */
 
@@ -435,7 +267,7 @@ Specific table layout
     width: 4%;
 }
 
-/* Port start/end */
+/* Post start/end */
 .objects-table--services .col-5,
 .objects-table--services .col-6 {
     width: 8%;
@@ -477,6 +309,11 @@ Specific table layout
     width: 20%;
 }
 
+.objects-table--interfaces .col-1,
+.objects-table--interfaces .col-2 {
+    width: 50%;
+}
+
 /*
 ====================================================================
 Global Rows
@@ -495,88 +332,6 @@ Global Rows
 .objects-table .details-row.readonly-row .details-content {
     background-color: var(--sds-color-layout-surface-2);
     color: var(--sds-color-text-secondary);
-}
-
-/*
-====================================================================
-Filters table layout
-====================================================================
-*/
-
-.filters-table th:nth-child(2),
-.filters-table td:nth-child(2) {
-    text-align: left;
-    padding-left: 4px;
-}
-
-/*
-====================================================================
-Rules table layout
-====================================================================
-*/
-
-.rules-table th:nth-child(1),
-.rules-table td:nth-child(1) {
-    width: 14%;
-}
-
-.rules-table th:nth-child(2),
-.rules-table td:nth-child(2),
-.rules-table th:nth-child(3),
-.rules-table td:nth-child(3),
-.rules-table th:nth-child(4),
-.rules-table td:nth-child(4) {
-    width: 10%;
-}
-
-.rules-table th:nth-child(5),
-.rules-table td:nth-child(5),
-.rules-table th:nth-child(6),
-.rules-table td:nth-child(6),
-.rules-table th:nth-child(7),
-.rules-table td:nth-child(7) {
-    width: 5%;
-    white-space: nowrap;
-    text-align: center;
-}
-
-.rules-table th:nth-child(8),
-.rules-table td:nth-child(8) {
-    width: 18%;
-}
-
-.rules-table th:nth-child(9),
-.rules-table td:nth-child(9),
-.rules-table th:nth-child(10),
-.rules-table td:nth-child(10) {
-    width: 9%;
-    white-space: nowrap;
-}
-
-.rules-table th:nth-child(11),
-.rules-table td:nth-child(11) {
-    width: 10%;
-}
-
-.rules-table td,
-.rules-table th {
-    vertical-align: top;
-}
-
-.rule-object-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    align-items: flex-start;
-}
-
-.rule-object-item {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     background-color: #f1f1f1;
     color: #7a7a7a;
 }
