@@ -1,6 +1,4 @@
 {% load static %}
-<tr id="row-{{ row.id }}" class="main-row {% if row.is_group %}group-row{% endif %}" onclick="expandRow('{{ row.id }}')"
-    hx-get="{% url 'modal-update' row.id %}" hx-trigger="dblclick" hx-target="#modal-container" hx-swap="innerHTML">
 
 <tr id="row-{{ row.id }}" class="main-row {% if row.is_group %}group-row{% endif %}"
     onclick="expandRow('{{ row.id }}')">
@@ -14,6 +12,6 @@
     </td>
 </tr>
 
-<tr id="details-{{ row.id }}" class="details-row">
+<tr id="details-{{ row.id }}" class="details-row" style="display: none;">
     {% include "partials/objects/_expandRow.html" with row=row headers=headers %}
 </tr>
