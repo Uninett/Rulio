@@ -4,6 +4,8 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from backend.utils.logger import set_up_logger
 
+from constants import GLOBAL_TENANT_ID
+from backend.services.helper_user_tenant import can_write_tenant
 from backend.views.search import get_global_search_results
 from backend.views.session import get_tenant_context
 
@@ -100,6 +102,9 @@ def get_tags_view(request):
         rows.append(
             {
                 "id": f"tag-{item.id}",
+                "tenant_id": item.tenant_id,
+                "is_global": item.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, item.tenant_id),
                 "istrue": istrue,
                 "cells": [
                     item.name,
