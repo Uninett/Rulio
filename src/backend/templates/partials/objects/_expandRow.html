@@ -5,6 +5,14 @@
             {% for field in row.expand %}
 
             {% if field.modal_on_dblclick %}
+            {% if field.label == "Devices" %}
+            <div class="detail-block detail-block--devices">
+                <div class="device-table-wrapper">
+                    {% include "partials/devices/_expandableDeviceLine.html" with devices=field.value %}
+                </div>
+            </div>
+            {% endif %}
+            {% if field.label != "Devices" %}
             <div class="detail-block">
                 <p><strong>{{ field.label }}:</strong></p>
 
