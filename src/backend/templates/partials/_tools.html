@@ -14,7 +14,7 @@
     </div>
 
     {% if add_button_label %}
-    {% if can_write_current_tenant %}
+    {% if can_write_current_tenant or request.user.is_superuser %}
     <button class="btn-add" type="button" hx-get="{% url 'modal-add' object_type %}" hx-target="#modal-container"
         hx-swap="innerHTML">
         {{ add_button_label }}
