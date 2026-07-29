@@ -5,27 +5,14 @@ Objects Table Container
 */
 
 .objects-table-container {
-    font-family: "Haffer", sans-serif;
-    /* color-layut-background-strong */
-    text-align: left;
-    border: none;
-    border-top: 1px solid #E0E0E0;
-    border-bottom: 1px solid #E0E0E0;
+    width: 100%;
+    height: 80vh;
+    margin: 2vh auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #ffffff;
     position: relative;
-    line-height: auto;
-    font-size: inherit;
-
-}
-
-tr:hover {
-    background-color: #E8E8E8;
-    cursor: pointer;
-}
-
-th {
-
-    font-family: "Haffer", sans-serif;
-
+    border-radius: 0.5rem;
 }
 
 .objects-table-container table {
@@ -36,7 +23,7 @@ th {
     table-layout: fixed;
 }
 
-.objects-table tbody tr.main-row {
+.objects-table tbody tr {
     position: relative;
 }
 
@@ -80,7 +67,6 @@ th {
     white-space: nowrap;
     text-align: right;
 }
-
 
 /*
 ====================================================================
