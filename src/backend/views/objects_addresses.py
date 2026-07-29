@@ -6,6 +6,7 @@ from backend.services.get import get_all_tags_from_object
 from backend.utils.logger import set_up_logger
 
 from backend.views.objects_helpers import get_objects_toolbar_context
+from backend.views.session import get_tenant_context
 
 from backend.services.attribute_objects.create_attribute_objects import (
     create_address,
@@ -51,6 +52,7 @@ def get_objects_addresses(request):
                 "addresses", add_button_label="Add Address"
             ),  # Render the Objects page with Addresses as the active tab.
         },
+        **get_tenant_context(request),
     )
 
 

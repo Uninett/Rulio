@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from constants import GLOBAL_TENANT_ID
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
-from backend.services.helper_user_tenant import is_superadmin
+from backend.services.helper_user_tenant import is_superadmin, can_write_tenant
 
 
 """
@@ -100,9 +100,19 @@ def get_tenants_view(request):
 
 # Builds the data that the templates need in order to render the tenant dropdown correctly
 def get_tenant_context(request):
+    selected_tenant = request.session.get("current_tenant_id")
+
+    can_write_current_tenant = False
+    if selected_tenant:
+        try:
+            can_write_current_tenant = can_write_tenant(request.user, int(selected_tenant))
+        except Exception:
+            can_write_current_tenant = False
+
     return {
         "tenants": get_tenants_view(request),
-        "selected_tenant": request.session.get("current_tenant_id"),
+        "selected_tenant": selected_tenant,
+        "can_write_current_tenant": can_write_current_tenant,
     }
 
 
