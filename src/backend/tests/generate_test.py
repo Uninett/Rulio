@@ -6,6 +6,7 @@ from backend.services.config_generation.generate_config import (
     generate_multi_policy_config,
     merge_policies,
 )
+from backend.services.config_generation.platform_capabilities import get_platform_capabilities
 from backend.utils.logger import clear_logs, set_up_logger
 from backend.utils.write_to_file import write_configuration_to_file
 from constants import TEST_LOGPATH
@@ -40,7 +41,7 @@ class TestGenerateConfig:
         return generated_text
 
     def _generate_for_all_vendors(self, policy, output_subdir: str, output_prefix: str):
-        generated_texts = {}
+        generated_outputs = {}
 
         for vendor, target_spec in self.vendor_target_spec_pairs:
             vendor_policy = copy.deepcopy(policy)
@@ -63,9 +64,28 @@ class TestGenerateConfig:
                 log_for_vendors=self.log_for_vendors,
             )
 
-            generated_texts[vendor] = generated_text
+            generated_outputs[vendor] = {
+                "text": generated_text,
+                "result": result,
+            }
 
-        return generated_texts
+        return generated_outputs
+
+    @staticmethod
+    def _assert_config_has_common_service_content(config_text: str) -> None:
+        assert "80" in config_text or "www" in config_text
+        assert "53" in config_text or "domain" in config_text
+
+    @staticmethod
+    def _assert_config_exists_only(config_text: str) -> None:
+        assert config_text
+        assert isinstance(config_text, str)
+        assert len(config_text.strip()) > 0
+
+    @staticmethod
+    def _vendor_supports_any_service_render(vendor: str) -> bool:
+        capabilities = get_platform_capabilities(vendor)
+        return capabilities.supports_neutral_port or capabilities.supports_source_port
 
     def test_generate_address_config(self, built_address_policy):
         configs = self._generate_for_all_vendors(
@@ -74,14 +94,16 @@ class TestGenerateConfig:
             output_prefix="address",
         )
 
-        for vendor, config in configs.items():
+        for vendor, output in configs.items():
+            config = output["text"]
+
             if vendor == "paloalto":
                 assert config
                 continue
 
             assert "192.168.1.0" in config
 
-        juniper_config = configs["juniper"]
+        juniper_config = configs["juniper"]["text"]
         assert "Test_Address_Rule_1" in juniper_config
         assert "Test_Address_Rule_2" in juniper_config
         assert "192.168.1.0/24" in juniper_config
@@ -93,7 +115,9 @@ class TestGenerateConfig:
             output_prefix="address_group",
         )
 
-        for vendor, config in configs.items():
+        for vendor, output in configs.items():
+            config = output["text"]
+
             if vendor == "paloalto":
                 assert config
                 continue
@@ -101,7 +125,7 @@ class TestGenerateConfig:
             assert "10.0.0.0" in config
             assert "172.16.0.0" in config
 
-        juniper_config = configs["juniper"]
+        juniper_config = configs["juniper"]["text"]
         assert "Test_Rule_for_Address_Group_1" in juniper_config
         assert "Test_Rule_for_Address_Group_2" in juniper_config
         assert "10.0.0.0/8" in juniper_config
@@ -113,19 +137,65 @@ class TestGenerateConfig:
             output_prefix="service",
         )
 
-        for vendor, config in configs.items():
+        for vendor, output in configs.items():
+            config = output["text"]
+
             if vendor == "paloalto":
                 assert config
                 continue
 
-            assert "80" in config or "www" in config
-            assert "53" in config or "domain" in config
+            self._assert_config_has_common_service_content(config)
 
-        juniper_config = configs["juniper"]
+        juniper_config = configs["juniper"]["text"]
         assert "Test_Service_Rule_1" in juniper_config
         assert "Test_Service_Rule_2" in juniper_config
         assert "destination-port 80;" in juniper_config
         assert "protocol tcp;" in juniper_config
+
+    def test_generate_icmp_service_config(self, built_icmp_policy):
+        for vendor, target_spec in self.vendor_target_spec_pairs:
+            vendor_policy = copy.deepcopy(built_icmp_policy)
+            vendor_policy.set_vendor(vendor, target_spec)
+
+            result = generate_config(vendor_policy)
+            capabilities = get_platform_capabilities(vendor)
+
+            if capabilities.supports_icmp_type and capabilities.supports_icmp_code:
+                assert result.success, [error.message for error in result.errors]
+
+                generated_text = self._extract_generated_text(result.config)
+
+                filepath = TEST_LOGPATH / "icmp" / f"{vendor.upper()}_icmp_generated_config.txt"
+                filedir = TEST_LOGPATH / "icmp"
+                write_configuration_to_file(
+                    result.config,
+                    filepath,
+                    filedir,
+                    vendor,
+                    __name__,
+                    generated_by=vendor,
+                    log_for_vendors=self.log_for_vendors,
+                )
+
+                if vendor == "juniper":
+                    assert "Allow_ICMP_Unreachable" in generated_text
+                    assert "protocol icmp;" in generated_text
+                    assert "icmp-type 3;" in generated_text
+                    assert "icmp-code 3;" in generated_text
+
+            elif capabilities.supports_icmp_type and not capabilities.supports_icmp_code:
+                assert not result.success
+                assert any("does not support ICMP code matching" in warning.message for warning in result.warnings)
+                assert any("no terms found" in error.message.lower() for error in result.errors)
+
+            else:
+                assert not result.success
+                assert any(
+                    "does not support ICMP type matching" in warning.message
+                    or "does not support ICMP code matching" in warning.message
+                    for warning in result.warnings
+                )
+                assert any("no terms found" in error.message.lower() for error in result.errors)
 
     def test_generate_service_group_config(self, built_service_group_policy):
         configs = self._generate_for_all_vendors(
@@ -134,18 +204,23 @@ class TestGenerateConfig:
             output_prefix="service_group",
         )
 
-        for vendor, config in configs.items():
-            if vendor == "paloalto":
-                assert config
+        for vendor, output in configs.items():
+            config = output["text"]
+            result = output["result"]
+
+            if self._vendor_supports_any_service_render(vendor):
+                self._assert_config_has_common_service_content(config)
                 continue
 
-            assert "80" in config or "www" in config
-            assert "53" in config or "domain" in config
+            self._assert_config_exists_only(config)
+            assert any("contains service direction 'any'" in warning.message for warning in result.warnings)
 
-        juniper_config = configs["juniper"]
+        juniper_config = configs["juniper"]["text"]
         assert "Test_Rule_for_Service_Group_1" in juniper_config
         assert "protocol tcp;" in juniper_config
         assert "protocol udp;" in juniper_config
+        assert "port [ 53 80 1000-2000 ];" in juniper_config
+        assert "port [ 53 3000-4000 ];" in juniper_config
 
     def test_generate_combined_config(self, built_combined_policy):
         configs = self._generate_for_all_vendors(
@@ -154,7 +229,9 @@ class TestGenerateConfig:
             output_prefix="combined",
         )
 
-        for vendor, config in configs.items():
+        for vendor, output in configs.items():
+            config = output["text"]
+
             if vendor == "paloalto":
                 assert config
                 continue
@@ -163,7 +240,7 @@ class TestGenerateConfig:
             assert "80" in config or "www" in config
             assert "53" in config or "domain" in config
 
-        juniper_config = configs["juniper"]
+        juniper_config = configs["juniper"]["text"]
         assert "Combined_Rule_1" in juniper_config
         assert "Combined_Rule_2" in juniper_config
         assert "destination-port 80;" in juniper_config
@@ -175,7 +252,9 @@ class TestGenerateConfig:
             output_prefix="realistic",
         )
 
-        for vendor, config in configs.items():
+        for vendor, output in configs.items():
+            config = output["text"]
+
             if vendor == "paloalto":
                 assert config
                 continue
@@ -184,7 +263,7 @@ class TestGenerateConfig:
             assert "172.16.20.53" in config
             assert "443" in config or "https" in config
 
-        juniper_config = configs["juniper"]
+        juniper_config = configs["juniper"]["text"]
         assert "Allow_Trusted_To_Web" in juniper_config
         assert "Allow_Trusted_To_DNS" in juniper_config
         assert "Deny_Admins_To_Blocked" in juniper_config

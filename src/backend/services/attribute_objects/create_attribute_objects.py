@@ -165,6 +165,8 @@ def create_service(
     protocol: str,
     port_start: int | None = None,
     port_end: int | None = None,
+    icmp_type: int | None = None,
+    icmp_code: int | None = None,
 ) -> Service:
 
     require_write_tenant(actor, tenant_id)
@@ -176,6 +178,8 @@ def create_service(
         protocol=protocol.upper(),
         port_start=port_start,
         port_end=port_end,
+        icmp_type=icmp_type,
+        icmp_code=icmp_code,
     )
     try:
         service.full_clean()
@@ -198,6 +202,8 @@ def create_and_add_service_to_groups(
     port_start: int | None = None,
     port_end: int | None = None,
     group_ids: list[int] | None = None,
+    icmp_type: int | None = None,
+    icmp_code: int | None = None,
 ) -> Service:
 
     require_write_tenant(actor, tenant_id)
@@ -210,6 +216,8 @@ def create_and_add_service_to_groups(
         protocol=protocol,
         port_start=port_start,
         port_end=port_end,
+        icmp_type=icmp_type,
+        icmp_code=icmp_code,
     )
 
     if group_ids:
@@ -230,6 +238,8 @@ def get_or_create_service(
     protocol: str,
     port_start: int | None = None,
     port_end: int | None = None,
+    icmp_type: int | None = None,
+    icmp_code: int | None = None,
     request_type: str | None = "standard",
 ) -> tuple[Service, int, bool]:
 
@@ -242,6 +252,8 @@ def get_or_create_service(
         protocol=protocol,
         port_start=port_start,
         port_end=port_end,
+        icmp_type=icmp_type,
+        icmp_code=icmp_code,
     )
     if request_type == "seeding":
         pass

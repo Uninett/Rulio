@@ -4,8 +4,8 @@ import copy
 import logging
 import re
 
-from aerleon.lib import naming
 from aerleon import api as aerleon_api
+from aerleon.lib import naming
 from django.contrib.auth.models import User
 
 from backend.objects.attributes.address import Address
@@ -14,6 +14,11 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.services.attribute_objects.get_address_objects import get_address_group_members
 from backend.services.attribute_objects.get_service_objects import get_service_group_members
+from backend.services.config_generation.icmp import (
+    get_aerleon_icmp_code,
+    get_aerleon_icmp_type,
+)
+from backend.services.config_generation.platform_capabilities import vendor_supports
 from backend.services.get import DJANGO_MODEL_MAPPING
 from backend.utils.logger import set_up_logger
 from constants import DIRECTION_CHOICES
@@ -53,6 +58,23 @@ class RuleBuildResult:
     warnings: list[str] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class ServiceMatch:
+    service_name: str
+    protocol: str
+    port_value: str | None = None
+    icmp_type: int | None = None
+    icmp_code: int | None = None
+
+    @property
+    def is_port_based(self) -> bool:
+        return self.protocol in {"tcp", "udp"}
+
+    @property
+    def is_icmp_based(self) -> bool:
+        return self.protocol in {"icmp", "icmpv6"}
+
+
 class _AerleonLogCaptureHandler(logging.Handler):
     def __init__(self) -> None:
         super().__init__()
@@ -78,6 +100,7 @@ class PolicyRuleMember:
     - destination
     - reverse_source
     - reverse_destination
+    - any
     """
 
     VALID_TYPES = {"address", "addressgroup", "service", "servicegroup"}
@@ -130,11 +153,12 @@ class PolicyRule:
     - one or more PolicyRuleMember objects that define addresses/services/groups
 
     A PolicyRule normally builds a single Aerleon term, but may build multiple
-    terms in the caveat case where protocol-specific port mappings differ and
+    terms in the caveat case where protocol-specific match mappings differ and
     must be split to preserve semantics.
     """
 
     PORT_BASED_PROTOCOLS = {"tcp", "udp"}
+    ICMP_PROTOCOLS = {"icmp", "icmpv6"}
 
     def __init__(
         self,
@@ -179,12 +203,10 @@ class PolicyRule:
         max_base_length = 62 - len(suffix_part)
         return f"{self.name[:max_base_length]}{suffix_part}"
 
-    def build(self) -> RuleBuildResult:
+    def build(self, vendor: str) -> RuleBuildResult:
         """
-        Build Aerleon term(s) and required network/service definitions for this rule.
-
-        Normally returns a single term. If protocol-specific port mappings differ
-        across protocols, returns one term per protocol and emits a warning.
+        Build Aerleon term(s) and required network/service definitions for this rule
+        for a specific vendor/platform.
         """
         networks: dict[str, dict] = {}
         services: dict[str, list[dict]] = {}
@@ -195,17 +217,20 @@ class PolicyRule:
         reverse_source_addresses: list[str] = []
         reverse_destination_addresses: list[str] = []
 
-        # Service object names used in rendered terms.
         source_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         destination_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_source_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_destination_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
+        any_ports_by_protocol: dict[str, list[str]] = defaultdict(list)
 
-        # Actual port values used only for split-decision logic.
         source_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
         destination_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_source_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
         reverse_destination_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
+        any_port_values_by_protocol: dict[str, list[str]] = defaultdict(list)
+
+        icmp_types_by_protocol: dict[str, list[int]] = defaultdict(list)
+        icmp_codes_by_protocol: dict[str, list[int]] = defaultdict(list)
 
         all_protocols: set[str] = set()
 
@@ -234,58 +259,44 @@ class PolicyRule:
                     )
 
                 case "service":
-                    service_name, protocol, is_port_based, port_value = self._add_service_definition(
-                        services, member.object
-                    )
-                    all_protocols.add(protocol)
-
-                    self._append_ports_by_direction_and_protocol(
-                        direction=member.direction,
-                        protocol=protocol,
-                        source_dict=source_ports_by_protocol,
-                        destination_dict=destination_ports_by_protocol,
-                        reverse_source_dict=reverse_source_ports_by_protocol,
-                        reverse_destination_dict=reverse_destination_ports_by_protocol,
-                        value=service_name,
-                        append_ports=is_port_based,
-                    )
-
-                    self._append_ports_by_direction_and_protocol(
-                        direction=member.direction,
-                        protocol=protocol,
-                        source_dict=source_port_values_by_protocol,
-                        destination_dict=destination_port_values_by_protocol,
-                        reverse_source_dict=reverse_source_port_values_by_protocol,
-                        reverse_destination_dict=reverse_destination_port_values_by_protocol,
-                        value=port_value,
-                        append_ports=is_port_based and port_value is not None,
+                    service_match = self._add_service_definition(services, member.object)
+                    all_protocols.add(service_match.protocol)
+                    self._accumulate_service_match(
+                        member_direction=member.direction,
+                        service_match=service_match,
+                        source_ports_by_protocol=source_ports_by_protocol,
+                        destination_ports_by_protocol=destination_ports_by_protocol,
+                        reverse_source_ports_by_protocol=reverse_source_ports_by_protocol,
+                        reverse_destination_ports_by_protocol=reverse_destination_ports_by_protocol,
+                        any_ports_by_protocol=any_ports_by_protocol,
+                        source_port_values_by_protocol=source_port_values_by_protocol,
+                        destination_port_values_by_protocol=destination_port_values_by_protocol,
+                        reverse_source_port_values_by_protocol=reverse_source_port_values_by_protocol,
+                        reverse_destination_port_values_by_protocol=reverse_destination_port_values_by_protocol,
+                        any_port_values_by_protocol=any_port_values_by_protocol,
+                        icmp_types_by_protocol=icmp_types_by_protocol,
+                        icmp_codes_by_protocol=icmp_codes_by_protocol,
                     )
 
                 case "servicegroup":
-                    service_entries = self._add_service_group_definition(services, member.object)
-                    for service_name, protocol, is_port_based, port_value in service_entries:
-                        all_protocols.add(protocol)
-
-                        self._append_ports_by_direction_and_protocol(
-                            direction=member.direction,
-                            protocol=protocol,
-                            source_dict=source_ports_by_protocol,
-                            destination_dict=destination_ports_by_protocol,
-                            reverse_source_dict=reverse_source_ports_by_protocol,
-                            reverse_destination_dict=reverse_destination_ports_by_protocol,
-                            value=service_name,
-                            append_ports=is_port_based,
-                        )
-
-                        self._append_ports_by_direction_and_protocol(
-                            direction=member.direction,
-                            protocol=protocol,
-                            source_dict=source_port_values_by_protocol,
-                            destination_dict=destination_port_values_by_protocol,
-                            reverse_source_dict=reverse_source_port_values_by_protocol,
-                            reverse_destination_dict=reverse_destination_port_values_by_protocol,
-                            value=port_value,
-                            append_ports=is_port_based and port_value is not None,
+                    service_matches = self._add_service_group_definition(services, member.object)
+                    for service_match in service_matches:
+                        all_protocols.add(service_match.protocol)
+                        self._accumulate_service_match(
+                            member_direction=member.direction,
+                            service_match=service_match,
+                            source_ports_by_protocol=source_ports_by_protocol,
+                            destination_ports_by_protocol=destination_ports_by_protocol,
+                            reverse_source_ports_by_protocol=reverse_source_ports_by_protocol,
+                            reverse_destination_ports_by_protocol=reverse_destination_ports_by_protocol,
+                            any_ports_by_protocol=any_ports_by_protocol,
+                            source_port_values_by_protocol=source_port_values_by_protocol,
+                            destination_port_values_by_protocol=destination_port_values_by_protocol,
+                            reverse_source_port_values_by_protocol=reverse_source_port_values_by_protocol,
+                            reverse_destination_port_values_by_protocol=reverse_destination_port_values_by_protocol,
+                            any_port_values_by_protocol=any_port_values_by_protocol,
+                            icmp_types_by_protocol=icmp_types_by_protocol,
+                            icmp_codes_by_protocol=icmp_codes_by_protocol,
                         )
 
                 case _:
@@ -307,6 +318,7 @@ class PolicyRule:
             reverse_destination_ports_by_protocol[protocol] = self._dedupe_preserve_order(
                 reverse_destination_ports_by_protocol.get(protocol, [])
             )
+            any_ports_by_protocol[protocol] = self._dedupe_preserve_order(any_ports_by_protocol.get(protocol, []))
 
             source_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
                 source_port_values_by_protocol.get(protocol, [])
@@ -320,6 +332,12 @@ class PolicyRule:
             reverse_destination_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
                 reverse_destination_port_values_by_protocol.get(protocol, [])
             )
+            any_port_values_by_protocol[protocol] = self._dedupe_preserve_order(
+                any_port_values_by_protocol.get(protocol, [])
+            )
+
+            icmp_types_by_protocol[protocol] = self._dedupe_preserve_order(icmp_types_by_protocol.get(protocol, []))
+            icmp_codes_by_protocol[protocol] = self._dedupe_preserve_order(icmp_codes_by_protocol.get(protocol, []))
 
         if self._requires_protocol_split(
             all_protocols=all_protocols,
@@ -327,11 +345,14 @@ class PolicyRule:
             destination_ports_by_protocol=destination_port_values_by_protocol,
             reverse_source_ports_by_protocol=reverse_source_port_values_by_protocol,
             reverse_destination_ports_by_protocol=reverse_destination_port_values_by_protocol,
+            any_ports_by_protocol=any_port_values_by_protocol,
+            icmp_types_by_protocol=icmp_types_by_protocol,
+            icmp_codes_by_protocol=icmp_codes_by_protocol,
         ):
             warnings.append(
                 f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) was split into "
                 f"multiple terms because it contains multiple protocols with different "
-                f"port mappings, which cannot be safely represented as a single term."
+                f"match mappings, which cannot be safely represented as a single term."
             )
 
             terms = []
@@ -346,20 +367,43 @@ class PolicyRule:
                 )
                 term["protocol"] = protocol
 
-                if protocol in self.PORT_BASED_PROTOCOLS:
-                    source_ports = source_ports_by_protocol.get(protocol, [])
-                    destination_ports = destination_ports_by_protocol.get(protocol, [])
-                    reverse_source_ports = reverse_source_ports_by_protocol.get(protocol, [])
-                    reverse_destination_ports = reverse_destination_ports_by_protocol.get(protocol, [])
+                should_include = True
 
-                    if source_ports:
-                        term["source-port"] = source_ports
-                    if destination_ports:
-                        term["destination-port"] = destination_ports
-                    if reverse_source_ports:
-                        term["reverse-source-port"] = reverse_source_ports
-                    if reverse_destination_ports:
-                        term["reverse-destination-port"] = reverse_destination_ports
+                if protocol in self.PORT_BASED_PROTOCOLS:
+                    should_include = self._add_port_fields_to_term(
+                        term=term,
+                        vendor=vendor,
+                        source_ports=source_ports_by_protocol.get(protocol, []),
+                        destination_ports=destination_ports_by_protocol.get(protocol, []),
+                        reverse_source_ports=reverse_source_ports_by_protocol.get(protocol, []),
+                        reverse_destination_ports=reverse_destination_ports_by_protocol.get(protocol, []),
+                        any_ports=any_ports_by_protocol.get(protocol, []),
+                        warnings=warnings,
+                    )
+
+                if should_include and protocol in self.ICMP_PROTOCOLS:
+                    protocol_icmp_types = icmp_types_by_protocol.get(protocol, [])
+                    protocol_icmp_codes = icmp_codes_by_protocol.get(protocol, [])
+
+                    if len(protocol_icmp_types) > 1 or len(protocol_icmp_codes) > 1:
+                        warnings.append(
+                            f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) contains multiple ICMP "
+                            f"type/code matches that cannot be safely rendered in a single term. "
+                            f"Skipping term '{term.get('name', self.name)}' for vendor '{vendor}'."
+                        )
+                        should_include = False
+                    else:
+                        should_include = self._add_icmp_fields_to_term(
+                            term=term,
+                            vendor=vendor,
+                            protocol=protocol,
+                            icmp_type=protocol_icmp_types[0] if protocol_icmp_types else None,
+                            icmp_code=protocol_icmp_codes[0] if protocol_icmp_codes else None,
+                            warnings=warnings,
+                        )
+
+                if not should_include:
+                    continue
 
                 terms.append(term)
 
@@ -378,6 +422,8 @@ class PolicyRule:
             reverse_source_addresses=reverse_source_addresses,
             reverse_destination_addresses=reverse_destination_addresses,
         )
+
+        should_include_term = True
 
         if all_protocols:
             sorted_protocols = sorted(all_protocols)
@@ -399,23 +445,116 @@ class PolicyRule:
                     for port in reverse_destination_ports_by_protocol.get(protocol, [])
                 ]
             )
+            shared_any_ports = self._dedupe_preserve_order(
+                [port for protocol in sorted_protocols for port in any_ports_by_protocol.get(protocol, [])]
+            )
+
+            shared_icmp_types = self._dedupe_preserve_order(
+                [icmp_type for protocol in sorted_protocols for icmp_type in icmp_types_by_protocol.get(protocol, [])]
+            )
+            shared_icmp_codes = self._dedupe_preserve_order(
+                [icmp_code for protocol in sorted_protocols for icmp_code in icmp_codes_by_protocol.get(protocol, [])]
+            )
 
             if any(protocol in self.PORT_BASED_PROTOCOLS for protocol in sorted_protocols):
-                if shared_source_ports:
-                    term["source-port"] = shared_source_ports
-                if shared_destination_ports:
-                    term["destination-port"] = shared_destination_ports
-                if shared_reverse_source_ports:
-                    term["reverse-source-port"] = shared_reverse_source_ports
-                if shared_reverse_destination_ports:
-                    term["reverse-destination-port"] = shared_reverse_destination_ports
+                should_include_term = self._add_port_fields_to_term(
+                    term=term,
+                    vendor=vendor,
+                    source_ports=shared_source_ports,
+                    destination_ports=shared_destination_ports,
+                    reverse_source_ports=shared_reverse_source_ports,
+                    reverse_destination_ports=shared_reverse_destination_ports,
+                    any_ports=shared_any_ports,
+                    warnings=warnings,
+                )
+
+            if should_include_term and any(protocol in self.ICMP_PROTOCOLS for protocol in sorted_protocols):
+                icmp_protocols = [protocol for protocol in sorted_protocols if protocol in self.ICMP_PROTOCOLS]
+
+                if len(icmp_protocols) > 1:
+                    warnings.append(
+                        f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) contains multiple ICMP protocols "
+                        f"that cannot be safely rendered in a single unsplit term. "
+                        f"Skipping term '{term.get('name', self.name)}' for vendor '{vendor}'."
+                    )
+                    should_include_term = False
+                elif len(shared_icmp_types) > 1 or len(shared_icmp_codes) > 1:
+                    warnings.append(
+                        f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) contains multiple ICMP "
+                        f"type/code matches that cannot be safely rendered in a single term. "
+                        f"Skipping term '{term.get('name', self.name)}' for vendor '{vendor}'."
+                    )
+                    should_include_term = False
+                else:
+                    should_include_term = self._add_icmp_fields_to_term(
+                        term=term,
+                        vendor=vendor,
+                        protocol=icmp_protocols[0],
+                        icmp_type=shared_icmp_types[0] if shared_icmp_types else None,
+                        icmp_code=shared_icmp_codes[0] if shared_icmp_codes else None,
+                        warnings=warnings,
+                    )
 
         return RuleBuildResult(
-            terms=[term],
+            terms=[term] if should_include_term else [],
             networks=networks,
             services=services,
             warnings=warnings,
         )
+
+    def _accumulate_service_match(
+        self,
+        *,
+        member_direction: str,
+        service_match: ServiceMatch,
+        source_ports_by_protocol: dict[str, list[str]],
+        destination_ports_by_protocol: dict[str, list[str]],
+        reverse_source_ports_by_protocol: dict[str, list[str]],
+        reverse_destination_ports_by_protocol: dict[str, list[str]],
+        any_ports_by_protocol: dict[str, list[str]],
+        source_port_values_by_protocol: dict[str, list[str]],
+        destination_port_values_by_protocol: dict[str, list[str]],
+        reverse_source_port_values_by_protocol: dict[str, list[str]],
+        reverse_destination_port_values_by_protocol: dict[str, list[str]],
+        any_port_values_by_protocol: dict[str, list[str]],
+        icmp_types_by_protocol: dict[str, list[int]],
+        icmp_codes_by_protocol: dict[str, list[int]],
+    ) -> None:
+        protocol = service_match.protocol
+
+        self._append_ports_by_direction_and_protocol(
+            direction=member_direction,
+            protocol=protocol,
+            source_dict=source_ports_by_protocol,
+            destination_dict=destination_ports_by_protocol,
+            reverse_source_dict=reverse_source_ports_by_protocol,
+            reverse_destination_dict=reverse_destination_ports_by_protocol,
+            any_dict=any_ports_by_protocol,
+            value=service_match.service_name,
+            append_ports=service_match.is_port_based,
+        )
+
+        self._append_ports_by_direction_and_protocol(
+            direction=member_direction,
+            protocol=protocol,
+            source_dict=source_port_values_by_protocol,
+            destination_dict=destination_port_values_by_protocol,
+            reverse_source_dict=reverse_source_port_values_by_protocol,
+            reverse_destination_dict=reverse_destination_port_values_by_protocol,
+            any_dict=any_port_values_by_protocol,
+            value=service_match.port_value,
+            append_ports=service_match.is_port_based and service_match.port_value is not None,
+        )
+
+        if service_match.is_icmp_based:
+            icmp_types_by_protocol.setdefault(protocol, [])
+            icmp_codes_by_protocol.setdefault(protocol, [])
+
+            if service_match.icmp_type is not None:
+                icmp_types_by_protocol[protocol].append(service_match.icmp_type)
+
+            if service_match.icmp_code is not None:
+                icmp_codes_by_protocol[protocol].append(service_match.icmp_code)
 
     def _requires_protocol_split(
         self,
@@ -424,11 +563,13 @@ class PolicyRule:
         destination_ports_by_protocol: dict[str, list[str]],
         reverse_source_ports_by_protocol: dict[str, list[str]],
         reverse_destination_ports_by_protocol: dict[str, list[str]],
+        any_ports_by_protocol: dict[str, list[str]],
+        icmp_types_by_protocol: dict[str, list[int]],
+        icmp_codes_by_protocol: dict[str, list[int]],
     ) -> bool:
         """
-        Split only when multiple protocols have different port mappings.
+        Split only when multiple protocols have different match mappings.
         If there are no protocols or only one protocol, no split is needed.
-        Non-port-based protocols contribute empty port signatures.
         """
         if len(all_protocols) <= 1:
             return False
@@ -442,6 +583,9 @@ class PolicyRule:
                 tuple(destination_ports_by_protocol.get(protocol, [])),
                 tuple(reverse_source_ports_by_protocol.get(protocol, [])),
                 tuple(reverse_destination_ports_by_protocol.get(protocol, [])),
+                tuple(any_ports_by_protocol.get(protocol, [])),
+                tuple(icmp_types_by_protocol.get(protocol, [])),
+                tuple(icmp_codes_by_protocol.get(protocol, [])),
             )
 
             if first_signature is None:
@@ -498,6 +642,9 @@ class PolicyRule:
             reverse_source_list.append(value)
         elif direction == "reverse_destination":
             reverse_destination_list.append(value)
+        elif direction == "any":
+            source_list.append(value)
+            destination_list.append(value)
         else:
             raise ValueError(f"Unsupported rule direction: {direction}")
 
@@ -509,6 +656,7 @@ class PolicyRule:
         destination_dict: dict[str, list[str]],
         reverse_source_dict: dict[str, list[str]],
         reverse_destination_dict: dict[str, list[str]],
+        any_dict: dict[str, list[str]],
         value: str | None,
         append_ports: bool,
     ) -> None:
@@ -517,6 +665,7 @@ class PolicyRule:
             destination_dict.setdefault(protocol, [])
             reverse_source_dict.setdefault(protocol, [])
             reverse_destination_dict.setdefault(protocol, [])
+            any_dict.setdefault(protocol, [])
             return
 
         if value is None:
@@ -530,8 +679,123 @@ class PolicyRule:
             reverse_source_dict[protocol].append(value)
         elif direction == "reverse_destination":
             reverse_destination_dict[protocol].append(value)
+        elif direction == "any":
+            any_dict[protocol].append(value)
         else:
             raise ValueError(f"Unsupported rule direction: {direction}")
+
+    @staticmethod
+    def _extend_deduped(target: list[str], values: list[str]) -> list[str]:
+        return list(dict.fromkeys([*target, *values]))
+
+    def _add_port_fields_to_term(
+        self,
+        *,
+        term: dict,
+        vendor: str,
+        source_ports: list[str],
+        destination_ports: list[str],
+        reverse_source_ports: list[str],
+        reverse_destination_ports: list[str],
+        any_ports: list[str],
+        warnings: list[str],
+    ) -> bool:
+        if source_ports:
+            term["source-port"] = source_ports
+        if destination_ports:
+            term["destination-port"] = destination_ports
+        if reverse_source_ports:
+            term["reverse-source-port"] = reverse_source_ports
+        if reverse_destination_ports:
+            term["reverse-destination-port"] = reverse_destination_ports
+
+        if not any_ports:
+            return True
+
+        if vendor_supports(vendor, "supports_neutral_port"):
+            term["port"] = any_ports
+            return True
+
+        if vendor_supports(vendor, "supports_source_port"):
+            existing_source_ports = term.get("source-port", [])
+            existing_destination_ports = term.get("destination-port", [])
+
+            term["source-port"] = self._extend_deduped(existing_source_ports, any_ports)
+            term["destination-port"] = self._extend_deduped(existing_destination_ports, any_ports)
+            return True
+
+        term_name = term.get("name", self.name)
+        warnings.append(
+            f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) contains service direction 'any', "
+            f"but vendor '{vendor}' does not support either neutral 'port' or 'source-port'. "
+            f"Skipping term '{term_name}' for this vendor."
+        )
+        return False
+
+    def _add_icmp_fields_to_term(
+        self,
+        *,
+        term: dict,
+        vendor: str,
+        protocol: str,
+        icmp_type: int | None,
+        icmp_code: int | None,
+        warnings: list[str],
+    ) -> bool:
+        if protocol not in self.ICMP_PROTOCOLS:
+            return True
+
+        term_name = term.get("name", self.name)
+
+        if icmp_type is None and icmp_code is None:
+            return True
+
+        if icmp_code is not None and icmp_type is None:
+            warnings.append(
+                f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) contains ICMP code without ICMP type. "
+                f"Skipping term '{term_name}' for vendor '{vendor}'."
+            )
+            return False
+
+        if icmp_type is not None:
+            if not vendor_supports(vendor, "supports_icmp_type"):
+                warnings.append(
+                    f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) contains ICMP type, "
+                    f"but vendor '{vendor}' does not support ICMP type matching. "
+                    f"Skipping term '{term_name}' for this vendor."
+                )
+                return False
+
+            try:
+                term["icmp-type"] = [get_aerleon_icmp_type(protocol, icmp_type)]
+            except ValueError as exc:
+                warnings.append(
+                    f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) has unsupported ICMP type "
+                    f"'{icmp_type}' for protocol '{protocol}': {exc}. "
+                    f"Skipping term '{term_name}'."
+                )
+                return False
+
+        if icmp_code is not None:
+            if not vendor_supports(vendor, "supports_icmp_code"):
+                warnings.append(
+                    f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) contains ICMP code, "
+                    f"but vendor '{vendor}' does not support ICMP code matching. "
+                    f"Skipping term '{term_name}' for this vendor."
+                )
+                return False
+
+            try:
+                term["icmp-code"] = [get_aerleon_icmp_code(icmp_code)]
+            except ValueError as exc:
+                warnings.append(
+                    f"PolicyRule '{self.name}' (sequence {self.rule_sequence}) has invalid ICMP code "
+                    f"'{icmp_code}': {exc}. "
+                    f"Skipping term '{term_name}'."
+                )
+                return False
+
+        return True
 
     def _add_address_definition(self, networks: dict[str, dict], address: Address) -> None:
         values = []
@@ -566,25 +830,32 @@ class PolicyRule:
         self,
         services: dict[str, list[dict]],
         service: Service,
-    ) -> tuple[str, str, bool, str | None]:
+    ) -> ServiceMatch:
         service_name = service.name
         protocol = service.get_protocol()
         port_value = service.get_ports()
-        is_port_based = service.is_port_based()
+        icmp_type = service.get_icmp_type()
+        icmp_code = service.get_icmp_code()
 
         entry = {"protocol": protocol}
         if port_value is not None:
             entry["port"] = port_value
 
         services[service_name] = [entry]
-        return service_name, protocol, is_port_based, port_value
+        return ServiceMatch(
+            service_name=service_name,
+            protocol=protocol,
+            port_value=port_value,
+            icmp_type=icmp_type,
+            icmp_code=icmp_code,
+        )
 
     def _add_service_group_definition(
         self,
         services: dict[str, list[dict]],
         service_group: ServiceGroup,
-    ) -> list[tuple[str, str, bool, str | None]]:
-        service_entries = []
+    ) -> list[ServiceMatch]:
+        service_entries: list[ServiceMatch] = []
 
         for service in get_service_group_members(
             service_group_id=service_group.id,
@@ -594,19 +865,28 @@ class PolicyRule:
             service_name = service.name
             protocol = service.get_protocol()
             port_value = service.get_ports()
-            is_port_based = service.is_port_based()
+            icmp_type = service.get_icmp_type()
+            icmp_code = service.get_icmp_code()
 
             entry = {"protocol": protocol}
             if port_value is not None:
                 entry["port"] = port_value
 
             services[service_name] = [entry]
-            service_entries.append((service_name, protocol, is_port_based, port_value))
+            service_entries.append(
+                ServiceMatch(
+                    service_name=service_name,
+                    protocol=protocol,
+                    port_value=port_value,
+                    icmp_type=icmp_type,
+                    icmp_code=icmp_code,
+                )
+            )
 
         return service_entries
 
     @staticmethod
-    def _dedupe_preserve_order(items: list[str]) -> list[str]:
+    def _dedupe_preserve_order(items: list) -> list:
         return list(dict.fromkeys(items))
 
 
@@ -644,15 +924,18 @@ class Policy:
 
         self._validate_rule_sequences(rules)
         self._validate_rendered_rule_names_unique(rules)
+        self._rebuild_policy_contents()
 
+    def _rebuild_policy_contents(self) -> None:
         self.YAMLConfig = self._build_base_yaml()
         self.networks = {"networks": {}}
         self.services = {"services": {}}
+        self.build_warnings = []
 
         used_term_names: set[str] = set()
 
-        for rule in sorted(rules, key=lambda r: r.rule_sequence):
-            result = rule.build()
+        for rule in sorted(self.rules, key=lambda r: r.rule_sequence):
+            result = rule.build(vendor=self.vendor)
 
             for warning in result.warnings:
                 self.build_warnings.append(warning)
@@ -732,14 +1015,11 @@ class Policy:
         """
         Update the vendor and target specification used in filter headers.
 
-        This rewrites the header of each filter in YAMLConfig without changing
-        terms, networks, or services.
+        Because term rendering is vendor-aware, this rebuilds the policy contents.
         """
         self.vendor = new_vendor.lower()
         self.target_spec = target_spec if target_spec not in ("", []) else None
-
-        for filter_config in self.YAMLConfig["filters"]:
-            filter_config["header"] = self._build_filter_header()
+        self._rebuild_policy_contents()
 
 
 def _build_warning_diagnostics(policy: Policy) -> list[GenerationDiagnostic]:
