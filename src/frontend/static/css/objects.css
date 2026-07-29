@@ -13,16 +13,8 @@ Objects Table Container
     border-bottom: 1px solid #E0E0E0;
     position: relative;
     line-height: auto;
-    font-size: smaller;
+    font-size: inherit;
 
-}
-
-td:first-child {
-    border-left: 4px solid #D1CDFF;
-}
-
-tr.group-row td:first-child {
-    border-left: 4px solid #A79BFF;
 }
 
 tr:hover {
@@ -34,17 +26,6 @@ th {
 
     font-family: "Haffer", sans-serif;
 
-}
-
-table {
-    width: 100%;
-    height: 80vh;
-    margin: 2vh auto;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background-color: var(--sds-color-layout-surface-1);
-    position: relative;
-    border-radius: 0.5rem;
 }
 
 .objects-table-container table {
