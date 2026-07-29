@@ -1,4 +1,4 @@
-<td colspan="{{ headers|length }}" class="details-cell">
+<td colspan="{{ headers|length|add:'1' }}" class="details-cell">
     <section class="details-content">
         {% if row.is_group or row.istrue %}
         <div class="group-detail-columns">
@@ -6,8 +6,10 @@
 
             {% if field.modal_on_dblclick %}
             {% if field.label == "Devices" %}
-            <div class="detail-block">
-                {% include "partials/devices/_expandableDeviceLine.html" with devices=field.value %}
+            <div class="detail-block detail-block--devices">
+                <div class="device-table-wrapper">
+                    {% include "partials/devices/_expandableDeviceLine.html" with devices=field.value %}
+                </div>
             </div>
             {% endif %}
             {% if field.label != "Devices" %}
