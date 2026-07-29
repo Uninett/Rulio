@@ -51,8 +51,8 @@ def get_objects_addresses(request):
             **get_objects_toolbar_context(
                 "addresses", add_button_label="Add Address"
             ),  # Render the Objects page with Addresses as the active tab.
+            **get_tenant_context(request),
         },
-        **get_tenant_context(request),
     )
 
 
