@@ -80,3 +80,19 @@ Add Button
     align-items: center;
     gap: 0.5rem;
 }
+
+.btn-add-disabled {
+    background-color: #E5E5E5;
+    color: #808080;
+    border-color: #E5E5E5;
+    cursor: not-allowed;
+}
+
+.btn-add-disabled:hover {
+    background-color: #E0E0E0;
+    border-color: #E0E0E0;
+}
+
+.btn-add-disabled .btn-icon {
+    filter: brightness(0) saturate(100%) invert(56%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(90%) contrast(90%);
+}
