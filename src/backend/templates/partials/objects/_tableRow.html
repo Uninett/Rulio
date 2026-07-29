@@ -4,12 +4,21 @@
     onclick="expandRow('{{ row.id }}')">
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}
 
+    {% if can_write_current_tenant %}
     <td class="actions-column">
         <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.id %}" hx-target="#modal-container"
             hx-swap="innerHTML" onclick="event.stopPropagation()">
             <img class="btn-icon actions-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
         </button>
     </td>
+    {% else %}
+    <td class="actions-column">
+        <button type="button" class="actions-btn actions-btn-disabled"
+            title="{% if selected_tenant|stringformat:'s' == '1' %}Need superuser permission to update {{ object_type }}.{% else %}Need tenant admin permission to update {{ object_type }}.{% endif %}">
+            <img class="btn-icon actions-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
+        </button>
+    </td>
+    {% endif %}
 </tr>
 
 <tr id="details-{{ row.id }}" class="details-row">

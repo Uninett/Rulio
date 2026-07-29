@@ -361,3 +361,8 @@ Actions
     width: 1.5rem;
     height: 1.5rem;
 }
+
+.actions-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
