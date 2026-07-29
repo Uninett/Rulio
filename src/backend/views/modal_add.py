@@ -79,10 +79,8 @@ def get_add_modal_config(object_type):
             "supports_types": False,
             "form_partial": "partials/modals/_rule_form.html",
             "post_url": reverse("post-rule-view"),
-            "target": "#rules-table",
-            "swap": "beforeend",
-            "refresh_url": reverse("rules-page") + f"?filter_id={{filter_id}}&filter_name={{filter_name}}",
-            "modal_refresh_target": "#rules-content",
+            "target": "#modal-container",
+            "swap": "innerHTML",
         },
         "addresses": {
             "title": "Add Address",
@@ -152,7 +150,6 @@ def get_add_modal_config(object_type):
 def get_add_modal(request, object_type):
     config = get_add_modal_config(object_type)
 
-    # Check if modal supports multiple types
     if config.get("supports_types"):
         selected_type = config["default_type"]
         modal_content_partial = config["types"][selected_type]
@@ -163,6 +160,11 @@ def get_add_modal(request, object_type):
     modal_post_url = config.get("post_url")
     if config.get("supports_types") and config.get("post_urls"):
         modal_post_url = config["post_urls"].get(selected_type)
+
+    object_data = {}
+
+    if object_type == "rules":
+        object_data["filter_id"] = request.GET.get("filter_id", "")
 
     context = {
         "modal_title": config["title"],
@@ -179,7 +181,7 @@ def get_add_modal(request, object_type):
         "modal_submit_handler": config.get("submit_handler"),
         "modal_refresh_url": config.get("refresh_url"),
         "modal_refresh_target": config.get("modal_refresh_target"),
-        "object_data": {},
+        "object_data": object_data,
         "selected_group_ids": [],
         "selected_device_ids": [],
         "selected_address_ids": [],
@@ -196,7 +198,7 @@ def get_add_modal(request, object_type):
     if object_type == "users":
         context["tenant_options"] = [
             {"id": tenant.id, "name": tenant.tenant_name}
-            for tenant in Tenant.objects.exclude(id=GLOBAL_TENANT_ID).order_by("tenant_name")
+            for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
         ]
 
     if object_type == "tenants":

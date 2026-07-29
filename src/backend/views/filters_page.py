@@ -29,7 +29,7 @@ def get_filters_page(request):
             "active_page": "filters",
             "page_title": "Filters",
             "object_type": "filters",
-            "object_extra_type": "rule",
+            "object_extra_type": "rules",
             "add_button_label": "Add Filter",
             "add_extra_button_label": "Add Rule",
             "filters": get_filters_view(request),  # Address data for the page

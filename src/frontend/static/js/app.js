@@ -1,5 +1,24 @@
 /*
 ====================================================================
+Set Z-Index for Modals
+====================================================================
+*/
+
+let modalZIndexCounter = 1000;
+
+function getNextModalZIndex() {
+    modalZIndexCounter += 1;
+    return modalZIndexCounter;
+}
+
+function bringModalToFront(modal) {
+    if (!modal) return;
+    const next = getNextModalZIndex();
+    modal.style.zIndex = next;
+}
+
+/*
+====================================================================
 Toggle Buttons
 ====================================================================
 */
@@ -78,15 +97,76 @@ const draggableModalState = {
     suppressBackdropClick: false
 };
 
-function makeModalDraggable(modalId, headerId) {
-    const modal = document.getElementById(modalId);
-    const header = document.getElementById(headerId);
+function closeThisModal(button) {
+    const modal = button.closest(".draggable-modal");
+    if (!modal) return;
 
+    modal.remove();
+}
+
+function applyRuleSelectorSelection(selectorType, button) {
+    const modal = button.closest(".draggable-modal");
+    if (!modal) return;
+
+    const selectedList = modal.querySelector(".membership-list-selected");
+    if (!selectedList) return;
+
+    const selectedItems = Array.from(selectedList.querySelectorAll(".membership-list-item"));
+
+    const selectedIds = selectedItems.map(item => item.dataset.id);
+    const selectedNames = selectedItems.map(item => {
+        // get only visible text, not hidden input values
+        return item.childNodes[0]?.textContent.trim() || item.textContent.trim();
+    });
+
+    let hiddenInputId = "";
+    let summaryId = "";
+    let emptyText = "";
+
+    if (selectorType === "source") {
+        hiddenInputId = "rule-source-ids";
+        summaryId = "rule-source-summary";
+        emptyText = "No source objects selected.";
+    } else if (selectorType === "destination") {
+        hiddenInputId = "rule-destination-ids";
+        summaryId = "rule-destination-summary";
+        emptyText = "No destination objects selected.";
+    } else if (selectorType === "service") {
+        hiddenInputId = "rule-service-ids";
+        summaryId = "rule-services-summary";
+        emptyText = "No services selected.";
+    }
+
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const summary = document.getElementById(summaryId);
+
+    if (hiddenInput) {
+        hiddenInput.value = selectedIds.join(",");
+    }
+
+    if (summary) {
+        if (selectedNames.length > 0) {
+            summary.innerHTML = selectedNames
+                .map(name => `<div>${name}</div>`)
+                .join("");
+        } else {
+            summary.textContent = emptyText;
+        }
+    }
+
+    closeThisModal(button);
+}
+
+function makeModalDraggable(modal, header) {
     if (!modal || !header || header.dataset.dragBound === "true") return;
     header.dataset.dragBound = "true";
 
+    bringModalToFront(modal);
+
     header.addEventListener("mousedown", function (e) {
         if (e.button !== 0) return;
+
+        bringModalToFront(modal);
 
         e.preventDefault();
         e.stopPropagation();
@@ -108,11 +188,18 @@ function makeModalDraggable(modalId, headerId) {
 
     header.addEventListener("click", function (e) {
         e.stopPropagation();
+        bringModalToFront(modal);
+    });
+
+    modal.addEventListener("mousedown", function () {
+        bringModalToFront(modal);
     });
 }
-
-function initDraggableModal() {
-    makeModalDraggable("draggable-modal", "draggable-modal-header");
+function initDraggableModals() {
+    document.querySelectorAll(".draggable-modal").forEach((modal) => {
+        const header = modal.querySelector(".draggable-modal-header");
+        makeModalDraggable(modal, header);
+    });
 }
 
 function handleModalMouseMove(e) {
@@ -120,8 +207,8 @@ function handleModalMouseMove(e) {
 
     const { modal, offsetX, offsetY } = draggableModalState.activeDrag;
 
-    let newLeft = e.clientX - offsetX;
-    let newTop = e.clientY - offsetY;
+    const newLeft = e.clientX - offsetX;
+    const newTop = e.clientY - offsetY;
 
     modal.style.left = `${newLeft}px`;
     modal.style.top = `${newTop}px`;
@@ -149,6 +236,12 @@ function handleBackdropClickSuppression(e) {
         e.stopPropagation();
     }
 }
+
+document.addEventListener("mousemove", handleModalMouseMove);
+document.addEventListener("mouseup", handleModalMouseUp);
+document.addEventListener("click", handleBackdropClickSuppression, true);
+document.addEventListener("DOMContentLoaded", initDraggableModals);
+document.body.addEventListener("htmx:afterSwap", initDraggableModals);
 
 
 /*
@@ -562,16 +655,43 @@ document.addEventListener("mouseup", handleModalMouseUp);
 document.addEventListener("click", handleBackdropClickSuppression, true);
 
 document.addEventListener("DOMContentLoaded", function () {
-    initDraggableModal();
+    initDraggableModals();
     initializeMembershipSelectors(document);
     focusAndExpandFromUrl();
 });
 
 document.addEventListener("htmx:afterSwap", function (event) {
-    initDraggableModal();
+    initDraggableModals();
     initializeMembershipSelectors(event.target);
     focusAndExpandFromUrl();
 });
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
 document.addEventListener("click", handleGenerateConfigButtonClick);
+
+function openRuleSelectorModal(selectorType, url) {
+    const existing = document.getElementById(`submodal-${selectorType}`);
+    if (existing) {
+        existing.style.zIndex = getNextModalZIndex();
+        return;
+    }
+
+    let selectedIds = "";
+
+    if (selectorType === "source") {
+        selectedIds = document.getElementById("rule-source-ids")?.value || "";
+    } else if (selectorType === "destination") {
+        selectedIds = document.getElementById("rule-destination-ids")?.value || "";
+    } else if (selectorType === "service") {
+        selectedIds = document.getElementById("rule-service-ids")?.value || "";
+    }
+
+    const separator = url.includes("?") ? "&" : "?";
+    const fullUrl = `${url}${separator}selected_ids=${encodeURIComponent(selectedIds)}`;
+
+    htmx.ajax("GET", fullUrl, {
+        target: "#submodal-container",
+        swap: "beforeend"
+    });
+}
+

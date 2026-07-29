@@ -1,20 +1,19 @@
-<div class="submodal">
-    <h2>Edit {{ selector_type|title }}</h2>
-    <p>Selector goes here.</p>
-    <button type="button" onclick="this.closest('.submodal').remove()">Close</button>
-</div>
-<div class="modal-header">
-    <h2 class="membership-header">Addresses</h2>
-</div>
-
-<p class="form-help">Choose any addresses you want to add to this address group.</p>
+<p class="form-help">Choose any addresses you want to add to this rule {{ selector_type }}.</p>
 
 <div class="membership-selector" data-input-name="address_ids">
     <div class="membership-column">
         <div class="membership-list membership-list-available" data-list-type="available">
+            {% for addressGroup in group_options %}
+            {% if addressGroup.selector_id not in selected_object_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ addressGroup.selector_id }}">
+                {{ addressGroup.name }}
+            </div>
+            {% endif %}
+            {% endfor %}
+
             {% for address in item_options %}
-            {% if address.id not in selected_address_ids %}
-            <div class="membership-list-item" draggable="true" data-id="{{ address.id }}">
+            {% if address.selector_id not in selected_object_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ address.selector_id }}">
                 {{ address.name }}
             </div>
             {% endif %}
@@ -24,11 +23,20 @@
 
     <div class="membership-column">
         <div class="membership-list membership-list-selected" data-list-type="selected">
+            {% for addressGroup in group_options %}
+            {% if addressGroup.selector_id in selected_object_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ addressGroup.selector_id }}">
+                {{ addressGroup.name }}
+                <input type="hidden" name="address_ids" value="{{ addressGroup.selector_id }}">
+            </div>
+            {% endif %}
+            {% endfor %}
+
             {% for address in item_options %}
-            {% if address.id in selected_address_ids %}
-            <div class="membership-list-item" draggable="true" data-id="{{ address.id }}">
+            {% if address.selector_id in selected_object_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ address.selector_id }}">
                 {{ address.name }}
-                <input type="hidden" name="address_ids" value="{{ address.id }}">
+                <input type="hidden" name="address_ids" value="{{ address.selector_id }}">
             </div>
             {% endif %}
             {% endfor %}
