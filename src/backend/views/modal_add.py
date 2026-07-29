@@ -117,10 +117,10 @@ def get_add_modal_config(object_type):
         },
     }
     config = configs.get(object_type)
-    if config is None: # Throw error if object_type is not found in configs
+    if config is None:  # Throw error if object_type is not found in configs
         raise Http404(f"Unknown modal object type: {object_type}")
 
-    return config # Return the modal config for the selected object type
+    return config  # Return the modal config for the selected object type
 
 
 # Render the Add modal with the default form for the selected object type.
