@@ -36,6 +36,9 @@ th {
     table-layout: fixed;
 }
 
+.objects-table tbody tr.main-row {
+    position: relative;
+}
 
 .objects-table tbody tr.main-row::after {
     content: "";
@@ -77,6 +80,7 @@ th {
     white-space: nowrap;
     text-align: right;
 }
+
 
 /*
 ====================================================================
