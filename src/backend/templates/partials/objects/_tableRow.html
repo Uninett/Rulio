@@ -11,7 +11,7 @@
     class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
     {% if object_type=="rules" and row.can_write %}draggable="true" data-rules-draggable="true" {% endif %} {% if
     object_type !="rules" %}onclick="expandRow('{{ row.id }}')" {% endif %}>
-    {% endif %}
+    {% endif %}s
 
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}
 
