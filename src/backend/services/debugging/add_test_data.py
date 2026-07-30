@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 
 from backend.objects.attributes.tag import Tag
+from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address, get_or_create_tag
 from backend.services.filter_objects.create_filter_objects import get_or_create_filter
 from backend.services.tenant_objects.create_tenant_objects import get_or_create_device
@@ -16,81 +17,170 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
+def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, tenants: list):
     require_write_tenant(actor, tenant_id)
+    ntnu_tenant = tenants[0]
+    sikt_tenant = tenants[1]
 
-    device = get_or_create_device(
-        actor=actor,
-        tenant_id=tenant_id,
-        name="edge-fw-01",
-        platform="FortiGate",
-        description="Primary edge firewall for Trondheim office.",
-        type="firewall",
+    current_tenant = next((tenant for tenant in tenants if getattr(tenant, "id", None) == tenant_id), None)
+    current_tenant_name = getattr(current_tenant, "tenant_name", "") or ""
+    is_ntnu_or_sikt_tenant = any(marker in current_tenant_name.lower() for marker in ["ntnu", "sikt"])
+
+    tenant_prefix = (
+        "ntnu"
+        if "ntnu" in current_tenant_name.lower()
+        else "sikt"
+        if "sikt" in current_tenant_name.lower()
+        else "shared"
     )
-    logger.info(f"Created {device} for tenant={device.tenant_id}")
+    tenant_label = f"{tenant_prefix.upper()}" if tenant_prefix != "shared" else "SHARED"
 
-    device2 = get_or_create_device(
-        actor=actor,
-        tenant_id=tenant_id,
-        name="edge-fw-02",
-        platform="FortiGate",
-        description="Secondary edge firewall for Trondheim office.",
-        type="firewall",
-    )
-    logger.info(f"Created {device2} for tenant={device2.tenant_id}")
+    device_specs = [
+        (f"{tenant_prefix}-edge-fw-01", "FortiGate", f"Primary edge firewall for {tenant_label} office.", "firewall"),
+        (f"{tenant_prefix}-edge-fw-02", "FortiGate", f"Secondary edge firewall for {tenant_label} office.", "firewall"),
+        (f"{tenant_prefix}-core-sw-01", "Cisco", f"Core switch for {tenant_label} office.", "switch"),
+        (f"{tenant_prefix}-core-sw-02", "Cisco", f"Secondary core switch for {tenant_label} office.", "switch"),
+        (f"{tenant_prefix}-router-01", "Cisco", f"Primary router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-02", "Juniper", f"Secondary router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-03", "Brocade", f"Edge router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-04", "Cisco", f"Backup router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-05", "Juniper", f"Distribution router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-06", "Brocade", f"Aggregation router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-07", "Cisco", f"WAN router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-08", "Juniper", f"LAN router for {tenant_label} office.", "router"),
+    ]
 
-    device3 = get_or_create_device(
-        actor=actor,
-        tenant_id=tenant_id,
-        name="core-switch-01",
-        platform="Cisco",
-        description="Core switch for Trondheim office.",
-        type="switch",
-    )
-    logger.info(f"Created {device3} for tenant={device3.tenant_id}")
-
-    device_group = get_or_create_device_group(
-        actor=actor,
-        tenant_id=tenant_id,
-        name="trondheim-firewalls",
-        description="Firewall devices in the Trondheim office.",
-    )
-    logger.info(f"Created {device_group} for tenant={tenant_id}")
-
-    device_group2 = get_or_create_device_group(
-        actor=actor,
-        tenant_id=tenant_id,
-        name="trondheim-switches",
-        description="Switch devices in the Trondheim office.",
-    )
-    logger.info(f"Created {device_group2} for tenant={tenant_id}")
-
-    try:
-        add_devices_to_group(
-            actor=actor, tenant_id=tenant_id, device_group_id=device_group.id, device_ids=[device.id, device2.id]
+    if is_ntnu_or_sikt_tenant:
+        device_specs.extend(
+            [
+                (
+                    f"{tenant_prefix}-edge-fw-03",
+                    "FortiGate",
+                    f"Additional edge firewall for {tenant_label} testing.",
+                    "firewall",
+                ),
+                (
+                    f"{tenant_prefix}-edge-fw-04",
+                    "FortiGate",
+                    f"Additional edge firewall for {tenant_label} testing.",
+                    "firewall",
+                ),
+                (
+                    f"{tenant_prefix}-core-sw-03",
+                    "Cisco",
+                    f"Additional core switch for {tenant_label} testing.",
+                    "switch",
+                ),
+                (
+                    f"{tenant_prefix}-core-sw-04",
+                    "Cisco",
+                    f"Additional core switch for {tenant_label} testing.",
+                    "switch",
+                ),
+                (f"{tenant_prefix}-router-09", "Brocade", f"Campus router for {tenant_label} testing.", "router"),
+                (f"{tenant_prefix}-router-10", "Juniper", f"Campus router for {tenant_label} testing.", "router"),
+            ]
         )
-    except ValueError as e:
-        logger.warning(str(e))
 
-    interface, _, _, _, _, _ = get_or_create_interface(
-        actor=actor,
-        tenant_id=tenant_id,
-        device_id=device.id,
-        name="port1",
-        description="External WAN interface.",
-        type="physical",
-    )
-    logger.info(f"Created {interface} for device={device.id} and tenant={tenant_id}")
+    device_tenant_id = tenant_id
+    if "ntnu" in current_tenant_name.lower():
+        device_tenant_id = ntnu_tenant.id
+    elif "sikt" in current_tenant_name.lower():
+        device_tenant_id = sikt_tenant.id
 
-    interface2, _, _, _, _, _ = get_or_create_interface(
-        actor=actor,
-        tenant_id=tenant_id,
-        device_id=device3.id,
-        name="port2",
-        description="Internal LAN interface.",
-        type="physical",
+    created_devices = []
+    for name, platform, description, device_type in device_specs:
+        device_obj = get_or_create_device(
+            actor=actor,
+            tenant_id=device_tenant_id,
+            name=name,
+            platform=platform,
+            description=description,
+            type=device_type,
+        )
+        created_devices.append(device_obj)
+        logger.info(f"Created {device_obj} for tenant={device_obj.tenant_id}")
+
+    device, device2, device3, device4 = created_devices[:4]
+
+    created_interfaces = []
+    for index, device_obj in enumerate(created_devices):
+        interface_obj, _, _, _, _, _ = get_or_create_interface(
+            actor=actor,
+            tenant_id=device_tenant_id,
+            device_id=device_obj.id,
+            name=f"port{index + 1}",
+            description=f"Interface {index + 1} for {device_obj.name}.",
+            type="physical",
+        )
+        created_interfaces.append(interface_obj)
+        logger.info(f"Created {interface_obj} for device={device_obj.id} and tenant={device_tenant_id}")
+
+    device_group_specs = [
+        (f"{tenant_prefix}-firewalls", f"Firewall devices for {tenant_label} office."),
+        (f"{tenant_prefix}-switches", f"Switch devices for {tenant_label} office."),
+        (f"{tenant_prefix}-routers", f"Router devices for {tenant_label} office."),
+    ]
+
+    if is_ntnu_or_sikt_tenant:
+        device_group_specs.extend(
+            [
+                (f"{tenant_prefix}-campus-firewalls", f"Additional firewall group for {tenant_label} campus testing."),
+                (f"{tenant_prefix}-security-switches", f"Additional switch group for {tenant_label} security testing."),
+                (f"{tenant_prefix}-shared-services", f"Shared services group for {tenant_label} testing."),
+            ]
+        )
+
+    created_device_groups = []
+    for name, description in device_group_specs:
+        device_group_obj = get_or_create_device_group(
+            actor=actor,
+            tenant_id=device_tenant_id,
+            name=name,
+            description=description,
+        )
+        created_device_groups.append(device_group_obj)
+        logger.info(f"Created {device_group_obj} for tenant={device_tenant_id}")
+
+    device_group, device_group2 = created_device_groups[:2]
+
+    for index, device_group_obj in enumerate(created_device_groups):
+        device_ids = [device_obj.id for device_obj in created_devices[index * 2 : index * 2 + 2]]
+        if len(device_ids) == 2:
+            try:
+                add_devices_to_group(
+                    actor=actor,
+                    tenant_id=device_tenant_id,
+                    device_group_id=device_group_obj.id,
+                    device_ids=device_ids,
+                )
+            except ValueError as e:
+                logger.warning(str(e))
+
+    interface = created_interfaces[0] if created_interfaces else None
+    interface2 = (
+        created_interfaces[2] if len(created_interfaces) > 2 else created_interfaces[0] if created_interfaces else None
     )
-    logger.info(f"Created {interface2} for device={device3.id} and tenant={tenant_id}")
+
+    if interface is None or interface2 is None:
+        interface = get_or_create_interface(
+            actor=actor,
+            tenant_id=device_tenant_id,
+            device_id=device.id,
+            name="port1",
+            description="External WAN interface.",
+            type="physical",
+        )[0]
+        interface2 = get_or_create_interface(
+            actor=actor,
+            tenant_id=device_tenant_id,
+            device_id=device3.id,
+            name="port2",
+            description="Internal LAN interface.",
+            type="physical",
+        )[0]
+    logger.info(f"Created {interface} for device={device.id} and tenant={device_tenant_id}")
+    logger.info(f"Created {interface2} for device={device3.id} and tenant={device_tenant_id}")
 
     filter1, _ = get_or_create_filter(
         actor=actor,
@@ -139,7 +229,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
     add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag2, obj=device_group2)
     add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag2, obj=address)
 
-    if default_tag := Tag.objects.filter(name="default", tenant_id=tenant_id).first():
+    if default_tag := Tag.objects.filter(name="global", tenant_id=tenant_id).first():
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=device)
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=device2)
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=device3)
@@ -149,3 +239,46 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=interface2)
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=filter1)
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=address)
+
+    # Create tenant admin and regular tenant member for the NTNU tenant
+    tenant_admin, created_admin = User.objects.get_or_create(
+        username="NTNUTenantAdmin",
+        defaults={"email": "tenantadmin@ntnu.no"},
+    )
+    if created_admin:
+        tenant_admin.set_password("change-me")
+        tenant_admin.save(update_fields=["password"])
+    TenantUserMember.objects.get_or_create(
+        tenant=ntnu_tenant,
+        user_id=int(tenant_admin.id),
+        defaults={"role": TenantUserMember.TenantRole.ADMIN},
+    )
+    tenant_member, created_member = User.objects.get_or_create(
+        username="NTNUTenantMember",
+        defaults={"email": "tenantmember@ntnu.no"},
+    )
+    if created_member:
+        tenant_member.set_password("change-me")
+        tenant_member.save(update_fields=["password"])
+    TenantUserMember.objects.get_or_create(
+        tenant=ntnu_tenant,
+        user_id=int(tenant_member.id),
+        defaults={"role": TenantUserMember.TenantRole.MEMBER},
+    )
+    NTNU_Admin_sikt_member, created_cross_tenant_member = User.objects.get_or_create(
+        username="NTNU_Admin_Sikt_Member",
+        defaults={"email": "ntnuadmin@sikt.no"},
+    )
+    if created_cross_tenant_member:
+        NTNU_Admin_sikt_member.set_password("change-me")
+        NTNU_Admin_sikt_member.save(update_fields=["password"])
+    TenantUserMember.objects.get_or_create(
+        tenant=ntnu_tenant,
+        user_id=int(NTNU_Admin_sikt_member.id),
+        defaults={"role": TenantUserMember.TenantRole.ADMIN},
+    )
+    TenantUserMember.objects.get_or_create(
+        tenant=sikt_tenant,
+        user_id=int(NTNU_Admin_sikt_member.id),
+        defaults={"role": TenantUserMember.TenantRole.MEMBER},
+    )
