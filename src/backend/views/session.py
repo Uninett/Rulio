@@ -84,8 +84,8 @@ def get_tenants_view(request):
     else:
         tenant_ids = list(TenantUserMember.objects.filter(user=request.user).values_list("tenant_id", flat=True))
 
-        if GLOBAL_TENANT_ID not in tenant_ids:
-            tenant_ids.append(GLOBAL_TENANT_ID)
+        if GLOBAL_TENANT_ID in tenant_ids:
+            tenant_ids.remove(GLOBAL_TENANT_ID)
 
         tenants = Tenant.objects.filter(id__in=tenant_ids).order_by("id")
 
