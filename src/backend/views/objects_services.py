@@ -78,8 +78,21 @@ def get_services_view(request):
             "rows": [],
         }
 
-    services = sorted(services, key=lambda s: (getattr(s, "name", "") or "").lower())
-    service_groups = sorted(service_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
+    services = sorted(
+        services,
+        key=lambda s: (
+            getattr(s, "tenant_id", None) != GLOBAL_TENANT_ID,
+            (getattr(s, "name", "") or "").lower(),
+        ),
+    )
+
+    service_groups = sorted(
+        service_groups,
+        key=lambda g: (
+            getattr(g, "tenant_id", None) != GLOBAL_TENANT_ID,
+            (getattr(g, "name", "") or "").lower(),
+        ),
+    )
 
     headers = ["Type", "Name", "Description", "Protocol", "Port Start", "Port End", "Tags", ""]
 

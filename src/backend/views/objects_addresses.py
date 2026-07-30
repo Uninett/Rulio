@@ -135,8 +135,21 @@ def get_addresses_view(request):
         }
 
     # Sort the addresses, the key can be dependent on a switch case to allow for different sorting methods in the future.
-    addresses = sorted(addresses, key=lambda a: (getattr(a, "name", "") or "").lower())
-    address_groups = sorted(address_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
+    addresses = sorted(
+        addresses,
+        key=lambda a: (
+            getattr(a, "tenant_id", None) != GLOBAL_TENANT_ID,
+            (getattr(a, "name", "") or "").lower(),
+        ),
+    )
+
+    address_groups = sorted(
+        address_groups,
+        key=lambda g: (
+            getattr(g, "tenant_id", None) != GLOBAL_TENANT_ID,
+            (getattr(g, "name", "") or "").lower(),
+        ),
+    )
 
     headers = ["Type", "Name", "Description", "IPv4", "IPv6", "Tags", ""]
     rows = []
