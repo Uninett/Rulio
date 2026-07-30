@@ -82,11 +82,17 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             ]
         )
 
+    device_tenant_id = tenant_id
+    if "ntnu" in current_tenant_name.lower():
+        device_tenant_id = ntnu_tenant.id
+    elif "sikt" in current_tenant_name.lower():
+        device_tenant_id = sikt_tenant.id
+
     created_devices = []
     for name, platform, description, device_type in device_specs:
         device_obj = get_or_create_device(
             actor=actor,
-            tenant_id=tenant_id,
+            tenant_id=device_tenant_id,
             name=name,
             platform=platform,
             description=description,
@@ -96,6 +102,19 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         logger.info(f"Created {device_obj} for tenant={device_obj.tenant_id}")
 
     device, device2, device3, device4 = created_devices[:4]
+
+    created_interfaces = []
+    for index, device_obj in enumerate(created_devices):
+        interface_obj, _, _, _, _, _ = get_or_create_interface(
+            actor=actor,
+            tenant_id=device_tenant_id,
+            device_id=device_obj.id,
+            name=f"port{index + 1}",
+            description=f"Interface {index + 1} for {device_obj.name}.",
+            type="physical",
+        )
+        created_interfaces.append(interface_obj)
+        logger.info(f"Created {interface_obj} for device={device_obj.id} and tenant={device_tenant_id}")
 
     device_group_specs = [
         (f"{tenant_prefix}-firewalls", f"Firewall devices for {tenant_label} office."),
@@ -116,12 +135,12 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
     for name, description in device_group_specs:
         device_group_obj = get_or_create_device_group(
             actor=actor,
-            tenant_id=tenant_id,
+            tenant_id=device_tenant_id,
             name=name,
             description=description,
         )
         created_device_groups.append(device_group_obj)
-        logger.info(f"Created {device_group_obj} for tenant={tenant_id}")
+        logger.info(f"Created {device_group_obj} for tenant={device_tenant_id}")
 
     device_group, device_group2 = created_device_groups[:2]
 
@@ -131,32 +150,37 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             try:
                 add_devices_to_group(
                     actor=actor,
-                    tenant_id=tenant_id,
+                    tenant_id=device_tenant_id,
                     device_group_id=device_group_obj.id,
                     device_ids=device_ids,
                 )
             except ValueError as e:
                 logger.warning(str(e))
 
-    interface, _, _, _, _, _ = get_or_create_interface(
-        actor=actor,
-        tenant_id=tenant_id,
-        device_id=device.id,
-        name="port1",
-        description="External WAN interface.",
-        type="physical",
+    interface = created_interfaces[0] if created_interfaces else None
+    interface2 = (
+        created_interfaces[2] if len(created_interfaces) > 2 else created_interfaces[0] if created_interfaces else None
     )
-    logger.info(f"Created {interface} for device={device.id} and tenant={tenant_id}")
 
-    interface2, _, _, _, _, _ = get_or_create_interface(
-        actor=actor,
-        tenant_id=tenant_id,
-        device_id=device3.id,
-        name="port2",
-        description="Internal LAN interface.",
-        type="physical",
-    )
-    logger.info(f"Created {interface2} for device={device3.id} and tenant={tenant_id}")
+    if interface is None or interface2 is None:
+        interface = get_or_create_interface(
+            actor=actor,
+            tenant_id=device_tenant_id,
+            device_id=device.id,
+            name="port1",
+            description="External WAN interface.",
+            type="physical",
+        )[0]
+        interface2 = get_or_create_interface(
+            actor=actor,
+            tenant_id=device_tenant_id,
+            device_id=device3.id,
+            name="port2",
+            description="Internal LAN interface.",
+            type="physical",
+        )[0]
+    logger.info(f"Created {interface} for device={device.id} and tenant={device_tenant_id}")
+    logger.info(f"Created {interface2} for device={device3.id} and tenant={device_tenant_id}")
 
     filter1, _ = get_or_create_filter(
         actor=actor,
@@ -217,27 +241,37 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=address)
 
     # Create tenant admin and regular tenant member for the NTNU tenant
-    tenant_admin = User.objects.create_user(
+    tenant_admin, created_admin = User.objects.get_or_create(
         username="NTNUTenantAdmin",
-        email="tenantadmin@ntnu.no",
-        password="change-me",
+        defaults={"email": "tenantadmin@ntnu.no"},
     )
+    if created_admin:
+        tenant_admin.set_password("change-me")
+        tenant_admin.save(update_fields=["password"])
     TenantUserMember.objects.get_or_create(
         tenant=ntnu_tenant,
         user_id=int(tenant_admin.id),
         defaults={"role": TenantUserMember.TenantRole.ADMIN},
     )
-    tenant_member = User.objects.create_user(
-        username="NTNUTenantMember", email="tenantmember@ntnu.no", password="tenantmemberpassword"
+    tenant_member, created_member = User.objects.get_or_create(
+        username="NTNUTenantMember",
+        defaults={"email": "tenantmember@ntnu.no"},
     )
+    if created_member:
+        tenant_member.set_password("change-me")
+        tenant_member.save(update_fields=["password"])
     TenantUserMember.objects.get_or_create(
         tenant=ntnu_tenant,
         user_id=int(tenant_member.id),
         defaults={"role": TenantUserMember.TenantRole.MEMBER},
     )
-    NTNU_Admin_sikt_member = User.objects.create_user(
-        username="NTNU_Admin_Sikt_Member", email="ntnuadmin@sikt.no", password="ntnuadminpassword"
+    NTNU_Admin_sikt_member, created_cross_tenant_member = User.objects.get_or_create(
+        username="NTNU_Admin_Sikt_Member",
+        defaults={"email": "ntnuadmin@sikt.no"},
     )
+    if created_cross_tenant_member:
+        NTNU_Admin_sikt_member.set_password("change-me")
+        NTNU_Admin_sikt_member.save(update_fields=["password"])
     TenantUserMember.objects.get_or_create(
         tenant=ntnu_tenant,
         user_id=int(NTNU_Admin_sikt_member.id),
