@@ -542,6 +542,22 @@ function focusAndExpandFromUrl() {
     }, 200);
 }
 
+function focusAndExpandRow(rowId) {
+    const row = document.getElementById(`row-${rowId}`);
+    const detailsRow = document.getElementById(`details-${rowId}`);
+
+    if (!row || !detailsRow) return;
+
+    if (window.getComputedStyle(detailsRow).display !== "table-row") {
+        expandRow(rowId);
+    }
+
+    row.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+    });
+}
+
 
 /*
 ====================================================================

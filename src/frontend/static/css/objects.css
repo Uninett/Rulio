@@ -246,6 +246,10 @@ Objects Details Row
     gap: 0.35rem;
 }
 
+.objects-group-member-name:hover {
+    cursor: pointer;
+}
+
 /*
 ====================================================================
 Objects Tags
