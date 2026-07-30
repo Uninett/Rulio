@@ -21,30 +21,66 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
     require_write_tenant(actor, tenant_id)
     ntnu_tenant = tenants[0]
     sikt_tenant = tenants[1]
-    uio_tenant = tenants[2]
+
+    current_tenant = next((tenant for tenant in tenants if getattr(tenant, "id", None) == tenant_id), None)
+    current_tenant_name = getattr(current_tenant, "tenant_name", "") or ""
+    is_ntnu_or_sikt_tenant = any(marker in current_tenant_name.lower() for marker in ["ntnu", "sikt"])
+
+    tenant_prefix = (
+        "ntnu"
+        if "ntnu" in current_tenant_name.lower()
+        else "sikt"
+        if "sikt" in current_tenant_name.lower()
+        else "shared"
+    )
+    tenant_label = f"{tenant_prefix.upper()}" if tenant_prefix != "shared" else "SHARED"
 
     device_specs = [
-        ("edge-fw-01", "FortiGate", "Primary edge firewall for Trondheim office.", "firewall"),
-        ("edge-fw-02", "FortiGate", "Secondary edge firewall for Trondheim office.", "firewall"),
-        ("core-switch-01", "Cisco", "Core switch for Trondheim office.", "switch"),
-        ("core-switch-02", "Cisco", "Secondary core switch for Trondheim office.", "switch"),
-        ("edge-fw-03", "FortiGate", "Additional edge firewall for Oslo office.", "firewall"),
-        ("edge-fw-04", "FortiGate", "Additional edge firewall for Oslo office.", "firewall"),
-        ("core-switch-03", "Cisco", "Core switch for Oslo office.", "switch"),
-        ("core-switch-04", "Cisco", "Secondary core switch for Oslo office.", "switch"),
-        ("edge-fw-05", "Palo Alto", "Edge firewall for Copenhagen office.", "firewall"),
-        ("edge-fw-06", "Palo Alto", "Edge firewall for Copenhagen office.", "firewall"),
-        ("core-switch-05", "Arista", "Core switch for Copenhagen office.", "switch"),
-        ("core-switch-06", "Arista", "Secondary core switch for Copenhagen office.", "switch"),
-        ("edge-fw-07", "Check Point", "Edge firewall for Stockholm office.", "firewall"),
-        ("edge-fw-08", "Check Point", "Edge firewall for Stockholm office.", "firewall"),
-        ("core-switch-07", "Juniper", "Core switch for Stockholm office.", "switch"),
-        ("core-switch-08", "Juniper", "Secondary core switch for Stockholm office.", "switch"),
-        ("edge-fw-09", "Sophos", "Edge firewall for Helsinki office.", "firewall"),
-        ("edge-fw-10", "Sophos", "Edge firewall for Helsinki office.", "firewall"),
-        ("core-switch-09", "Huawei", "Core switch for Helsinki office.", "switch"),
-        ("core-switch-10", "Huawei", "Secondary core switch for Helsinki office.", "switch"),
+        (f"{tenant_prefix}-edge-fw-01", "FortiGate", f"Primary edge firewall for {tenant_label} office.", "firewall"),
+        (f"{tenant_prefix}-edge-fw-02", "FortiGate", f"Secondary edge firewall for {tenant_label} office.", "firewall"),
+        (f"{tenant_prefix}-core-sw-01", "Cisco", f"Core switch for {tenant_label} office.", "switch"),
+        (f"{tenant_prefix}-core-sw-02", "Cisco", f"Secondary core switch for {tenant_label} office.", "switch"),
+        (f"{tenant_prefix}-router-01", "Cisco", f"Primary router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-02", "Juniper", f"Secondary router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-03", "Brocade", f"Edge router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-04", "Cisco", f"Backup router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-05", "Juniper", f"Distribution router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-06", "Brocade", f"Aggregation router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-07", "Cisco", f"WAN router for {tenant_label} office.", "router"),
+        (f"{tenant_prefix}-router-08", "Juniper", f"LAN router for {tenant_label} office.", "router"),
     ]
+
+    if is_ntnu_or_sikt_tenant:
+        device_specs.extend(
+            [
+                (
+                    f"{tenant_prefix}-edge-fw-03",
+                    "FortiGate",
+                    f"Additional edge firewall for {tenant_label} testing.",
+                    "firewall",
+                ),
+                (
+                    f"{tenant_prefix}-edge-fw-04",
+                    "FortiGate",
+                    f"Additional edge firewall for {tenant_label} testing.",
+                    "firewall",
+                ),
+                (
+                    f"{tenant_prefix}-core-sw-03",
+                    "Cisco",
+                    f"Additional core switch for {tenant_label} testing.",
+                    "switch",
+                ),
+                (
+                    f"{tenant_prefix}-core-sw-04",
+                    "Cisco",
+                    f"Additional core switch for {tenant_label} testing.",
+                    "switch",
+                ),
+                (f"{tenant_prefix}-router-09", "Brocade", f"Campus router for {tenant_label} testing.", "router"),
+                (f"{tenant_prefix}-router-10", "Juniper", f"Campus router for {tenant_label} testing.", "router"),
+            ]
+        )
 
     created_devices = []
     for name, platform, description, device_type in device_specs:
@@ -62,17 +98,19 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
     device, device2, device3, device4 = created_devices[:4]
 
     device_group_specs = [
-        ("trondheim-firewalls", "Firewall devices in the Trondheim office."),
-        ("trondheim-switches", "Switch devices in the Trondheim office."),
-        ("oslo-firewalls", "Firewall devices in the Oslo office."),
-        ("oslo-switches", "Switch devices in the Oslo office."),
-        ("copenhagen-firewalls", "Firewall devices in the Copenhagen office."),
-        ("copenhagen-switches", "Switch devices in the Copenhagen office."),
-        ("stockholm-firewalls", "Firewall devices in the Stockholm office."),
-        ("stockholm-switches", "Switch devices in the Stockholm office."),
-        ("helsinki-firewalls", "Firewall devices in the Helsinki office."),
-        ("helsinki-switches", "Switch devices in the Helsinki office."),
+        (f"{tenant_prefix}-firewalls", f"Firewall devices for {tenant_label} office."),
+        (f"{tenant_prefix}-switches", f"Switch devices for {tenant_label} office."),
+        (f"{tenant_prefix}-routers", f"Router devices for {tenant_label} office."),
     ]
+
+    if is_ntnu_or_sikt_tenant:
+        device_group_specs.extend(
+            [
+                (f"{tenant_prefix}-campus-firewalls", f"Additional firewall group for {tenant_label} campus testing."),
+                (f"{tenant_prefix}-security-switches", f"Additional switch group for {tenant_label} security testing."),
+                (f"{tenant_prefix}-shared-services", f"Shared services group for {tenant_label} testing."),
+            ]
+        )
 
     created_device_groups = []
     for name, description in device_group_specs:
@@ -180,38 +218,33 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
 
     # Create tenant admin and regular tenant member for the NTNU tenant
     tenant_admin = User.objects.create_user(
-        username="TenantAdmin",
+        username="NTNUTenantAdmin",
         email="tenantadmin@ntnu.no",
         password="change-me",
     )
     TenantUserMember.objects.get_or_create(
-                tenant=ntnu_tenant,
-                user_id=int(tenant_admin.id),
-                defaults={"role": TenantUserMember.TenantRole.ADMIN},
-            )
+        tenant=ntnu_tenant,
+        user_id=int(tenant_admin.id),
+        defaults={"role": TenantUserMember.TenantRole.ADMIN},
+    )
     tenant_member = User.objects.create_user(
-        username="TenantMember",
-        email="tenantmember@ntnu.no",
-        password="tenantmemberpassword"
+        username="NTNUTenantMember", email="tenantmember@ntnu.no", password="tenantmemberpassword"
     )
     TenantUserMember.objects.get_or_create(
-                tenant=ntnu_tenant,
-                user_id=int(tenant_member.id),
-                defaults={"role": TenantUserMember.TenantRole.MEMBER},
-            )
+        tenant=ntnu_tenant,
+        user_id=int(tenant_member.id),
+        defaults={"role": TenantUserMember.TenantRole.MEMBER},
+    )
     NTNU_Admin_sikt_member = User.objects.create_user(
-        username="NTNU_Admin_Sikt_Member",
-        email="ntnuadmin@sikt.no",
-        password="ntnuadminpassword"
+        username="NTNU_Admin_Sikt_Member", email="ntnuadmin@sikt.no", password="ntnuadminpassword"
     )
     TenantUserMember.objects.get_or_create(
-                tenant=ntnu_tenant,
-                user_id=int(NTNU_Admin_sikt_member.id),
-                defaults={"role": TenantUserMember.TenantRole.ADMIN},
-            )
+        tenant=ntnu_tenant,
+        user_id=int(NTNU_Admin_sikt_member.id),
+        defaults={"role": TenantUserMember.TenantRole.ADMIN},
+    )
     TenantUserMember.objects.get_or_create(
-                tenant=sikt_tenant,
-                user_id=int(NTNU_Admin_sikt_member.id),
-                defaults={"role": TenantUserMember.TenantRole.MEMBER},
-            )
-    
+        tenant=sikt_tenant,
+        user_id=int(NTNU_Admin_sikt_member.id),
+        defaults={"role": TenantUserMember.TenantRole.MEMBER},
+    )
