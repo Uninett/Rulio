@@ -31,6 +31,23 @@
                     {% include "partials/search/_modal_search.html" with search_results=search_results %}
                 </div>
 
+                <div class="form-group form-description">
+                    <label></label>
+                    <div class="modal-tag-list">
+                        {% if object_tags %}
+                        {% for tag in object_tags %}
+                        {% if tag.name|lower == "default" %}
+                        <span class="modal-tag-item modal-tag-item-default">{{ tag.name }}</span>
+                        {% else %}
+                        <span class="modal-tag-item">{{ tag.name }}</span>
+                        {% endif %}
+                        {% endfor %}
+                        {% else %}
+                        <p>No tags added.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
                 {% endif %}
                 {% endif %}
 

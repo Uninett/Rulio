@@ -183,6 +183,39 @@ Address Form Layout
 
 /*
 ====================================================================
+Modal Tags
+====================================================================
+*/
+
+
+.modal-tag-item {
+    border: 1px solid var(--sds-color-interaction-neutral-subtle-hover);
+    background-color: var(--sds-color-interaction-neutral-subtle-hover);
+    color: var(--sds-color-text-primary);
+    border-radius: 20px;
+    display: inline-block;
+    font-size: x-small;
+    width: auto;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    margin-right: 0.25rem;
+    max-width: 100%;
+}
+
+.modal-tag-item-default {
+    border: 1px solid var(--sds-color-interaction-neutral-subtle);
+    background-color: var(--sds-color-interaction-neutral-subtle);
+}
+
+.modal-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/*
+====================================================================
 Modal Type Switch
 ====================================================================
 */

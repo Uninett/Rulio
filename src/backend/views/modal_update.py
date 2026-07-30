@@ -21,6 +21,8 @@ from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
 
+from backend.services.get import get_all_tags_from_object
+
 logger = set_up_logger(__name__)
 
 
@@ -147,6 +149,18 @@ def get_update_modal(request, row_id):
     object_data = None
     options_context = {}
     selected_ids = []
+    object_tags = []
+
+    if object_type in ["address", "addressgroup", "service", "servicegroup"] and tenant_id is not None:
+        try:
+            object_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_id=object_id,
+                object_type=object_type,
+            )
+        except Exception:
+            object_tags = []
 
     if object_type == "user":
         user = User.objects.filter(id=object_id).first()
@@ -300,6 +314,7 @@ def get_update_modal(request, row_id):
         "modal_refresh_target": config["modal_refresh_target"],
         "object_data": object_data,
         "search_results": get_tags_search_results(request, ""),
+        "object_tags": object_tags,
         **options_context,
     }
 
