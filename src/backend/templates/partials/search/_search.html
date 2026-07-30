@@ -1,7 +1,8 @@
 <section class="search-dropdown-wrapper" id="dropdownWrapper">
-    <input type="text" placeholder="Search..." id="myInput" class="search-input" onkeyup="filterFunction()" />
+    <input type="text" placeholder="Search..." id="myInput" class="search-input search-input-global"
+        onkeyup="filterFunction()" />
 
-    <section id="myDropdown" class="search-dropdown">
+    <section id="myDropdown" class="search-dropdown search-dropdown-global">
         {% for item in search_results.results %}
         <a href="{{ item.url }}" data-search="{{ item.search_text|default:item.name|lower }}">
             <div class="search-result-name">{{ item.name }}</div>

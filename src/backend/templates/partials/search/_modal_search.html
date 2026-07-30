@@ -1,11 +1,11 @@
 <section class="search-container">
-    <input type="text" placeholder="Search tags..." class="search-input" id="modalSearchInput"
+    <input type="text" placeholder="Search tags..." class="search-input search-input-modal" id="modalSearchInput"
         onkeyup="filterModalSearch()" />
 
-    <section class="search-dropdown" id="modalSearchDropdown">
+    <section class="search-dropdown search-dropdown-modal" id="modalSearchDropdown">
         {% for item in search_results.results %}
         <div class="search-result" data-search="{{ item.search_text|default:item.name|lower }}">
-            <div>{{ item.name }}</div>
+            <div class="search-result-name">{{ item.name }}</div>
             <div class="search-result-type">{{ item.type }}</div>
         </div>
         {% endfor %}
