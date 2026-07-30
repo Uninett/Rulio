@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
+from backend.utils.logger import set_up_logger
 from backend.views.session import get_tenant_context
 
 from backend.views.search import get_global_search_results
@@ -12,6 +13,7 @@ from backend.objects.tenant_objects.filter_interface import FilterInterface
 from constants import GLOBAL_TENANT_ID
 from backend.services.helper_user_tenant import can_write_tenant
 
+logger = set_up_logger(__name__)
 
 """
 ====================================================================
@@ -39,7 +41,7 @@ def get_devices_page(request):
 
 
 def get_devices_view(request):
-    print("TESTER")
+    logger.info("TESTER")
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
         return {
@@ -65,11 +67,11 @@ def get_devices_view(request):
     rows = []
 
     for group in device_groups:
-        print(group.name)
+        logger.info(group.name)
         try:
             device_group_tags = group.get_tags()
             device_group_tag_names = [tag.name for tag in device_group_tags]
-            print(device_group_tags)
+            logger.info(device_group_tags)
         except Exception:
             device_group_tag_names = []
 
@@ -79,7 +81,7 @@ def get_devices_view(request):
                 tenant_id=int(tenant_id),
                 device_group_id=group.id,
             )
-            print(device_group_members)
+            logger.info(device_group_members)
         except Exception:
             device_group_members = []
 
@@ -97,14 +99,15 @@ def get_devices_view(request):
             except Exception:
                 member_tag_names = []
 
-            # group_devices.append(
-            #     build_device_table_row(
-            #         request=request,
-            #         tenant_id=tenant_id,
-            #         device=member,
-            #         tag_names=member_tag_names,
-            #     )
-            # )
+            devices_in_group.append(
+                {
+                    "row_id": f"device-{member.id}",
+                    "name": getattr(member, "name", "") or "",
+                    "description": getattr(member, "description", "") or "",
+                }
+            )
+
+        logger.info(f"DEVICES IN GROUP{devices_in_group}")
 
         rows.append(
             {
@@ -132,11 +135,11 @@ def get_devices_view(request):
                 ],
             }
         )
-    print("UTENFOR")
+    logger.info("UTENFOR")
     for device in devices:
-        print("INNI")
-        print(devices)
-        print(device.name)
+        logger.info("INNI")
+        logger.info(devices)
+        logger.info(device.name)
         try:
             devices_tags = get_all_tags_from_object(
                 actor=request.user,
@@ -181,7 +184,7 @@ def get_devices_view(request):
                 ],
             }
         )
-        print(f"THESE ARE THE ROWS{rows}")
+        logger.info(f"THESE ARE THE ROWS{rows}")
 
     return {
         "headers": headers,
@@ -239,8 +242,8 @@ def get_devices_view(request):
 #     for interface in interfaces:
 #         filters = build_interface_filters(interface)
 
-#         # print("INTERFACE:", interface.id, getattr(interface, "name", ""))
-#         # print("FILTERS:", filters)
+#         # logger.info("INTERFACE:", interface.id, getattr(interface, "name", ""))
+#         # logger.info("FILTERS:", filters)
 
 #         interface_list.append(
 #             {

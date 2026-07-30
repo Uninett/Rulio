@@ -5,16 +5,9 @@
             {% for field in row.expand %}
 
             {% if field.modal_on_dblclick %}
-            <!-- {% if field.label == "Devices" %}
-            <div class="detail-block detail-block--devices">
-                <div class="device-table-wrapper">
-                    {% include "partials/devices/_expandableDeviceLine.html" with devices=field.value %}
-                </div>
-            </div> -->
-            {% endif %}
-            <!-- {% if field.label != "Devices" %} -->
             <div class="detail-block">
                 <p><strong>{{ field.label }}:</strong></p>
+
                 {% for value in field.value %}
                 <div hx-get="{% url 'modal-update' value.row_id %}" hx-trigger="dblclick" hx-target="#modal-container"
                     hx-swap="innerHTML" title="{{ value.hover_text }}">
@@ -34,7 +27,6 @@
                 </div>
                 {% endfor %}
             </div>
-            {% endif %}
 
             {% elif field.label == "Tags" %}
             {% include "partials/objects/_stylingTags.html" with row=row field=field %}
@@ -49,7 +41,7 @@
                 {% else %}
                 {% for value in field.value %}
                 <div>{{ value }}</div>
-                {% endfor %}
+                {% endfor %},
                 {% endif %}
             </div>
             {% endif %}
