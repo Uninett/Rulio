@@ -22,6 +22,7 @@
     {% endif %}
 </tr>
 
-<tr id="details-{{ row.id }}" class="details-row">
+<tr id="details-{{ row.id }}"
+    class="details-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}">
     {% include "partials/objects/_expandRow.html" with row=row headers=headers %}
 </tr>
