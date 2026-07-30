@@ -118,7 +118,7 @@ def get_devices_view(request):
             devices_in_group.append(
                 {
                     "row_id": f"device-{member.id}",
-                    "name": getattr(member, "name", "") or "",
+                    "name": getattr(member, "name", "").upper or "",
                     # "description": getattr(member, "description", "") or "",
                 }
             )
