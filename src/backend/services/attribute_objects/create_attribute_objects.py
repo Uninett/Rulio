@@ -452,32 +452,30 @@ def get_or_create_address_group(
         addr_type="Group",
     )
     if created:
-        if request_type == "seeding":
-            pass
-        else:
+        if request_type != "seeding":
             logger.info(f"Created {address_group} for tenant={address_group.tenant_id}")
-            if members:
-                add_addresses_to_group(
-                    actor=actor,
-                    tenant_id=tenant_id,
-                    address_group_id=address_group.id,
-                    address_ids=members,
-                    request_type=request_type,
-                )
+        if members:
+            add_addresses_to_group(
+                actor=actor,
+                tenant_id=tenant_id,
+                address_group_id=address_group.id,
+                address_ids=members,
+                request_type=request_type,
+            )
+            if request_type != "seeding":
                 logger.info(f"Added members to {address_group}: {members}")
     else:
-        if request_type == "seeding":
-            pass
-        else:
+        if request_type != "seeding":
             logger.info(f"Address Group already exists: {address_group} for tenant={address_group.tenant_id}")
-            if members:
-                add_addresses_to_group(
-                    actor=actor,
-                    tenant_id=tenant_id,
-                    address_group_id=address_group.id,
-                    address_ids=members,
-                    request_type=request_type,
-                )
+        if members:
+            add_addresses_to_group(
+                actor=actor,
+                tenant_id=tenant_id,
+                address_group_id=address_group.id,
+                address_ids=members,
+                request_type=request_type,
+            )
+            if request_type != "seeding":
                 logger.info(f"Added members to existing {address_group}: {members}")
 
     return address_group, address_group.id, created
