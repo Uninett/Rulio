@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.objects.attributes.tag import Tag
+from backend.views.search import get_tags_search_results
 
 from backend.views.modal import get_group_options_view, get_item_options_view
 from backend.views.objects_addresses import build_ip_input
@@ -298,6 +299,7 @@ def get_update_modal(request, row_id):
         "modal_refresh_url": reverse(config["refresh_url_name"]),
         "modal_refresh_target": config["modal_refresh_target"],
         "object_data": object_data,
+        "search_results": get_tags_search_results(request, ""),
         **options_context,
     }
 
