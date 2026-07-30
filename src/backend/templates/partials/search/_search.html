@@ -1,62 +1,7 @@
-<style>
-    #myInput {
-        box-sizing: border-box;
-        font-size: 16px;
-        border: none;
-        border-bottom: 1px solid #ddd;
-        min-height: 2.5rem;
-        min-width: 14rem;
-        padding: 0 0.75;
-        border: 1px solid #767676;
-        border-radius: 10px;
-    }
+<section class="search-dropdown-wrapper" id="dropdownWrapper">
+    <input type="text" placeholder="Search..." id="myInput" class="search-input" onkeyup="filterFunction()" />
 
-    #myInput:focus {
-        outline: 3px solid #ddd;
-    }
-
-    .dropdown {
-        position: relative;
-        display: inline-block;
-    }
-
-    .dropdown-content {
-        display: none;
-        position: absolute;
-        background-color: #f6f6f6;
-        min-width: 230px;
-        overflow: auto;
-        border: 1px solid #ddd;
-        z-index: 3;
-        max-height: 240px;
-        overflow-y: auto;
-    }
-
-    .dropdown-content a {
-        color: black;
-        padding: 4px 4px;
-        text-decoration: none;
-        display: block;
-    }
-
-    .dropdown a:hover {
-        background-color: #ddd;
-    }
-
-    .search-result-name {
-        font-weight: 300;
-    }
-
-    .search-result-type {
-        font-size: 0.85rem;
-        color: #666;
-        margin-top: 2px;
-    }
-</style>
-<section class="dropdown" id="dropdownWrapper">
-    <input type="text" placeholder="Search..." id="myInput" onkeyup="filterFunction()" />
-
-    <section id="myDropdown" class="dropdown-content">
+    <section id="myDropdown" class="search-dropdown">
         {% for item in search_results.results %}
         <a href="{{ item.url }}" data-search="{{ item.search_text|default:item.name|lower }}">
             <div class="search-result-name">{{ item.name }}</div>
@@ -67,7 +12,6 @@
 </section>
 
 <script>
-
     document.addEventListener("click", function (event) {
         const dropdown = document.getElementById("dropdownWrapper");
         const menu = document.getElementById("myDropdown");
@@ -87,7 +31,7 @@
 
         // if input is too short, then the styling is none, and links are hidden
         if (filter.length < 2) {
-            a.forEach(link => link.style.display = "none");
+            Array.from(a).forEach(link => link.style.display = "none");
             section.style.display = "none";
             return;
         }
@@ -135,5 +79,4 @@
         this.select();
         filterFunction();
     });
-
 </script>

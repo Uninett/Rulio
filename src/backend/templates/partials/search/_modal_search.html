@@ -1,35 +1,10 @@
-<style>
-    #modalSearchInput {
-        min-height: 2.5rem;
-        min-width: 14rem;
-        padding: 0 0.75rem;
-        border: 1px solid #767676;
-        border-radius: 10px;
-    }
+<section class="search-container">
+    <input type="text" placeholder="Search tags..." class="search-input" id="modalSearchInput"
+        onkeyup="filterModalSearch()" />
 
-    #modalSearchDropdown {
-        display: none;
-        border: 1px solid #ddd;
-        max-height: 240px;
-        overflow-y: auto;
-    }
-
-    .modal-search-result {
-        padding: 4px;
-    }
-
-    .search-result-type {
-        font-size: 0.85rem;
-        color: #666;
-    }
-</style>
-
-<section>
-    <input type="text" placeholder="Search tags..." id="modalSearchInput" onkeyup="filterModalSearch()" />
-
-    <section id="modalSearchDropdown">
+    <section class="search-dropdown" id="modalSearchDropdown">
         {% for item in search_results.results %}
-        <div class="modal-search-result" data-search="{{ item.search_text|default:item.name|lower }}">
+        <div class="search-result" data-search="{{ item.search_text|default:item.name|lower }}">
             <div>{{ item.name }}</div>
             <div class="search-result-type">{{ item.type }}</div>
         </div>
@@ -42,7 +17,7 @@
         const input = document.getElementById("modalSearchInput");
         const filter = input.value.toUpperCase();
         const section = document.getElementById("modalSearchDropdown");
-        const results = section.getElementsByClassName("modal-search-result");
+        const results = section.getElementsByClassName("search-result");
 
         let hasMatches = false;
 
