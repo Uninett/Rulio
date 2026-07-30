@@ -1242,10 +1242,6 @@ def merge_policies(policies: list[Policy], name: str | None = None) -> Policy:
         merged_policy.name = normalized_name
         merged_policy.YAMLConfig["filename"] = normalized_name
 
-    for filter_config in merged_policy.YAMLConfig["filters"]:
-        if merged_policy.target_spec is None:
-            filter_config["header"] = merged_policy._build_filter_header()
-
     return merged_policy
 
 
