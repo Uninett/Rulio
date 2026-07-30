@@ -1,4 +1,4 @@
-<td colspan="{{ headers|length }}" class="details-cell">
+<td colspan="{{ headers|length|add:'1' }}" class="details-cell">
     <section class="details-content">
         {% if row.is_group or row.istrue %}
         <div class="group-detail-columns">
@@ -7,6 +7,7 @@
             {% if field.modal_on_dblclick %}
             <div class="detail-block">
                 <p><strong>{{ field.label }}:</strong></p>
+
                 {% for value in field.value %}
                 <div hx-get="{% url 'modal-update' value.row_id %}" hx-trigger="dblclick" hx-target="#modal-container"
                     hx-swap="innerHTML" title="{{ value.hover_text }}">
@@ -40,7 +41,7 @@
                 {% else %}
                 {% for value in field.value %}
                 <div>{{ value }}</div>
-                {% endfor %}
+                {% endfor %},
                 {% endif %}
             </div>
             {% endif %}

@@ -4,8 +4,13 @@ from django.core.exceptions import PermissionDenied
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.rule_match import RuleMatch
-from backend.services.attribute_objects.create_attribute_objects import create_address, create_service
-from backend.services.attribute_objects.create_attribute_objects import create_address_group, create_service_group
+from backend.services.attribute_objects.create_attribute_objects import (
+    create_address,
+    create_service,
+    create_address_group,
+    create_service_group,
+    get_or_create_address_group,
+)
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 from backend.services.membership import (
     add_addresses_to_group,
@@ -123,6 +128,21 @@ class TestCreateServiceGroup:
         assert service_group.name == "Test Service Group"
         assert service_group.description == "This is a test service group"
         assert service_group.tenant_id == request_with_session.tenant_id
+
+    def test_get_or_create_address_group_with_seeding_adds_members(self, sample_addresses, request_with_session):
+        address_ids = [address.id for address in sample_addresses]
+
+        address_group, _, created = get_or_create_address_group(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Seeded Address Group",
+            description="Address group created during seeding",
+            members=address_ids,
+            request_type="seeding",
+        )
+
+        assert created is True
+        assert AddressGroupMember.objects.filter(group=address_group).count() == len(address_ids)
 
 
 @pytest.mark.django_db
