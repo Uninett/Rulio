@@ -8,8 +8,6 @@ from backend.views.search import get_global_search_results
 from backend.services.get import get_all_device_groups_and_devices_with_tags_from_tenant
 from backend.services.get import get_device_group_members
 from backend.services.get import get_all_tags_from_object
-from backend.services.get import get_all_interfaces_from_device
-from backend.objects.tenant_objects.filter_interface import FilterInterface
 from constants import GLOBAL_TENANT_ID
 from backend.services.helper_user_tenant import can_write_tenant
 
@@ -108,6 +106,7 @@ def get_devices_view(request):
             )
 
         logger.info(f"DEVICES IN GROUP{devices_in_group}")
+        logger.info(f"member_tag_names{member_tag_names}")
 
         rows.append(
             {
