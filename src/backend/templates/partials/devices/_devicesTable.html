@@ -1,15 +1,19 @@
-<section>
-    <table class="nested-device-table">
+<section class="objects-table-container table-container">
+    <table class="objects-table objects-table--addresses">
         <thead>
-            <tr class="headerDevices">
+            <tr>
                 {% for header in devices.headers %}
-                <th>{{ header }}</th>
+                <th class="col-{{ forloop.counter }}">{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody id="addresses-table">
             {% for row in devices.rows %}
             {% include "partials/objects/_tableRow.html" with row=row headers=devices.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ devices.headers|length }}">No devices found.</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
