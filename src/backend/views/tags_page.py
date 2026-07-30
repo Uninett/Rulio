@@ -179,7 +179,7 @@ def update_tag_view(request, object_id):
 
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
-    color = request.POST.get("color", "#808080")
+    color = request.POST.get("color", "")
 
     object_data = {
         "name": name,
