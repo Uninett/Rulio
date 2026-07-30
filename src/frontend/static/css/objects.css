@@ -11,6 +11,12 @@ Objects Table Container
     border: none;
     border-top: 1px solid #E0E0E0;
     border-bottom: 1px solid #E0E0E0;
+    width: 100%;
+    height: 80vh;
+    margin: 2vh auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: var(--sds-color-layout-surface-1);
     position: relative;
     line-height: auto;
     font-size: inherit;
