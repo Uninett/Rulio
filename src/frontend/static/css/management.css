@@ -10,7 +10,7 @@
 .management-table-container table {
     width: 100%;
     border-collapse: collapse;
-    background-color: #ffffff;
+    background-color: var(--sds-color-layout-surface-1);
     border-radius: 0.5rem;
     table-layout: auto;
 }
@@ -26,7 +26,7 @@
     right: 1rem;
     bottom: 0;
     height: 1px;
-    background-color: #E0E0E0;
+    background-color: var(--sds-color-layout-border-subtle);
 }
 
 .management-table-container th,
@@ -82,12 +82,12 @@ User table
 
 .user-full-name {
     font-weight: 600;
-    color: #000000;
+    color: var(--sds-color-text-primary);
 }
 
 .user-username {
     font-style: italic;
-    color: #595959;
+    color: var(--sds-color-text-secondary);
 }
 
 .user-role {
@@ -102,14 +102,14 @@ User table
 }
 
 .user-superuser {
-    background-color: #7351FB;
-    border: 2px solid #7351FB;
-    color: #ffffff;
+    background-color: var(--sds-color-brand-primary-strong);
+    border: 2px solid var(--sds-color-brand-primary-strong);
+    color: var(--sds-color-text-on-strong);
 }
 
 .user-tenant-admin {
-    background-color: #D1CDFF;
-    border: 2px solid #D1CDFF;
+    background-color: var(--sds-color-brand-primary-subtle);
+    border: 2px solid var(--sds-color-brand-primary-subtle);
 }
 
 .last-login-column {
@@ -153,7 +153,7 @@ User Modal
     width: 1rem;
     height: 1rem;
     margin: 0;
-    accent-color: #7351FB;
+    accent-color: var(--sds-color-brand-primary-strong);
 }
 
 /*

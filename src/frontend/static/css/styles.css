@@ -8,7 +8,7 @@ html,
 body {
     margin: 0;
     min-height: 100%;
-    background-color: #F1F1F1;
+    background-color: var(--sds-color-layout-default);
 }
 
 body {
@@ -26,10 +26,43 @@ Typography
 h1 {
     font-size: 2rem;
     font-weight: bold;
-    color: #595959;
-    /* color-text-secondary */
+    color: var(--sds-color-layout-border-strong);
 }
 
+/*
+====================================================================
+Typography
+====================================================================
+*/
+
+:root {
+    --sds-color-layout-default: #F1F1F1;
+    --sds-color-layout-surface-1: #FFFFFF;
+    --sds-color-layout-surface-2: #F1F1F1;
+
+    --sds-color-brand-primary-strong: #7351FB;
+    --sds-color-brand-primary-strong-hover: #643FFA;
+    --sds-color-brand-primary-subtle: #EBE6FE;
+    --sds-color-brand-primary-subtle-hover: #C2BCFF;
+
+    --sds-color-interaction-neutral-subtle: #E0E0E0;
+    --sds-color-interaction-neutral-subtle-hover: #D6D6D6;
+
+    --sds-color-support-critical-strong: #B60203;
+    --sds-color-support-critical-strong-hover: #970002;
+    --sds-color-support-critical-subtle: #FFEAE9;
+    --sds-color-support-success-strong: #096638;
+    --sds-color-support-success-subtle: #CFF7E2;
+
+
+    --sds-color-text-primary: #0A0132;
+    --sds-color-text-on-strong: #FFFFFF;
+    --sds-color-text-secondary: #595959;
+    --sds-color-text-critical: #B60203;
+
+    --sds-color-layout-border-strong: #656565;
+    --sds-color-layout-border-subtle: #E0E0E0;
+}
 
 /*
 ====================================================================
@@ -39,18 +72,18 @@ Buttons
 
 button {
     font-size: 1rem;
-    background-color: #7351FB;
-    border: 2px solid #7351FB;
+    background-color: var(--sds-color-brand-primary-strong);
+    border: 2px solid var(--sds-color-brand-primary-strong);
     border-radius: 2rem;
-    color: #FFFFFF;
+    color: var(--sds-color-text-on-strong);
     padding: 0.5rem 1rem;
     cursor: pointer;
     margin-top: 0.5rem;
 }
 
 button:hover {
-    background-color: #643FFA;
-    border: 2px solid #643FFA;
+    background-color: var(--sds-color-brand-primary-strong-hover);
+    border: 2px solid var(--sds-color-brand-primary-strong-hover);
 }
 
 
@@ -85,9 +118,9 @@ Header
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    border: 1px solid #767676;
-    background: #ffffff;
-    color: #000000;
+    border: 1px solid var(--sds-color-layout-border-strong);
+    background: var(--sds-color-layout-surface-1);
+    color: var(--sds-color-text-primary);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -99,12 +132,12 @@ Header
 }
 
 .user-icon:hover {
-    background: #ffffff;
-    border: 1px solid #767676;
+    background: var(--sds-color-layout-surface-1);
+    border: 1px solid var(--sds-color-layout-border-strong);
 }
 
 .user-menu-trigger:hover {
-    background: #ffffff;
+    background: var(--sds-color-layout-surface-1);
 }
 
 .user-menu-dropdown {
@@ -112,7 +145,7 @@ Header
     right: calc(100% + 0.75rem);
     top: 0;
     min-width: 14rem;
-    background: #ffffff;
+    background: var(--sds-color-layout-surface-1);
     border-radius: 8px;
     padding: 0.75rem;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -125,7 +158,7 @@ Header
     gap: 0.15rem;
     font-size: 0.85rem;
     padding: 0.5rem;
-    border-bottom: 1px solid #E0E0E0;
+    border-bottom: 1px solid var(--sds-color-layout-border-subtle);
 }
 
 .user-menu-info p {
@@ -160,7 +193,7 @@ Header
     border: none;
     border-radius: 0;
     padding: 0.5rem;
-    color: #000000;
+    color: var(--sds-color-text-primary);
     font: inherit;
     font-size: 0.85rem;
     line-height: 1.2;
@@ -173,7 +206,7 @@ Header
 
 .user-menu-dropdown a.user-menu-btn:hover,
 .user-menu-dropdown button.user-menu-btn:hover {
-    background: #F3F1FE;
+    background: var(--sds-color-brand-primary-subtle-hover);
     border: none;
     border-radius: 0;
     text-decoration: none;
@@ -252,8 +285,7 @@ Forms
     min-height: 2.5rem;
     min-width: 14rem;
     padding: 0 0.75rem;
-    border: 1px solid #767676;
-    /* color-layut-border-strong */
+    border: 1px solid var(--sds-color-layout-border-strong);
     border-radius: 10px;
 }
 
@@ -262,15 +294,14 @@ select[name="tenant_id"],
 select[name="protocol"],
 select[name="ipv4_type"],
 select[name="ipv6_type"] {
-    background-color: white;
-    border: 1px solid #767676;
+    background-color: var(--sds-color-layout-surface-1);
+    border: 1px solid var(--sds-color-layout-border-strong);
 }
 
 input,
 textarea {
     padding: 0 0.75rem;
-    border: 1px solid #767676;
-    /* color-layut-border-strong */
+    border: 1px solid var(--sds-color-layout-border-strong);
     border-radius: 10px;
 }
 
@@ -284,7 +315,7 @@ textarea {
 }
 
 .required {
-    color: #7351FB;
+    color: var(--sds-color-brand-primary-strong);
 }
 
 /*
@@ -297,8 +328,7 @@ Search bar
     min-height: 2.5rem;
     min-width: 14rem;
     padding: 0 0.75rem;
-    border: 1px solid #767676;
-    /* color-layut-border-strong */
+    border: 1px solid var(--sds-color-layout-border-strong);
     border-radius: 10px;
 }
 
