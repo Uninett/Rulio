@@ -68,12 +68,13 @@
 
                 <div id="user-menu-dropdown" class="user-menu-dropdown hidden">
                     <div class="user-menu-info">
-                        {% if request.user.first_name and request.user.last_name %}
-                        <p>{{ request.user.first_name}} {{ request.user.last_name}}</p>
-                        {% else %}
-                        <p>{{ request.user.email}}</p>
-                        {% endif %}
-                        <p><i>{{ request.user.username }}</i></p>
+                        <div class="user-menu-contact">
+                            {% if request.user.first_name and request.user.last_name %}
+                            <p><b>{{ request.user.first_name}} {{ request.user.last_name}}</b></p>
+                            {% endif %}
+                            <p><i>{{ request.user.username}}</i></p>
+                        </div>
+                        <p>{{ request.user.email }}</p>
                     </div>
 
                     {% if request.user.is_superuser %}

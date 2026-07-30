@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from constants import GLOBAL_TENANT_ID
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
-from backend.services.helper_user_tenant import is_superadmin
+from backend.services.helper_user_tenant import is_superadmin, can_write_tenant
 
 
 """
@@ -45,10 +45,18 @@ def get_login_page(request):
             if first_tenant:
                 request.session["current_tenant_id"] = first_tenant.id
         else:
-            # Set the current tenant for non-superusers based on their membership.
-            tenant_member = TenantUserMember.objects.filter(user_id=user.id).first()
+            # Set the current tenant for non-superusers based on their non-global membership first.
+            tenant_member = TenantUserMember.objects.filter(user_id=user.id).exclude(tenant_id=GLOBAL_TENANT_ID).first()
+
             if tenant_member:
                 request.session["current_tenant_id"] = tenant_member.tenant_id
+            else:
+                global_member = TenantUserMember.objects.filter(
+                    user_id=user.id,
+                    tenant_id=GLOBAL_TENANT_ID,
+                ).first()
+                if global_member:
+                    request.session["current_tenant_id"] = global_member.tenant_id
 
         return redirect("devices")
 
@@ -84,8 +92,8 @@ def get_tenants_view(request):
     else:
         tenant_ids = list(TenantUserMember.objects.filter(user=request.user).values_list("tenant_id", flat=True))
 
-        if GLOBAL_TENANT_ID not in tenant_ids:
-            tenant_ids.append(GLOBAL_TENANT_ID)
+        if GLOBAL_TENANT_ID in tenant_ids:
+            tenant_ids.remove(GLOBAL_TENANT_ID)
 
         tenants = Tenant.objects.filter(id__in=tenant_ids).order_by("id")
 
@@ -100,9 +108,19 @@ def get_tenants_view(request):
 
 # Builds the data that the templates need in order to render the tenant dropdown correctly
 def get_tenant_context(request):
+    selected_tenant = request.session.get("current_tenant_id")
+
+    can_write_current_tenant = False
+    if selected_tenant:
+        try:
+            can_write_current_tenant = can_write_tenant(request.user, int(selected_tenant))
+        except Exception:
+            can_write_current_tenant = False
+
     return {
         "tenants": get_tenants_view(request),
-        "selected_tenant": request.session.get("current_tenant_id"),
+        "selected_tenant": selected_tenant,
+        "can_write_current_tenant": can_write_current_tenant,
     }
 
 

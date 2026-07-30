@@ -35,6 +35,15 @@ def get_users_view(request):
     rows = []
 
     for user in User.objects.all().order_by("username"):
+        is_tenant_admin = (
+            TenantUserMember.objects.filter(
+                user=user,
+                role=TenantUserMember.TenantRole.ADMIN,
+            )
+            .exclude(tenant_id=GLOBAL_TENANT_ID)
+            .exists()
+        )
+
         rows.append(
             {
                 "id": user.id,
@@ -44,6 +53,7 @@ def get_users_view(request):
                 "last_name": user.last_name,
                 "email": user.email,
                 "is_superuser": user.is_superuser,
+                "is_tenant_admin": is_tenant_admin,
                 "last_login": user.last_login,
                 "date_joined": user.date_joined,
             }
@@ -94,6 +104,7 @@ def post_user_view(request):
     password = request.POST.get("password", "")
     tenant_id = request.POST.get("tenant_id", "").strip()
     is_superuser = request.POST.get("is_superuser") == "on"
+    is_tenant_admin = request.POST.get("is_tenant_admin") == "on"
 
     object_data = {
         "username": username,
@@ -102,6 +113,7 @@ def post_user_view(request):
         "email": email,
         "tenant_id": tenant_id,
         "is_superuser": is_superuser,
+        "is_tenant_admin": is_tenant_admin,
     }
 
     if not username:
@@ -126,6 +138,17 @@ def post_user_view(request):
             status=400,
         )
 
+    if not is_superuser and not tenant_id:
+        return render(
+            request,
+            "partials/_modal.html",
+            get_user_modal_context(
+                object_data=object_data,
+                error_message="Tenant is required for non-superusers.",
+            ),
+            status=400,
+        )
+
     if User.objects.filter(username=username).exists():
         return render(
             request,
@@ -146,22 +169,23 @@ def post_user_view(request):
         user.first_name = first_name
         user.last_name = last_name
         user.is_superuser = is_superuser
-        user.is_staff = is_superuser
         user.save()
 
         global_role = TenantUserMember.TenantRole.ADMIN if is_superuser else TenantUserMember.TenantRole.MEMBER
 
         TenantUserMember.objects.get_or_create(
             user=user,
-            tenant_id=1,
+            tenant_id=GLOBAL_TENANT_ID,
             defaults={"role": global_role},
         )
 
         if not is_superuser and tenant_id:
+            tenant_role = TenantUserMember.TenantRole.ADMIN if is_tenant_admin else TenantUserMember.TenantRole.MEMBER
+
             TenantUserMember.objects.get_or_create(
                 user=user,
                 tenant_id=int(tenant_id),
-                defaults={"role": TenantUserMember.TenantRole.MEMBER},
+                defaults={"role": tenant_role},
             )
 
         logger.info(f"User created: {user.username}")
@@ -205,8 +229,9 @@ def update_user_view(request, object_id):
     first_name = request.POST.get("first_name", "").strip()
     last_name = request.POST.get("last_name", "").strip()
     email = request.POST.get("email", "").strip()
-    password = request.POST.get("password", "").strip()
+    tenant_id = request.POST.get("tenant_id", "").strip()
     is_superuser = request.POST.get("is_superuser") == "on"
+    is_tenant_admin = request.POST.get("is_tenant_admin") == "on"
 
     try:
         user.username = username
@@ -214,11 +239,32 @@ def update_user_view(request, object_id):
         user.last_name = last_name
         user.email = email
         user.is_superuser = is_superuser
-        user.is_staff = is_superuser
-        if password:
-            user.set_password(password)
 
         user.save()
+
+        global_membership = TenantUserMember.objects.filter(user=user, tenant_id=GLOBAL_TENANT_ID).first()
+        if global_membership:
+            global_membership.role = (
+                TenantUserMember.TenantRole.ADMIN if is_superuser else TenantUserMember.TenantRole.MEMBER
+            )
+            global_membership.save()
+
+        TenantUserMember.objects.filter(user=user).exclude(tenant_id=GLOBAL_TENANT_ID).delete()
+
+        if not is_superuser and tenant_id:
+            tenant_role = TenantUserMember.TenantRole.ADMIN if is_tenant_admin else TenantUserMember.TenantRole.MEMBER
+
+            TenantUserMember.objects.get_or_create(
+                user=user,
+                tenant_id=int(tenant_id),
+                defaults={"role": tenant_role},
+            )
+
+            membership = TenantUserMember.objects.filter(user=user, tenant_id=int(tenant_id)).first()
+            if membership:
+                membership.role = tenant_role
+                membership.save()
+
     except Exception as e:
         return HttpResponse(f"Could not update user: {e}", status=400)
 

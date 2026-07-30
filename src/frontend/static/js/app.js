@@ -42,9 +42,27 @@ function closeModalAndRefresh(url, target) {
 
     if (!url || !target) return;
 
+    const refreshTarget = document.querySelector(target);
+    let savedScrollTop = 0;
+
+    if (refreshTarget) {
+        const scrollContainer = refreshTarget.querySelector(".table-container");
+        if (scrollContainer) {
+            savedScrollTop = scrollContainer.scrollTop;
+        }
+    }
+
     htmx.ajax("GET", url, {
         target: target,
         swap: "innerHTML"
+    }).then(() => {
+        const updatedTarget = document.querySelector(target);
+        if (!updatedTarget) return;
+
+        const updatedScrollContainer = updatedTarget.querySelector(".table-container");
+        if (updatedScrollContainer) {
+            updatedScrollContainer.scrollTop = savedScrollTop;
+        }
     });
 }
 

@@ -42,7 +42,11 @@
 
                         {% if row.is_superuser %}
                         <span class="user-role">
-                            <p class="user-superuser">Superuser</p>
+                            <p class="user-admin user-superuser">Superuser</p>
+                        </span>
+                        {% elif row.is_tenant_admin %}
+                        <span class="user-role">
+                            <p class="user-admin user-tenant-admin">Tenant Admin</p>
                         </span>
                         {% endif %}
                     </div>
@@ -58,7 +62,7 @@
                 <td class="actions-column">
                     <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.row_id %}"
                         hx-target="#modal-container" hx-swap="innerHTML">
-                        <img class="btn-icon actions-icon" src="{% static 'images/actions.svg' %}" alt=""
+                        <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt=""
                             aria-hidden="true">
                     </button>
                 </td>

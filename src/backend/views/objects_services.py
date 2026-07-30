@@ -5,7 +5,10 @@ from django.http import HttpResponse
 from backend.services.get import get_all_tags_from_object
 from backend.utils.logger import set_up_logger
 
+from constants import GLOBAL_TENANT_ID
+from backend.services.helper_user_tenant import can_write_tenant
 from backend.views.objects_helpers import get_objects_toolbar_context
+from backend.views.session import get_tenant_context
 
 from backend.services.attribute_objects.create_attribute_objects import (
     create_service,
@@ -49,6 +52,7 @@ def get_objects_services(request):
             **get_objects_toolbar_context(
                 "services", add_button_label="Add Service"
             ),  # Render the Objects page with Services as the active tab.
+            **get_tenant_context(request),
         },
     )
 
@@ -74,8 +78,21 @@ def get_services_view(request):
             "rows": [],
         }
 
-    services = sorted(services, key=lambda s: (getattr(s, "name", "") or "").lower())
-    service_groups = sorted(service_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
+    services = sorted(
+        services,
+        key=lambda s: (
+            getattr(s, "tenant_id", None) != GLOBAL_TENANT_ID,
+            (getattr(s, "name", "") or "").lower(),
+        ),
+    )
+
+    service_groups = sorted(
+        service_groups,
+        key=lambda g: (
+            getattr(g, "tenant_id", None) != GLOBAL_TENANT_ID,
+            (getattr(g, "name", "") or "").lower(),
+        ),
+    )
 
     headers = ["Type", "Name", "Description", "Protocol", "Port Start", "Port End", "Tags", ""]
 
@@ -105,6 +122,9 @@ def get_services_view(request):
         rows.append(
             {
                 "id": f"servicegroup-{group.id}",
+                "tenant_id": group.tenant_id,
+                "is_global": group.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, group.tenant_id),
                 "is_group": True,
                 "cells": [
                     "Group",
@@ -150,6 +170,9 @@ def get_services_view(request):
         rows.append(
             {
                 "id": f"service-{service.id}",
+                "tenant_id": service.tenant_id,
+                "is_global": service.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, service.tenant_id),
                 "is_group": False,
                 "cells": [
                     "Service",

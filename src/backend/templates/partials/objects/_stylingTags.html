@@ -1,10 +1,13 @@
 <div class="detail-block">
     <p><strong>{{ field.label }}:</strong>
         {% for tag in field.value %}
+        {% if tag %}
+        {% if tag|lower == "default" %}
+        <span class="tags-styling tag-item-default">{{ tag }}</span>
+        {% else %}
         <span class="tags-styling">{{ tag }}</span>
-
-
+        {% endif %}
+        {% endif %}
         {% endfor %}
     </p>
-
 </div>

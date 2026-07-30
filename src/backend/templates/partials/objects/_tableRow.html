@@ -1,17 +1,28 @@
 {% load static %}
 
-<tr id="row-{{ row.id }}" class="main-row {% if row.is_group %}group-row{% endif %}"
+<tr id="row-{{ row.id }}"
+    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
     onclick="expandRow('{{ row.id }}')">
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}
 
+    {% if row.can_write %}
     <td class="actions-column">
         <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.id %}" hx-target="#modal-container"
             hx-swap="innerHTML" onclick="event.stopPropagation()">
-            <img class="btn-icon actions-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
+            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
         </button>
     </td>
+    {% else %}
+    <td class="actions-column">
+        <button type="button" class="actions-btn actions-btn-disabled"
+            title="{% if row.is_global %}Need superuser permission to update global {{ object_type }}.{% else %}Need tenant admin permission to update {{ object_type }}.{% endif %}">
+            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
+        </button>
+    </td>
+    {% endif %}
 </tr>
 
-<tr id="details-{{ row.id }}" class="details-row">
+<tr id="details-{{ row.id }}"
+    class="details-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}">
     {% include "partials/objects/_expandRow.html" with row=row headers=headers %}
 </tr>

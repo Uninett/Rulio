@@ -1,4 +1,6 @@
 <input type="hidden" id="initial_is_superuser" value="{{ object_data.is_superuser|default:'' }}">
+<input type="hidden" id="initial_is_tenant_admin" value="{{ object_data.is_tenant_admin|default:'' }}">
+<input type="hidden" id="initial_tenant_id" value="{{ object_data.tenant_id|default:'' }}">
 
 <div class="form-row">
     <div class="form-group form-group-username">
@@ -7,13 +9,14 @@
             autocomplete="off" required>
     </div>
 
-    <div class="form-group form-group-superuser">
-        <div class="superuser-control">
-            <span class="superuser-text">Superuser</span>
+    <div class="form-group form-group-checkbox">
+        <div class="checkbox-control">
+            <span class="checkbox-text">Superuser</span>
             <input type="checkbox" id="id_is_superuser" name="is_superuser">
         </div>
     </div>
 </div>
+
 <div class="form-group">
     <label for="id_first_name">Name</label>
     <div class="form-row">
@@ -29,28 +32,32 @@
     <input type="email" id="id_email" name="email" value="{{ object_data.email|default:'' }}">
 </div>
 
+{% if modal_mode == "add" %}
 <div class="form-group">
     <label for="id_password">Password<span class="required"> *</span></label>
     <input type="password" id="id_password" name="password" autocomplete="new-password" required>
 </div>
-
-{% if modal_mode == "update" %}
-<div class="form-group">
-    <label></label>
-    <p class="form-help">Leave blank to keep current password.</p>
-</div>
 {% endif %}
 
-<div class=" form-group form-group-tenant" id="tenant-group">
-    <label for="id_tenant_id">Tenant</label>
-    <select id="id_tenant_id" name="tenant_id">
-        <option value="">Select tenant</option>
-        {% for tenant in tenant_options %}
-        <option value="{{ tenant.id }}">
-            {{ tenant.name }}
-        </option>
-        {% endfor %}
-    </select>
+<div class="form-row" id="tenant-access-row">
+    <div class="form-group form-group-tenant" id="tenant-group">
+        <label for="id_tenant_id">Tenant</label>
+        <select id="id_tenant_id" name="tenant_id">
+            <option value="">Select tenant</option>
+            {% for tenant in tenant_options %}
+            <option value="{{ tenant.id }}">
+                {{ tenant.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group form-group-checkbox" id="tenant-admin-group">
+        <div class="checkbox-control">
+            <span class="checkbox-text">Tenant admin</span>
+            <input type="checkbox" id="id_is_tenant_admin" name="is_tenant_admin">
+        </div>
+    </div>
 </div>
 
 {% if error_message %}
@@ -61,10 +68,16 @@
 
 <script>
     (function () {
-        const checkbox = document.getElementById("id_is_superuser");
-        const tenantGroup = document.getElementById("tenant-group");
+        const superuserCheckbox = document.getElementById("id_is_superuser");
+        const tenantAccessRow = document.getElementById("tenant-access-row");
         const tenantSelect = document.getElementById("id_tenant_id");
-        const initialValue = document.getElementById("initial_is_superuser");
+        const tenantAdminCheckbox = document.getElementById("id_is_tenant_admin");
+
+        const initialSuperuser = document.getElementById("initial_is_superuser");
+        const initialTenantAdmin = document.getElementById("initial_is_tenant_admin");
+        const initialTenantId = document.getElementById("initial_tenant_id");
+
+        const usernameInput = document.getElementById("id_username");
 
         function isTruthy(value) {
             if (!value) return false;
@@ -72,24 +85,43 @@
             return normalized === "true" || normalized === "1" || normalized === "on";
         }
 
-        function toggleTenantField() {
-            if (!checkbox || !tenantGroup || !tenantSelect) return;
+        function normalizeUsername() {
+            if (!usernameInput) return;
+            usernameInput.value = usernameInput.value.toLowerCase();
+        }
 
-            if (checkbox.checked) {
-                tenantGroup.style.display = "none";
-                tenantSelect.value = "";
+        function toggleTenantFields() {
+            if (!superuserCheckbox || !tenantAccessRow) return;
+
+            if (superuserCheckbox.checked) {
+                tenantAccessRow.style.display = "none";
             } else {
-                tenantGroup.style.display = "";
+                tenantAccessRow.style.display = "";
             }
         }
 
-        if (checkbox && initialValue) {
-            checkbox.checked = isTruthy(initialValue.value);
+        if (superuserCheckbox && initialSuperuser) {
+            superuserCheckbox.checked = isTruthy(initialSuperuser.value);
         }
 
-        if (checkbox) {
-            checkbox.addEventListener("change", toggleTenantField);
-            toggleTenantField();
+        if (tenantAdminCheckbox && initialTenantAdmin) {
+            tenantAdminCheckbox.checked = isTruthy(initialTenantAdmin.value);
         }
+
+        if (tenantSelect && initialTenantId) {
+            tenantSelect.value = initialTenantId.value || "";
+        }
+
+        if (usernameInput) {
+            usernameInput.addEventListener("input", normalizeUsername);
+            usernameInput.addEventListener("blur", normalizeUsername);
+            normalizeUsername();
+        }
+
+        if (superuserCheckbox) {
+            superuserCheckbox.addEventListener("change", toggleTenantFields);
+        }
+
+        toggleTenantFields();
     })();
 </script>

@@ -108,6 +108,11 @@ def get_add_modal_config(object_type):
             "title": "Add Tag",
             "supports_types": False,
             "form_partial": "partials/modals/_tag_form.html",
+            "post_url": reverse("post-tag-view"),
+            "target": "#tags-table",
+            "swap": "beforeend",
+            "refresh_url": reverse("tags"),
+            "modal_refresh_target": "#tags-content",
         },
     }
     return configs[object_type]  # Return the modal config for the selected object type

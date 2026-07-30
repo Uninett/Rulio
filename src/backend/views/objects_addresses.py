@@ -5,7 +5,10 @@ from django.http import HttpResponse
 from backend.services.get import get_all_tags_from_object
 from backend.utils.logger import set_up_logger
 
+from constants import GLOBAL_TENANT_ID
+from backend.services.helper_user_tenant import can_write_tenant
 from backend.views.objects_helpers import get_objects_toolbar_context
+from backend.views.session import get_tenant_context
 
 from backend.services.attribute_objects.create_attribute_objects import (
     create_address,
@@ -50,6 +53,7 @@ def get_objects_addresses(request):
             **get_objects_toolbar_context(
                 "addresses", add_button_label="Add Address"
             ),  # Render the Objects page with Addresses as the active tab.
+            **get_tenant_context(request),
         },
     )
 
@@ -131,8 +135,21 @@ def get_addresses_view(request):
         }
 
     # Sort the addresses, the key can be dependent on a switch case to allow for different sorting methods in the future.
-    addresses = sorted(addresses, key=lambda a: (getattr(a, "name", "") or "").lower())
-    address_groups = sorted(address_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
+    addresses = sorted(
+        addresses,
+        key=lambda a: (
+            getattr(a, "tenant_id", None) != GLOBAL_TENANT_ID,
+            (getattr(a, "name", "") or "").lower(),
+        ),
+    )
+
+    address_groups = sorted(
+        address_groups,
+        key=lambda g: (
+            getattr(g, "tenant_id", None) != GLOBAL_TENANT_ID,
+            (getattr(g, "name", "") or "").lower(),
+        ),
+    )
 
     headers = ["Type", "Name", "Description", "IPv4", "IPv6", "Tags", ""]
     rows = []
@@ -161,6 +178,9 @@ def get_addresses_view(request):
         rows.append(
             {
                 "id": f"addressgroup-{address_group.id}",
+                "tenant_id": address_group.tenant_id,
+                "is_global": address_group.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, address_group.tenant_id),
                 "is_group": True,
                 "cells": [
                     "Group",
@@ -227,6 +247,9 @@ def get_addresses_view(request):
         rows.append(
             {
                 "id": f"address-{address.id}",
+                "tenant_id": address.tenant_id,
+                "is_global": address.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, address.tenant_id),
                 "is_group": False,
                 "cells": [
                     getattr(address, "addr_type", "") or "",
