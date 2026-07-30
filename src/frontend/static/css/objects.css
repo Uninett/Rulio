@@ -286,6 +286,22 @@ Spectific table layout
     width: 65%;
 }
 
+.objects-table--devices .col-1 {
+    width: 5%;
+}
+
+.objects-table--devices .col-2 {
+    width: 10%;
+}
+
+.objects-table--devices .col-3 {
+    width: 25%;
+}
+
+.objects-table--devices .col-4 {
+    width: 40%;
+}
+
 /*
 ====================================================================
 Global Rows
