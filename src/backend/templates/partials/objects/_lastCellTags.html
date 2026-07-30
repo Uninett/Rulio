@@ -3,7 +3,13 @@
     {% if forloop.last and object_type == "addresses" or forloop.last and object_type == "services" %}
     <div class="tag-list-container">
         {% for item in cell %}
+        {% if item %}
+        {% if item|lower == "default" %}
+        <span class="cell-text tag-item tag-item-default">{{ item }}</span>
+        {% else %}
         <span class="cell-text tag-item">{{ item }}</span>
+        {% endif %}
+        {% endif %}
         {% endfor %}
     </div>
     {% else %}

@@ -1,6 +1,7 @@
 {% load static %}
 
-<tr id="row-{{ row.id }}" class="main-row {% if row.is_group %}group-row{% endif %}"
+<tr id="row-{{ row.id }}"
+    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
     onclick="expandRow('{{ row.id }}')">
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}
 
