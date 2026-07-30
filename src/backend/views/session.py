@@ -45,10 +45,18 @@ def get_login_page(request):
             if first_tenant:
                 request.session["current_tenant_id"] = first_tenant.id
         else:
-            # Set the current tenant for non-superusers based on their membership.
-            tenant_member = TenantUserMember.objects.filter(user_id=user.id).first()
+            # Set the current tenant for non-superusers based on their non-global membership first.
+            tenant_member = TenantUserMember.objects.filter(user_id=user.id).exclude(tenant_id=GLOBAL_TENANT_ID).first()
+
             if tenant_member:
                 request.session["current_tenant_id"] = tenant_member.tenant_id
+            else:
+                global_member = TenantUserMember.objects.filter(
+                    user_id=user.id,
+                    tenant_id=GLOBAL_TENANT_ID,
+                ).first()
+                if global_member:
+                    request.session["current_tenant_id"] = global_member.tenant_id
 
         return redirect("devices")
 
