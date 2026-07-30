@@ -1431,10 +1431,14 @@ def add_filter_to_interface_endpoint(
 @api.post("/add_test_data", tags=["Debugging"], response={200: dict, 403: MessageSchema})
 @require_write_tenantd
 def add_test_data(request):
-    create_interfaces_devices_devicegroups_tags(actor=request.user, tenant_id=request.session["current_tenant_id"])
-    Tenant.objects.get_or_create(tenant_name="NTNU")
-    Tenant.objects.get_or_create(tenant_name="Sikt")
-    Tenant.objects.get_or_create(tenant_name="UiO")
+    tenants = [
+        Tenant.objects.get_or_create(tenant_name="NTNU")[0],
+        Tenant.objects.get_or_create(tenant_name="Sikt")[0],
+        Tenant.objects.get_or_create(tenant_name="UiO")[0],
+    ]
+    create_interfaces_devices_devicegroups_tags(
+        actor=request.user, tenant_id=request.session["current_tenant_id"], tenants=tenants
+    )
     return Status(
         200,
         {

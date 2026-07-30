@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 
 from backend.objects.attributes.tag import Tag
+from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address, get_or_create_tag
 from backend.services.filter_objects.create_filter_objects import get_or_create_filter
 from backend.services.tenant_objects.create_tenant_objects import get_or_create_device
@@ -16,8 +17,11 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
-def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
+def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, tenants: list):
     require_write_tenant(actor, tenant_id)
+    ntnu_tenant = tenants[0]
+    sikt_tenant = tenants[1]
+    uio_tenant = tenants[2]
 
     device_specs = [
         ("edge-fw-01", "FortiGate", "Primary edge firewall for Trondheim office.", "firewall"),
@@ -173,3 +177,41 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int):
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=interface2)
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=filter1)
         add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=default_tag, obj=address)
+
+    # Create tenant admin and regular tenant member for the NTNU tenant
+    tenant_admin = User.objects.create_user(
+        username="TenantAdmin",
+        email="tenantadmin@ntnu.no",
+        password="change-me",
+    )
+    TenantUserMember.objects.get_or_create(
+                tenant=ntnu_tenant,
+                user_id=int(tenant_admin.id),
+                defaults={"role": TenantUserMember.TenantRole.ADMIN},
+            )
+    tenant_member = User.objects.create_user(
+        username="TenantMember",
+        email="tenantmember@ntnu.no",
+        password="tenantmemberpassword"
+    )
+    TenantUserMember.objects.get_or_create(
+                tenant=ntnu_tenant,
+                user_id=int(tenant_member.id),
+                defaults={"role": TenantUserMember.TenantRole.MEMBER},
+            )
+    NTNU_Admin_sikt_member = User.objects.create_user(
+        username="NTNU_Admin_Sikt_Member",
+        email="ntnuadmin@sikt.no",
+        password="ntnuadminpassword"
+    )
+    TenantUserMember.objects.get_or_create(
+                tenant=ntnu_tenant,
+                user_id=int(NTNU_Admin_sikt_member.id),
+                defaults={"role": TenantUserMember.TenantRole.ADMIN},
+            )
+    TenantUserMember.objects.get_or_create(
+                tenant=sikt_tenant,
+                user_id=int(NTNU_Admin_sikt_member.id),
+                defaults={"role": TenantUserMember.TenantRole.MEMBER},
+            )
+    
