@@ -24,6 +24,14 @@
                     <label for="description">Description</label>
                     <textarea id="description" name="description">{{ object_data.description|default:'' }}</textarea>
                 </div>
+
+                {% if modal_object_type != "tags" %}
+                <div class="form-group form-description">
+                    <label for="description">Tags</label>
+                    {% include "partials/search/_modal_search.html" with search_results=search_results %}
+                </div>
+
+                {% endif %}
                 {% endif %}
 
 
