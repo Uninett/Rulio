@@ -118,9 +118,13 @@ def get_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object
     return list(obj.get_tags())
 
 
-def get_all_tags_from_tenant(actor: User, tenant_id: int) -> list[Tag]:
+def get_all_tags_from_tenant(actor: User, tenant_id: int, include_global=True) -> list[Tag]:
     require_read_tenant(actor, tenant_id)
-    return Tag.objects.filter(tenant_id=tenant_id)
+    if include_global:
+        allowed_tenants = [GLOBAL_TENANT_ID, tenant_id]
+    else:
+        allowed_tenants = [tenant_id]
+    return Tag.objects.filter(tenant_id__in=allowed_tenants)
 
 
 def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, object_id: int):
