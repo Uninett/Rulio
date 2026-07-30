@@ -270,6 +270,7 @@ def get_update_modal(request, row_id):
             object_data = {
                 "name": tag.name,
                 "description": tag.description,
+                "color": tag.color,
             }
         except Tag.DoesNotExist:
             object_data = None

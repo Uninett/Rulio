@@ -124,6 +124,7 @@ def get_tags_view(request):
 def post_tag_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
+    color = request.POST.get("color", "#808080")
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
 
     try:
@@ -132,6 +133,7 @@ def post_tag_view(request):
             tenant_id=tenant_id,
             name=name,
             description=description,
+            color=color,
         )
     except Exception as e:
         return render(
@@ -144,6 +146,7 @@ def post_tag_view(request):
                 "object_data": {
                     "name": name,
                     "description": description,
+                    "color": color,
                 },
                 "error_message": f"Could not create tag: {e}",
             },
@@ -176,10 +179,12 @@ def update_tag_view(request, object_id):
 
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
+    color = request.POST.get("color", "#808080")
 
     object_data = {
         "name": name,
         "description": description,
+        "color": color,
     }
 
     if not tenant_id:
@@ -213,6 +218,7 @@ def update_tag_view(request, object_id):
             tag_id=object_id,
             name=name,
             description=description,
+            color=color,
         )
     except Exception as e:
         return render(

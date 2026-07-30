@@ -188,11 +188,13 @@ class TestUpdate:
                 tag_id=tag.id,
                 name=new_name,
                 description="updated tag description",
+                color="#123456",
             )
 
             tag.refresh_from_db()
             assert tag.name == new_name
             assert tag.description == "updated tag description"
+            assert tag.color == "#123456"
 
     def test_update_interface(self, request_with_session, sample_interfaces):
         for interface in sample_interfaces:

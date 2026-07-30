@@ -151,13 +151,15 @@ def update_device_group(*, actor, tenant_id, device_group_id, name=None, descrip
     return device_group
 
 
-def update_tag(*, actor, tenant_id, tag_id, name=None, description=None):
+def update_tag(*, actor, tenant_id, tag_id, name=None, description=None, color=None):
     require_write_tenant(actor, tenant_id)
     tag = Tag.objects.get(id=tag_id, tenant_id=tenant_id)
     if name is not None:
         tag.name = name
     if description is not None:
         tag.description = description
+    if color is not None:
+        tag.color = color
     tag.save()
     return tag
 
