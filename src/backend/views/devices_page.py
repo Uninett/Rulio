@@ -61,7 +61,7 @@ def get_devices_view(request):
     devices = sorted(devices, key=lambda d: (getattr(d, "name", "") or "").lower())
     device_groups = sorted(device_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
 
-    headers = ["Type", "Name", "Description", "Tags"]
+    headers = ["Type", "Name", "Description", "Tags", ""]
     rows = []
 
     for group in device_groups:
@@ -100,8 +100,8 @@ def get_devices_view(request):
             devices_in_group.append(
                 {
                     "row_id": f"device-{member.id}",
-                    "name": getattr(member, "name", "") or "",
-                    "description": getattr(member, "description", "") or "",
+                    "name": getattr(member, "name", "").upper or "",
+                    # "description": getattr(member, "description", "") or "",
                 }
             )
 
