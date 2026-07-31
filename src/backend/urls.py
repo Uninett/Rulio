@@ -18,11 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from backend.views.rule_page import (
-    get_rule_page,
-    get_rule_selector_modal,
-    post_rule_view,
-)
+
 
 
 from .api import (
@@ -88,6 +84,13 @@ from .views.objects_service_groups import (
     post_service_group_view,
     update_service_group_view,
     delete_service_group_view,
+)
+
+from backend.views.rule_page import (
+    get_rule_page,
+    get_rule_selector_modal,
+    post_rule_view,
+    update_rule_view,
 )
 
 from .views.tags_page import (
@@ -173,4 +176,5 @@ urlpatterns = [
     path("modal/rule-selector/<str:selector_type>/", get_rule_selector_modal, name="rule-selector-modal"),
     path("rules/", get_rule_page, name="rules-page"),
     path("rules/create/", post_rule_view, name="post-rule-view"),
+    path("rules/<int:rule_id>/update/", update_rule_view, name="update-rule-view"),
 ]

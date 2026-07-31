@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import QuerySet
@@ -13,13 +15,14 @@ from backend.objects.attributes.tag import Tag
 from backend.objects.attributes.tag_connection import TagConnection
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
+from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.interface import Interface
-from backend.objects.tenant_objects.device_group import DeviceGroup
 
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.services.helper_user_tenant import is_superadmin, require_read_tenant
+from backend.services.serialize import serialize_rule_object
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
 
@@ -159,8 +162,13 @@ def get_all_rules_with_objects_from_filter(actor: User, tenant_id: int, filter_i
     return result
 
 
-def get_all_objects_from_rule(actor: User, tenant_id: int, rule_id: int) -> list[dict]:
+def get_all_objects_from_rule(
+    actor: User,
+    tenant_id: int,
+    rule_id: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     require_read_tenant(actor, tenant_id)
+
     try:
         rule = Rule.objects.get(id=rule_id)
     except Rule.DoesNotExist:
@@ -169,20 +177,79 @@ def get_all_objects_from_rule(actor: User, tenant_id: int, rule_id: int) -> list
     if rule.tenant_id != tenant_id and not is_superadmin(actor):
         raise PermissionDenied(f"Rule with ID {rule_id} does not belong to tenant {tenant_id}.")
 
-    result = []
-    for match in rule.matches.all():
-        obj = match.content_object
-        if obj:
-            result.append(
-                {
-                    "object_type": obj.__class__.__name__,
-                    "object_id": obj.id,
-                    "object_name": getattr(obj, "name", None),
-                    "match_type": match.match,
-                }
+    rule_matches = list(RuleMatch.objects.filter(rule=rule))
+
+    # Gather database IDs by their model type.
+    ids_by_type: dict[str, set[int]] = defaultdict(set)
+
+    for match in rule_matches:
+        ids_by_type[match.object_type.model].add(match.object_id)
+
+    # Fetch each object type in bulk rather than one query per RuleMatch.
+    objects_by_type = {
+        "address": Address.objects.in_bulk(ids_by_type["address"]),
+        "addressgroup": AddressGroup.objects.in_bulk(ids_by_type["addressgroup"]),
+        "service": Service.objects.in_bulk(ids_by_type["service"]),
+        "servicegroup": ServiceGroup.objects.in_bulk(ids_by_type["servicegroup"]),
+    }
+
+    source_objects: list[dict[str, Any]] = []
+    destination_objects: list[dict[str, Any]] = []
+    service_objects: list[dict[str, Any]] = []
+
+    for match in rule_matches:
+        object_map = objects_by_type.get(match.object_type.model)
+
+        if object_map is None:
+            raise ValueError(f"Unsupported rule object type: {match.object_type!r}")
+
+        obj = object_map.get(match.object_id)
+
+        # The RuleMatch references an object that no longer exists.
+        if obj is None:
+            continue
+
+        serialized_object = serialize_rule_object(obj, match.object_type.model)
+
+        if match.match == "source":
+            source_objects.append(serialized_object)
+
+        elif match.match == "destination":
+            destination_objects.append(serialized_object)
+
+        elif match.match == "service":
+            service_objects.append(serialized_object)
+
+        else:
+            raise ValueError(
+                f"Unsupported rule object type: {match.object_type!r}; "
+                f"match id={match.id}, "
+                f"match.match={match.match!r}, "
+                f"match.object_id={match.object_id!r}, "
+                f"match data={match.__dict__!r}"
             )
 
-    return result
+    return source_objects, destination_objects, service_objects
+
+
+def get_rule_with_tags_from_tenant(
+    *, actor: User, tenant_id: int, rule_id: int, include_global_tenant=True
+) -> tuple[Rule, list[Tag]]:
+    require_read_tenant(actor, tenant_id)
+    try:
+        if include_global_tenant:
+            rule = Rule.objects.prefetch_related("tag_objects__tag").get(id=rule_id)
+        else:
+            rule = Rule.objects.prefetch_related("tag_objects__tag").filter(tenant_id=tenant_id).get(id=rule_id)
+    except Rule.DoesNotExist:
+        raise ObjectDoesNotExist(f"Rule with ID {rule_id} does not exist.")
+
+    if rule.tenant_id != tenant_id and not is_superadmin(actor):
+        raise PermissionDenied(f"Rule with ID {rule_id} does not belong to tenant {tenant_id}.")
+
+    tags = [tc.tag for tc in rule.tag_objects.all()]
+
+    return rule, tags
 
 
 def get_all_rules_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):

@@ -49,16 +49,22 @@
 <div class="form-group">
     <label for="enable">
         Enable
-        <input type="checkbox" id="enable" name="enable" {% if object_data.enable %}checked{% endif %}>
+        <input type="checkbox" id="enable" name="enable" checked>
     </label>
 </div>
 
 <div class="form-group">
-    <label>Source objects</label>
+    <label>Sources</label>
     <div id="rule-source-summary" class="selector-summary">
-        No source objects selected.
+        {% for source_name in object_data.source_names %}
+        {{ source_name }}
+        {% endfor %}
+        {% if not object_data.source_names %}
+        No sources selected.
+        {% endif %}
     </div>
-    <input type="hidden" name="source_ids" id="rule-source-ids" value="">
+    <input type="hidden" name="source_ids" id="rule-source-ids"
+        value="{% for source_id in object_data.source_ids %}{{ source_id }}{% if not forloop.last %},{% endif %}{% endfor %}">
     <button type="button" class="btn-secondary"
         onclick="openRuleSelectorModal('source', '{% url 'rule-selector-modal' 'source' %}')">
         Edit Sources
@@ -66,11 +72,17 @@
 </div>
 
 <div class="form-group">
-    <label>Destination objects</label>
+    <label>Destinations</label>
     <div id="rule-destination-summary" class="selector-summary">
-        No destination objects selected.
+        {% for destination_name in object_data.destination_names %}
+        {{ destination_name }}
+        {% endfor %}
+        {% if not object_data.destination_names %}
+        No destinations selected.
+        {% endif %}
     </div>
-    <input type="hidden" name="destination_ids" id="rule-destination-ids" value="">
+    <input type="hidden" name="destination_ids" id="rule-destination-ids"
+        value="{% for destination_id in object_data.destination_ids %}{{ destination_id }}{% if not forloop.last %},{% endif %}{% endfor %}">
     <button type="button" class="btn-secondary"
         onclick="openRuleSelectorModal('destination', '{% url 'rule-selector-modal' 'destination' %}')">
         Edit Destinations
@@ -80,9 +92,15 @@
 <div class="form-group">
     <label>Services</label>
     <div id="rule-services-summary" class="selector-summary">
+        {% for service_name in object_data.service_names %}
+        {{ service_name }}
+        {% endfor %}
+        {% if not object_data.service_names %}
         No services selected.
+        {% endif %}
     </div>
-    <input type="hidden" name="service_ids" id="rule-service-ids" value="">
+    <input type="hidden" name="service_ids" id="rule-service-ids"
+        value="{% for service_id in object_data.service_ids %}{{ service_id }}{% if not forloop.last %},{% endif %}{% endfor %}">
     <button type="button" class="btn-secondary"
         onclick="openRuleSelectorModal('service', '{% url 'rule-selector-modal' 'service' %}')">
         Edit Services

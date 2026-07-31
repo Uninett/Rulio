@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
-from backend.services.membership import add_objects_to_rule
+from backend.services.membership import add_objects_to_rule, update_objects_in_rule
 from constants import GLOBAL_TENANT_ID
 
 from backend.objects.attributes.address import Address
@@ -20,7 +20,11 @@ from django.urls import reverse
 from django.http import HttpResponse
 
 
-from backend.services.get import get_filters_with_rules_with_tags_from_tenant, get_all_rules_with_objects_from_filter
+from backend.services.get import (
+    get_all_objects_from_rule,
+    get_filters_with_rules_with_tags_from_tenant,
+    get_all_rules_with_objects_from_filter,
+)
 
 """
 ====================================================================
@@ -294,6 +298,124 @@ def post_rule_view(request):
                 "modal_supports_types": False,
                 "object_data": object_data,
                 "error_message": f"Error creating rule: {e}",
+            },
+            status=400,
+        )
+
+    return HttpResponse(status=204)
+
+
+@login_required(login_url="login")
+def update_rule_view(request, rule_id):
+    rule = Rule.objects.filter(id=rule_id).first()
+    if not rule:
+        return render(
+            request,
+            "partials/modals/_modal_form.html",
+            {
+                "modal_object_type": "rules",
+                "modal_content_partial": "partials/modals/_rule_form.html",
+                "modal_supports_types": False,
+                "error_message": f"Rule with ID {rule_id} does not exist.",
+            },
+            status=400,
+        )
+
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    action = request.POST.get("action", "")
+    log_type = request.POST.get("log_type", "")
+    enable = request.POST.get("enable") == "on"
+
+
+
+    if not all([name, action, log_type]):
+        return render(
+            request,
+            "partials/modals/_modal_form.html",
+            {
+                "modal_object_type": "rules",
+                "modal_content_partial": "partials/modals/_rule_form.html",
+                "modal_supports_types": False,
+                "object_data": {
+                    "name": name,
+                    "description": description,
+                    "action": action,
+                    "log_type": log_type,
+                    "filter_id": rule.filter.id if rule.filter else "",
+                },
+                "error_message": "Missing required fields.",
+            },
+            status=400,
+        )
+
+    try:
+        rule.name = name
+        rule.description = description
+        rule.action = action
+        rule.log_type = log_type
+        rule.enable = enable
+        rule.save()
+
+        source_ids_raw = request.POST.get("source_ids", "")
+        destination_ids_raw = request.POST.get("destination_ids", "")
+        service_ids_raw = request.POST.get("service_ids", "")
+
+        source_ordered, source_grouped = parse_typed_ids(source_ids_raw)
+        destination_ordered, destination_grouped = parse_typed_ids(destination_ids_raw)
+        service_ordered, service_grouped = parse_typed_ids(service_ids_raw)
+
+        tenant_id = int(request.session.get("current_tenant_id"))
+
+        source_cache = fetch_objects_by_type(source_grouped, tenant_id)
+        destination_cache = fetch_objects_by_type(destination_grouped, tenant_id)
+        service_cache = fetch_objects_by_type(service_grouped, tenant_id)
+
+        source_objects = build_ordered_object_list(source_ordered, source_cache)
+        destination_objects = build_ordered_object_list(destination_ordered, destination_cache)
+        service_objects = build_ordered_object_list(service_ordered, service_cache)
+
+        update_objects_in_rule(
+            actor=request.user,
+            tenant_id=tenant_id,
+            rule_id=rule.id,
+            match_type="source",
+            objects=source_objects,
+        )
+
+        update_objects_in_rule(
+            actor=request.user,
+            tenant_id=tenant_id,
+            rule_id=rule.id,
+            match_type="destination",
+            objects=destination_objects,
+        )
+
+        update_objects_in_rule(
+            actor=request.user,
+            tenant_id=tenant_id,
+            rule_id=rule.id,
+            match_type="service",
+            objects=service_objects,
+        )
+
+    except Exception as e:
+        print(f"Error updating rule: {e}")
+        return render(
+            request,
+            "partials/modals/_modal_form.html",
+            {
+                "modal_object_type": "rules",
+                "modal_content_partial": "partials/modals/_rule_form.html",
+                "modal_supports_types": False,
+                "object_data": {
+                    "name": name,
+                    "description": description,
+                    "action": action,
+                    "log_type": log_type,
+                    "filter_id": rule.filter.id if rule.filter else "",
+                },
+                "error_message": f"Error updating rule: {e}",
             },
             status=400,
         )
