@@ -105,6 +105,7 @@ def get_tags_view(request):
                 "tenant_id": item.tenant_id,
                 "is_global": item.tenant_id == GLOBAL_TENANT_ID,
                 "can_write": can_write_tenant(request.user, item.tenant_id),
+                "color": item.color,
                 "istrue": istrue,
                 "cells": [
                     item.name,

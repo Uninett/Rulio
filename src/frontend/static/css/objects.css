@@ -111,6 +111,10 @@ Objects Cells
     background-color: #7351FB;
 }
 
+.objects-table .tag-row .first-column-cell::before {
+    background-color: var(--tag-color);
+}
+
 .objects-table .cell-text {
     display: block;
     width: 100%;
@@ -176,8 +180,8 @@ Objects Tags
 */
 
 .objects-table .tags-styling {
-    border: 1px solid lightgray;
-    background-color: lightgray;
+    border: 1px solid var(--tag-color);
+    background-color: var(--tag-color);
     border-radius: 20px;
     display: inline-block;
     padding: 0.1rem 0.5rem;
@@ -192,8 +196,8 @@ Objects Tags
 }
 
 .objects-table .tag-item {
-    border: 1px solid lightgray;
-    background-color: lightgray;
+    border: 1px solid var(--tag-color);
+    background-color: var(--tag-color);
     color: black;
     border-radius: 20px;
     display: inline-block;
