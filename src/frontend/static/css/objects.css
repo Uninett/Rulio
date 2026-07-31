@@ -180,11 +180,6 @@ Objects Tags
 */
 
 .objects-table .tags-styling {
-    border: 1px solid lightgray;
-    background-color: lightgray;
-    border-radius: 20px;
-    display: inline-block;
-    padding: 0.1rem 0.5rem;
     height: auto;
     font-size: x-small;
 }
@@ -195,7 +190,8 @@ Objects Tags
     line-height: 1.5rem;
 }
 
-.objects-table .tag-item {
+.objects-table .tag-item,
+.objects-table .tags-styling {
     border: 1px solid var(--tag-color);
     background-color: var(--tag-color);
     color: var(--tag-text-color, #000);

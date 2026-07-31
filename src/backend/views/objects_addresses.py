@@ -162,9 +162,8 @@ def get_addresses_view(request):
                 object_type="addressgroup",
                 object_id=address_group.id,
             )
-            address_group_tag_names = [tag.name for tag in address_group_tags]
         except Exception:
-            address_group_tag_names = []
+            address_group_tags = []
 
         try:
             address_group_members = get_address_group_members(
@@ -205,7 +204,7 @@ def get_addresses_view(request):
                     },
                     {
                         "label": "Tags",
-                        "value": address_group_tag_names,
+                        "value": address_group_tags,
                     },
                 ],
             }
@@ -242,7 +241,7 @@ def get_addresses_view(request):
                 expand.append({"label": label, "value": value})
 
         if tag_names:
-            expand.append({"label": "Tags", "value": tag_names})
+            expand.append({"label": "Tags", "value": address_tags})
 
         rows.append(
             {

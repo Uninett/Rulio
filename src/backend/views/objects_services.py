@@ -106,9 +106,8 @@ def get_services_view(request):
                 object_type="servicegroup",
                 object_id=group.id,
             )
-            service_group_tag_names = [tag.name for tag in service_group_tags]
         except Exception:
-            service_group_tag_names = []
+            service_group_tags = []
 
         try:
             service_group_members = get_service_group_members(
@@ -149,7 +148,7 @@ def get_services_view(request):
                     },
                     {
                         "label": "Tags",
-                        "value": service_group_tag_names,
+                        "value": service_group_tags,
                     },
                 ],
             }
@@ -163,9 +162,8 @@ def get_services_view(request):
                 object_type="service",
                 object_id=service.id,
             )
-            service_tag_names = [tag.name for tag in service_tags]
         except Exception:
-            service_tag_names = []
+            service_tags = []
 
         rows.append(
             {
@@ -198,7 +196,7 @@ def get_services_view(request):
                     },
                     {
                         "label": "Tags",
-                        "value": service_tag_names,
+                        "value": service_tags,
                     },
                 ],
             }
