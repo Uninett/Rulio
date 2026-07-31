@@ -23,127 +23,223 @@ def seed_tags(actor: User, tenant_id: int) -> tuple[int, list[Tag]]:
     require_write_tenant(actor, tenant_id)
 
     default_tags = [
-        {"name": "global", "description": "General-purpose tag for seeded default objects."},
+        {"name": "global", "description": "General-purpose tag for seeded default objects.", "color": "#64748B"},
         {
             "name": "shared",
             "description": "Tag for objects intended to be reused across multiple rules, filters, devices, or interfaces.",
+            "color": "#6366F1",
         },
-        {"name": "temporary", "description": "Tag for temporary objects that may be removed or replaced later."},
-        {"name": "deprecated", "description": "Tag for objects that should no longer be used for new configurations."},
+        {
+            "name": "temporary",
+            "description": "Tag for temporary objects that may be removed or replaced later.",
+            "color": "#F59E0B",
+        },
+        {
+            "name": "deprecated",
+            "description": "Tag for objects that should no longer be used for new configurations.",
+            "color": "#6B7280",
+        },
         {
             "name": "critical",
             "description": "Tag for business-critical, security-critical, or operationally critical objects.",
+            "color": "#DC2626",
         },
         {
             "name": "debugging",
             "description": "Tag for objects used for debugging, testing, troubleshooting, or observability.",
+            "color": "#F97316",
         },
-        {"name": "production", "description": "Tag for objects intended for production environments."},
-        {"name": "staging", "description": "Tag for objects intended for staging or pre-production environments."},
-        {"name": "development", "description": "Tag for objects intended for development or lab environments."},
-        {"name": "internal", "description": "Tag for objects intended for internal-only use within trusted networks."},
-        {"name": "external", "description": "Tag for objects intended for external-facing or untrusted network use."},
-        {"name": "inbound", "description": "Tag for objects commonly used in inbound traffic policies."},
-        {"name": "outbound", "description": "Tag for objects commonly used in outbound traffic policies."},
+        {
+            "name": "production",
+            "description": "Tag for objects intended for production environments.",
+            "color": "#16A34A",
+        },
+        {
+            "name": "staging",
+            "description": "Tag for objects intended for staging or pre-production environments.",
+            "color": "#06B6D4",
+        },
+        {
+            "name": "development",
+            "description": "Tag for objects intended for development or lab environments.",
+            "color": "#84CC16",
+        },
+        {
+            "name": "internal",
+            "description": "Tag for objects intended for internal-only use within trusted networks.",
+            "color": "#2563EB",
+        },
+        {
+            "name": "external",
+            "description": "Tag for objects intended for external-facing or untrusted network use.",
+            "color": "#9333EA",
+        },
+        {
+            "name": "inbound",
+            "description": "Tag for objects commonly used in inbound traffic policies.",
+            "color": "#14B8A6",
+        },
+        {
+            "name": "outbound",
+            "description": "Tag for objects commonly used in outbound traffic policies.",
+            "color": "#0EA5E9",
+        },
         {
             "name": "east_west",
             "description": "Tag for objects commonly used in internal lateral or east-west traffic policies.",
+            "color": "#8B5CF6",
         },
         {
             "name": "north_south",
             "description": "Tag for objects commonly used in north-south traffic crossing trust boundaries.",
+            "color": "#F43F5E",
         },
         {
             "name": "private_address_space",
             "description": "Tag for objects related to private or non-public address space.",
+            "color": "#22C55E",
         },
         {
             "name": "public_address_space",
             "description": "Tag for objects related to public or globally reachable address space.",
+            "color": "#F97316",
         },
         {
             "name": "multicast",
             "description": "Tag for objects related to multicast traffic or multicast address ranges.",
+            "color": "#D946EF",
         },
-        {"name": "loopback", "description": "Tag for objects related to loopback traffic or loopback address ranges."},
+        {
+            "name": "loopback",
+            "description": "Tag for objects related to loopback traffic or loopback address ranges.",
+            "color": "#EAB308",
+        },
         {
             "name": "link_local",
             "description": "Tag for objects related to link-local addressing or traffic confined to a local segment.",
+            "color": "#06B6D4",
         },
         {
             "name": "documentation",
             "description": "Tag for objects reserved for documentation, examples, or reference use.",
+            "color": "#60A5FA",
         },
         {
             "name": "transit",
             "description": "Tag for objects related to routed transit traffic or transit network use cases.",
+            "color": "#4F46E5",
         },
         {
             "name": "management",
             "description": "Tag for objects related to administrative access, device management, or control plane access.",
+            "color": "#1D4ED8",
         },
         {
             "name": "monitoring",
             "description": "Tag for objects related to metrics, logging, telemetry, or observability.",
+            "color": "#0D9488",
         },
         {
             "name": "infrastructure",
             "description": "Tag for core infrastructure objects such as DNS, DHCP, NTP, routing, and identity services.",
+            "color": "#475569",
         },
         {
             "name": "authentication",
             "description": "Tag for objects related to authentication, authorization, directory, or identity services.",
+            "color": "#7E22CE",
         },
         {
             "name": "web",
             "description": "Tag for objects related to web applications, web publishing, or browser-based services.",
+            "color": "#0284C7",
         },
-        {"name": "database", "description": "Tag for objects related to database services and database connectivity."},
+        {
+            "name": "database",
+            "description": "Tag for objects related to database services and database connectivity.",
+            "color": "#7C3AED",
+        },
         {
             "name": "file_sharing",
             "description": "Tag for objects related to file sharing, storage access, or remote filesystem protocols.",
+            "color": "#D97706",
         },
         {
             "name": "vpn",
             "description": "Tag for objects related to VPN connectivity, secure tunnels, or encrypted overlays.",
+            "color": "#2563EB",
         },
-        {"name": "voice", "description": "Tag for objects related to voice, signaling, or multimedia communication."},
+        {
+            "name": "voice",
+            "description": "Tag for objects related to voice, signaling, or multimedia communication.",
+            "color": "#DB2777",
+        },
         {
             "name": "legacy",
             "description": "Tag for objects related to older, legacy, or less preferred protocols and services.",
+            "color": "#78716C",
         },
-        {"name": "allow_list", "description": "Tag for objects commonly used in explicit allow-list style policies."},
-        {"name": "deny_list", "description": "Tag for objects commonly used in explicit deny-list style policies."},
+        {
+            "name": "allow_list",
+            "description": "Tag for objects commonly used in explicit allow-list style policies.",
+            "color": "#16A34A",
+        },
+        {
+            "name": "deny_list",
+            "description": "Tag for objects commonly used in explicit deny-list style policies.",
+            "color": "#DC2626",
+        },
         {
             "name": "restricted",
             "description": "Tag for objects that should be limited to specific trusted sources, destinations, or contexts.",
+            "color": "#EA580C",
         },
         {
             "name": "sensitive",
             "description": "Tag for objects related to sensitive systems, services, or traffic flows.",
+            "color": "#E11D48",
         },
         {
             "name": "priority_1",
             "description": "Tag for objects with the highest priority in filtering or operational relevance.",
+            "color": "#DC2626",
         },
         {
             "name": "priority_2",
             "description": "Tag for objects with medium priority in filtering or operational relevance.",
+            "color": "#F59E0B",
         },
         {
             "name": "priority_3",
             "description": "Tag for objects with lower priority in filtering or operational relevance.",
+            "color": "#22C55E",
         },
-        {"name": "border_router", "description": "Tag for objects associated with border router use cases."},
-        {"name": "internal_router", "description": "Tag for objects associated with internal router use cases."},
-        {"name": "external_router", "description": "Tag for objects associated with external router use cases."},
+        {
+            "name": "border_router",
+            "description": "Tag for objects associated with border router use cases.",
+            "color": "#7C3AED",
+        },
+        {
+            "name": "internal_router",
+            "description": "Tag for objects associated with internal router use cases.",
+            "color": "#2563EB",
+        },
+        {
+            "name": "external_router",
+            "description": "Tag for objects associated with external router use cases.",
+            "color": "#9333EA",
+        },
         {
             "name": "edge",
             "description": "Tag for objects associated with network edge, perimeter, or demarcation use cases.",
+            "color": "#F97316",
         },
-        {"name": "dmz", "description": "Tag for objects associated with demilitarized zone segments or services."},
+        {
+            "name": "dmz",
+            "description": "Tag for objects associated with demilitarized zone segments or services.",
+            "color": "#E11D48",
+        },
     ]
-
     existing_tags = get_all_tags_from_tenant(actor=actor, tenant_id=tenant_id)
     existing_tag_names = {tag.name for tag in existing_tags}
 
@@ -161,6 +257,7 @@ def seed_tags(actor: User, tenant_id: int) -> tuple[int, list[Tag]]:
                 name=tag_data["name"],
                 description=tag_data["description"],
                 request_type="seeding",
+                color=tag_data["color"],
             )
         )
         created_count += 1
