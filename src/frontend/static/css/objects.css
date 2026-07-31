@@ -180,8 +180,8 @@ Objects Tags
 */
 
 .objects-table .tags-styling {
-    border: 1px solid var(--tag-color);
-    background-color: var(--tag-color);
+    border: 1px solid lightgray;
+    background-color: lightgray;
     border-radius: 20px;
     display: inline-block;
     padding: 0.1rem 0.5rem;
@@ -198,13 +198,16 @@ Objects Tags
 .objects-table .tag-item {
     border: 1px solid var(--tag-color);
     background-color: var(--tag-color);
-    color: black;
-    border-radius: 20px;
+    color: var(--tag-text-color, #000);
+    border-radius: 999px;
     display: inline-block;
-    font-size: x-small;
+    vertical-align: middle;
+
+    font-size: 0.65rem;
+    line-height: 1rem;
+    padding: 0 0.4rem;
+
     width: auto;
-    padding-left: 0.4rem;
-    padding-right: 0.4rem;
     margin-right: 0.25rem;
     max-width: 100%;
 }

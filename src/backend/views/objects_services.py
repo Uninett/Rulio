@@ -133,7 +133,7 @@ def get_services_view(request):
                     "",
                     "",
                     "",
-                    service_group_tag_names,
+                    service_group_tags,
                 ],
                 "expand": [
                     {
@@ -181,7 +181,7 @@ def get_services_view(request):
                     getattr(service, "protocol", ""),
                     getattr(service, "port_start", "") or "",
                     getattr(service, "port_end", "") or "",
-                    service_tag_names,
+                    service_tags,
                 ],
                 "expand": [
                     {

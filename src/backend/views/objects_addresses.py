@@ -188,7 +188,7 @@ def get_addresses_view(request):
                     getattr(address_group, "description", "") or "",
                     "",
                     "",
-                    address_group_tag_names,
+                    address_group_tags,
                 ],
                 "expand": [
                     {
@@ -257,7 +257,7 @@ def get_addresses_view(request):
                     getattr(address, "description", "") or "",
                     build_IPv4_row_text(address),
                     build_IPv6_row_text(address),
-                    tag_names,
+                    address_tags,
                 ],
                 "expand": expand,
             }
