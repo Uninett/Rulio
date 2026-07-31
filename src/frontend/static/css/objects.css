@@ -372,11 +372,15 @@ Specific table layout
 }
 
 .objects-table--devices .col-3 {
-    width: 25%;
+    width: 35%;
 }
 
 .objects-table--devices .col-4 {
-    width: 40%;
+    width: 25%;
+}
+
+.objects-table--devices .col-5 {
+    width: 20%;
 }
 
 /*
