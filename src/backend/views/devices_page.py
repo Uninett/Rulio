@@ -8,8 +8,10 @@ from backend.views.search import get_global_search_results
 from backend.services.get import get_all_device_groups_and_devices_with_tags_from_tenant
 from backend.services.get import get_device_group_members
 from backend.services.get import get_all_tags_from_object
+from backend.services.get import get_all_interfaces_from_device
 from constants import GLOBAL_TENANT_ID
 from backend.services.helper_user_tenant import can_write_tenant
+
 
 logger = set_up_logger(__name__)
 
@@ -39,7 +41,6 @@ def get_devices_page(request):
 
 
 def get_devices_view(request):
-    logger.info("TESTER")
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
         return {
@@ -61,15 +62,13 @@ def get_devices_view(request):
     devices = sorted(devices, key=lambda d: (getattr(d, "name", "") or "").lower())
     device_groups = sorted(device_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
 
-    headers = ["Type", "Name", "Description", "Tags", ""]
+    headers = ["Type", "Name", "Description", "Platform", "Tags", ""]
     rows = []
 
     for group in device_groups:
-        logger.info(group.name)
         try:
             device_group_tags = group.get_tags()
             device_group_tag_names = [tag.name for tag in device_group_tags]
-            logger.info(device_group_tags)
         except Exception:
             device_group_tag_names = []
 
@@ -86,27 +85,13 @@ def get_devices_view(request):
         devices_in_group = []
 
         for member in device_group_members:
-            try:
-                member_tags = get_all_tags_from_object(
-                    actor=request.user,
-                    tenant_id=int(tenant_id),
-                    object_type="device",
-                    object_id=member.id,
-                )
-                member_tag_names = [tag.name for tag in member_tags]
-            except Exception:
-                member_tag_names = []
-
             devices_in_group.append(
                 {
                     "row_id": f"device-{member.id}",
-                    "name": getattr(member, "name", "").upper or "",
+                    "name": getattr(member, "name", "") or "",
                     # "description": getattr(member, "description", "") or "",
                 }
             )
-
-        logger.info(f"DEVICES IN GROUP{devices_in_group}")
-        logger.info(f"member_tag_names{member_tag_names}")
 
         rows.append(
             {
@@ -119,6 +104,7 @@ def get_devices_view(request):
                     "Group",
                     getattr(group, "name", ""),
                     getattr(group, "description", ""),
+                    getattr(group, "platform", ""),
                     device_group_tag_names,
                 ],
                 "expand": [
@@ -134,11 +120,7 @@ def get_devices_view(request):
                 ],
             }
         )
-    logger.info("UTENFOR")
     for device in devices:
-        logger.info("INNI")
-        logger.info(devices)
-        logger.info(device.name)
         try:
             devices_tags = get_all_tags_from_object(
                 actor=request.user,
@@ -150,6 +132,25 @@ def get_devices_view(request):
         except Exception:
             device_tag_names = []
 
+        interfaces_from_device = get_all_interfaces_from_device(
+            actor=request.user,
+            tenant_id=int(tenant_id),
+            device_id=device.id,
+        )
+
+        interfaces_for_device = []
+
+        for interface in interfaces_from_device:
+            interfaces_for_device.append(
+                {
+                    "row_id": f"interface-{interface.id}",
+                    "name": getattr(interface, "name", "") or "",
+                    "description": getattr(interface, "description", "") or "",
+                    "type": getattr(interface, "type", "") or "",
+                    "vrf": getattr(interface, "VRF", "") or "",
+                }
+            )
+
         rows.append(
             {
                 "id": f"device-{device.id}",
@@ -158,161 +159,27 @@ def get_devices_view(request):
                 "is_global": device.tenant_id == GLOBAL_TENANT_ID,
                 "can_write": can_write_tenant(request.user, device.tenant_id),
                 "cells": [
-                    "Device",
+                    getattr(device, "type", ""),
                     getattr(device, "name", ""),
                     getattr(device, "description", ""),
+                    getattr(device, "platform", ""),
                     device_tag_names,
                 ],
                 "expand": [
                     {
-                        "label": "Name",
-                        "value": getattr(device, "name", "") or "",
-                    },
-                    {
-                        "label": "Platform",
-                        "value": getattr(device, "platform", "") or "",
-                    },
-                    {
-                        "label": "Type",
-                        "value": getattr(device, "type", "") or "",
-                    },
-                    {
                         "label": "Tags",
                         "value": device_tag_names,
+                    },
+                    {
+                        "label": "Interfaces",
+                        "value": interfaces_for_device,
+                        # "value": get_all_interfaces_from_device(request, tenant_id, device),
                     },
                 ],
             }
         )
-        logger.info(f"THESE ARE THE ROWS{rows}")
 
     return {
         "headers": headers,
         "rows": rows,
     }
-
-
-# def build_interface_filters(interface):
-#     filter_links = (
-#         FilterInterface.objects.filter(interface_id=interface.id, enable=True)
-#         .select_related("filter", "interface_direction")
-#         .order_by("policy_sequence")
-#     )
-
-#     ingoing = []
-#     outgoing = []
-
-#     for link in filter_links:
-#         direction = (getattr(link.interface_direction, "direction", "") or "").strip().lower()
-#         filter_obj = link.filter
-
-#         filter_obj = link.filter
-
-#         item = {
-#             "id": getattr(filter_obj, "id", None),
-#             "name": getattr(filter_obj, "name", "") or "",
-#             "description": getattr(filter_obj, "description", "") or "",
-#             "policy_sequence": link.policy_sequence,
-#             "direction": direction,
-#         }
-
-#         if direction == "in":
-#             ingoing.append(item)
-#         elif direction == "out":
-#             outgoing.append(item)
-
-#     return {
-#         "ingoing": ingoing,
-#         "outgoing": outgoing,
-#     }
-
-
-# def build_device_interfaces(request, tenant_id, device_id):
-#     try:
-#         interfaces = get_all_interfaces_from_device(
-#             actor=request.user,
-#             tenant_id=int(tenant_id),
-#             device_id=device_id,
-#         )
-#     except Exception:
-#         interfaces = []
-
-#     interface_list = []
-
-#     for interface in interfaces:
-#         filters = build_interface_filters(interface)
-
-#         # logger.info("INTERFACE:", interface.id, getattr(interface, "name", ""))
-#         # logger.info("FILTERS:", filters)
-
-#         interface_list.append(
-#             {
-#                 "id": interface.id,
-#                 "row_id": f"interface-{interface.id}",
-#                 "name": getattr(interface, "name", "") or "",
-#                 "description": getattr(interface, "description", "") or "",
-#                 "device_id": getattr(interface, "device_id", None),
-#                 "type": getattr(interface, "type", "") or "",
-#                 "vrf": getattr(interface, "VRF", "") or "",
-#                 "filters": build_interface_filters(interface),
-#             }
-#         )
-
-#     return interface_list
-
-
-# # def build_device_payload(request, tenant_id, device, tag_names=None):
-# #     return {
-# #         "row_id": f"device-{device.id}",
-# #         "name": getattr(device, "name", "") or "",
-# #         "description": getattr(device, "description", "") or "",
-# #         "platform": getattr(device, "platform", "") or "",
-# #         "type": getattr(device, "type", "") or "",
-# #         "tags": tag_names or [],
-# #         "interfaces": build_device_interfaces(
-# #             request=request,
-# #             tenant_id=tenant_id,
-# #             device_id=device.id,
-# #         ),
-# #     }
-
-
-# def build_device_table_row(request, tenant_id, device, tag_names=None):
-#     tag_names = tag_names or []
-
-#     return {
-#         "id": f"device-{device.id}",
-#         "is_group": False,
-#         "cells": [
-#             "Device",
-#             getattr(device, "name", "") or "",
-#             getattr(device, "description", "") or "",
-#             tag_names,
-#         ],
-#         "expand": [
-#             {
-#                 "label": "Name",
-#                 "value": getattr(device, "name", "") or "",
-#             },
-#             {
-#                 "label": "Platform",
-#                 "value": getattr(device, "platform", "") or "",
-#             },
-#             {
-#                 "label": "Type",
-#                 "value": getattr(device, "type", "") or "",
-#             },
-#             {
-#                 "label": "Interfaces",
-#                 "value": build_device_interfaces(
-#                     request=request,
-#                     tenant_id=tenant_id,
-#                     device_id=device.id,
-#                 ),
-#                 "modal_on_dblclick": True,
-#             },
-#             {
-#                 "label": "Tags",
-#                 "value": tag_names,
-#             },
-#         ],
-#     }
