@@ -6,6 +6,7 @@ from django.conf import settings
 
 
 from backend.objects.attributes.service import Service
+from backend.objects.attributes.tag import Tag
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.schemas.address_group import CreateGroupSchema
 from backend.schemas.device import CreateDeviceSchema
@@ -94,8 +95,10 @@ from backend.services.membership import (
     add_addresses_to_group,
     add_services_to_group,
     add_devices_to_group,
+    add_tag_to_object,
 )
 from backend.utils.logger import set_up_logger
+from constants import GLOBAL_TENANT_ID
 
 
 # Logger setup
@@ -840,6 +843,57 @@ def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchem
             "color": tag.color,
             "object_id": payload.object_id,
             "object_type": payload.object_type,
+        },
+    )
+
+
+@api.post("/add_tag_to_object", tags=["Attributes - Tag"], response={200: dict, 403: MessageSchema, 404: MessageSchema})
+@require_write_tenantd
+def add_tag_to_object_endpoint(request, tag_id: int, object_id: int, object_type: str):
+    try:
+        DJANGO_MODEL_MAPPING[object_type.lower()].objects.get(id=object_id)
+    except KeyError:
+        return Status(
+            404,
+            {
+                "status": "error",
+                "message": f"Object type '{object_type}' is not recognized.",
+            },
+        )
+    except DJANGO_MODEL_MAPPING[object_type.lower()].DoesNotExist:
+        return Status(
+            404,
+            {
+                "status": "error",
+                "message": f"Object with id={object_id} of type '{object_type}' not found.",
+            },
+        )
+    try:
+        permitted_tenant_ids = [request.session["current_tenant_id"], GLOBAL_TENANT_ID]
+        tag = Tag.objects.get(id=tag_id, tenant_id__in=permitted_tenant_ids)
+    except Tag.DoesNotExist:
+        return Status(
+            404,
+            {
+                "status": "error",
+                "message": f"Tag with id={tag_id} not found in tenant {request.session['current_tenant_id']}.",
+            },
+        )
+    add_tag_to_object(
+        actor=request.user,
+        tenant_id=request.session["current_tenant_id"],
+        tag=tag,
+        obj=DJANGO_MODEL_MAPPING[object_type.lower()].objects.get(id=object_id),
+    )
+    logger.info(
+        f"add_tag_to_object endpoint succeeded for tag id={tag_id} and object id={object_id} of type {object_type}"
+    )
+    return Status(
+        200,
+        {
+            "tag_id": tag_id,
+            "object_id": object_id,
+            "object_type": object_type,
         },
     )
 

@@ -418,9 +418,20 @@ def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, d
     }
 
 
-def add_tag_to_object(*, actor: User, tenant_id: int, tag: Tag, obj: object, request_type: str | None = "standard"):
+def add_tag_to_object(
+    *,
+    actor: User,
+    tenant_id: int,
+    tag: Tag,
+    obj: object,
+    include_global: bool = True,
+    request_type: str | None = "standard",
+):
     require_write_tenant(actor, tenant_id)
-    if not Tag.objects.filter(id=tag.id, tenant_id=tenant_id).exists() and not is_superadmin(actor):
+    permitted_tenant_ids = [tenant_id]
+    if include_global:
+        permitted_tenant_ids.append(GLOBAL_TENANT_ID)
+    if not Tag.objects.filter(id=tag.id, tenant_id__in=permitted_tenant_ids).exists() and not is_superadmin(actor):
         raise PermissionDenied(f"Tag with ID {tag.id} does not exist in tenant {tenant_id}.")
     if TagConnection.objects.filter(
         tag=tag, content_type=ContentType.objects.get_for_model(obj), object_id=obj.id
