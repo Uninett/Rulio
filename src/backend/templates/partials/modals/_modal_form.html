@@ -39,13 +39,6 @@
                         <div class="modal-tag-list" id="modalTagList">
                             {% if object_tags %}
                             {% for tag in object_tags %}
-                            {% if tag.name|lower == "default" %}
-                            <span class="modal-tag-item modal-tag-item-default" data-tag-id="{{ tag.id }}">
-                                {{ tag.name }}
-                                <button type="button" class="modal-tag-remove"
-                                    onclick="removeTagFromModal('{{ tag.id }}')">×</button>
-                            </span>
-                            {% else %}
                             <span class="modal-tag-item" data-tag-id="{{ tag.id }}">
                                 {{ tag.name }}
                                 <button type="button" class="modal-tag-remove"
