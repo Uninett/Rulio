@@ -12,8 +12,8 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
     Seed the default service groups for a tenant.
     """
     required_service_names = [
-        "ICMP_RFC792",
-        "ICMPv6_RFC4443",
+        # "ICMP_RFC792",
+        # "ICMPv6_RFC4443",
         "GRE_RFC2784",
         "ESP_RFC4303",
         "AH_RFC4302",
@@ -98,8 +98,8 @@ def seed_servicegroups(actor, tenant_id: int) -> tuple[int, list[ServiceGroup]]:
                 service_ids_by_name["DHCP_Server_UDP_RFC2131"],
                 service_ids_by_name["DHCP_Client_UDP_RFC2131"],
                 service_ids_by_name["NTP_UDP_RFC5905"],
-                service_ids_by_name["ICMP_RFC792"],
-                service_ids_by_name["ICMPv6_RFC4443"],
+                # service_ids_by_name["ICMP_RFC792"],
+                # service_ids_by_name["ICMPv6_RFC4443"],
             ],
             request_type="seeding",
         ),
