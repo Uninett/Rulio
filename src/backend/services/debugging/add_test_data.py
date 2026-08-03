@@ -43,13 +43,13 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         device_specs = [
             (
                 f"{tenant_prefix}-edge-fw-01",
-                "FortiGate",
+                "Juniper",
                 f"Primary edge firewall for {tenant_label} office.",
                 "firewall",
             ),
             (
                 f"{tenant_prefix}-edge-fw-02",
-                "FortiGate",
+                "Juniper",
                 f"Secondary edge firewall for {tenant_label} office.",
                 "firewall",
             ),
@@ -70,13 +70,13 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
                 [
                     (
                         f"{tenant_prefix}-edge-fw-03",
-                        "FortiGate",
+                        "Juniper",
                         f"Additional edge firewall for {tenant_label} testing.",
                         "firewall",
                     ),
                     (
                         f"{tenant_prefix}-edge-fw-04",
-                        "FortiGate",
+                        "Juniper",
                         f"Additional edge firewall for {tenant_label} testing.",
                         "firewall",
                     ),
