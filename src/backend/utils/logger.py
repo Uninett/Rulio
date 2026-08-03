@@ -103,6 +103,7 @@ def clear_logs(name: str) -> None:
             with open(path, "w"):
                 pass
 
+
 def set_log_level(logger: logging.Logger, level: int) -> None:
     """
     Sets the logging level for the specified logger and its handlers.
