@@ -2,10 +2,10 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
-from backend.services.get import get_all_tags_from_object
 from backend.utils.logger import set_up_logger
 
 from constants import GLOBAL_TENANT_ID
+from backend.objects.attributes.tag import Tag
 from backend.services.helper_user_tenant import can_write_tenant
 from backend.views.objects_helpers import get_objects_toolbar_context
 from backend.views.session import get_tenant_context
@@ -23,14 +23,11 @@ from backend.services.update import (
     update_address,
 )
 
-from backend.services.delete import (
-    delete_address,
-)
+from backend.services.delete import delete_address, remove_tag_from_object
 
 from backend.services.get import get_all_tags_from_object, get_object_by_type_and_id
 from backend.services.membership import add_tag_to_object
-from backend.services.delete import remove_tag_from_object
-from backend.objects.attributes.tag import Tag
+
 
 logger = set_up_logger(__name__)
 

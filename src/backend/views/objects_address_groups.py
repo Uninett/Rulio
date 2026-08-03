@@ -12,6 +12,11 @@ from backend.services.membership import add_addresses_to_group, remove_address_f
 from backend.services.update import update_address_group
 from backend.services.delete import delete_address_group
 
+from backend.services.get import get_all_tags_from_object, get_object_by_type_and_id
+from backend.services.membership import add_tag_to_object
+from backend.services.delete import remove_tag_from_object
+from backend.objects.attributes.tag import Tag
+
 logger = set_up_logger(__name__)
 
 
@@ -44,6 +49,17 @@ def post_address_group_view(request):
                 tenant_id=tenant_id,
                 address_group_id=created_address_group.id,
                 address_ids=address_ids,
+            )
+
+        submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
+
+        for tag_id in submitted_tag_ids:
+            tag = Tag.objects.get(id=tag_id)
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=created_address_group,
             )
 
     except Exception as e:
