@@ -49,6 +49,10 @@ class ConfigGenerationResult:
     def success(self) -> bool:
         return not self.errors
 
+    @property
+    def has_warnings(self) -> bool:
+        return bool(self.warnings)
+
 
 @dataclass
 class RuleBuildResult:
