@@ -541,4 +541,43 @@ Rules table layout
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    background-color: #f1f1f1;
+    color: #7a7a7a;
+}
+
+
+
+/*
+====================================================================
+Objects Interface Table
+====================================================================
+*/
+
+.objects-interface-table-header-row,
+.objects-interface-table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 2fr;
+    column-gap: 1rem;
+}
+
+.objects-interface-table-header-row {
+    /* padding: 0.4rem 0.6rem; */
+    font-weight: 600;
+    padding-top: 0.5rem;
+}
+
+.objects-interface-table-row {
+    padding-top: 0.2rem;
+    /* padding: 0.45rem 0.6rem; */
+}
+
+.objects-interface-table-cell {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.objects-interface-empty {
+    padding: 0.5rem 0.6rem;
 }
