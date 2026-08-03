@@ -2,7 +2,6 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
-from backend.services.get import get_all_tags_from_object
 from backend.utils.logger import set_up_logger
 
 from constants import GLOBAL_TENANT_ID
