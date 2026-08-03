@@ -195,8 +195,8 @@ Modal Tags
 }
 
 .modal-tag-item {
-    border: 1px solid var(--sds-color-interaction-neutral-subtle);
-    background-color: var(--sds-color-interaction-neutral-subtle);
+    border: 1px solid var(--tag-color);
+    background-color: var(--tag-color);
     color: var(--sds-color-text-primary);
     border-radius: 999px;
     display: inline-flex;
@@ -212,10 +212,8 @@ Modal Tags
 }
 
 .modal-tag-item:hover {
-    border: 1px solid var(--sds-color-interaction-neutral-subtle-hover);
-    background-color: var(--sds-color-interaction-neutral-subtle-hover);
+    opacity: 0.75;
 }
-
 
 .modal-tag-remove {
     display: inline-flex;

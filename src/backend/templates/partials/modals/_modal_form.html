@@ -39,7 +39,8 @@
                         <div class="modal-tag-list" id="modalTagList">
                             {% if object_tags %}
                             {% for tag in object_tags %}
-                            <span class="modal-tag-item" data-tag-id="{{ tag.id }}">
+                            <span class="modal-tag-item" style="--tag-color: {{ tag.color }}"
+                                data-tag-id="{{ tag.id }}">
                                 {{ tag.name }}
                                 <button type="button" class="modal-tag-remove"
                                     onclick="removeTagFromModal('{{ tag.id }}')">
