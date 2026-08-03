@@ -39,7 +39,9 @@ class InterfaceConfigGenerationResult:
         return [*self.inbound.warnings, *self.outbound.warnings]
 
 
-def _build_direction_result(*, actor: User, tenant_id: int, interface_id: int, direction: str) -> InterfaceDirectionGenerationResult:
+def _build_direction_result(
+    *, actor: User, tenant_id: int, interface_id: int, direction: str
+) -> InterfaceDirectionGenerationResult:
     try:
         policies = build_policies_for_interface(
             actor=actor,
@@ -70,7 +72,15 @@ def _build_direction_result(*, actor: User, tenant_id: int, interface_id: int, d
         )
 
 
-def generate_interface_config_results(*, actor: User, tenant_id: int, interface_id: int) -> InterfaceConfigGenerationResult:
+def generate_interface_config_results(
+    *, actor: User, tenant_id: int, interface_id: int
+) -> InterfaceConfigGenerationResult:
+    logger.info(
+        "Generating interface config for interface_id=%s tenant_id=%s by actor=%s",
+        interface_id,
+        tenant_id,
+        actor.username,
+    )
     inbound = _build_direction_result(
         actor=actor,
         tenant_id=tenant_id,
@@ -95,7 +105,13 @@ def generate_interface_config_results(*, actor: User, tenant_id: int, interface_
         result.status = "success_with_warnings"
     else:
         result.status = "success"
-
+    logger.info(
+        "Interface config generation completed for interface_id=%s tenant_id=%s by actor=%s with status=%s",
+        interface_id,
+        tenant_id,
+        actor.username,
+        result.status,
+    )
     return result
 
 
