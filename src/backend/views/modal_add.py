@@ -57,6 +57,7 @@ def get_add_modal_config(object_type):
             },
             "post_urls": {
                 "item": reverse("post-device-view"),
+                "group": reverse("post-device-group-view"),
             },
             "target": "#devices-table",
             "swap": "beforeend",
@@ -165,6 +166,7 @@ def get_add_modal(request, object_type):
         "modal_refresh_target": config.get("modal_refresh_target"),
         "object_data": {},
         "selected_group_ids": [],
+        "selected_device_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
         "search_results": get_tags_search_results(request, ""),
@@ -222,6 +224,7 @@ def get_add_modal_form_content(request, object_type, type):
             "description": request.GET.get("description", ""),
         },
         "selected_group_ids": [],
+        "selected_device_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
         "search_results": get_tags_search_results(request, ""),

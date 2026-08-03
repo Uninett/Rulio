@@ -44,6 +44,10 @@ from .views.devices_page import (
     post_device_view,
 )
 
+from .views.device_groups import (
+    post_device_group_view,
+)
+
 
 from .views.filters_page import (
     get_filters_page,
@@ -129,6 +133,7 @@ urlpatterns = [
         name="download-interface-config",
     ),
     path("devices/add/", post_device_view, name="post-device-view"),
+    path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
     # Objects Page: Address
