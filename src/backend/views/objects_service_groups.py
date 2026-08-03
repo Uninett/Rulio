@@ -12,6 +12,11 @@ from backend.services.membership import add_services_to_group, remove_service_fr
 from backend.services.update import update_service_group
 from backend.services.delete import delete_service_group
 
+from backend.services.get import get_all_tags_from_object, get_object_by_type_and_id
+from backend.services.membership import add_tag_to_object
+from backend.services.delete import remove_tag_from_object
+from backend.objects.attributes.tag import Tag
+
 logger = set_up_logger(__name__)
 
 """
@@ -43,6 +48,17 @@ def post_service_group_view(request):
                 tenant_id=tenant_id,
                 service_group_id=created_service_group.id,
                 service_ids=service_ids,
+            )
+
+        submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
+
+        for tag_id in submitted_tag_ids:
+            tag = Tag.objects.get(id=tag_id)
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=created_service_group,
             )
 
     except Exception as e:
@@ -162,6 +178,44 @@ def update_service_group_view(request, object_id):
                 tenant_id=tenant_id,
                 service_group_id=object_id,
                 service_ids=list(service_ids_to_add),
+            )
+
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
+
+        current_tags = get_all_tags_from_object(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_id=object_id,
+            object_type="servicegroup",
+        )
+        current_tag_ids = {tag.id for tag in current_tags}
+
+        tag_ids_to_add = submitted_tag_ids - current_tag_ids
+        tag_ids_to_remove = current_tag_ids - submitted_tag_ids
+
+        obj = get_object_by_type_and_id(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_type="servicegroup",
+            object_id=object_id,
+        )
+
+        for tag_id in tag_ids_to_add:
+            tag = Tag.objects.get(id=tag_id)
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=obj,
+            )
+
+        for tag_id in tag_ids_to_remove:
+            remove_tag_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_id=object_id,
+                object_type="servicegroup",
+                tag_id=tag_id,
             )
 
     except Exception as e:

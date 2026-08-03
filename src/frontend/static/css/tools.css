@@ -39,7 +39,7 @@ Toolbar Toggle
 
 .tools-toggle {
     display: flex;
-    border-bottom: 1px solid #E0E0E0;
+    border-bottom: 1px solid var(--sds-color-layout-border-subtle);
 }
 
 
@@ -60,11 +60,11 @@ Toggle Buttons
 .btn-toggle.active {
     background-color: transparent;
     border: none;
-    border-bottom: 4px solid #7351FB;
+    border-bottom: 4px solid var(--sds-color-brand-primary-strong);
 }
 
 .btn-toggle:hover {
-    background-color: #d6d6d6;
+    background-color: var(--sds-color-interaction-neutral-subtle);
     border: none;
 }
 
@@ -82,15 +82,15 @@ Add Button
 }
 
 .btn-add-disabled {
-    background-color: #E5E5E5;
-    color: #808080;
-    border-color: #E5E5E5;
+    background-color: var(--sds-color-interaction-neutral-subtle);
+    color: var(--sds-color-text-secondary);
+    border-color: var(--sds-color-interaction-neutral-subtle);
     cursor: not-allowed;
 }
 
 .btn-add-disabled:hover {
-    background-color: #E0E0E0;
-    border-color: #E0E0E0;
+    background-color: var(--sds-color-interaction-neutral-subtle-hover);
+    border-color: var(--sds-color-interaction-neutral-subtle-hover);
 }
 
 .btn-add-disabled .btn-icon {

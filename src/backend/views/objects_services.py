@@ -2,7 +2,6 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
-from backend.services.get import get_all_tags_from_object
 from backend.utils.logger import set_up_logger
 
 from constants import GLOBAL_TENANT_ID
@@ -26,6 +25,12 @@ from backend.services.update import (
 from backend.services.delete import (
     delete_service,
 )
+
+from backend.services.get import get_all_tags_from_object, get_object_by_type_and_id
+from backend.services.membership import add_tag_to_object
+from backend.services.delete import remove_tag_from_object
+from backend.objects.attributes.tag import Tag
+
 
 logger = set_up_logger(__name__)
 
@@ -234,6 +239,17 @@ def post_service_view(request):
             port_end=port_end,
         )
 
+        submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
+
+        for tag_id in submitted_tag_ids:
+            tag = Tag.objects.get(id=tag_id)
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=created_service,
+            )
+
     except Exception as e:
         return render(
             request,
@@ -336,6 +352,43 @@ def update_service_view(request, object_id):
             port_start=port_start,
             port_end=port_end,
         )
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
+
+        current_tags = get_all_tags_from_object(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_id=object_id,
+            object_type="service",
+        )
+        current_tag_ids = {tag.id for tag in current_tags}
+
+        tag_ids_to_add = submitted_tag_ids - current_tag_ids
+        tag_ids_to_remove = current_tag_ids - submitted_tag_ids
+
+        obj = get_object_by_type_and_id(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_type="service",
+            object_id=object_id,
+        )
+
+        for tag_id in tag_ids_to_add:
+            tag = Tag.objects.get(id=tag_id)
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=obj,
+            )
+
+        for tag_id in tag_ids_to_remove:
+            remove_tag_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_id=object_id,
+                object_type="service",
+                tag_id=tag_id,
+            )
 
     except Exception as e:
         return render(

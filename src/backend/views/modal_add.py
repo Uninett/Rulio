@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib.auth.models import User
+from backend.views.search import get_tags_search_results
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.utils.logger import set_up_logger
@@ -159,6 +160,8 @@ def get_add_modal(request, object_type):
         "selected_group_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
+        "search_results": get_tags_search_results(request, ""),
+        "object_tags": [],
     }
 
     # If object_type is address, service or device, then show all groups
@@ -214,6 +217,8 @@ def get_add_modal_form_content(request, object_type, type):
         "selected_group_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
+        "search_results": get_tags_search_results(request, ""),
+        "object_tags": [],
     }
 
     # If object_type is address, service or device, then show all groups

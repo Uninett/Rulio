@@ -22,7 +22,6 @@ def get_address_search_results(request, query):
         result, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
-            include_global_tenant=False,
         )
     except Exception:
         return {"results": []}
@@ -60,7 +59,6 @@ def get_service_search_results(request, query):
         services, _, _ = get_all_services_and_groups_with_tags_from_tenant(
             actor=request.user,
             tenant_id=int(tenant_id),
-            include_global_tenant=False,
         )
     except Exception:
         return {"results": []}
@@ -107,6 +105,7 @@ def get_tags_search_results(request, query):
                 {
                     "id": item.id,
                     "name": item.name,
+                    "color": item.color,
                     "type": "Tag",
                     "display": item.name,
                     "search_text": searchable_text,

@@ -19,7 +19,7 @@ Modal
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: #F3F1FE;
+    background: var(--sds-color-brand-primary-subtle);
     border-radius: 1rem;
     padding: 2rem;
     width: 40rem;
@@ -59,7 +59,7 @@ Modal Header
 
 .modal hr {
     width: 100%;
-    border-top: 1px solid #E0E0E0;
+    border-top: 1px solid var(--sds-color-layout-border-subtle);
     margin: 1rem 0;
 }
 
@@ -183,6 +183,68 @@ Address Form Layout
 
 /*
 ====================================================================
+Modal Tags
+====================================================================
+*/
+
+.modal-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.modal-tag-item {
+    border: 1px solid var(--tag-color);
+    background-color: var(--tag-color);
+    color: var(--sds-color-text-primary);
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.65rem;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1rem;
+    width: auto;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    margin-right: 0.25rem;
+    max-width: 100%;
+}
+
+.modal-tag-item:hover {
+    opacity: 0.75;
+}
+
+.modal-tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.modal-tag-remove:hover,
+.modal-tag-remove:focus,
+.modal-tag-remove:active {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
+
+.cancel-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+/*
+====================================================================
 Modal Type Switch
 ====================================================================
 */
@@ -202,7 +264,7 @@ Modal Type Switch
     padding: 0;
     font: inherit;
     font-size: smaller;
-    color: #444444;
+    color: var(--sds-color-text-secondary);
     cursor: pointer;
 }
 
@@ -213,7 +275,7 @@ Modal Type Switch
 
 .modal-btn-toggle.active {
     font-weight: 600;
-    color: #000000;
+    color: var(--sds-color-text-primary);
     border: none;
 }
 
@@ -242,7 +304,7 @@ Membership Selection
 .membership-list {
     height: 20rem;
     overflow-y: auto;
-    background: #ffffff;
+    background: var(--sds-color-layout-surface-1);
 }
 
 .membership-list-item {
@@ -257,7 +319,7 @@ Membership Selection
 }
 
 .membership-list-item:hover {
-    background-color: #F3F1FE;
+    background-color: var(--sds-color-brand-primary-subtle-hover);
 }
 
 .membership-list-item:last-child {
@@ -282,7 +344,7 @@ Modal Actions
     margin-top: 1rem;
     padding-top: 1rem;
     flex-shrink: 0;
-    border-top: 1px solid #E0E0E0;
+    border-top: 1px solid var(--sds-color-layout-border-subtle);
 }
 
 .modal-actions-left {
@@ -307,31 +369,29 @@ Modal Actions
 }
 
 .btn-delete {
-    background-color: #B60203;
-    border-color: #B60203;
+    background-color: var(--sds-color-support-critical-strong);
+    border-color: var(--sds-color-support-critical-strong);
     color: white;
 }
 
 .btn-delete.btn-delete:hover {
-    background-color: #970002;
-    border-color: #970002;
+    background-color: var(--sds-color-support-critical-strong-hover);
+    border-color: var(--sds-color-support-critical-strong-hover);
 }
 
 .modal-actions .form-error {
     margin: 0;
-    color: #B60203;
+    color: var(--sds-color-support-critical-strong);
     font-size: smaller;
 }
 
 .btn-cancel {
     background-color: transparent;
     border-color: transparent;
-    color: #B60203;
-    /* color-interaction-critical-strong-default */
+    color: var(--sds-color-support-critical-strong);
 }
 
 .btn-cancel:hover {
-    background-color: #FFEAE9;
-    border-color: #FFEAE9;
-    /* color-support-critical-subtle */
+    background-color: var(--sds-color-support-critical-subtle);
+    border-color: var(--sds-color-support-critical-subtle);
 }

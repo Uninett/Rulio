@@ -17,7 +17,7 @@
     flex-direction: column;
     gap: 16px;
     padding: 32px;
-    background: #ffffff;
+    background: var(--sds-color-text-on-strong);
     border-radius: 1rem;
 }
 
@@ -34,6 +34,6 @@
 }
 
 .login-error {
-    color: #dc2626;
+    color: var(--sds-color-text-critical);
     text-align: center;
 }

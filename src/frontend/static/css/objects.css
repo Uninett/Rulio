@@ -10,7 +10,7 @@ Objects Table Container
     margin: 2vh auto;
     overflow-y: auto;
     overflow-x: hidden;
-    background-color: #ffffff;
+    background-color: var(--sds-color-layout-surface-1);
     position: relative;
     border-radius: 0.5rem;
 }
@@ -18,7 +18,7 @@ Objects Table Container
 .objects-table-container table {
     width: 100%;
     border-collapse: collapse;
-    background-color: #ffffff;
+    background-color: var(--sds-color-layout-surface-1);
     border-radius: 0.5rem;
     table-layout: fixed;
 }
@@ -34,7 +34,7 @@ Objects Table Container
     right: 1rem;
     bottom: 0;
     height: 1px;
-    background-color: #E0E0E0;
+    background-color: var(--sds-color-interaction-neutral-subtle);
 }
 
 .objects-table th,
@@ -50,7 +50,7 @@ Objects Table Container
 .objects-table thead th {
     position: sticky;
     top: 0;
-    background: #ffffff;
+    background: var(--sds-color-layout-surface-1);
     z-index: 2;
     padding-top: 1rem;
 }
@@ -79,11 +79,11 @@ Objects Main Rows
 }
 
 .objects-table .main-row:hover {
-    background-color: #F8F8F8;
+    background-color: var(--sds-color-brand-primary-subtle);
 }
 
 .objects-table .main-row.expanded-row {
-    background-color: #EBE6FE;
+    background-color: var(--sds-color-brand-primary-subtle);
 }
 
 
@@ -104,11 +104,11 @@ Objects Cells
     top: 0.2rem;
     bottom: 0.2rem;
     width: 3px;
-    background-color: #D1CDFF;
+    background-color: var(--sds-color-brand-primary-subtle);
 }
 
 .objects-table .group-row .first-column-cell::before {
-    background-color: #7351FB;
+    background-color: var(--sds-color-brand-primary-strong);
 }
 
 .objects-table .tag-row .first-column-cell::before {
@@ -146,7 +146,7 @@ Objects Details Row
     text-align: left;
     padding: 0.5rem 1rem;
     line-height: 1.2;
-    background-color: #f5f5f5;
+    background-color: var(--sds-color-layout-surface-2);
     font-size: small;
 }
 
@@ -180,6 +180,11 @@ Objects Tags
 */
 
 .objects-table .tags-styling {
+    border: 1px solid var(--sds-color-interaction-neutral-subtle-hover);
+    background-color: var(--sds-color-interaction-neutral-subtle-hover);
+    border-radius: 20px;
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
     height: auto;
     font-size: x-small;
 }
@@ -194,7 +199,7 @@ Objects Tags
 .objects-table .tags-styling {
     border: 1px solid var(--tag-color);
     background-color: var(--tag-color);
-    color: var(--tag-text-color, #000);
+    color: var(--sds-color-text-primary);
     border-radius: 999px;
     display: inline-block;
     vertical-align: middle;
@@ -288,15 +293,15 @@ Global Rows
 */
 
 .objects-table .main-row.readonly-row .cell-text {
-    color: gray;
+    color: var(--sds-color-text-secondary);
 }
 
 .objects-table .tag-item-default {
-    border: 1px solid #e9e9e9;
-    background-color: #e9e9e9;
+    border: 1px solid var(--sds-color-interaction-neutral-subtle);
+    background-color: var(--sds-color-interaction-neutral-subtle);
 }
 
 .objects-table .details-row.readonly-row .details-content {
-    background-color: #f1f1f1;
-    color: #7a7a7a;
+    background-color: var(--sds-color-layout-surface-2);
+    color: var(--sds-color-text-secondary);
 }
