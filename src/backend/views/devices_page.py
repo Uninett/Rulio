@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 
+from backend.services.config_generation.build import build_policies_for_interface
+from backend.services.config_generation.generate_config import generate_multi_policy_config
 from backend.utils.logger import set_up_logger
 from backend.views.session import get_tenant_context
 
@@ -222,6 +224,71 @@ def get_devices_view(request):
 #             "search_results": get_global_search_results(request),
 #             **get_tenant_context(request),
 #         },
+
+def generate_and_download_config_for_interface_in_and_out(request, interface_id):
+    in_policies = build_policies_for_interface(
+        actor=request.user,
+        tenant_id=request.session.get("current_tenant_id"),
+        interface_id=interface_id,
+        direction="in",
+    )
+    out_policies = build_policies_for_interface(
+        actor=request.user,
+        tenant_id=request.session.get("current_tenant_id"),
+        interface_id=interface_id,
+        direction="out",
+    )
+
+    in_config_result = generate_multi_policy_config(in_policies)
+    out_config_result = generate_multi_policy_config(out_policies)
+
+    result = {
+        "generated_in_config": in_config_result.config if in_config_result.success else None,
+        "generated_out_config": out_config_result.config if out_config_result.success else None,
+    }
+
+    if not in_config_result.success:
+        result["in_config_errors"] = in_config_result.errors
+        logger.error(f"Failed to generate config for interface {interface_id} in direction: {in_config_result.errors}")
+    else:
+        result["in_config"] = in_config_result.config
+
+    if not out_config_result.success:
+        result["out_config_errors"] = out_config_result.errors
+        logger.error(f"Failed to generate config for interface {interface_id} in direction: {out_config_result.errors}")
+    else:
+        result["out_config"] = out_config_result.config
+
+    if in_config_result.has_warnings:
+        result["in_config_warnings"] = in_config_result.warnings
+        logger.warning(f"Config generation for interface {interface_id} in direction has warnings: {in_config_result.warnings}")
+
+    if out_config_result.has_warnings:
+        result["out_config_warnings"] = out_config_result.warnings
+        logger.warning(f"Config generation for interface {interface_id} in direction has warnings: {out_config_result.warnings}")
+
+    if not in_config_result.success and not out_config_result.success:
+        result["status"] = "error"
+        return result
+
+    elif not in_config_result.success or not out_config_result.success:
+        result["status"] = "partial_error"
+        return result
+
+    elif in_config_result.has_warnings or out_config_result.has_warnings:
+        result["status"] = "success_with_warnings"
+        return result
+
+    else:
+        result["status"] = "success"
+        return result
+    
+
+# def build_interface_filters(interface):
+#     filter_links = (
+#         FilterInterface.objects.filter(interface_id=interface.id, enable=True)
+#         .select_related("filter", "interface_direction")
+#         .order_by("policy_sequence")
 #     )
 
 
