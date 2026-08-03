@@ -55,6 +55,13 @@ def get_add_modal_config(object_type):
                 "item": "partials/modals/_device_form.html",
                 "group": "partials/modals/_device_group_form.html",
             },
+            "post_urls": {
+                "item": reverse("post-device-view"),
+            },
+            "target": "#devices-table",
+            "swap": "beforeend",
+            "refresh_url": reverse("devices"),
+            "modal_refresh_target": "#devices-content",
         },
         "filters": {
             "title": "Add Filter",
@@ -165,7 +172,7 @@ def get_add_modal(request, object_type):
     }
 
     # If object_type is address, service or device, then show all groups
-    if object_type in ["addresses", "services"]:
+    if object_type in ["addresses", "services", "devices"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
 
@@ -222,7 +229,7 @@ def get_add_modal_form_content(request, object_type, type):
     }
 
     # If object_type is address, service or device, then show all groups
-    if object_type in ["addresses", "services"]:
+    if object_type in ["addresses", "services", "devices"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
 

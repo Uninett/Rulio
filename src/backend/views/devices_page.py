@@ -25,6 +25,13 @@ from backend.services.config_generation.generate_interface_config import (
     generate_interface_config_results,
 )
 
+from backend.services.tenant_objects.create_tenant_objects import (
+    create_device,
+)
+
+from backend.services.membership import add_tag_to_object
+from backend.objects.attributes.tag import Tag
+
 
 logger = set_up_logger(__name__)
 
@@ -543,5 +550,78 @@ def interface_filters_view(request, device_id, interface_id):
                 "rows": rows,
             },
             **get_tenant_context(request),
+        },
+    )
+
+
+# Handles creation of a new device from modal form submission.
+@login_required(login_url="login")
+def post_device_view(request):
+    name = request.POST.get("name", "")
+    description = request.POST.get("description", "")
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    platform = request.POST.get("platform", "")
+    type = request.POST.get("type", "")
+
+    try:
+        created_device = create_device(
+            actor=request.user,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+            platform=platform,
+            type=type,
+        )
+
+        submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
+
+        for tag_id in submitted_tag_ids:
+            tag = Tag.objects.get(id=tag_id)
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=created_device,
+            )
+
+    except Exception as e:
+        return render(
+            request,
+            "partials/modals/_modal_form.html",
+            {
+                "modal_object_type": "devices",
+                "modal_content_partial": "partials/modals/_device_form.html",
+                "modal_supports_types": True,
+                "modal_type": "item",
+                "item_type_editable": False,
+                "modal_type_labels": {
+                    "item": "Device",
+                    "group": "Group",
+                },
+                "error_message": f"Could not create device: {e}",
+            },
+            status=400,
+        )
+
+    row = {
+        "id": f"device-{created_device.id}",
+        "cells": [
+            "Service",
+            created_device.name,
+            created_device.description,
+            created_device.platform,
+            created_device.type,
+            [],
+        ],
+        "raw": created_device,
+    }
+
+    return render(
+        request,
+        "partials/objects/_tableRow.html",
+        {
+            "row": row,
+            "headers": ["Type", "Name", "Description", "Platform", "Tags", ""],
+            "object_type": "services",
         },
     )
