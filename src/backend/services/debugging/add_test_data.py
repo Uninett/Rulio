@@ -222,7 +222,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         address, _, _ = get_or_create_address(
             actor=actor,
             tenant_id=target_tenant.id,
-            name="web-server-01",
+            name=f"{tenant_prefix}-web-server-01",
             description="Web server in Trondheim office.",
             addr_type="host",
             ipv4_type="standard",
@@ -230,7 +230,10 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         )
 
         tag1, tag1_id, tag1_created = get_or_create_tag(
-            actor=actor, tenant_id=target_tenant.id, name="web-servers", description="Tag for web servers."
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-web-servers",
+            description="Tag for web servers.",
         )
 
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=device3)
@@ -239,7 +242,10 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=address)
 
         tag2, tag2_id, tag2_created = get_or_create_tag(
-            actor=actor, tenant_id=target_tenant.id, name="firewalls", description="Tag for firewall devices."
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-firewalls",
+            description="Tag for firewall devices.",
         )
 
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag2, obj=device)
