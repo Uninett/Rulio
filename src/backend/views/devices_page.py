@@ -67,10 +67,14 @@ def get_devices_view(request):
 
     for group in device_groups:
         try:
-            device_group_tags = group.get_tags()
-            device_group_tag_names = [tag.name for tag in device_group_tags]
+            device_group_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=int(tenant_id),
+                object_type="devicegroup",
+                object_id=group.id,
+            )
         except Exception:
-            device_group_tag_names = []
+            device_group_tags = []
 
         try:
             device_group_members = get_device_group_members(
@@ -105,7 +109,7 @@ def get_devices_view(request):
                     getattr(group, "name", ""),
                     getattr(group, "description", ""),
                     getattr(group, "platform", ""),
-                    device_group_tag_names,
+                    device_group_tags,
                 ],
                 "expand": [
                     {
@@ -115,7 +119,7 @@ def get_devices_view(request):
                     },
                     {
                         "label": "Tags",
-                        "value": device_group_tag_names,
+                        "value": device_group_tags,
                     },
                 ],
             }
@@ -128,9 +132,8 @@ def get_devices_view(request):
                 object_type="device",
                 object_id=device.id,
             )
-            device_tag_names = [tag.name for tag in devices_tags]
         except Exception:
-            device_tag_names = []
+            devices_tags = []
 
         interfaces_from_device = get_all_interfaces_from_device(
             actor=request.user,
@@ -162,12 +165,12 @@ def get_devices_view(request):
                     getattr(device, "name", ""),
                     getattr(device, "description", ""),
                     getattr(device, "platform", ""),
-                    device_tag_names,
+                    devices_tags,
                 ],
                 "expand": [
                     {
                         "label": "Tags",
-                        "value": device_tag_names,
+                        "value": devices_tags,
                     },
                     {
                         "label": "Interfaces",
