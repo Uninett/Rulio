@@ -131,8 +131,8 @@ def build_policies_for_interface(
     """
     require_read_tenant(actor, tenant_id)
 
-    if direction not in ["in", "out"]:
-        raise ValueError(f"Invalid direction '{direction}' specified. Must be 'in' or 'out'.")
+    if direction not in ["in", "out", "both"]:
+        raise ValueError(f"Invalid direction '{direction}' specified. Must be 'in' or 'out' or 'both'.")
 
     interface = Interface.objects.get(id=interface_id)
 
@@ -142,36 +142,55 @@ def build_policies_for_interface(
         device_id=interface.device_id,
     )
 
-    interface_direction = InterfaceDirection.objects.get(interface=interface, direction=direction)
+    # Add getting target spec from device here later if we want to add target spec support
 
-    filter_interfaces = FilterInterface.objects.filter(interface_direction_id=interface_direction.id).order_by(
-        "policy_sequence"
-    )
-    if not filter_interfaces.exists():
-        raise ValueError(f"No filters found for interface with ID {interface_id} for direction '{direction}'.")
+    if direction == "in" or direction == "out":
+        interface_direction = InterfaceDirection.objects.get(interface=interface, direction=direction)
 
-    policies: list[Policy] = []
-    for filter_interface in filter_interfaces:
-        if filter_interface.enable is False:
-            logger.info(
-                f"Skipping disabled filter_interface with ID {filter_interface.id} "
-                f"for interface with ID {interface_id} and direction '{direction}'."
+        filter_interfaces = FilterInterface.objects.filter(interface_direction_id=interface_direction.id).order_by(
+            "policy_sequence"
+        )
+        if not filter_interfaces.exists():
+            raise ValueError(f"No filters found for interface with ID {interface_id} for direction '{direction}'.")
+
+        policies: list[Policy] = []
+        for filter_interface in filter_interfaces:
+            if filter_interface.enable is False:
+                logger.info(
+                    f"Skipping disabled filter_interface with ID {filter_interface.id} "
+                    f"for interface with ID {interface_id} and direction '{direction}'."
+                )
+                continue
+
+            filter_obj = Filter.objects.get(id=filter_interface.filter_id)
+
+            policy = build_policy_from_filter(
+                actor=actor,
+                tenant_id=tenant_id,
+                filter_id=filter_obj.id,
+                policy_sequence=filter_interface.policy_sequence,
+                vendor=vendor,
+                target_spec=target_spec,
             )
-            continue
+            policies.append(policy)
 
-        filter_obj = Filter.objects.get(id=filter_interface.filter_id)
+        logger.info(f"Built {len(policies)} policies for interface id={interface_id} direction='{direction}'")
+        logger.info(f"Policies: {[policy.YAMLConfig for policy in policies]}")
 
-        policy = build_policy_from_filter(
+        return policies
+    elif direction == "both":
+        policies_in = build_policies_for_interface(
             actor=actor,
             tenant_id=tenant_id,
-            filter_id=filter_obj.id,
-            policy_sequence=filter_interface.policy_sequence,
-            vendor=vendor,
+            interface_id=interface_id,
+            direction="in",
             target_spec=target_spec,
         )
-        policies.append(policy)
-
-    logger.info(f"Built {len(policies)} policies for interface id={interface_id} direction='{direction}'")
-    logger.info(f"Policies: {[policy.YAMLConfig for policy in policies]}")
-
-    return policies
+        policies_out = build_policies_for_interface(
+            actor=actor,
+            tenant_id=tenant_id,
+            interface_id=interface_id,
+            direction="out",
+            target_spec=target_spec,
+        )
+        return policies_in + policies_out
