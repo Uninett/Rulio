@@ -188,18 +188,6 @@ def get_services_view(request):
                 ],
                 "expand": [
                     {
-                        "label": "Protocol",
-                        "value": getattr(service, "protocol", "") or "",
-                    },
-                    {
-                        "label": "Port Start",
-                        "value": getattr(service, "port_start", "") or "",
-                    },
-                    {
-                        "label": "Port End",
-                        "value": getattr(service, "port_end", "") or "",
-                    },
-                    {
                         "label": "Tags",
                         "value": service_tags,
                     },
