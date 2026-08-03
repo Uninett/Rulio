@@ -74,7 +74,7 @@ def seed_rules(
         actor=actor,
         tenant_id=tenant_id,
         rule_id=rule_2.id,
-        match_type="source",
+        match_type="any",
         objects=[address_groups_by_name["Private_And_Local_Use_Addresses"]],
         request_type="seeding",
     )
@@ -113,7 +113,7 @@ def seed_rules(
         actor=actor,
         tenant_id=tenant_id,
         rule_id=rule_3.id,
-        match_type="destination",
+        match_type="any",
         objects=[service_groups_by_name["Restricted_Administrative_Access_Services"]],
         request_type="seeding",
     )
@@ -144,7 +144,7 @@ def seed_rules(
         actor=actor,
         tenant_id=tenant_id,
         rule_id=rule_4.id,
-        match_type="destination",
+        match_type="any",
         objects=[service_groups_by_name["Restricted_Internal_Identity_Services"]],
         request_type="seeding",
     )
@@ -175,7 +175,7 @@ def seed_rules(
         actor=actor,
         tenant_id=tenant_id,
         rule_id=rule_5.id,
-        match_type="destination",
+        match_type="any",
         objects=[service_groups_by_name["Restricted_Internal_File_Sharing_Services"]],
         request_type="seeding",
     )
@@ -206,7 +206,7 @@ def seed_rules(
         actor=actor,
         tenant_id=tenant_id,
         rule_id=rule_6.id,
-        match_type="destination",
+        match_type="any",
         objects=[service_groups_by_name["Restricted_Database_Services"]],
         request_type="seeding",
     )

@@ -482,7 +482,13 @@ def get_or_create_address_group(
 
 
 def create_tag(
-    *, actor: User, tenant_id: int, name: str, description: str, request_type: str | None = "standard"
+    *,
+    actor: User,
+    tenant_id: int,
+    name: str,
+    description: str,
+    color: str | None = None,
+    request_type: str | None = "standard",
 ) -> Tag:
 
     require_write_tenant(actor, tenant_id)
@@ -491,6 +497,7 @@ def create_tag(
         name=name,
         description=description,
         tenant_id=tenant_id,
+        color=color or "#808080",
     )
     try:
         tag.full_clean()
@@ -507,7 +514,13 @@ def create_tag(
 
 
 def get_or_create_tag(
-    *, actor: User, tenant_id: int, name: str, description: str, request_type: str = "standard"
+    *,
+    actor: User,
+    tenant_id: int,
+    name: str,
+    description: str,
+    color: str | None = None,
+    request_type: str = "standard",
 ) -> tuple[Tag, int, bool]:
 
     require_write_tenant(actor, tenant_id)
@@ -516,6 +529,7 @@ def get_or_create_tag(
         name=name,
         description=description,
         tenant_id=tenant_id,
+        defaults={"color": color or "#808080"},
     )
     if created:
         if request_type == "seeding":
@@ -531,12 +545,19 @@ def get_or_create_tag(
 
 
 def create_and_add_tag_to_object(
-    *, actor: User, tenant_id: int, tag_name: str, tag_description: str, object_type: str, object_id: int
+    *,
+    actor: User,
+    tenant_id: int,
+    tag_name: str,
+    tag_description: str,
+    color: str | None = None,
+    object_type: str,
+    object_id: int,
 ) -> Tag:
 
     require_write_tenant(actor, tenant_id)
 
-    tag = create_tag(actor=actor, tenant_id=tenant_id, name=tag_name, description=tag_description)
+    tag = create_tag(actor=actor, tenant_id=tenant_id, name=tag_name, description=tag_description, color=color)
     obj = get_object_by_type_and_id(actor, tenant_id, object_type, object_id)
     if isinstance(obj, TaggableMixin):
         obj.add_tag(tag)

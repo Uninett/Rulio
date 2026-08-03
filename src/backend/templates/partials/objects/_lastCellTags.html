@@ -5,11 +5,9 @@
     <div class="tag-list-container">
         {% for item in cell %}
         {% if item %}
-        {% if item|lower == "default" %}
-        <span class="cell-text tag-item tag-item-default">{{ item }}</span>
-        {% else %}
-        <span class="cell-text tag-item">{{ item }}</span>
-        {% endif %}
+        <span class="cell-text tag-item" style="--tag-color: {{ item.color }};" title="{{ item.name }}">
+            {{ item.name }}
+        </span>
         {% endif %}
         {% endfor %}
     </div>

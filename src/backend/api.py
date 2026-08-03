@@ -744,6 +744,7 @@ def get_all_tags_from_object_endpoint(request, object_id: int, object_type: str)
                 "name": tag.name,
                 "description": tag.description,
                 "tenant_id": tag.tenant_id,
+                "color": tag.color,
             }
             for tag in tags
         ],
@@ -762,6 +763,7 @@ def get_all_tags_from_tenant_endpoint(request):
                 "name": tag.name,
                 "description": tag.description,
                 "tenant_id": tag.tenant_id,
+                "color": tag.color,
             }
             for tag in tags
         ],
@@ -776,6 +778,7 @@ def create_tag_endpoint(request, payload: CreateTagSchema):
         tenant_id=request.session["current_tenant_id"],
         name=payload.name,
         description=payload.description,
+        color=payload.color,
     )
     logger.info(f"create_tag endpoint succeeded for tag id={tag.id}")
     return Status(
@@ -785,6 +788,7 @@ def create_tag_endpoint(request, payload: CreateTagSchema):
             "name": tag.name,
             "description": tag.description,
             "tenant_id": tag.tenant_id,
+            "color": tag.color,
         },
     )
 
@@ -819,6 +823,7 @@ def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchem
         tenant_id=request.session["current_tenant_id"],
         tag_name=payload.name,
         tag_description=payload.description,
+        color=payload.color,
         object_type=payload.object_type,
         object_id=payload.object_id,
     )
@@ -832,6 +837,7 @@ def create_and_add_tag_to_object_endpoint(request, payload: CreateTagObjectSchem
             "name": tag.name,
             "description": tag.description,
             "tenant_id": tag.tenant_id,
+            "color": tag.color,
             "object_id": payload.object_id,
             "object_type": payload.object_type,
         },

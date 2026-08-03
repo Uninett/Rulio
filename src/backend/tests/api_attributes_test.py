@@ -607,6 +607,7 @@ def test_api_create_tag(authenticated_client_with_tenant):
     payload = {
         "name": "test_api_tag",
         "description": "This is a test API tag",
+        "color": "#ff00aa",
     }
 
     response = client.post("/api/create_tag", data=json.dumps(payload), content_type="application/json")
