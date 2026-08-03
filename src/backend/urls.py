@@ -39,6 +39,8 @@ from .views.management_tenants import get_management_tenants, post_tenant_view, 
 from .views.devices_page import (
     get_devices_page,
     interface_filters_view,
+    check_interface_config_generation,
+    download_interface_configs,
 )
 
 from .views.filters_page import (
@@ -127,6 +129,16 @@ urlpatterns = [
         "management/devices/<int:device_id>/interfaces/<int:interface_id>/filters/",
         interface_filters_view,
         name="interface-filters-view",
+    ),
+    path(
+        "devices/interfaces/<int:interface_id>/check-config/",
+        check_interface_config_generation,
+        name="check-interface-config",
+    ),
+    path(
+        "devices/interfaces/<int:interface_id>/download-config/",
+        download_interface_configs,
+        name="download-interface-config",
     ),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
