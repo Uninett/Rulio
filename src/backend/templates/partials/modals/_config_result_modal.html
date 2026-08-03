@@ -1,0 +1,42 @@
+<div
+    id="config-result-modal"
+    class="modal-backdrop"
+    hidden
+    onclick="closeConfigResultModal()"
+>
+    <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="config-result-modal-title"
+        onclick="event.stopPropagation()"
+    >
+        <div class="modal-header">
+            <h2 id="config-result-modal-title">Config Result</h2>
+        </div>
+
+        <hr>
+
+        <div class="modal-type-content">
+            <div id="config-result-modal-body" class="modal-form-content"></div>
+        </div>
+
+        <div class="modal-actions">
+            <div></div>
+            <button
+                type="button"
+                id="config-result-modal-cancel"
+                class="btn-secondary"
+            >
+                Cancel
+            </button>
+            <button
+                type="button"
+                id="config-result-modal-confirm"
+                class="btn-primary"
+            >
+                OK
+            </button>
+        </div>
+    </div>
+</div>
