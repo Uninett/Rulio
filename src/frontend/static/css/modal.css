@@ -198,9 +198,12 @@ Modal Tags
     border: 1px solid var(--sds-color-interaction-neutral-subtle);
     background-color: var(--sds-color-interaction-neutral-subtle);
     color: var(--sds-color-text-primary);
-    border-radius: 20px;
-    display: inline-block;
-    font-size: x-small;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.65rem;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1rem;
     width: auto;
     padding-left: 0.4rem;
     padding-right: 0.4rem;
@@ -215,6 +218,9 @@ Modal Tags
 
 
 .modal-tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: none;
     border: none;
     color: inherit;
@@ -232,6 +238,11 @@ Modal Tags
     border: none;
     box-shadow: none;
     outline: none;
+}
+
+.cancel-icon {
+    width: 0.8rem;
+    height: 0.8rem;
 }
 
 /*
