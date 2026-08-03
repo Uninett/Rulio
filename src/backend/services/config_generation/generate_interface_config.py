@@ -7,10 +7,10 @@ from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.services.config_generation.build import build_policies_for_interface
 from backend.services.config_generation.generate_config import generate_multi_policy_config
-from backend.utils.logger import set_up_logger
+from backend.utils.logger import set_log_level, set_up_logger
 
 logger = set_up_logger(__name__)
-
+set_log_level(logger, level=10)  
 
 @dataclass
 class InterfaceDirectionGenerationResult:
