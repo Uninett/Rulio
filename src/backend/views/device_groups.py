@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
 from backend.utils.logger import set_up_logger
+from constants import GLOBAL_TENANT_ID
+from backend.services.helper_user_tenant import can_write_tenant
 
 from backend.views.modal import get_item_options_view
 
@@ -79,24 +81,36 @@ def post_device_group_view(request):
 
     row = {
         "id": f"devicegroup-{created_device_group.id}",
+        "is_group": True,
+        "tenant_id": created_device_group.tenant_id,
+        "is_global": created_device_group.tenant_id == GLOBAL_TENANT_ID,
+        "can_write": can_write_tenant(request.user, created_device_group.tenant_id),
         "cells": [
-            "deviceGroup",
-            created_device_group.name,
-            created_device_group.description,
-            "-",
-            "-",
-            [],
+            "Group",
+            created_device_group.name or "",
+            created_device_group.description or "",
+            "",
+            [],  # Tags
         ],
         "expand": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            [],
-            [],
+            {
+                "label": "Devices",
+                "value": [],
+                "modal_on_dblclick": True,
+            },
+            {
+                "label": "Tags",
+                "value": [],
+            },
         ],
     }
 
-    return render(request, "partials/objects/_tableRow.html", {"row": row})
+    return render(
+        request,
+        "partials/objects/_tableRow.html",
+        {
+            "row": row,
+            "headers": ["Type", "Name", "Description", "Platform", "Tags", ""],
+            "object_type": "devices",
+        },
+    )

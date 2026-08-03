@@ -45,19 +45,24 @@ Device Page
 @login_required(login_url="login")
 def get_devices_page(request):
     request.session["active_page"] = "devices"
-    return render(
-        request,
-        "devices.html",
-        {
-            "active_page": "devices",
-            "page_title": "Devices",
-            "object_type": "devices",
-            "add_button_label": "Add Device",
-            "devices": get_devices_view(request),
-            "search_results": get_global_search_results(request),
-            **get_tenant_context(request),
-        },
-    )
+
+    context = {
+        "active_page": "devices",
+        "page_title": "Devices",
+        "title": "Devices",
+        "object_type": "devices",
+        "add_button_label": "Add Device",
+        "devices": get_devices_view(request),
+        "search_results": get_global_search_results(request),
+        **get_tenant_context(request),
+    }
+
+    # Used when the modal refreshes #devices-content.
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "partials/_page_content.html", context)
+
+    # Used for a normal full-page request.
+    return render(request, "devices.html", context)
 
 
 def get_devices_view(request):
@@ -605,15 +610,28 @@ def post_device_view(request):
 
     row = {
         "id": f"device-{created_device.id}",
+        "is_group": False,
+        "tenant_id": created_device.tenant_id,
+        "is_global": created_device.tenant_id == GLOBAL_TENANT_ID,
+        "can_write": can_write_tenant(request.user, created_device.tenant_id),
         "cells": [
-            "Service",
-            created_device.name,
-            created_device.description,
-            created_device.platform,
-            created_device.type,
-            [],
+            created_device.type or "",
+            created_device.name or "",
+            created_device.description or "",
+            created_device.platform or "",
+            [],  # Tags
         ],
-        "raw": created_device,
+        "expand": [
+            {
+                "label": "Tags",
+                "value": [],
+            },
+            {
+                "label": "Interfaces",
+                "headers": ["Interface Name", "Type", "VRF", "Description"],
+                "value": [],
+            },
+        ],
     }
 
     return render(
@@ -622,6 +640,6 @@ def post_device_view(request):
         {
             "row": row,
             "headers": ["Type", "Name", "Description", "Platform", "Tags", ""],
-            "object_type": "services",
+            "object_type": "devices",
         },
     )
