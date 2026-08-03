@@ -187,10 +187,16 @@ Modal Tags
 ====================================================================
 */
 
+.modal-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
 
 .modal-tag-item {
-    border: 1px solid var(--sds-color-interaction-neutral-subtle-hover);
-    background-color: var(--sds-color-interaction-neutral-subtle-hover);
+    border: 1px solid var(--sds-color-interaction-neutral-subtle);
+    background-color: var(--sds-color-interaction-neutral-subtle);
     color: var(--sds-color-text-primary);
     border-radius: 20px;
     display: inline-block;
@@ -202,16 +208,30 @@ Modal Tags
     max-width: 100%;
 }
 
-.modal-tag-item-default {
-    border: 1px solid var(--sds-color-interaction-neutral-subtle);
-    background-color: var(--sds-color-interaction-neutral-subtle);
+.modal-tag-item:hover {
+    border: 1px solid var(--sds-color-interaction-neutral-subtle-hover);
+    background-color: var(--sds-color-interaction-neutral-subtle-hover);
 }
 
-.modal-tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    align-items: center;
+
+.modal-tag-remove {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.modal-tag-remove:hover,
+.modal-tag-remove:focus,
+.modal-tag-remove:active {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
 }
 
 /*

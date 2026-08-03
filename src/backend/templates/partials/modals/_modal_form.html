@@ -1,3 +1,5 @@
+{% load static %}
+
 {% if modal_post_url %}
 {% if modal_submit_handler %}
 <form class="modal-form" hx-post="{{ modal_post_url }}" hx-target="{{ modal_target }}" hx-swap="{{ modal_swap }}"
@@ -33,21 +35,41 @@
 
                 <div class="form-group form-description">
                     <label></label>
-                    <div class="modal-tag-list">
-                        {% if object_tags %}
-                        {% for tag in object_tags %}
-                        {% if tag.name|lower == "default" %}
-                        <span class="modal-tag-item modal-tag-item-default">{{ tag.name }}</span>
-                        {% else %}
-                        <span class="modal-tag-item">{{ tag.name }}</span>
-                        {% endif %}
-                        {% endfor %}
-                        {% else %}
-                        <p>No tags added.</p>
-                        {% endif %}
+                    <div>
+                        <div class="modal-tag-list" id="modalTagList">
+                            {% if object_tags %}
+                            {% for tag in object_tags %}
+                            {% if tag.name|lower == "default" %}
+                            <span class="modal-tag-item modal-tag-item-default" data-tag-id="{{ tag.id }}">
+                                {{ tag.name }}
+                                <button type="button" class="modal-tag-remove"
+                                    onclick="removeTagFromModal('{{ tag.id }}')">×</button>
+                            </span>
+                            {% else %}
+                            <span class="modal-tag-item" data-tag-id="{{ tag.id }}">
+                                {{ tag.name }}
+                                <button type="button" class="modal-tag-remove"
+                                    onclick="removeTagFromModal('{{ tag.id }}')">
+                                    <img class="btn-icon cancel-icon" src="{% static 'images/cancel.svg' %}" alt=""
+                                        aria-hidden="true">
+                                </button>
+                            </span>
+                            {% endif %}
+                            {% endfor %}
+                            {% else %}
+                            <p id="noTagsMessage">No tags added.</p>
+                            {% endif %}
+                        </div>
+
+                        <div id="modalTagInputs">
+                            {% if object_tags %}
+                            {% for tag in object_tags %}
+                            <input type="hidden" name="tag_ids" value="{{ tag.id }}">
+                            {% endfor %}
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
-
                 {% endif %}
                 {% endif %}
 

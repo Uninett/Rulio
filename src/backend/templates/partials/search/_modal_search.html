@@ -1,10 +1,11 @@
-<section class="search-container">
+<section class="search-container" id="modalSearchContainer">
     <input type="text" placeholder="Search tags..." class="search-input search-input-modal" id="modalSearchInput"
         onkeyup="filterModalSearch()" />
 
     <section class="search-dropdown search-dropdown-modal" id="modalSearchDropdown">
         {% for item in search_results.results %}
-        <div class="search-result" data-search="{{ item.search_text|default:item.name|lower }}">
+        <div class="search-result" data-tag-id="{{ item.id }}" data-tag-name="{{ item.name }}"
+            data-search="{{ item.search_text|default:item.name|lower }}">
             <div class="search-result-name">{{ item.name }}</div>
             <div class="search-result-type">{{ item.type }}</div>
         </div>
@@ -13,11 +14,17 @@
 </section>
 
 <script>
+    function getSelectedTagIds() {
+        const inputs = document.querySelectorAll('#modalTagInputs input[name="tag_ids"]');
+        return Array.from(inputs).map(input => input.value);
+    }
+
     function filterModalSearch() {
         const input = document.getElementById("modalSearchInput");
         const filter = input.value.toUpperCase();
         const section = document.getElementById("modalSearchDropdown");
         const results = section.getElementsByClassName("search-result");
+        const selectedTagIds = getSelectedTagIds();
 
         let hasMatches = false;
 
@@ -28,7 +35,13 @@
         }
 
         for (let i = 0; i < results.length; i++) {
+            const tagId = results[i].dataset.tagId;
             const searchText = (results[i].dataset.search || results[i].textContent || "").toUpperCase();
+
+            if (selectedTagIds.includes(tagId)) {
+                results[i].style.display = "none";
+                continue;
+            }
 
             if (searchText.indexOf(filter) > -1) {
                 results[i].style.display = "";
@@ -40,4 +53,83 @@
 
         section.style.display = hasMatches ? "block" : "none";
     }
+
+    function addTagToModal(tagId, tagName) {
+        const tagList = document.getElementById("modalTagList");
+        const tagInputs = document.getElementById("modalTagInputs");
+        const noTagsMessage = document.getElementById("noTagsMessage");
+
+        if (!tagList || !tagInputs) return;
+
+        const existingInput = tagInputs.querySelector(`input[name="tag_ids"][value="${tagId}"]`);
+        if (existingInput) return;
+
+        if (noTagsMessage) {
+            noTagsMessage.remove();
+        }
+
+        const tagElement = document.createElement("span");
+        tagElement.className = tagName.toLowerCase() === "default"
+            ? "modal-tag-item modal-tag-item-default"
+            : "modal-tag-item";
+        tagElement.dataset.tagId = tagId;
+        tagElement.innerHTML = `
+            ${tagName}
+            <button type="button" class="modal-tag-remove" onclick="removeTagFromModal('${tagId}')">×</button>
+        `;
+
+        tagList.appendChild(tagElement);
+
+        const hiddenInput = document.createElement("input");
+        hiddenInput.type = "hidden";
+        hiddenInput.name = "tag_ids";
+        hiddenInput.value = tagId;
+
+        tagInputs.appendChild(hiddenInput);
+
+        document.getElementById("modalSearchInput").value = "";
+        document.getElementById("modalSearchDropdown").style.display = "none";
+    }
+
+    function removeTagFromModal(tagId) {
+        const tagList = document.getElementById("modalTagList");
+        const tagInputs = document.getElementById("modalTagInputs");
+
+        const tagElement = tagList.querySelector(`[data-tag-id="${tagId}"]`);
+        const hiddenInput = tagInputs.querySelector(`input[name="tag_ids"][value="${tagId}"]`);
+
+        if (tagElement) {
+            tagElement.remove();
+        }
+
+        if (hiddenInput) {
+            hiddenInput.remove();
+        }
+
+        if (tagList && !tagList.querySelector(".modal-tag-item")) {
+            const emptyMessage = document.createElement("p");
+            emptyMessage.id = "noTagsMessage";
+            emptyMessage.textContent = "No tags added.";
+            tagList.appendChild(emptyMessage);
+        }
+    }
+
+    document.querySelectorAll("#modalSearchDropdown .search-result").forEach(function (item) {
+        item.addEventListener("click", function () {
+            addTagToModal(this.dataset.tagId, this.dataset.tagName);
+        });
+    });
+
+    document.getElementById("modalSearchInput").addEventListener("click", function () {
+        filterModalSearch();
+    });
+
+    document.addEventListener("click", function (event) {
+        const wrapper = document.getElementById("modalSearchContainer");
+        const dropdown = document.getElementById("modalSearchDropdown");
+
+        if (wrapper && dropdown && !wrapper.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+    });
 </script>
