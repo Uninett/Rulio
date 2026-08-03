@@ -7,7 +7,7 @@
     <section class="search-dropdown search-dropdown-modal" id="modalSearchDropdown">
         {% for item in search_results.results %}
         <div class="search-result" data-tag-id="{{ item.id }}" data-tag-name="{{ item.name }}"
-            data-search="{{ item.search_text|default:item.name|lower }}">
+            data-tag-color="{{ item.color }}" data-search="{{ item.search_text|default:item.name|lower }}">
             <div class="search-result-name">{{ item.name }}</div>
             <div class="search-result-type">{{ item.type }}</div>
         </div>
@@ -56,7 +56,7 @@
         section.style.display = hasMatches ? "block" : "none";
     }
 
-    function addTagToModal(tagId, tagName) {
+    function addTagToModal(tagId, tagName, tagColor) {
         const tagList = document.getElementById("modalTagList");
         const tagInputs = document.getElementById("modalTagInputs");
         const noTagsMessage = document.getElementById("noTagsMessage");
@@ -79,6 +79,10 @@
             <img class="btn-icon cancel-icon" src="{% static 'images/cancel.svg' %}" alt="" aria-hidden="true">
         </button>
     `;
+
+        if (tagColor) {
+            tagElement.style.setProperty("--tag-color", tagColor);
+        }
 
         tagList.appendChild(tagElement);
 
@@ -118,7 +122,7 @@
 
     document.querySelectorAll("#modalSearchDropdown .search-result").forEach(function (item) {
         item.addEventListener("click", function () {
-            addTagToModal(this.dataset.tagId, this.dataset.tagName);
+            addTagToModal(this.dataset.tagId, this.dataset.tagName, this.dataset.tagColor);
         });
     });
 

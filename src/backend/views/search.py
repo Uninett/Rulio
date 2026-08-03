@@ -105,6 +105,7 @@ def get_tags_search_results(request, query):
                 {
                     "id": item.id,
                     "name": item.name,
+                    "color": item.color,
                     "type": "Tag",
                     "display": item.name,
                     "search_text": searchable_text,
