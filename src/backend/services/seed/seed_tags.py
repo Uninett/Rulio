@@ -369,8 +369,8 @@ def add_tags_to_default_services(
     services_by_name: dict[str, Service] = {service.name: service for service in default_services}
 
     service_tag_mappings: dict[str, list[str]] = {
-        "ICMP_RFC792": ["global", "infrastructure", "monitoring", "debugging", "priority_1"],
-        "ICMPv6_RFC4443": ["global", "infrastructure", "monitoring", "debugging", "priority_1"],
+        #"ICMP_RFC792": ["global", "infrastructure", "monitoring", "debugging", "priority_1"],
+        #"ICMPv6_RFC4443": ["global", "infrastructure", "monitoring", "debugging", "priority_1"],
         "GRE_RFC2784": ["global", "vpn", "transit", "restricted", "priority_3"],
         "ESP_RFC4303": ["global", "vpn", "restricted", "priority_3"],
         "AH_RFC4302": ["global", "vpn", "restricted", "priority_3"],
