@@ -19,8 +19,6 @@ from django.contrib import admin
 from django.urls import path
 
 
-
-
 from .api import (
     api,
 )
@@ -44,7 +42,10 @@ from .views.devices_page import (
 
 from .views.filters_page import (
     get_filters_page,
+    update_filter_view,
     post_filter_view,
+    get_filters_content,
+    delete_filter_view,
 )
 
 from .views.objects_page import (
@@ -121,6 +122,9 @@ urlpatterns = [
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
     path("filters/create/", post_filter_view, name="post-filter-view"),
+    path("filters/<int:object_id>/update/", update_filter_view, name="update-filter-view"),
+    path("filters/content/", get_filters_content, name="filters-content"),
+    path("filters/<int:object_id>/delete/", delete_filter_view, name="delete-filter-view"),
     # Objects Page: Address
     path("objects/", get_objects_page, name="objects"),
     path("objects/addresses/", get_objects_addresses, name="objects-addresses"),

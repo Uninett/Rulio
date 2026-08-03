@@ -63,7 +63,7 @@ def get_add_modal_config(object_type):
             "post_url": reverse("post-filter-view"),
             "target": "#filters-content",
             "swap": "innerHTML",
-            "refresh_url": reverse("filters"),
+            "refresh_url": reverse("filters-content"),
             "modal_refresh_target": "#filters-content",
         },
         "rules": {
