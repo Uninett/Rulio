@@ -142,13 +142,12 @@ def get_devices_view(request):
 
         for interface in interfaces_from_device:
             interfaces_for_device.append(
-                {
-                    "row_id": f"interface-{interface.id}",
-                    "name": getattr(interface, "name", "") or "",
-                    "description": getattr(interface, "description", "") or "",
-                    "type": getattr(interface, "type", "") or "",
-                    "vrf": getattr(interface, "VRF", "") or "",
-                }
+                [
+                    getattr(interface, "name", "") or "",
+                    getattr(interface, "type", "") or "",
+                    getattr(interface, "VRF", "") or "",
+                    getattr(interface, "description", "") or "",
+                ]
             )
 
         rows.append(
@@ -172,6 +171,7 @@ def get_devices_view(request):
                     },
                     {
                         "label": "Interfaces",
+                        "headers": ["Interface Name", "Type", "VRF", "Description"],
                         "value": interfaces_for_device,
                         # "value": get_all_interfaces_from_device(request, tenant_id, device),
                     },
