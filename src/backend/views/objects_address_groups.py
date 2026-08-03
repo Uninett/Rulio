@@ -188,6 +188,44 @@ def update_address_group_view(request, object_id):
                 address_ids=list(address_ids_to_add),
             )
 
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
+
+        current_tags = get_all_tags_from_object(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_id=object_id,
+            object_type="addressgroup",
+        )
+        current_tag_ids = {tag.id for tag in current_tags}
+
+        tag_ids_to_add = submitted_tag_ids - current_tag_ids
+        tag_ids_to_remove = current_tag_ids - submitted_tag_ids
+
+        obj = get_object_by_type_and_id(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_type="addressgroup",
+            object_id=object_id,
+        )
+
+        for tag_id in tag_ids_to_add:
+            tag = Tag.objects.get(id=tag_id)
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=obj,
+            )
+
+        for tag_id in tag_ids_to_remove:
+            remove_tag_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_id=object_id,
+                object_type="addressgroup",
+                tag_id=tag_id,
+            )
+
     except Exception as e:
         return render(
             request,
