@@ -175,7 +175,7 @@ def build_policies_for_interface(
             policies.append(policy)
 
         logger.info(f"Built {len(policies)} policies for interface id={interface_id} direction='{direction}'")
-        logger.info(f"Policies: {[policy.YAMLConfig for policy in policies]}")
+        logger.debug(f"Policies: {[policy.YAMLConfig for policy in policies]}")
 
         return policies
     elif direction == "both":
