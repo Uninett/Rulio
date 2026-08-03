@@ -1,108 +1,134 @@
 <input type="hidden" name="filter_id" value="{{ object_data.filter_id|default:'' }}">
+
 <div class="form-group">
     <label for="action">Action</label>
     <select id="action" name="action">
-        {% if object_data.action == "allow" %}
-        <option value="allow" selected>Allow</option>
-        {% else %}
-        <option value="allow">Allow</option>
-        {% endif %}
-        {% if object_data.action == "deny" %}
-        <option value="deny" selected>Deny</option>
-        {% else %}
-        <option value="deny">Deny</option>
-        {% endif %}
-        {% if object_data.action == "reject" %}
-        <option value="reject" selected>Reject</option>
-        {% else %}
-        <option value="reject">Reject</option>
-        {% endif %}
+        <option value="allow" {% if object_data.action == "allow" %}selected{% endif %}>Allow</option>
+        <option value="deny" {% if object_data.action == "deny" %}selected{% endif %}>Deny</option>
+        <option value="reject" {% if object_data.action == "reject" %}selected{% endif %}>Reject</option>
     </select>
 </div>
 
 <div class="form-group">
-    <label for="action">Log Type</label>
-    <select id="action" name="log_type">
-        {% if object_data.log_type == "None" %}
-        <option value="None" selected>None</option>
-        {% else %}
-        <option value="None">None</option>
-        {% endif %}
-        {% if object_data.log_type == "Start" %}
-        <option value="Start" selected>Start</option>
-        {% else %}
-        <option value="Start">Start</option>
-        {% endif %}
-        {% if object_data.log_type == "End" %}
-        <option value="End" selected>End</option>
-        {% else %}
-        <option value="End">End</option>
-        {% endif %}
-        {% if object_data.log_type == "Both" %}
-        <option value="Both" selected>Both</option>
-        {% else %}
-        <option value="Both">Both</option>
-        {% endif %}
+    <label for="log_type">Log Type</label>
+    <select id="log_type" name="log_type">
+        <option value="None" {% if object_data.log_type == "None" %}selected{% endif %}>None</option>
+        <option value="Start" {% if object_data.log_type == "Start" %}selected{% endif %}>Start</option>
+        <option value="End" {% if object_data.log_type == "End" %}selected{% endif %}>End</option>
+        <option value="Both" {% if object_data.log_type == "Both" %}selected{% endif %}>Both</option>
     </select>
 </div>
 
 <div class="form-group">
     <label for="enable">
         Enable
-        <input type="checkbox" id="enable" name="enable" checked>
+        <input type="checkbox"
+               id="enable"
+               name="enable"
+               {% if object_data.enable %}checked{% endif %}>
     </label>
 </div>
 
 <div class="form-group">
-    <label>Sources</label>
-    <div id="rule-source-summary" class="selector-summary">
-        {% for source_name in object_data.source_names %}
-        {{ source_name }}
+    <label>Source Addresses</label>
+
+    <div id="rule-source-addresses-summary" class="selector-summary">
+        {% for name in object_data.source_address_names %}
+            {{ name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No source addresses selected.
         {% endfor %}
-        {% if not object_data.source_names %}
-        No sources selected.
-        {% endif %}
     </div>
-    <input type="hidden" name="source_ids" id="rule-source-ids"
-        value="{% for source_id in object_data.source_ids %}{{ source_id }}{% if not forloop.last %},{% endif %}{% endfor %}">
-    <button type="button" class="btn-secondary"
-        onclick="openRuleSelectorModal('source', '{% url 'rule-selector-modal' 'source' %}')">
-        Edit Sources
+
+    <input type="hidden"
+           name="source_address_ids"
+           id="rule-source-address-ids"
+           value="{% for id in object_data.source_address_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button"
+            class="btn-secondary"
+            onclick="openRuleSelectorModal(
+                'source_address',
+                '{% url 'rule-selector-modal' 'source_address' %}'
+            )">
+        Edit Source Addresses
     </button>
 </div>
 
 <div class="form-group">
-    <label>Destinations</label>
-    <div id="rule-destination-summary" class="selector-summary">
-        {% for destination_name in object_data.destination_names %}
-        {{ destination_name }}
+    <label>Destination Addresses</label>
+
+    <div id="rule-destination-addresses-summary" class="selector-summary">
+        {% for name in object_data.destination_address_names %}
+            {{ name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No destination addresses selected.
         {% endfor %}
-        {% if not object_data.destination_names %}
-        No destinations selected.
-        {% endif %}
     </div>
-    <input type="hidden" name="destination_ids" id="rule-destination-ids"
-        value="{% for destination_id in object_data.destination_ids %}{{ destination_id }}{% if not forloop.last %},{% endif %}{% endfor %}">
-    <button type="button" class="btn-secondary"
-        onclick="openRuleSelectorModal('destination', '{% url 'rule-selector-modal' 'destination' %}')">
-        Edit Destinations
+
+    <input type="hidden"
+           name="destination_address_ids"
+           id="rule-destination-address-ids"
+           value="{% for id in object_data.destination_address_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button"
+            class="btn-secondary"
+            onclick="openRuleSelectorModal(
+                'destination_address',
+                '{% url 'rule-selector-modal' 'destination_address' %}'
+            )">
+        Edit Destination Addresses
     </button>
 </div>
 
 <div class="form-group">
-    <label>Services</label>
-    <div id="rule-services-summary" class="selector-summary">
-        {% for service_name in object_data.service_names %}
-        {{ service_name }}
+    <label>Source Services</label>
+
+    <div id="rule-source-services-summary" class="selector-summary">
+        {% for name in object_data.source_service_names %}
+            {{ name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No source services selected.
         {% endfor %}
-        {% if not object_data.service_names %}
-        No services selected.
-        {% endif %}
     </div>
-    <input type="hidden" name="service_ids" id="rule-service-ids"
-        value="{% for service_id in object_data.service_ids %}{{ service_id }}{% if not forloop.last %},{% endif %}{% endfor %}">
-    <button type="button" class="btn-secondary"
-        onclick="openRuleSelectorModal('service', '{% url 'rule-selector-modal' 'service' %}')">
-        Edit Services
+
+    <input type="hidden"
+           name="source_service_ids"
+           id="rule-source-service-ids"
+           value="{% for id in object_data.source_service_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button"
+            class="btn-secondary"
+            onclick="openRuleSelectorModal(
+                'source_service',
+                '{% url 'rule-selector-modal' 'source_service' %}'
+            )">
+        Edit Source Services
+    </button>
+</div>
+
+<div class="form-group">
+    <label>Destination Services</label>
+
+    <div id="rule-destination-services-summary" class="selector-summary">
+        {% for name in object_data.destination_service_names %}
+            {{ name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No destination services selected.
+        {% endfor %}
+    </div>
+
+    <input type="hidden"
+           name="destination_service_ids"
+           id="rule-destination-service-ids"
+           value="{% for id in object_data.destination_service_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button"
+            class="btn-secondary"
+            onclick="openRuleSelectorModal(
+                'destination_service',
+                '{% url 'rule-selector-modal' 'destination_service' %}'
+            )">
+        Edit Destination Services
     </button>
 </div>

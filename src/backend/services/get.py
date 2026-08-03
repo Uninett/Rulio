@@ -166,70 +166,125 @@ def get_all_objects_from_rule(
     actor: User,
     tenant_id: int,
     rule_id: int,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
+    """
+    Return rule objects grouped as:
+
+    1. Source address/address-group objects
+    2. Destination address/address-group objects
+    3. Source service/service-group objects
+    4. Destination service/service-group objects
+    """
+
     require_read_tenant(actor, tenant_id)
 
     try:
         rule = Rule.objects.get(id=rule_id)
-    except Rule.DoesNotExist:
-        raise ObjectDoesNotExist(f"Rule with ID {rule_id} does not exist.")
+    except Rule.DoesNotExist as exc:
+        raise ObjectDoesNotExist(f"Rule with ID {rule_id} does not exist.") from exc
 
     if rule.tenant_id != tenant_id and not is_superadmin(actor):
         raise PermissionDenied(f"Rule with ID {rule_id} does not belong to tenant {tenant_id}.")
 
-    rule_matches = list(RuleMatch.objects.filter(rule=rule))
+    # select_related prevents an additional query every time
+    # match.object_type is accessed.
+    rule_matches = list(RuleMatch.objects.filter(rule=rule).select_related("object_type"))
 
-    # Gather database IDs by their model type.
-    ids_by_type: dict[str, set[int]] = defaultdict(set)
+    address_source_objects: list[dict[str, Any]] = []
+    address_destination_objects: list[dict[str, Any]] = []
+    service_source_objects: list[dict[str, Any]] = []
+    service_destination_objects: list[dict[str, Any]] = []
 
-    for match in rule_matches:
-        ids_by_type[match.object_type.model].add(match.object_id)
+    address_types = {"address", "addressgroup"}
+    service_types = {"service", "servicegroup"}
 
-    # Fetch each object type in bulk rather than one query per RuleMatch.
-    objects_by_type = {
-        "address": Address.objects.in_bulk(ids_by_type["address"]),
-        "addressgroup": AddressGroup.objects.in_bulk(ids_by_type["addressgroup"]),
-        "service": Service.objects.in_bulk(ids_by_type["service"]),
-        "servicegroup": ServiceGroup.objects.in_bulk(ids_by_type["servicegroup"]),
+    supported_model_classes = {
+        "address": Address,
+        "addressgroup": AddressGroup,
+        "service": Service,
+        "servicegroup": ServiceGroup,
     }
 
-    source_objects: list[dict[str, Any]] = []
-    destination_objects: list[dict[str, Any]] = []
-    service_objects: list[dict[str, Any]] = []
+    # Build a collection of required primary keys per Django content-type
+    # model name, so each model type can be retrieved in a single query.
+    ids_by_type: dict[str, set[int]] = defaultdict(set)
 
-    for match in rule_matches:
-        object_map = objects_by_type.get(match.object_type.model)
+    for rule_match in rule_matches:
+        model_name = rule_match.object_type.model
 
-        if object_map is None:
-            raise ValueError(f"Unsupported rule object type: {match.object_type!r}")
+        if model_name not in supported_model_classes:
+            raise ValueError(
+                "Unsupported RuleMatch content type: "
+                f"{rule_match.object_type.app_label}.{model_name}; "
+                f"RuleMatch id={rule_match.id}"
+            )
 
-        obj = object_map.get(match.object_id)
+        ids_by_type[model_name].add(rule_match.object_id)
 
-        # The RuleMatch references an object that no longer exists.
+    # Example result:
+    # {
+    #     "address": {1: <Address ...>, 4: <Address ...>},
+    #     "servicegroup": {3: <ServiceGroup ...>},
+    # }
+    objects_by_type: dict[str, dict[int, Any]] = {
+        model_name: model_class.objects.in_bulk(ids_by_type[model_name])
+        for model_name, model_class in supported_model_classes.items()
+    }
+
+    for rule_match in rule_matches:
+        model_name = rule_match.object_type.model
+        object_map = objects_by_type[model_name]
+
+        obj = object_map.get(rule_match.object_id)
+
+        # A GenericForeignKey does not automatically enforce database-level
+        # referential integrity. Skip a match if its referenced object is gone.
         if obj is None:
             continue
 
-        serialized_object = serialize_rule_object(obj, match.object_type.model)
+        serialized_object = serialize_rule_object(obj, model_name)
 
-        if match.match == "source":
-            source_objects.append(serialized_object)
+        if model_name in address_types:
+            if rule_match.match == "source":
+                address_source_objects.append(serialized_object)
 
-        elif match.match == "destination":
-            destination_objects.append(serialized_object)
+            elif rule_match.match == "destination":
+                address_destination_objects.append(serialized_object)
 
-        elif match.match == "service":
-            service_objects.append(serialized_object)
+            else:
+                raise ValueError(
+                    "Unsupported match direction for address object: "
+                    f"match={rule_match.match!r}; "
+                    f"content_type={rule_match.object_type.app_label}.{model_name}; "
+                    f"RuleMatch id={rule_match.id}"
+                )
 
-        else:
-            raise ValueError(
-                f"Unsupported rule object type: {match.object_type!r}; "
-                f"match id={match.id}, "
-                f"match.match={match.match!r}, "
-                f"match.object_id={match.object_id!r}, "
-                f"match data={match.__dict__!r}"
-            )
+        elif model_name in service_types:
+            if rule_match.match == "source":
+                service_source_objects.append(serialized_object)
 
-    return source_objects, destination_objects, service_objects
+            elif rule_match.match == "destination":
+                service_destination_objects.append(serialized_object)
+
+            else:
+                raise ValueError(
+                    "Unsupported match direction for service object: "
+                    f"match={rule_match.match!r}; "
+                    f"content_type={rule_match.object_type.app_label}.{model_name}; "
+                    f"RuleMatch id={rule_match.id}"
+                )
+
+    return (
+        address_source_objects,
+        address_destination_objects,
+        service_source_objects,
+        service_destination_objects,
+    )
 
 
 def get_rule_with_tags_from_tenant(
@@ -550,6 +605,94 @@ def get_filters_with_rules_with_tags_from_tenant(
 
     return result, filters, rules, tags
 
+def get_filter_with_rules_and_tags(
+    actor: User,
+    tenant_id: int,
+    filter_id: int,
+) -> dict[str, Any]:
+    """
+    Retrieve one filter, its rules, and its tags.
+
+    Access is allowed when the filter belongs to the selected tenant,
+    belongs to the global tenant, or the actor is a superadmin.
+    """
+
+    require_read_tenant(actor, tenant_id)
+
+    try:
+        filter_obj = Filter.objects.get(id=filter_id)
+    except Filter.DoesNotExist as exc:
+        raise ObjectDoesNotExist(
+            f"Filter with ID {filter_id} does not exist."
+        ) from exc
+
+    allowed_tenant_ids = {tenant_id, GLOBAL_TENANT_ID}
+
+    if (
+        filter_obj.tenant_id not in allowed_tenant_ids
+        and not is_superadmin(actor)
+    ):
+        raise PermissionDenied(
+            f"Filter with ID {filter_id} does not belong to tenant {tenant_id}."
+        )
+
+    rules = (
+        Rule.objects
+        .filter(filter_id=filter_obj.id)
+        .prefetch_related("matches")
+    )
+
+    filter_tags = list(filter_obj.get_tags())
+    tag_ids = {tag.id for tag in filter_tags}
+
+    serialized_rules: list[dict[str, Any]] = []
+
+    for rule in rules:
+        rule_tags = list(rule.get_tags())
+        tag_ids.update(tag.id for tag in rule_tags)
+
+        serialized_rules.append(
+            {
+                "rule_id": rule.id,
+                "rule_name": rule.name,
+                "rule_description": rule.description,
+                "rule_action": rule.action,
+                "rule_log_type": rule.log_type,
+                "rule_hit_count": rule.hit_count,
+                "rule_date_created": rule.date_created,
+                "rule_date_changed": rule.date_changed,
+                "rule_created_by": rule.created_by,
+                "rule_changed_by": rule.changed_by,
+                "rule_enable": rule.enable,
+                "rule_tenant_id": rule.tenant_id,
+                "tags": [
+                    {
+                        "tag_id": tag.id,
+                        "tag_name": tag.name,
+                        "tag_tenant_id": tag.tenant_id,
+                    }
+                    for tag in rule_tags
+                ],
+            }
+        )
+
+    return {
+        "filter_id": filter_obj.id,
+        "filter_name": filter_obj.name,
+        "filter_description": filter_obj.description,
+        "filter_enable": filter_obj.enable,
+        "filter_tenant_id": filter_obj.tenant_id,
+        "rules": serialized_rules,
+        "tags": [
+            {
+                "tag_id": tag.id,
+                "tag_name": tag.name,
+                "tag_tenant_id": tag.tenant_id,
+            }
+            for tag in filter_tags
+        ],
+        "all_tags": Tag.objects.filter(id__in=tag_ids),
+    }
 
 def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:
     require_read_tenant(actor, tenant_id)

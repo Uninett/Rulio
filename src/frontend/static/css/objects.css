@@ -504,7 +504,8 @@ Rules table layout
 .rule-object-item {
     display: block;
     width: 100%;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

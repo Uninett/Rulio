@@ -1,3 +1,4 @@
+from django.db.models import ObjectDoesNotExist
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
@@ -17,7 +18,11 @@ from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
 
-from backend.services.get import get_all_objects_from_rule, get_rule_with_tags_from_tenant
+from backend.services.get import (
+    get_all_objects_from_rule,
+    get_filter_with_rules_and_tags,
+    get_rule_with_tags_from_tenant,
+)
 
 from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
@@ -68,9 +73,16 @@ def get_update_modal_config(object_type):
             "title": "Update Device Group",
             "modal_object_type": "devices",
         },
-        "filters": {
+        "filter": {
             "title": "Update Filter",
             "modal_object_type": "filters",
+            "modal_type": "item",
+            "content_partial": "partials/modals/_filter_form.html",
+            "post_url_name": "update-filter-view",
+            "delete_url_name": "delete-filter-view",
+            "refresh_url_name": "filters-content",
+            "modal_refresh_target": "#filters-content",
+            "submit_handler": None,
         },
         "address": {
             "title": "Update Address",
@@ -305,66 +317,35 @@ def get_update_modal(request, row_id):
     elif object_type == "filters":
         # Fetch the filter data based on the object_id
         from backend.services.get import get_filter_with_rules_with_tags_from_tenant
+    elif object_type == "filter":
+        if tenant_id is None:
+            return HttpResponse("No tenant selected.", status=400)
 
         try:
-            _, filter_data, rules, tags = get_filter_with_rules_with_tags_from_tenant(
-                request.user,
-                tenant_id,
+            filter_data = get_filter_with_rules_and_tags(
+                actor=request.user,
+                tenant_id=tenant_id,
                 filter_id=object_id,
-                include_global_tenant=True,
-            )
-            if filter_data:
-                object_data = {
-                    "id": filter_data.get("id"),
-                    "name": filter_data.get("name"),
-                    "description": filter_data.get("description"),
-                    "rules": rules,
-                    "tags": tags,
-                }
-        except Exception as e:
-            logger.error(f"Error fetching filter data: {e}")
-            return HttpResponse("Error fetching filter data.", status=500)
-
-    elif object_type == "rule":
-        # Fetch the rule data based on the object_id
-
-        try:
-            rule, tags = get_rule_with_tags_from_tenant(
-                actor=request.user,
-                tenant_id=tenant_id,
-                rule_id=object_id,
-                include_global_tenant=True,
-            )
-
-            if rule is None:
-                return HttpResponse("Object not found.", status=404)
-
-            src_obj, dest_obj, svc_obj = get_all_objects_from_rule(
-                actor=request.user,
-                tenant_id=tenant_id,
-                rule_id=rule.id,
             )
 
             object_data = {
-                "id": rule.id,
-                "name": rule.name,
-                "description": rule.description,
-                "action": rule.action,
-                "log_type": rule.log_type,
-                "enable": rule.enable,
-                "filter_id": rule.filter_id,
-                "tags": tags,
-                "source_ids": [obj["selector_id"] for obj in src_obj],
-                "source_names": [obj["name"] for obj in src_obj],
-                "destination_ids": [obj["selector_id"] for obj in dest_obj],
-                "destination_names": [obj["name"] for obj in dest_obj],
-                "service_ids": [obj["selector_id"] for obj in svc_obj],
-                "service_names": [obj["name"] for obj in svc_obj],
+                "id": filter_data["filter_id"],
+                "name": filter_data["filter_name"],
+                "description": filter_data["filter_description"],
+                "enable": filter_data["filter_enable"],
+                "rules": filter_data["rules"],
+                "tags": filter_data["tags"],
             }
 
-        except Exception as exc:
-            logger.exception("Error fetching rule data")
-            return HttpResponse(f"Error fetching rule data: {exc}", status=500)
+        except ObjectDoesNotExist:
+            return HttpResponse("Object not found.", status=404)
+
+        except Exception:
+            logger.exception(
+                "Error fetching filter data for filter id=%s",
+                object_id,
+            )
+            return HttpResponse("Error fetching filter data.", status=500)
 
     if not object_data:
         return HttpResponse("Object not found.", status=404)

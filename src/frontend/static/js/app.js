@@ -85,6 +85,134 @@ function closeModalAndRefresh(url, target) {
     });
 }
 
+const RULE_SELECTOR_CONFIG = {
+    source_address: {
+        inputId: "rule-source-address-ids",
+        summaryId: "rule-source-addresses-summary",
+        emptyText: "No source addresses selected.",
+    },
+
+    destination_address: {
+        inputId: "rule-destination-address-ids",
+        summaryId: "rule-destination-addresses-summary",
+        emptyText: "No destination addresses selected.",
+    },
+
+    source_service: {
+        inputId: "rule-source-service-ids",
+        summaryId: "rule-source-services-summary",
+        emptyText: "No source services selected.",
+    },
+
+    destination_service: {
+        inputId: "rule-destination-service-ids",
+        summaryId: "rule-destination-services-summary",
+        emptyText: "No destination services selected.",
+    },
+};
+
+
+function openRuleSelectorModal(selectorType, url) {
+    const config = RULE_SELECTOR_CONFIG[selectorType];
+
+    if (!config) {
+        console.error(`Unsupported rule selector type: ${selectorType}`);
+        return;
+    }
+
+    const existing = document.getElementById(`submodal-${selectorType}`);
+
+    if (existing) {
+        existing.style.zIndex = getNextModalZIndex();
+        return;
+    }
+
+    const selectedInput = document.getElementById(config.inputId);
+    const selectedIds = selectedInput?.value || "";
+
+    const separator = url.includes("?") ? "&" : "?";
+    const fullUrl = (
+        `${url}${separator}selected_ids=${encodeURIComponent(selectedIds)}`
+    );
+
+    htmx.ajax("GET", fullUrl, {
+        target: "#submodal-container",
+        swap: "beforeend",
+    });
+}
+
+
+function applyRuleSelectorSelection(selectorType, button) {
+    const config = RULE_SELECTOR_CONFIG[selectorType];
+
+    if (!config) {
+        console.error(`Unsupported rule selector type: ${selectorType}`);
+        return;
+    }
+
+    const modal = button.closest(".draggable-modal");
+
+    if (!modal) {
+        console.error("Could not find parent selector modal.");
+        return;
+    }
+
+    const selectedList = modal.querySelector(".membership-list-selected");
+
+    if (!selectedList) {
+        console.error("Could not find selected-items list in selector modal.");
+        return;
+    }
+
+    const selectedItems = Array.from(
+        selectedList.querySelectorAll(".membership-list-item")
+    );
+
+    const selectedIds = selectedItems.map((item) => item.dataset.id);
+
+    const selectedNames = selectedItems.map((item) => {
+        // Prefer explicit data-name if present in the template.
+        if (item.dataset.name) {
+            return item.dataset.name;
+        }
+
+        // Fall back to visible text, excluding the hidden input.
+        return item.childNodes[0]?.textContent.trim() || item.textContent.trim();
+    });
+
+    const hiddenInput = document.getElementById(config.inputId);
+    const summary = document.getElementById(config.summaryId);
+
+    if (!hiddenInput) {
+        console.error(
+            `Could not find hidden input "${config.inputId}" for ${selectorType}.`
+        );
+        return;
+    }
+
+    if (!summary) {
+        console.error(
+            `Could not find summary "${config.summaryId}" for ${selectorType}.`
+        );
+        return;
+    }
+
+    // Stores typed IDs, for example:
+    // address-1,addressgroup-2
+    // service-4,servicegroup-3
+    hiddenInput.value = selectedIds.join(",");
+
+    if (selectedNames.length === 0) {
+        summary.textContent = config.emptyText;
+    } else {
+        summary.innerHTML = selectedNames
+            .map((name) => `<div>${name}</div>`)
+            .join("");
+    }
+
+    closeThisModal(button);
+}
+
 
 /*
 ====================================================================
@@ -104,58 +232,7 @@ function closeThisModal(button) {
     modal.remove();
 }
 
-function applyRuleSelectorSelection(selectorType, button) {
-    const modal = button.closest(".draggable-modal");
-    if (!modal) return;
 
-    const selectedList = modal.querySelector(".membership-list-selected");
-    if (!selectedList) return;
-
-    const selectedItems = Array.from(selectedList.querySelectorAll(".membership-list-item"));
-
-    const selectedIds = selectedItems.map(item => item.dataset.id);
-    const selectedNames = selectedItems.map(item => {
-        // get only visible text, not hidden input values
-        return item.childNodes[0]?.textContent.trim() || item.textContent.trim();
-    });
-
-    let hiddenInputId = "";
-    let summaryId = "";
-    let emptyText = "";
-
-    if (selectorType === "source") {
-        hiddenInputId = "rule-source-ids";
-        summaryId = "rule-source-summary";
-        emptyText = "No source objects selected.";
-    } else if (selectorType === "destination") {
-        hiddenInputId = "rule-destination-ids";
-        summaryId = "rule-destination-summary";
-        emptyText = "No destination objects selected.";
-    } else if (selectorType === "service") {
-        hiddenInputId = "rule-service-ids";
-        summaryId = "rule-services-summary";
-        emptyText = "No services selected.";
-    }
-
-    const hiddenInput = document.getElementById(hiddenInputId);
-    const summary = document.getElementById(summaryId);
-
-    if (hiddenInput) {
-        hiddenInput.value = selectedIds.join(",");
-    }
-
-    if (summary) {
-        if (selectedNames.length > 0) {
-            summary.innerHTML = selectedNames
-                .map(name => `<div>${name}</div>`)
-                .join("");
-        } else {
-            summary.textContent = emptyText;
-        }
-    }
-
-    closeThisModal(button);
-}
 
 function makeModalDraggable(modal, header) {
     if (!modal || !header || header.dataset.dragBound === "true") return;
@@ -669,29 +746,5 @@ document.addEventListener("htmx:afterSwap", function (event) {
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
 document.addEventListener("click", handleGenerateConfigButtonClick);
 
-function openRuleSelectorModal(selectorType, url) {
-    const existing = document.getElementById(`submodal-${selectorType}`);
-    if (existing) {
-        existing.style.zIndex = getNextModalZIndex();
-        return;
-    }
 
-    let selectedIds = "";
-
-    if (selectorType === "source") {
-        selectedIds = document.getElementById("rule-source-ids")?.value || "";
-    } else if (selectorType === "destination") {
-        selectedIds = document.getElementById("rule-destination-ids")?.value || "";
-    } else if (selectorType === "service") {
-        selectedIds = document.getElementById("rule-service-ids")?.value || "";
-    }
-
-    const separator = url.includes("?") ? "&" : "?";
-    const fullUrl = `${url}${separator}selected_ids=${encodeURIComponent(selectedIds)}`;
-
-    htmx.ajax("GET", fullUrl, {
-        target: "#submodal-container",
-        swap: "beforeend"
-    });
-}
 
