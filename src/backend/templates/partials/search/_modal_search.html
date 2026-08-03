@@ -71,15 +71,14 @@
         }
 
         const tagElement = document.createElement("span");
+        tagElement.className = "modal-tag-item";
         tagElement.dataset.tagId = tagId;
         tagElement.innerHTML = `
-            ${tagName}
-                <button type="button" class="modal-tag-remove"
-                    onclick="removeTagFromModal('{{ tag.id }}')">
-                    <img class="btn-icon cancel-icon" src="{% static 'images/cancel.svg' %}" alt=""
-                    aria-hidden="true">
-                </button>
-        `;
+        ${tagName}
+        <button type="button" class="modal-tag-remove" onclick="removeTagFromModal('${tagId}')">
+            <img class="btn-icon cancel-icon" src="{% static 'images/cancel.svg' %}" alt="" aria-hidden="true">
+        </button>
+    `;
 
         tagList.appendChild(tagElement);
 
