@@ -224,14 +224,7 @@ def _sanitize_zip_name(name: str, *, fallback: str) -> str:
     if not isinstance(name, str):
         return fallback
 
-    sanitized = (
-        name.strip()
-        .replace("\\", "_")
-        .replace("/", "_")
-        .replace("\r", "")
-        .replace("\n", "")
-        .replace(" ", "_")
-    )
+    sanitized = name.strip().replace("\\", "_").replace("/", "_").replace("\r", "").replace("\n", "").replace(" ", "_")
     return sanitized or fallback
 
 
@@ -279,9 +272,7 @@ def _extract_single_generated_file(config: object, *, fallback_name: str) -> tup
         return None
 
     if len(files) > 1:
-        raise ValueError(
-            f"Expected at most one generated file, but got {len(files)}: {list(files.keys())}"
-        )
+        raise ValueError(f"Expected at most one generated file, but got {len(files)}: {list(files.keys())}")
 
     return next(iter(files.items()))
 
@@ -339,11 +330,7 @@ def check_interface_config_generation(request, interface_id):
             "errors": result.all_errors(),
             "warnings": result.all_warnings(),
             "can_download": not result.has_errors,
-            "download_url": (
-                f"/devices/interfaces/{interface_id}/download-config/"
-                if not result.has_errors
-                else None
-            ),
+            "download_url": (f"/devices/interfaces/{interface_id}/download-config/" if not result.has_errors else None),
         }
     )
 
@@ -379,9 +366,7 @@ def download_interface_configs(request, interface_id):
         )
 
     first_interface_direction = (
-        InterfaceDirection.objects.select_related("interface")
-        .filter(interface_id=interface_id)
-        .first()
+        InterfaceDirection.objects.select_related("interface").filter(interface_id=interface_id).first()
     )
     interface_name = _sanitize_zip_name(
         getattr(first_interface_direction.interface, "name", "") if first_interface_direction else "",

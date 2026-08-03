@@ -259,9 +259,7 @@ class TestGenerateInterfaceConfigResults:
             interface_id=interface.id,
         )
 
-        expected_error = (
-            f"No filters found on interface_id={interface.id} tenant_id={request_with_session.tenant_id} for either direction"
-        )
+        expected_error = f"No filters found on interface_id={interface.id} tenant_id={request_with_session.tenant_id} for either direction"
 
         assert result.status == "error"
         assert result.has_errors is True

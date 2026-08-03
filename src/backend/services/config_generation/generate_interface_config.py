@@ -10,7 +10,8 @@ from backend.services.config_generation.generate_config import generate_multi_po
 from backend.utils.logger import set_log_level, set_up_logger
 
 logger = set_up_logger(__name__)
-set_log_level(logger, level=10)  
+set_log_level(logger, level=10)
+
 
 @dataclass
 class InterfaceDirectionGenerationResult:
@@ -85,9 +86,7 @@ def generate_interface_config_results(
     )
 
     first_interface_direction = (
-        InterfaceDirection.objects.select_related("interface__device")
-        .filter(interface_id=interface_id)
-        .first()
+        InterfaceDirection.objects.select_related("interface__device").filter(interface_id=interface_id).first()
     )
     interface = first_interface_direction.interface if first_interface_direction else None
 
@@ -153,8 +152,7 @@ def generate_interface_config_results(
             tenant_id,
         )
         error_message = (
-            f"Interface with id={interface_id} and tenant_id={tenant_id} "
-            "not found or does not have both directions"
+            f"Interface with id={interface_id} and tenant_id={tenant_id} not found or does not have both directions"
         )
         return InterfaceConfigGenerationResult(
             status="error",
@@ -172,12 +170,8 @@ def generate_interface_config_results(
             ),
         )
 
-    filters_on_interface_in = FilterInterface.objects.filter(
-        interface_direction_id=interface_in.id
-    ).exists()
-    filters_on_interface_out = FilterInterface.objects.filter(
-        interface_direction_id=interface_out.id
-    ).exists()
+    filters_on_interface_in = FilterInterface.objects.filter(interface_direction_id=interface_in.id).exists()
+    filters_on_interface_out = FilterInterface.objects.filter(interface_direction_id=interface_out.id).exists()
 
     if not filters_on_interface_in and not filters_on_interface_out:
         logger.warning(
@@ -185,9 +179,7 @@ def generate_interface_config_results(
             interface_id,
             tenant_id,
         )
-        error_message = (
-            f"No filters found on interface_id={interface_id} tenant_id={tenant_id} for either direction"
-        )
+        error_message = f"No filters found on interface_id={interface_id} tenant_id={tenant_id} for either direction"
         return InterfaceConfigGenerationResult(
             status="error",
             inbound=InterfaceDirectionGenerationResult(
@@ -213,9 +205,7 @@ def generate_interface_config_results(
         inbound = InterfaceDirectionGenerationResult(
             success=False,
             config=None,
-            warnings=[
-                f"No filters found on interface_id={interface_id} tenant_id={tenant_id} for inbound direction"
-            ],
+            warnings=[f"No filters found on interface_id={interface_id} tenant_id={tenant_id} for inbound direction"],
             errors=[],
         )
     else:
@@ -235,9 +225,7 @@ def generate_interface_config_results(
         outbound = InterfaceDirectionGenerationResult(
             success=False,
             config=None,
-            warnings=[
-                f"No filters found on interface_id={interface_id} tenant_id={tenant_id} for outbound direction"
-            ],
+            warnings=[f"No filters found on interface_id={interface_id} tenant_id={tenant_id} for outbound direction"],
             errors=[],
         )
     else:
