@@ -1,12 +1,13 @@
+import zipfile
+from io import BytesIO
+
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 
-from backend.services.config_generation.build import build_policies_for_interface
-from backend.services.config_generation.generate_config import generate_multi_policy_config
 from backend.utils.logger import set_up_logger
 from backend.views.session import get_tenant_context
-
 from backend.views.search import get_global_search_results
 from backend.services.get import (
     get_all_device_groups_and_devices_with_tags_from_tenant,
@@ -18,6 +19,11 @@ from backend.services.get import get_all_tags_from_object
 from backend.services.get import get_all_interfaces_from_device
 from constants import GLOBAL_TENANT_ID
 from backend.services.helper_user_tenant import can_write_tenant
+from backend.services.config_generation.generate_interface_config import (
+    generate_interface_config_results,
+    serialize_generated_config,
+)
+
 
 
 logger = set_up_logger(__name__)
@@ -209,80 +215,100 @@ def get_devices_view(request):
     }
 
 
-# @login_required(login_url="login")
-# def get_interface_page(request):
-#     request.session["active_page"] = "interfaces"
-#     return render(
-#         request,
-#         "interface_filters.html",
-#         {
-#             "active_page": "interfaces",
-#             "page_title": "Interfaces",
-#             "object_type": "interfaces",
-#             "add_button_label": "Add filter",
-#             "interfaces": interface_filters_view(request),
-#             "search_results": get_global_search_results(request),
-#             **get_tenant_context(request),
-#         },
+@login_required(login_url="login")
+def check_interface_config_generation(request, interface_id):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return JsonResponse(
+            {
+                "status": "error",
+                "errors": ["No tenant selected."],
+                "warnings": [],
+                "can_download": False,
+                "download_url": None,
+            },
+            status=400,
+        )
 
-def generate_and_download_config_for_interface_in_and_out(request, interface_id):
-    in_policies = build_policies_for_interface(
+    try:
+        tenant_id = int(tenant_id)
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {
+                "status": "error",
+                "errors": ["Invalid tenant selected."],
+                "warnings": [],
+                "can_download": False,
+                "download_url": None,
+            },
+            status=400,
+        )
+
+    result = generate_interface_config_results(
         actor=request.user,
-        tenant_id=request.session.get("current_tenant_id"),
+        tenant_id=tenant_id,
         interface_id=interface_id,
-        direction="in",
     )
-    out_policies = build_policies_for_interface(
+
+    return JsonResponse(
+        {
+            "status": result.status,
+            "errors": result.all_errors(),
+            "warnings": result.all_warnings(),
+            "can_download": not result.has_errors,
+            "download_url": (
+                f"/devices/interfaces/{interface_id}/download-config/"
+                if not result.has_errors
+                else None
+            ),
+        }
+    )
+
+
+@login_required(login_url="login")
+def download_interface_configs(request, interface_id):
+    tenant_id = request.session.get("current_tenant_id")
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400, content_type="text/plain")
+
+    try:
+        tenant_id = int(tenant_id)
+    except (TypeError, ValueError):
+        return HttpResponse("Invalid tenant selected.", status=400, content_type="text/plain")
+
+    result = generate_interface_config_results(
         actor=request.user,
-        tenant_id=request.session.get("current_tenant_id"),
+        tenant_id=tenant_id,
         interface_id=interface_id,
-        direction="out",
     )
 
-    in_config_result = generate_multi_policy_config(in_policies)
-    out_config_result = generate_multi_policy_config(out_policies)
+    if result.has_errors:
+        error_lines = result.all_errors()
+        if result.has_warnings:
+            error_lines.append("")
+            error_lines.append("Warnings:")
+            error_lines.extend(result.all_warnings())
 
-    result = {
-        "generated_in_config": in_config_result.config if in_config_result.success else None,
-        "generated_out_config": out_config_result.config if out_config_result.success else None,
-    }
+        return HttpResponse(
+            "\n".join(error_lines) or "Failed to generate config.",
+            status=400,
+            content_type="text/plain",
+        )
 
-    if not in_config_result.success:
-        result["in_config_errors"] = in_config_result.errors
-        logger.error(f"Failed to generate config for interface {interface_id} in direction: {in_config_result.errors}")
-    else:
-        result["in_config"] = in_config_result.config
+    zip_buffer = BytesIO()
 
-    if not out_config_result.success:
-        result["out_config_errors"] = out_config_result.errors
-        logger.error(f"Failed to generate config for interface {interface_id} in direction: {out_config_result.errors}")
-    else:
-        result["out_config"] = out_config_result.config
+    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr("config_in.txt", serialize_generated_config(result.inbound.config))
+        zip_file.writestr("config_out.txt", serialize_generated_config(result.outbound.config))
 
-    if in_config_result.has_warnings:
-        result["in_config_warnings"] = in_config_result.warnings
-        logger.warning(f"Config generation for interface {interface_id} in direction has warnings: {in_config_result.warnings}")
+        if result.has_warnings:
+            zip_file.writestr("warnings.txt", "\n".join(result.all_warnings()))
 
-    if out_config_result.has_warnings:
-        result["out_config_warnings"] = out_config_result.warnings
-        logger.warning(f"Config generation for interface {interface_id} in direction has warnings: {out_config_result.warnings}")
+    zip_buffer.seek(0)
 
-    if not in_config_result.success and not out_config_result.success:
-        result["status"] = "error"
-        return result
-
-    elif not in_config_result.success or not out_config_result.success:
-        result["status"] = "partial_error"
-        return result
-
-    elif in_config_result.has_warnings or out_config_result.has_warnings:
-        result["status"] = "success_with_warnings"
-        return result
-
-    else:
-        result["status"] = "success"
-        return result
-    
+    response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="interface_{interface_id}_configs.zip"'
+    return response
 
 # def build_interface_filters(interface):
 #     filter_links = (
