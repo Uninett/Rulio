@@ -558,6 +558,135 @@ function focusAndExpandRow(rowId) {
     });
 }
 
+/*
+====================================================================
+Generate Config For Interface
+====================================================================
+*/
+
+async function handleGenerateConfig(interfaceId) {
+  const response = await fetch(`/devices/interfaces/${interfaceId}/check-config/`, {
+    method: "GET",
+    headers: {
+      "X-Requested-With": "XMLHttpRequest"
+    }
+  });
+
+  const data = await response.json();
+
+  if (data.errors && data.errors.length > 0) {
+    showConfigResultModal({
+      title: "Error generating config",
+      errors: data.errors,
+      warnings: data.warnings || [],
+      allowCancel: false,
+      onConfirm: null
+    });
+    return;
+  }
+
+  if (data.warnings && data.warnings.length > 0) {
+    showConfigResultModal({
+      title: "Warnings while generating config",
+      errors: [],
+      warnings: data.warnings,
+      allowCancel: true,
+      onConfirm: () => {
+        if (data.download_url) {
+          window.location.href = data.download_url;
+        }
+      }
+    });
+    return;
+  }
+
+  if (data.can_download && data.download_url) {
+    window.location.href = data.download_url;
+  }
+}
+
+function showConfigResultModal({ title, errors = [], warnings = [], allowCancel = false, onConfirm = null }) {
+  const modal = document.getElementById("config-result-modal");
+  const titleEl = document.getElementById("config-result-modal-title");
+  const bodyEl = document.getElementById("config-result-modal-body");
+  const confirmBtn = document.getElementById("config-result-modal-confirm");
+  const cancelBtn = document.getElementById("config-result-modal-cancel");
+
+  titleEl.textContent = title;
+  bodyEl.innerHTML = "";
+
+  if (errors.length > 0) {
+    const errorsHeader = document.createElement("h4");
+    errorsHeader.textContent = "Errors";
+    bodyEl.appendChild(errorsHeader);
+
+    const errorsList = document.createElement("ul");
+    errors.forEach((errorText) => {
+      const li = document.createElement("li");
+      li.textContent = errorText;
+      errorsList.appendChild(li);
+    });
+    bodyEl.appendChild(errorsList);
+  }
+
+  if (warnings.length > 0) {
+    const warningsHeader = document.createElement("h4");
+    warningsHeader.textContent = "Warnings";
+    bodyEl.appendChild(warningsHeader);
+
+    const warningsList = document.createElement("ul");
+    warnings.forEach((warningText) => {
+      const li = document.createElement("li");
+      li.textContent = warningText;
+      warningsList.appendChild(li);
+    });
+    bodyEl.appendChild(warningsList);
+  }
+
+  cancelBtn.style.display = allowCancel ? "inline-block" : "none";
+
+  confirmBtn.onclick = () => {
+    closeConfigResultModal();
+    if (typeof onConfirm === "function") {
+      onConfirm();
+    }
+  };
+
+  cancelBtn.onclick = () => {
+    closeConfigResultModal();
+  };
+
+  modal.hidden = false;
+}
+
+function closeConfigResultModal() {
+  const modal = document.getElementById("config-result-modal");
+  modal.hidden = true;
+}
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".generate-config-btn");
+  if (!button) {
+    return;
+  }
+
+  const interfaceId = button.dataset.interfaceId;
+  if (!interfaceId) {
+    return;
+  }
+
+  handleGenerateConfig(interfaceId).catch((error) => {
+    showConfigResultModal({
+      title: "Error generating config",
+      errors: ["An unexpected error occurred while checking config generation."],
+      warnings: [],
+      allowCancel: false,
+      onConfirm: null
+    });
+    console.error(error);
+  });
+});
+
 
 /*
 ====================================================================
