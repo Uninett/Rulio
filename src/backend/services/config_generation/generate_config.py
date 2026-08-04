@@ -63,6 +63,12 @@ class RuleBuildResult:
 
 
 @dataclass(frozen=True)
+class PolicyBuildWarning:
+    code: str
+    message: str
+
+
+@dataclass(frozen=True)
 class ServiceMatch:
     service_name: str
     protocol: str
@@ -924,7 +930,7 @@ class Policy:
         self.rules = rules
         self.target_spec = target_spec if target_spec not in ("", []) else None
         self.policy_sequence = policy_sequence
-        self.build_warnings: list[str] = []
+        self.build_warnings: list[PolicyBuildWarning] = []
 
         self._validate_rule_sequences(rules)
         self._validate_rendered_rule_names_unique(rules)
@@ -937,12 +943,17 @@ class Policy:
         self.build_warnings = []
 
         used_term_names: set[str] = set()
+        split_rule_sequences: list[int] = []
 
         for rule in sorted(self.rules, key=lambda r: r.rule_sequence):
             result = rule.build(vendor=self.vendor)
 
             for warning in result.warnings:
-                self.build_warnings.append(warning)
+                if self._is_rule_split_warning(warning):
+                    split_rule_sequences.append(rule.rule_sequence)
+                    continue
+
+                self.build_warnings.append(PolicyBuildWarning(code="build_warning", message=warning))
                 logger.warning(warning)
 
             for term in result.terms:
@@ -954,6 +965,11 @@ class Policy:
             self._merge_networks(result.networks)
             self._merge_services(result.services)
             self.YAMLConfig["filters"][0]["terms"].extend(result.terms)
+
+        if split_rule_sequences:
+            aggregated_warning = self._build_aggregated_rule_split_warning(split_rule_sequences)
+            self.build_warnings.append(aggregated_warning)
+            logger.warning(aggregated_warning.message)
 
     def _build_filter_header(self) -> dict:
         if self.target_spec is None:
@@ -976,6 +992,31 @@ class Policy:
                 },
             ],
         }
+
+    @staticmethod
+    def _is_rule_split_warning(warning: str) -> bool:
+        return "was split into multiple terms because it contains multiple protocols with different" in warning
+
+    @staticmethod
+    def _build_aggregated_rule_split_warning(sequences: list[int]) -> PolicyBuildWarning:
+        unique_sequences = sorted(set(sequences))
+        formatted_sequences = ", ".join(str(sequence) for sequence in unique_sequences[:-1])
+        if len(unique_sequences) == 1:
+            formatted = str(unique_sequences[0])
+        elif len(unique_sequences) == 2:
+            formatted = f"{unique_sequences[0]} and {unique_sequences[1]}"
+        else:
+            formatted = f"{formatted_sequences}, and {unique_sequences[-1]}"
+
+        sequence_label = "sequence" if len(unique_sequences) == 1 else "sequences"
+        return PolicyBuildWarning(
+            code="rule_split",
+            message=(
+                f"{sequence_label} {formatted} were split into multiple terms because "
+                f"it contains multiple protocols with different match mappings, which cannot be "
+                f"safely represented as a single term."
+            ),
+        )
 
     @staticmethod
     def _validate_rule_sequences(rules: list[PolicyRule]) -> None:
@@ -1031,8 +1072,8 @@ def _build_warning_diagnostics(policy: Policy) -> list[GenerationDiagnostic]:
         GenerationDiagnostic(
             source="rulio",
             level="warning",
-            code="build_warning",
-            message=warning,
+            code=warning.code,
+            message=warning.message,
         )
         for warning in policy.build_warnings
     ]
