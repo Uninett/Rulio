@@ -1,7 +1,6 @@
 from backend.utils.logger import set_up_logger
 
 from backend.services.get import (
-    get_all_devices_with_tags_from_tenant,
     get_all_device_groups_and_devices_with_tags_from_tenant,
 )
 
