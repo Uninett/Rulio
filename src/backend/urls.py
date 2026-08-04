@@ -79,7 +79,9 @@ from .views.objects_service_groups import (
 )
 
 from backend.views.rule_page import (
+    delete_rule_view,
     get_rule_page,
+    get_rules_content,
     get_rule_selector_modal,
     post_rule_view,
     update_rule_view,
@@ -153,6 +155,8 @@ urlpatterns = [
     path("modal/update/<str:row_id>/", get_update_modal, name="modal-update"),
     path("modal/rule-selector/<str:selector_type>/", get_rule_selector_modal, name="rule-selector-modal"),
     path("rules/", get_rule_page, name="rules-page"),
+    path("rules/content/", get_rules_content, name="rules-content"),
     path("rules/create/", post_rule_view, name="post-rule-view"),
     path("rules/<int:rule_id>/update/", update_rule_view, name="update-rule-view"),
+    path("rules/<int:rule_id>/delete/", delete_rule_view, name="delete-rule-view"),
 ]
