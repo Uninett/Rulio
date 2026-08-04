@@ -30,7 +30,6 @@ ADDRESS_OBJECT_TYPES = {"address", "addressgroup"}
 SERVICE_OBJECT_TYPES = {"service", "servicegroup"}
 
 
-
 """
 ====================================================================
 Rule Page
