@@ -88,14 +88,14 @@ def get_all_rules_with_objects_from_tenant(actor: User, tenant_id: int) -> list[
 
 def get_all_rules_with_objects_from_filter(actor: User, tenant_id: int, filter_id: int) -> list[dict]:
     require_read_tenant(actor, tenant_id)
-
+    permitted_tenant_ids = {tenant_id, GLOBAL_TENANT_ID}
     try:
-        filter_obj = Filter.objects.get(id=filter_id, tenant_id=tenant_id)
+        filter_obj = Filter.objects.get(id=filter_id, tenant_id__in=permitted_tenant_ids)
     except Filter.DoesNotExist:
         raise ObjectDoesNotExist(f"Filter with ID {filter_id} does not exist in tenant {tenant_id}.")
 
     rules = list(
-        filter_obj.rules.filter(tenant_id=tenant_id)
+        filter_obj.rules.filter(tenant_id__in=permitted_tenant_ids)
         .prefetch_related("matches__object_type")
         .order_by("rule_sequence", "id")
     )
@@ -244,6 +244,13 @@ def get_all_objects_from_rule(
         # A GenericForeignKey does not automatically enforce database-level
         # referential integrity. Skip a match if its referenced object is gone.
         if obj is None:
+            logger.warning(
+                "RuleMatch with ID %s references a non-existent object: content_type=%s.%s, object_id=%s",
+                rule_match.id,
+                rule_match.object_type.app_label,
+                model_name,
+                rule_match.object_id,
+            )
             continue
 
         serialized_object = serialize_rule_object(obj, model_name)
@@ -253,6 +260,10 @@ def get_all_objects_from_rule(
                 address_source_objects.append(serialized_object)
 
             elif rule_match.match == "destination":
+                address_destination_objects.append(serialized_object)
+
+            elif rule_match.match == "any":
+                address_source_objects.append(serialized_object)
                 address_destination_objects.append(serialized_object)
 
             else:
@@ -268,6 +279,10 @@ def get_all_objects_from_rule(
                 service_source_objects.append(serialized_object)
 
             elif rule_match.match == "destination":
+                service_destination_objects.append(serialized_object)
+
+            elif rule_match.match == "any":
+                service_source_objects.append(serialized_object)
                 service_destination_objects.append(serialized_object)
 
             else:
@@ -292,13 +307,17 @@ def get_rule_with_tags_from_tenant(
     require_read_tenant(actor, tenant_id)
     try:
         if include_global_tenant:
-            rule = Rule.objects.prefetch_related("tag_objects__tag").get(id=rule_id)
+            rule = (
+                Rule.objects.prefetch_related("tag_objects__tag")
+                .filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+                .get(id=rule_id)
+            )
         else:
             rule = Rule.objects.prefetch_related("tag_objects__tag").filter(tenant_id=tenant_id).get(id=rule_id)
     except Rule.DoesNotExist:
         raise ObjectDoesNotExist(f"Rule with ID {rule_id} does not exist.")
 
-    if rule.tenant_id != tenant_id and not is_superadmin(actor):
+    if rule.tenant_id not in [tenant_id, GLOBAL_TENANT_ID] and not is_superadmin(actor):
         raise PermissionDenied(f"Rule with ID {rule_id} does not belong to tenant {tenant_id}.")
 
     tags = [tc.tag for tc in rule.tag_objects.all()]
@@ -519,8 +538,8 @@ def get_filters_with_rules_with_tags_from_tenant(
     require_read_tenant(actor, tenant_id)
 
     if include_global_tenant:
-        filters = Filter.objects.filter(tenant_id__in=[tenant_id, 1])
-        rules = Rule.objects.filter(tenant_id__in=[tenant_id, 1]).prefetch_related("matches")
+        filters = Filter.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+        rules = Rule.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).prefetch_related("matches")
     else:
         filters = Filter.objects.filter(tenant_id=tenant_id)
         rules = Rule.objects.filter(tenant_id=tenant_id).prefetch_related("matches")
