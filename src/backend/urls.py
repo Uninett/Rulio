@@ -38,6 +38,7 @@ from .views.management_tenants import get_management_tenants, post_tenant_view, 
 
 from .views.devices_page import (
     get_devices_page,
+    interface_filters_view,
 )
 
 from .views.filters_page import (
@@ -122,6 +123,11 @@ urlpatterns = [
     path("management/tenants/<int:object_id>/delete/", delete_tenant_view, name="delete-tenant-view"),
     # Device Page
     path("devices/", get_devices_page, name="devices"),
+    path(
+        "management/devices/<int:device_id>/interfaces/<int:interface_id>/filters/",
+        interface_filters_view,
+        name="interface-filters-view",
+    ),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
     path("filters/create/", post_filter_view, name="post-filter-view"),
