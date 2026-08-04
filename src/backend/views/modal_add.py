@@ -10,6 +10,7 @@ from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
 from backend.views.modal import get_group_options_view, get_item_options_view
 
+
 logger = set_up_logger(__name__)
 
 """
@@ -81,6 +82,8 @@ def get_add_modal_config(object_type):
             "post_url": reverse("post-rule-view"),
             "target": "#modal-container",
             "swap": "innerHTML",
+            "refresh_url": reverse("rules-content"),
+            "modal_refresh_target": "#rules-content",
         },
         "addresses": {
             "title": "Add Address",
@@ -163,8 +166,22 @@ def get_add_modal(request, object_type):
 
     object_data = {}
 
+    object_data = {}
+    modal_refresh_url = config.get("refresh_url")
+
     if object_type == "rules":
-        object_data["filter_id"] = request.GET.get("filter_id", "")
+        filter_id = request.GET.get("filter_id", "")
+        filter_name = request.GET.get("filter_name", "")
+
+        object_data["filter_id"] = filter_id
+
+        # get_rules_view() needs filter_id to load the correct rules.
+        if filter_id:
+            modal_refresh_url = f"{reverse('rules-content')}?filter_id={filter_id}"
+
+            # Optional: preserve the title shown by get_rules_content().
+            if filter_name:
+                modal_refresh_url += f"&filter_name={filter_name}"
 
     context = {
         "modal_title": config["title"],
@@ -179,7 +196,7 @@ def get_add_modal(request, object_type):
         "modal_target": config.get("target"),
         "modal_swap": config.get("swap"),
         "modal_submit_handler": config.get("submit_handler"),
-        "modal_refresh_url": config.get("refresh_url"),
+        "modal_refresh_url": modal_refresh_url,
         "modal_refresh_target": config.get("modal_refresh_target"),
         "object_data": object_data,
         "selected_group_ids": [],

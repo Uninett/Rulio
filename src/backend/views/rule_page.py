@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
+from backend.services.delete import delete_rule
 from backend.services.membership import add_objects_to_rule, update_objects_in_rule
 from constants import GLOBAL_TENANT_ID
 
@@ -51,6 +52,27 @@ def get_rule_page(request):
         {
             "active_page": "Filters",
             "page_title": "Filter -> " + filter_name,
+            "object_type": "rules",
+            "add_button_label": "Add Rule",
+            "current_filter_id": filter_id,
+            "current_filter_name": filter_name,
+            "rules": get_rules_view(request),
+            **get_tenant_context(request),
+        },
+    )
+
+
+@login_required(login_url="login")
+def get_rules_content(request):
+    filter_id = request.GET.get("filter_id", "")
+    filter_name = request.GET.get("filter_name", "")
+
+    return render(
+        request,
+        "partials/_page_content.html",
+        {
+            "title": f"Filter -> {filter_name}" if filter_name else "Rules",
+            "page_title": f"Filter -> {filter_name}" if filter_name else "Rules",
             "object_type": "rules",
             "add_button_label": "Add Rule",
             "current_filter_id": filter_id,
@@ -585,6 +607,36 @@ def update_rule_view(request, rule_id):
         print(f"Error updating rule {rule_id}: {exc}")
 
         return render_form_error("Unable to update the rule. Please verify the selected objects and try again.")
+
+    return HttpResponse(status=204)
+
+
+
+
+
+@login_required(login_url="login")
+def delete_rule_view(request, rule_id):
+    tenant_id_raw = request.session.get("current_tenant_id")
+
+    if not tenant_id_raw:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        tenant_id = int(tenant_id_raw)
+
+        delete_rule(
+            actor=request.user,
+            tenant_id=tenant_id,
+            rule_id=rule_id,
+        )
+
+    except Exception as exc:
+
+
+        return HttpResponse(
+            f"Could not delete rule: {exc}",
+            status=400,
+        )
 
     return HttpResponse(status=204)
 

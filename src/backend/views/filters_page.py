@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
@@ -63,28 +64,23 @@ def get_filters_content(request):
 
 @login_required(login_url="login")
 def delete_filter_view(request, object_id):
-    try:
-        delete_filter(actor=request.user, filter_id=object_id)
-    except Exception as e:
-        return render(
-            request,
-            "partials/modals/_modal_form.html",
-            {
-                "modal_object_type": "filters",
-                "modal_content_partial": "partials/modals/_filter_form.html",
-                "modal_supports_types": False,
-                "error_message": f"Could not delete filter: {e}",
-            },
-            status=400,
-        )
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+    
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400)
 
-    return render(
-        request,
-        "partials/objects/_tableRowDeleted.html",
-        {
-            "row_id": f"filter-{object_id}",
-        },
-    )
+    try:
+        delete_filter(
+            actor=request.user,
+            tenant_id=tenant_id,
+            filter_id=object_id,
+        )
+    except Exception as e:
+        return HttpResponse(f"Could not delete filter: {e}", status=400)
+
+    return HttpResponse(status=204)
+
+
 
 
 def get_filters_view(request):
