@@ -1,0 +1,32 @@
+<div class="detail-block">
+
+    <div class="objects-interface-table">
+        <div class="objects-interface-table-header-row">
+            {% for header in field.headers %}
+            <div class="interfaces-grid__header">
+                {{ header }}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% for interface_row in field.value %}
+        <div class="objects-interface-table-row">
+            {% for interface_value in interface_row %}
+            <div class="objects-interface-table-cell">
+                {% if interface_value.url %}
+                <a href="{{ interface_value.url }}" class="interface-filter-link">
+                    {{ interface_value.value }}
+                </a>
+                {% else %}
+                {{ interface_value }}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% empty %}
+        <div class="objects-interface-empty">
+            No interfaces found.
+        </div>
+        {% endfor %}
+    </div>
+</div>

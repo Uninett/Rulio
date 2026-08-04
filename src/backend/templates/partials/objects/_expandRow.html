@@ -64,6 +64,10 @@
         {% elif field.label == "Interfaces" %}
         {% include "partials/devices/_expandableDeviceLine.html" with row=row field=field %}
 
+        {% elif field.label == "Filters" %}
+        {% include "partials/devices/_expandableFiltersLine.html" with row=row field=field %}
+
+
         {% else %}
         <p>
             <strong>{{ field.label }}:</strong>
