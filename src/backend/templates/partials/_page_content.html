@@ -14,7 +14,7 @@
     {% elif title == "Filters" %}
     {% include "partials/filters/_filterTable.html" %}
 
-     <!--This page cannot have routing dependent on the title, this may be necessary to refactor in every case-->
+    <!--This page cannot have routing dependent on the title, this may be necessary to refactor in every case-->
     {% elif object_type == "rules" %}
     {% include "partials/filters/_rulesTable.html" %}
 
@@ -31,6 +31,7 @@
     {% include "partials/management/_users_table.html" %}
     {% elif title == "Tenant management" %}
     {% include "partials/management/_tenants_table.html" %}
+
     {% else %}
     <p>No content available.</p>
     {% endif %}
