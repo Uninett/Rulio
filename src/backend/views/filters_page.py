@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 
 from backend.services.filter_objects.create_filter_objects import create_filter
+from backend.services.helper_user_tenant import can_write_tenant
 from backend.services.update import update_filter
 from backend.services.delete import delete_filter
 from backend.views.session import get_tenant_context
@@ -14,6 +15,7 @@ from backend.services.get import (
     get_all_filters_with_tags_from_tenant,
     get_filters_with_rules_with_tags_from_tenant,
 )
+from constants import GLOBAL_TENANT_ID
 
 """
 ====================================================================
@@ -65,7 +67,7 @@ def get_filters_content(request):
 @login_required(login_url="login")
 def delete_filter_view(request, object_id):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-    
+
     if not tenant_id:
         return HttpResponse("No tenant selected.", status=400)
 
@@ -79,8 +81,6 @@ def delete_filter_view(request, object_id):
         return HttpResponse(f"Could not delete filter: {e}", status=400)
 
     return HttpResponse(status=204)
-
-
 
 
 def get_filters_view(request):
@@ -128,6 +128,8 @@ def get_filters_view(request):
                 "id": f"filter-{filter_obj.id}",
                 "is_group": False,
                 "inspect_url": reverse("rules-page") + f"?filter_id={filter_obj.id}&filter_name={filter_obj.name}",
+                "is_global": filter_obj.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, filter_obj.tenant_id),
                 "cells": [
                     "▶",
                     getattr(filter_obj, "name", "") or "",
