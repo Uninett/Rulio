@@ -1,5 +1,24 @@
 /*
 ====================================================================
+Set Z-Index for Modals
+====================================================================
+*/
+
+let modalZIndexCounter = 1000;
+
+function getNextModalZIndex() {
+    modalZIndexCounter += 1;
+    return modalZIndexCounter;
+}
+
+function bringModalToFront(modal) {
+    if (!modal) return;
+    const next = getNextModalZIndex();
+    modal.style.zIndex = next;
+}
+
+/*
+====================================================================
 Toggle Buttons
 ====================================================================
 */
@@ -66,6 +85,134 @@ function closeModalAndRefresh(url, target) {
     });
 }
 
+const RULE_SELECTOR_CONFIG = {
+    source_address: {
+        inputId: "rule-source-address-ids",
+        summaryId: "rule-source-addresses-summary",
+        emptyText: "No source addresses selected.",
+    },
+
+    destination_address: {
+        inputId: "rule-destination-address-ids",
+        summaryId: "rule-destination-addresses-summary",
+        emptyText: "No destination addresses selected.",
+    },
+
+    source_service: {
+        inputId: "rule-source-service-ids",
+        summaryId: "rule-source-services-summary",
+        emptyText: "No source services selected.",
+    },
+
+    destination_service: {
+        inputId: "rule-destination-service-ids",
+        summaryId: "rule-destination-services-summary",
+        emptyText: "No destination services selected.",
+    },
+};
+
+
+function openRuleSelectorModal(selectorType, url) {
+    const config = RULE_SELECTOR_CONFIG[selectorType];
+
+    if (!config) {
+        console.error(`Unsupported rule selector type: ${selectorType}`);
+        return;
+    }
+
+    const existing = document.getElementById(`submodal-${selectorType}`);
+
+    if (existing) {
+        existing.style.zIndex = getNextModalZIndex();
+        return;
+    }
+
+    const selectedInput = document.getElementById(config.inputId);
+    const selectedIds = selectedInput?.value || "";
+
+    const separator = url.includes("?") ? "&" : "?";
+    const fullUrl = (
+        `${url}${separator}selected_ids=${encodeURIComponent(selectedIds)}`
+    );
+
+    htmx.ajax("GET", fullUrl, {
+        target: "#submodal-container",
+        swap: "beforeend",
+    });
+}
+
+
+function applyRuleSelectorSelection(selectorType, button) {
+    const config = RULE_SELECTOR_CONFIG[selectorType];
+
+    if (!config) {
+        console.error(`Unsupported rule selector type: ${selectorType}`);
+        return;
+    }
+
+    const modal = button.closest(".draggable-modal");
+
+    if (!modal) {
+        console.error("Could not find parent selector modal.");
+        return;
+    }
+
+    const selectedList = modal.querySelector(".membership-list-selected");
+
+    if (!selectedList) {
+        console.error("Could not find selected-items list in selector modal.");
+        return;
+    }
+
+    const selectedItems = Array.from(
+        selectedList.querySelectorAll(".membership-list-item")
+    );
+
+    const selectedIds = selectedItems.map((item) => item.dataset.id);
+
+    const selectedNames = selectedItems.map((item) => {
+        // Prefer explicit data-name if present in the template.
+        if (item.dataset.name) {
+            return item.dataset.name;
+        }
+
+        // Fall back to visible text, excluding the hidden input.
+        return item.childNodes[0]?.textContent.trim() || item.textContent.trim();
+    });
+
+    const hiddenInput = document.getElementById(config.inputId);
+    const summary = document.getElementById(config.summaryId);
+
+    if (!hiddenInput) {
+        console.error(
+            `Could not find hidden input "${config.inputId}" for ${selectorType}.`
+        );
+        return;
+    }
+
+    if (!summary) {
+        console.error(
+            `Could not find summary "${config.summaryId}" for ${selectorType}.`
+        );
+        return;
+    }
+
+    // Stores typed IDs, for example:
+    // address-1,addressgroup-2
+    // service-4,servicegroup-3
+    hiddenInput.value = selectedIds.join(",");
+
+    if (selectedNames.length === 0) {
+        summary.textContent = config.emptyText;
+    } else {
+        summary.innerHTML = selectedNames
+            .map((name) => `<div>${name}</div>`)
+            .join("");
+    }
+
+    closeThisModal(button);
+}
+
 
 /*
 ====================================================================
@@ -78,15 +225,25 @@ const draggableModalState = {
     suppressBackdropClick: false
 };
 
-function makeModalDraggable(modalId, headerId) {
-    const modal = document.getElementById(modalId);
-    const header = document.getElementById(headerId);
+function closeThisModal(button) {
+    const modal = button.closest(".draggable-modal");
+    if (!modal) return;
 
+    modal.remove();
+}
+
+
+
+function makeModalDraggable(modal, header) {
     if (!modal || !header || header.dataset.dragBound === "true") return;
     header.dataset.dragBound = "true";
 
+    bringModalToFront(modal);
+
     header.addEventListener("mousedown", function (e) {
         if (e.button !== 0) return;
+
+        bringModalToFront(modal);
 
         e.preventDefault();
         e.stopPropagation();
@@ -108,11 +265,18 @@ function makeModalDraggable(modalId, headerId) {
 
     header.addEventListener("click", function (e) {
         e.stopPropagation();
+        bringModalToFront(modal);
+    });
+
+    modal.addEventListener("mousedown", function () {
+        bringModalToFront(modal);
     });
 }
-
-function initDraggableModal() {
-    makeModalDraggable("draggable-modal", "draggable-modal-header");
+function initDraggableModals() {
+    document.querySelectorAll(".draggable-modal").forEach((modal) => {
+        const header = modal.querySelector(".draggable-modal-header");
+        makeModalDraggable(modal, header);
+    });
 }
 
 function handleModalMouseMove(e) {
@@ -120,8 +284,8 @@ function handleModalMouseMove(e) {
 
     const { modal, offsetX, offsetY } = draggableModalState.activeDrag;
 
-    let newLeft = e.clientX - offsetX;
-    let newTop = e.clientY - offsetY;
+    const newLeft = e.clientX - offsetX;
+    const newTop = e.clientY - offsetY;
 
     modal.style.left = `${newLeft}px`;
     modal.style.top = `${newTop}px`;
@@ -149,6 +313,12 @@ function handleBackdropClickSuppression(e) {
         e.stopPropagation();
     }
 }
+
+document.addEventListener("mousemove", handleModalMouseMove);
+document.addEventListener("mouseup", handleModalMouseUp);
+document.addEventListener("click", handleBackdropClickSuppression, true);
+document.addEventListener("DOMContentLoaded", initDraggableModals);
+document.body.addEventListener("htmx:afterSwap", initDraggableModals);
 
 
 /*
@@ -315,12 +485,25 @@ function expandRow(rowId) {
 
     if (!detailsRow || !openedRow) return;
 
+    const toggleVisibilityIcon = (isExpanded) => {
+        const icon = openedRow.querySelector(".row-visibility-icon");
+        if (!icon) return;
+
+        const openIcon = icon.dataset.eyeOpen;
+        const closedIcon = icon.dataset.eyeClosed;
+        if (!openIcon || !closedIcon) return;
+
+        icon.src = isExpanded ? closedIcon : openIcon;
+    };
+
     if (detailsRow.style.display === "table-row") {
         detailsRow.style.display = "none";
         openedRow.classList.remove("expanded-row");
+        toggleVisibilityIcon(false);
     } else {
         detailsRow.style.display = "table-row";
         openedRow.classList.add("expanded-row");
+        toggleVisibilityIcon(true);
     }
 }
 
@@ -362,6 +545,183 @@ function focusAndExpandFromUrl() {
 
 /*
 ====================================================================
+Rule Reordering
+====================================================================
+*/
+
+function getCsrfToken() {
+    const cookieValue = document.cookie
+        .split(";")
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith("csrftoken="));
+
+    if (!cookieValue) return "";
+
+    return decodeURIComponent(cookieValue.split("=")[1]);
+}
+
+function getRuleMainRows(rulesBody) {
+    return Array.from(rulesBody.querySelectorAll("tr[id^='row-rule-']"));
+}
+
+function getRuleIdFromMainRow(mainRow) {
+    const fullId = mainRow?.id || "";
+    if (!fullId.startsWith("row-rule-")) return null;
+
+    const idValue = Number(fullId.replace("row-rule-", ""));
+    return Number.isInteger(idValue) ? idValue : null;
+}
+
+function getDetailsRowForMainRow(mainRow) {
+    if (!mainRow?.id) return null;
+    return document.getElementById(mainRow.id.replace("row-", "details-"));
+}
+
+function moveRuleRowPair(draggedMainRow, targetMainRow, placeBefore) {
+    if (!draggedMainRow || !targetMainRow || draggedMainRow === targetMainRow) return;
+
+    const draggedDetailsRow = getDetailsRowForMainRow(draggedMainRow);
+    const targetDetailsRow = getDetailsRowForMainRow(targetMainRow);
+
+    if (placeBefore) {
+        targetMainRow.parentNode.insertBefore(draggedMainRow, targetMainRow);
+        if (draggedDetailsRow) {
+            targetMainRow.parentNode.insertBefore(draggedDetailsRow, targetMainRow);
+        }
+    } else {
+        const insertionAnchor = targetDetailsRow?.nextSibling || targetMainRow.nextSibling;
+        targetMainRow.parentNode.insertBefore(draggedMainRow, insertionAnchor);
+        if (draggedDetailsRow) {
+            targetMainRow.parentNode.insertBefore(draggedDetailsRow, insertionAnchor);
+        }
+    }
+}
+
+function refreshRulesTableContent(rulesBody) {
+    if (!rulesBody) return;
+
+    const contentUrl = rulesBody.dataset.contentUrl;
+    const filterId = rulesBody.dataset.filterId;
+    if (!contentUrl || !filterId) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const filterName = params.get("filter_name") || "";
+    const refreshUrl = `${contentUrl}?filter_id=${encodeURIComponent(filterId)}&filter_name=${encodeURIComponent(filterName)}`;
+
+    const refreshTarget = "#filters-content";
+    const contentRoot = document.querySelector(refreshTarget);
+    let savedScrollTop = 0;
+
+    if (contentRoot) {
+        const scrollContainer = contentRoot.querySelector(".table-container");
+        if (scrollContainer) {
+            savedScrollTop = scrollContainer.scrollTop;
+        }
+    }
+
+    htmx.ajax("GET", refreshUrl, {
+        target: refreshTarget,
+        swap: "innerHTML",
+    }).then(() => {
+        const updatedRoot = document.querySelector(refreshTarget);
+        if (!updatedRoot) return;
+
+        const updatedScrollContainer = updatedRoot.querySelector(".table-container");
+        if (updatedScrollContainer) {
+            updatedScrollContainer.scrollTop = savedScrollTop;
+        }
+    });
+}
+
+function initializeRuleRowDragAndDrop(root = document) {
+    const rulesBody = root.querySelector("#rules-table");
+    if (!rulesBody || rulesBody.dataset.dragInitialized === "true") return;
+
+    const reorderUrl = rulesBody.dataset.reorderUrl;
+    const filterId = rulesBody.dataset.filterId;
+
+    if (!reorderUrl || !filterId) return;
+
+    rulesBody.dataset.dragInitialized = "true";
+
+    let draggedMainRow = null;
+
+    rulesBody.querySelectorAll("tr[data-rules-draggable='true']").forEach((row) => {
+        row.addEventListener("dragstart", (event) => {
+            draggedMainRow = row;
+            row.classList.add("dragging");
+
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", row.id);
+            }
+        });
+
+        row.addEventListener("dragend", () => {
+            row.classList.remove("dragging");
+            draggedMainRow = null;
+        });
+    });
+
+    rulesBody.addEventListener("dragover", (event) => {
+        if (!draggedMainRow) return;
+
+        event.preventDefault();
+
+        const targetMainRow = event.target.closest("tr[id^='row-rule-']");
+        if (!targetMainRow || targetMainRow === draggedMainRow) return;
+
+        const rect = targetMainRow.getBoundingClientRect();
+        const placeBefore = event.clientY < rect.top + rect.height / 2;
+
+        moveRuleRowPair(draggedMainRow, targetMainRow, placeBefore);
+    });
+
+    rulesBody.addEventListener("drop", async (event) => {
+        if (!draggedMainRow) return;
+
+        event.preventDefault();
+
+        const ruleId = getRuleIdFromMainRow(draggedMainRow);
+        if (!ruleId) return;
+
+        const mainRows = getRuleMainRows(rulesBody);
+        const newSequence = mainRows.findIndex((row) => row === draggedMainRow) + 1;
+        if (newSequence < 1) return;
+
+        const csrfToken = getCsrfToken();
+
+        try {
+            const response = await fetch(reorderUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "X-CSRFToken": csrfToken,
+                },
+                body: new URLSearchParams({
+                    rule_id: String(ruleId),
+                    filter_id: String(filterId),
+                    new_sequence: String(newSequence),
+                }),
+            });
+
+            if (!response.ok) {
+                console.error("Failed to reorder rules.", await response.text());
+                refreshRulesTableContent(rulesBody);
+                return;
+            }
+
+            refreshRulesTableContent(rulesBody);
+        } catch (error) {
+            console.error("Error while reordering rules.", error);
+            refreshRulesTableContent(rulesBody);
+        }
+    });
+}
+
+
+/*
+====================================================================
 Event Listeners
 ====================================================================
 */
@@ -373,15 +733,20 @@ document.addEventListener("mouseup", handleModalMouseUp);
 document.addEventListener("click", handleBackdropClickSuppression, true);
 
 document.addEventListener("DOMContentLoaded", function () {
-    initDraggableModal();
+    initDraggableModals();
     initializeMembershipSelectors(document);
+    initializeRuleRowDragAndDrop(document);
     focusAndExpandFromUrl();
 });
 
 document.addEventListener("htmx:afterSwap", function (event) {
-    initDraggableModal();
+    initDraggableModals();
     initializeMembershipSelectors(event.target);
+    initializeRuleRowDragAndDrop(event.target);
     focusAndExpandFromUrl();
 });
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
+
+
+

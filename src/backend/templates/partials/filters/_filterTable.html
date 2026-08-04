@@ -1,0 +1,21 @@
+<section class="objects-table-container table-container">
+    <table class="objects-table filters-table">
+        <thead>
+            <tr>
+                {% for header in filters.headers %}
+                <th class="col-{{ forloop.counter }}">{{ header }}</th>
+                {% endfor %}
+                <th class="actions-column"></th>
+            </tr>
+        </thead>
+        <tbody id="filters-table">
+            {% for row in filters.rows %}
+            {% include "partials/objects/_tableRow.html" with row=row headers=filters.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ filters.headers|length }}">No filters found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>

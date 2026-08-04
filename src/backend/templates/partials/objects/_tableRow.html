@@ -1,30 +1,44 @@
 {% load static %}
 
 {% if object_type == "tags" %}
-<tr id="row-{{ row.id }}"
-    class="main-row tag-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
-    style="--tag-color: {{ row.color }};" onclick="expandRow('{{ row.id }}')">
-    {% else %}
-<tr id="row-{{ row.id }}"
-    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
-    onclick="expandRow('{{ row.id }}')">
-    {% endif %}
+    <tr id="row-{{ row.id }}"
+        class="main-row tag-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
+        style="--tag-color: {{ row.color }};"
+        onclick="expandRow('{{ row.id }}')">
+{% else %}
+    <tr id="row-{{ row.id }}"
+        class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
+    {% if object_type == "rules" and row.can_write %}draggable="true" data-rules-draggable="true"{% endif %}
+        {% if object_type != "rules" %}onclick="expandRow('{{ row.id }}')"{% endif %}>
+{% endif %}
+
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}
 
     {% if row.can_write %}
-    <td class="actions-column">
-        <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.id %}" hx-target="#modal-container"
-            hx-swap="innerHTML" onclick="event.stopPropagation()">
-            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
-        </button>
-    </td>
+        <td class="actions-column">
+            <button type="button"
+                    class="actions-btn"
+                    hx-get="{% url 'modal-update' row.id %}"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML"
+                    onclick="event.stopPropagation()">
+                <img class="btn-icon actions-icon"
+                     src="{% static 'images/edit.svg' %}"
+                     alt=""
+                     aria-hidden="true">
+            </button>
+        </td>
     {% else %}
-    <td class="actions-column">
-        <button type="button" class="actions-btn actions-btn-disabled"
-            title="{% if row.is_global %}Need superuser permission to update global {{ object_type }}.{% else %}Need tenant admin permission to update {{ object_type }}.{% endif %}">
-            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
-        </button>
-    </td>
+        <td class="actions-column">
+            <button type="button"
+                    class="actions-btn actions-btn-disabled"
+                    title="{% if row.is_global %}Need superuser permission to update global {{ object_type }}.{% else %}Need tenant admin permission to update {{ object_type }}.{% endif %}">
+                <img class="btn-icon actions-icon"
+                     src="{% static 'images/edit.svg' %}"
+                     alt=""
+                     aria-hidden="true">
+            </button>
+        </td>
     {% endif %}
 </tr>
 

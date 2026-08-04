@@ -1,3 +1,4 @@
+from django.db.models import ObjectDoesNotExist
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
@@ -17,11 +18,17 @@ from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
 
+from backend.services.get import (
+    get_all_objects_from_rule,
+    get_all_tags_from_object,
+    get_filter_with_rules_and_tags,
+    get_rule_with_tags_from_tenant,
+)
+
 from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
 
-from backend.services.get import get_all_tags_from_object
 
 logger = set_up_logger(__name__)
 
@@ -66,9 +73,16 @@ def get_update_modal_config(object_type):
             "title": "Update Device Group",
             "modal_object_type": "devices",
         },
-        "filters": {
+        "filter": {
             "title": "Update Filter",
             "modal_object_type": "filters",
+            "modal_type": "item",
+            "content_partial": "partials/modals/_filter_form.html",
+            "post_url_name": "update-filter-view",
+            "delete_url_name": "delete-filter-view",
+            "refresh_url_name": "filters-content",
+            "modal_refresh_target": "#filters-content",
+            "submit_handler": None,
         },
         "address": {
             "title": "Update Address",
@@ -125,6 +139,17 @@ def get_update_modal_config(object_type):
             "modal_refresh_target": "#tags-content",
             "submit_handler": None,
         },
+        "rule": {
+            "title": "Update Rule",
+            "modal_object_type": "rules",
+            "modal_type": "item",
+            "content_partial": "partials/modals/_rule_form.html",
+            "post_url_name": "update-rule-view",
+            "delete_url_name": "delete-rule-view",
+            "refresh_url_name": "rules-content",
+            "modal_refresh_target": "#rules-content",
+            "submit_handler": None,
+        },
     }
     return configs.get(object_type)
 
@@ -151,7 +176,10 @@ def get_update_modal(request, row_id):
     selected_ids = []
     object_tags = []
 
-    if object_type in ["address", "addressgroup", "service", "servicegroup"] and tenant_id is not None:
+    if (
+        object_type in ["address", "addressgroup", "service", "servicegroup", "rule", "filter"]
+        and tenant_id is not None
+    ):
         try:
             object_tags = get_all_tags_from_object(
                 actor=request.user,
@@ -290,8 +318,107 @@ def get_update_modal(request, row_id):
         except Tag.DoesNotExist:
             object_data = None
 
+    elif object_type == "rule":
+        if tenant_id is None:
+            return HttpResponse("No tenant selected.", status=400)
+
+        try:
+            rule, tags = get_rule_with_tags_from_tenant(
+                actor=request.user,
+                tenant_id=tenant_id,
+                rule_id=object_id,
+                include_global_tenant=True,
+            )
+
+            if rule is None:
+                return HttpResponse("Object not found.", status=404)
+
+            (
+                source_address_objects,
+                destination_address_objects,
+                source_service_objects,
+                destination_service_objects,
+            ) = get_all_objects_from_rule(
+                actor=request.user,
+                tenant_id=tenant_id,
+                rule_id=rule.id,
+            )
+
+            def get_selector_ids(objects):
+                return [
+                    obj.get("selector_id") or obj.get("row_id")
+                    for obj in objects
+                    if obj.get("selector_id") or obj.get("row_id")
+                ]
+
+            object_data = {
+                "id": rule.id,
+                "name": rule.name,
+                "description": rule.description,
+                "action": rule.action,
+                "log_type": rule.log_type,
+                "enable": rule.enable,
+                "filter_id": rule.filter_id,
+                "tags": tags,
+                "source_address_ids": get_selector_ids(source_address_objects),
+                "source_address_names": [obj.get("name", "") for obj in source_address_objects],
+                "destination_address_ids": get_selector_ids(destination_address_objects),
+                "destination_address_names": [obj.get("name", "") for obj in destination_address_objects],
+                "source_service_ids": get_selector_ids(source_service_objects),
+                "source_service_names": [obj.get("name", "") for obj in source_service_objects],
+                "destination_service_ids": get_selector_ids(destination_service_objects),
+                "destination_service_names": [obj.get("name", "") for obj in destination_service_objects],
+            }
+
+        except ObjectDoesNotExist:
+            return HttpResponse("Object not found.", status=404)
+
+        except Exception:
+            logger.exception(
+                "Error fetching rule data for rule id=%s",
+                object_id,
+            )
+            return HttpResponse("Error fetching rule data.", status=500)
+
+    elif object_type == "filter":
+        if tenant_id is None:
+            return HttpResponse("No tenant selected.", status=400)
+
+        try:
+            filter_data = get_filter_with_rules_and_tags(
+                actor=request.user,
+                tenant_id=tenant_id,
+                filter_id=object_id,
+            )
+
+            object_data = {
+                "id": filter_data["filter_id"],
+                "name": filter_data["filter_name"],
+                "description": filter_data["filter_description"],
+                "enable": filter_data["filter_enable"],
+                "rules": filter_data["rules"],
+                "tags": filter_data["tags"],
+            }
+
+        except ObjectDoesNotExist:
+            return HttpResponse("Object not found.", status=404)
+
+        except Exception:
+            logger.exception(
+                "Error fetching filter data for filter id=%s",
+                object_id,
+            )
+            return HttpResponse("Error fetching filter data.", status=500)
+
     if not object_data:
         return HttpResponse("Object not found.", status=404)
+    modal_refresh_url = reverse(config["refresh_url_name"])
+
+    if object_type == "rule":
+        filter_id = object_data.get("filter_id")
+
+        if filter_id:
+            modal_refresh_url += f"?filter_id={filter_id}"
 
     context = {
         "modal_title": config["title"],
@@ -310,7 +437,7 @@ def get_update_modal(request, row_id):
         "modal_target": "#modal-container",
         "modal_swap": "innerHTML",
         "modal_submit_handler": config["submit_handler"],
-        "modal_refresh_url": reverse(config["refresh_url_name"]),
+        "modal_refresh_url": modal_refresh_url,
         "modal_refresh_target": config["modal_refresh_target"],
         "object_data": object_data,
         "search_results": get_tags_search_results(request, ""),

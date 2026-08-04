@@ -23,6 +23,41 @@ Objects Table Container
     table-layout: fixed;
 }
 
+/*
+====================================================================
+Objects Table Container
+====================================================================
+*/
+
+.objects-table-container {
+    width: 100%;
+    height: 80vh;
+    margin: 2vh auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #ffffff;
+    position: relative;
+    border-radius: 0.5rem;
+}
+
+.table-container {
+    margin-top: 1rem;
+    height: 75vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.objects-table-container table,
+.objects-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    table-layout: fixed;
+}
+
 .objects-table tbody tr {
     position: relative;
 }
@@ -86,7 +121,6 @@ Objects Main Rows
     background-color: var(--sds-color-brand-primary-subtle);
 }
 
-
 /*
 ====================================================================
 Objects Cells
@@ -124,6 +158,45 @@ Objects Cells
     text-overflow: ellipsis;
 }
 
+.inspect-column {
+    width: 1%;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.rule-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.row-visibility-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: none;
+    background: transparent;
+    padding: 0.15rem;
+    margin: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.row-visibility-control:hover,
+.row-visibility-control:focus {
+    background: var(--sds-color-brand-primary-subtle);
+}
+
+.row-visibility-icon {
+    width: 1rem;
+    height: 1rem;
+    object-fit: contain;
+}
+
 /*
 ====================================================================
 Objects Details Row
@@ -140,6 +213,7 @@ Objects Details Row
 
 .objects-table .details-row td {
     padding: 0;
+    vertical-align: top;
 }
 
 .objects-table .details-content {
@@ -171,7 +245,6 @@ Objects Details Row
     flex-direction: column;
     gap: 0.35rem;
 }
-
 
 /*
 ====================================================================
@@ -231,7 +304,7 @@ Objects Tags
 
 /*
 ====================================================================
-Spectific table layout
+Specific table layout
 ====================================================================
 */
 
@@ -264,7 +337,7 @@ Spectific table layout
     width: 4%;
 }
 
-/* Post start/end */
+/* Port start/end */
 .objects-table--services .col-5,
 .objects-table--services .col-6 {
     width: 8%;
@@ -286,6 +359,7 @@ Spectific table layout
     width: 65%;
 }
 
+
 /*
 ====================================================================
 Global Rows
@@ -304,4 +378,86 @@ Global Rows
 .objects-table .details-row.readonly-row .details-content {
     background-color: var(--sds-color-layout-surface-2);
     color: var(--sds-color-text-secondary);
+}
+
+/*
+====================================================================
+Filters table layout
+====================================================================
+*/
+
+.filters-table th:nth-child(2),
+.filters-table td:nth-child(2) {
+    text-align: left;
+    padding-left: 4px;
+}
+
+/*
+====================================================================
+Rules table layout
+====================================================================
+*/
+
+.rules-table th:nth-child(1),
+.rules-table td:nth-child(1) {
+    width: 14%;
+}
+
+.rules-table th:nth-child(2),
+.rules-table td:nth-child(2),
+.rules-table th:nth-child(3),
+.rules-table td:nth-child(3),
+.rules-table th:nth-child(4),
+.rules-table td:nth-child(4) {
+    width: 10%;
+}
+
+.rules-table th:nth-child(5),
+.rules-table td:nth-child(5),
+.rules-table th:nth-child(6),
+.rules-table td:nth-child(6),
+.rules-table th:nth-child(7),
+.rules-table td:nth-child(7) {
+    width: 5%;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.rules-table th:nth-child(8),
+.rules-table td:nth-child(8) {
+    width: 18%;
+}
+
+.rules-table th:nth-child(9),
+.rules-table td:nth-child(9),
+.rules-table th:nth-child(10),
+.rules-table td:nth-child(10) {
+    width: 9%;
+    white-space: nowrap;
+}
+
+.rules-table th:nth-child(11),
+.rules-table td:nth-child(11) {
+    width: 10%;
+}
+
+.rules-table td,
+.rules-table th {
+    vertical-align: top;
+}
+
+.rule-object-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+}
+
+.rule-object-item {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

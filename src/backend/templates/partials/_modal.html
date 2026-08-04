@@ -1,14 +1,35 @@
+{% if not modal_is_submodal %}
 <div class="modal-backdrop" onclick="closeModal(event)">
-    <div id="draggable-modal" class="modal" onclick="event.stopPropagation()">
+    <div id="modal-workspace">
+        <div class="modal draggable-modal"
+             {% if modal_instance_id %}id="{{ modal_instance_id }}"{% endif %}
+             onclick="event.stopPropagation()">
+            <div class="modal-header draggable-modal-header" onclick="event.stopPropagation()">
+                <h2>{{ modal_title }}</h2>
+            </div>
 
-        <div id="draggable-modal-header" class="modal-header" onclick="event.stopPropagation()">
-            <h2>{{ modal_title }}</h2>
+            <hr>
+
+            <div class="modal-type-content" id="modal-type-content">
+                {% include "partials/modals/_modal_form.html" %}
+            </div>
         </div>
 
-        <hr>
-
-        <div class="modal-type-content" id="modal-type-content">
-            {% include "partials/modals/_modal_form.html" %}
-        </div>
+        <div id="submodal-container"></div>
     </div>
 </div>
+{% else %}
+<div class="modal draggable-modal submodal-panel"
+     {% if modal_instance_id %}id="{{ modal_instance_id }}"{% endif %}
+     onclick="event.stopPropagation()">
+    <div class="modal-header draggable-modal-header" onclick="event.stopPropagation()">
+        <h2>{{ modal_title }}</h2>
+    </div>
+
+    <hr>
+
+    <div class="modal-type-content" id="modal-type-content">
+        {% include "partials/modals/_modal_form.html" %}
+    </div>
+</div>
+{% endif %}

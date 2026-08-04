@@ -42,6 +42,10 @@ from .views.devices_page import (
 
 from .views.filters_page import (
     get_filters_page,
+    update_filter_view,
+    post_filter_view,
+    get_filters_content,
+    delete_filter_view,
 )
 
 from .views.objects_page import (
@@ -72,6 +76,16 @@ from .views.objects_service_groups import (
     post_service_group_view,
     update_service_group_view,
     delete_service_group_view,
+)
+
+from backend.views.rule_page import (
+    delete_rule_view,
+    get_rule_page,
+    get_rules_content,
+    get_rule_selector_modal,
+    post_rule_view,
+    reorder_rule_view,
+    update_rule_view,
 )
 
 from .views.tags_page import (
@@ -110,6 +124,10 @@ urlpatterns = [
     path("devices/", get_devices_page, name="devices"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
+    path("filters/create/", post_filter_view, name="post-filter-view"),
+    path("filters/<int:object_id>/update/", update_filter_view, name="update-filter-view"),
+    path("filters/content/", get_filters_content, name="filters-content"),
+    path("filters/<int:object_id>/delete/", delete_filter_view, name="delete-filter-view"),
     # Objects Page: Address
     path("objects/", get_objects_page, name="objects"),
     path("objects/addresses/", get_objects_addresses, name="objects-addresses"),
@@ -136,4 +154,11 @@ urlpatterns = [
     path("modal/add/<str:object_type>/", get_add_modal, name="modal-add"),
     path("modal/add/<str:object_type>/<str:type>/form/", get_add_modal_form_content, name="modal-add-form-content"),
     path("modal/update/<str:row_id>/", get_update_modal, name="modal-update"),
+    path("modal/rule-selector/<str:selector_type>/", get_rule_selector_modal, name="rule-selector-modal"),
+    path("rules/", get_rule_page, name="rules-page"),
+    path("rules/content/", get_rules_content, name="rules-content"),
+    path("rules/create/", post_rule_view, name="post-rule-view"),
+    path("rules/reorder/", reorder_rule_view, name="reorder-rule-view"),
+    path("rules/<int:rule_id>/update/", update_rule_view, name="update-rule-view"),
+    path("rules/<int:rule_id>/delete/", delete_rule_view, name="delete-rule-view"),
 ]
