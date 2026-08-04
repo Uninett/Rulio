@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 
+from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.utils.logger import set_up_logger
 from backend.views.session import get_tenant_context
@@ -372,6 +373,7 @@ def download_interface_configs(request, interface_id):
         getattr(first_interface_direction.interface, "name", "") if first_interface_direction else "",
         fallback=f"interface_{interface_id}",
     )
+    device_name = Device.objects.filter(id=first_interface_direction.interface.device_id).first().name if first_interface_direction else ""
 
     inbound_file = _extract_single_generated_file(
         result.inbound.config,
@@ -401,7 +403,7 @@ def download_interface_configs(request, interface_id):
     zip_buffer.seek(0)
 
     response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
-    response["Content-Disposition"] = f'attachment; filename="interface_{interface_id}_configs.zip"'
+    response["Content-Disposition"] = f'attachment; filename="{device_name}_{interface_name}_configs.zip"'
     return response
 
 # def build_interface_filters(interface):
