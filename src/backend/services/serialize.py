@@ -1,5 +1,6 @@
 from typing import Any
 
+
 def serialize_rule_object(obj: Any, object_type: str) -> dict[str, Any]:
     """
     Convert any selectable object model into one consistent dictionary

@@ -605,6 +605,7 @@ def get_filters_with_rules_with_tags_from_tenant(
 
     return result, filters, rules, tags
 
+
 def get_filter_with_rules_and_tags(
     actor: User,
     tenant_id: int,
@@ -622,25 +623,14 @@ def get_filter_with_rules_and_tags(
     try:
         filter_obj = Filter.objects.get(id=filter_id)
     except Filter.DoesNotExist as exc:
-        raise ObjectDoesNotExist(
-            f"Filter with ID {filter_id} does not exist."
-        ) from exc
+        raise ObjectDoesNotExist(f"Filter with ID {filter_id} does not exist.") from exc
 
     allowed_tenant_ids = {tenant_id, GLOBAL_TENANT_ID}
 
-    if (
-        filter_obj.tenant_id not in allowed_tenant_ids
-        and not is_superadmin(actor)
-    ):
-        raise PermissionDenied(
-            f"Filter with ID {filter_id} does not belong to tenant {tenant_id}."
-        )
+    if filter_obj.tenant_id not in allowed_tenant_ids and not is_superadmin(actor):
+        raise PermissionDenied(f"Filter with ID {filter_id} does not belong to tenant {tenant_id}.")
 
-    rules = (
-        Rule.objects
-        .filter(filter_id=filter_obj.id)
-        .prefetch_related("matches")
-    )
+    rules = Rule.objects.filter(filter_id=filter_obj.id).prefetch_related("matches")
 
     filter_tags = list(filter_obj.get_tags())
     tag_ids = {tag.id for tag in filter_tags}
@@ -693,6 +683,7 @@ def get_filter_with_rules_and_tags(
         ],
         "all_tags": Tag.objects.filter(id__in=tag_ids),
     }
+
 
 def get_platform_from_device(actor: User, tenant_id: int, device_id: int) -> str:
     require_read_tenant(actor, tenant_id)

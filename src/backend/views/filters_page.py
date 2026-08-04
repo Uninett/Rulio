@@ -10,9 +10,7 @@ from backend.services.delete import delete_filter
 from backend.views.session import get_tenant_context
 
 from backend.views.search import get_global_search_results
-from django.shortcuts import render
 from backend.services.get import (
-    get_all_filters_with_tags_from_tenant,
     get_filters_with_rules_with_tags_from_tenant,
 )
 from constants import GLOBAL_TENANT_ID

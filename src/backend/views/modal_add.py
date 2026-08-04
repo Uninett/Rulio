@@ -7,7 +7,6 @@ from backend.views.search import get_tags_search_results
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
 from backend.views.modal import get_group_options_view, get_item_options_view
 
 
