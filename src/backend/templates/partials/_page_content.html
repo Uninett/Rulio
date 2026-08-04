@@ -7,6 +7,9 @@
     {% if title == "Devices" %}
     {% include "partials/devices/_devicesTable.html" %}
 
+    {% elif object_type == "interfaces" %}
+    {% include "partials/devices/_interfaceTable.html" %}
+
     {% elif title == "Filters" %}
     {% include "partials/filters/_filterTable.html" %}
 
@@ -27,6 +30,7 @@
     {% include "partials/management/_users_table.html" %}
     {% elif title == "Tenant management" %}
     {% include "partials/management/_tenants_table.html" %}
+
     {% else %}
     <p>No content available.</p>
     {% endif %}
