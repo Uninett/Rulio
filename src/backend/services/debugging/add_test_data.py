@@ -114,13 +114,42 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
 
         created_interfaces = []
         for index, device_obj in enumerate(created_devices):
+            for i in range(3):  # Create 3 interfaces for each device
+                interface_obj, _, _, _, _, _ = get_or_create_interface(
+                    actor=actor,
+                    tenant_id=target_tenant.id,
+                    device_id=device_obj.id,
+                    name=f"eth{i}",
+                    description=f"Interface {i} for {device_obj.name}.",
+                    type="physical",
+                )
+                created_interfaces.append(interface_obj)
+                logger.info(f"Created {interface_obj} for device={device_obj.id} and tenant={target_tenant.id}")
             interface_obj, _, _, _, _, _ = get_or_create_interface(
                 actor=actor,
                 tenant_id=target_tenant.id,
                 device_id=device_obj.id,
-                name=f"port{index + 1}",
-                description=f"Interface {index + 1} for {device_obj.name}.",
-                type="physical",
+                name=f"vlan{20 if index % 2 == 0 else 30}",
+                description=f"Vlan interface for {device_obj.name}.",
+                type="vlan",
+            )
+            add_filter_to_interface(
+                actor=actor,
+                tenant_id=target_tenant.id,
+                interface_id=interface_obj.id,
+                filter_id=1,
+                policy_sequence=1,
+                enable=True,
+                direction="in",
+            )
+            add_filter_to_interface(
+                actor=actor,
+                tenant_id=target_tenant.id,
+                interface_id=interface_obj.id,
+                filter_id=2,
+                policy_sequence=2,
+                enable=True,
+                direction="out",
             )
             created_interfaces.append(interface_obj)
             logger.info(f"Created {interface_obj} for device={device_obj.id} and tenant={target_tenant.id}")
