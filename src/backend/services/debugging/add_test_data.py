@@ -126,7 +126,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             port_start=80,
             port_end=80,
         )[0]
-        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r1.id, match_type="service", objects=[s1])
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r1.id, match_type="any", objects=[s1])
         
         f2=get_or_create_filter(
             actor=actor,
@@ -155,7 +155,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             port_start=443,
             port_end=443,
         )[0]
-        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r2.id, match_type="service", objects=[s2])
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r2.id, match_type="any", objects=[s2])
 
         f3=get_or_create_filter(
             actor=actor,
@@ -184,7 +184,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             port_start=22,
             port_end=22,
         )[0]
-        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r3.id, match_type="service", objects=[s3])
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r3.id, match_type="any", objects=[s3])
 
         f4=get_or_create_filter(
             actor=actor,
@@ -213,7 +213,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             ipv4_type="standard",
             ipv4Network="10.0.0.0/8",
         )[0]
-        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r4.id, match_type="address", objects=[a1])
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r4.id, match_type="source", objects=[a1])
 
         f5=get_or_create_filter(
             actor=actor,
@@ -242,7 +242,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             port_start=53,
             port_end=53,
         )[0]
-        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r5.id, match_type="service", objects=[s5])
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r5.id, match_type="any", objects=[s5])
 
         f6=get_or_create_filter(
             actor=actor,
@@ -271,7 +271,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             ipv4_type="standard",
             ipv4Network="192.168.0.0/16",
         )[0]
-        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r6.id, match_type="address", objects=[a2])
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r6.id, match_type="source", objects=[a2])
 
         f7=get_or_create_filter(
             actor=actor,
@@ -300,7 +300,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             ipv4_type="standard",
             ipv4Network="0.0.0.0/0",
         )[0]
-        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r7.id, match_type="address", objects=[a3])
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r7.id, match_type="any", objects=[a3])
 
 
         tenant_filters = [f1, f2, f3, f4, f5, f6, f7]
@@ -444,23 +444,6 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         logger.info(f"Created {interface} for device={device.id} and tenant={target_tenant.id}")
         logger.info(f"Created {interface2} for device={device3.id} and tenant={target_tenant.id}")
 
-        filter1, _ = get_or_create_filter(
-            actor=actor,
-            tenant_id=target_tenant.id,
-            name="Allow HTTP",
-            description="Allow HTTP traffic.",
-        )
-        logger.info(f"Created {filter1} for tenant={target_tenant.id}")
-
-        add_filter_to_interface(
-            actor=actor,
-            tenant_id=target_tenant.id,
-            interface_id=interface2.id,
-            filter_id=filter1.id,
-            policy_sequence=1,
-            enable=True,
-            direction="in",
-        )
 
         address, _, _ = get_or_create_address(
             actor=actor,
@@ -481,7 +464,6 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
 
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=device3)
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=interface2)
-        add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=filter1)
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=address)
 
         tag2, tag2_id, tag2_created = get_or_create_tag(
@@ -505,7 +487,6 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=device_group2)
             add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=interface)
             add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=interface2)
-            add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=filter1)
             add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=address)
 
         tenant_admin, created_admin = User.objects.get_or_create(
