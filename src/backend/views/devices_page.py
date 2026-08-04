@@ -536,6 +536,7 @@ def interface_filters_view(request, device_id, interface_id):
             "object_type": "interfaces",
             "device": device,
             "interface": selected_interface,
+            "add_button_label": "Add filter",
             "search_results": get_global_search_results(request),
             "filters": {
                 "headers": headers,
