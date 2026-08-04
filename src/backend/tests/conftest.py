@@ -1204,7 +1204,7 @@ def built_interface_policies(sample_filters, sample_rules_with_objects, request_
         tenant_id=request_with_session.tenant_id,
         interface_id=interface.id,
         filter_id=new_filter.id,
-        policy_sequence=5,
+        policy_sequence=1,
         enable=False,
         direction="in",
     )
@@ -1213,7 +1213,7 @@ def built_interface_policies(sample_filters, sample_rules_with_objects, request_
         tenant_id=request_with_session.tenant_id,
         interface_id=interface.id,
         filter_id=sample_filters[0].id,
-        policy_sequence=10,
+        policy_sequence=2,
         enable=True,
         direction="in",
     )
@@ -1222,7 +1222,7 @@ def built_interface_policies(sample_filters, sample_rules_with_objects, request_
         tenant_id=request_with_session.tenant_id,
         interface_id=interface.id,
         filter_id=sample_filters[1].id,
-        policy_sequence=20,
+        policy_sequence=3,
         enable=True,
         direction="in",
     )

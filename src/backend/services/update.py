@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
 from backend.objects.attributes.address import Address
@@ -192,18 +193,122 @@ def update_filter(*, actor, tenant_id, filter_id, name=None, description=None):
     return filter
 
 
+def update_filter_interface_sequence(*, actor, tenant_id, filter_interface, new_sequence):
+    if not getattr(actor, "is_superuser", False):
+        require_write_tenant(actor, tenant_id)
+
+    if filter_interface.filter_id is None:
+        raise ValueError("FilterInterface must be linked to a filter before updating its sequence.")
+
+    filter_interface = FilterInterface.objects.select_related("filter", "interface_direction__interface__device").get(
+        id=filter_interface.id
+    )
+
+    if filter_interface.filter.tenant_id != tenant_id:
+        raise PermissionDenied(f"Filter interface {filter_interface.id} does not belong to tenant {tenant_id}.")
+
+    with transaction.atomic():
+        interface_direction = filter_interface.interface_direction
+        matching_filter_interfaces = FilterInterface.objects.filter(interface_direction=interface_direction).order_by(
+            "policy_sequence"
+        )
+        is_placeholder = filter_interface.policy_sequence == 0
+
+        if new_sequence is None:
+            new_sequence = filter_interface.policy_sequence
+        if new_sequence == 0:
+            new_sequence = (
+                matching_filter_interfaces.exclude(id=filter_interface.id).count()
+                if is_placeholder
+                else matching_filter_interfaces.count()
+            ) + 1
+
+        if is_placeholder:
+            sibling_filter_interfaces = matching_filter_interfaces.exclude(id=filter_interface.id)
+            if not sibling_filter_interfaces.exists():
+                if new_sequence != 1:
+                    raise ValueError(
+                        f"There are no filters attached to interface direction {interface_direction.id}, so the only valid sequence is 1."
+                    )
+                filter_interface.policy_sequence = new_sequence
+                filter_interface.save()
+                return filter_interface
+
+            if new_sequence < 1 or new_sequence > sibling_filter_interfaces.count() + 1:
+                raise ValueError(
+                    f"New policy sequence {new_sequence} is out of bounds for interface direction {interface_direction.id}."
+                )
+
+            for related_filter_interface in sibling_filter_interfaces.filter(policy_sequence__gte=new_sequence):
+                related_filter_interface.policy_sequence += 1
+                related_filter_interface.save()
+            filter_interface.policy_sequence = new_sequence
+            filter_interface.save()
+            return filter_interface
+
+        if not matching_filter_interfaces.exists():
+            if new_sequence != 1:
+                raise ValueError(
+                    f"There are no filters attached to interface direction {interface_direction.id}, so the only valid sequence is 1."
+                )
+            filter_interface.policy_sequence = new_sequence
+            filter_interface.save()
+            return filter_interface
+
+        if new_sequence < 1 or new_sequence > matching_filter_interfaces.count() + 1:
+            raise ValueError(
+                f"New policy sequence {new_sequence} is out of bounds for interface direction {interface_direction.id}."
+            )
+
+        if filter_interface.policy_sequence == new_sequence:
+            return filter_interface
+
+        if filter_interface.policy_sequence < new_sequence:
+            for related_filter_interface in matching_filter_interfaces.filter(
+                policy_sequence__gt=filter_interface.policy_sequence,
+                policy_sequence__lte=new_sequence,
+            ):
+                related_filter_interface.policy_sequence -= 1
+                related_filter_interface.save()
+        else:
+            for related_filter_interface in matching_filter_interfaces.filter(
+                policy_sequence__lt=filter_interface.policy_sequence,
+                policy_sequence__gte=new_sequence,
+            ):
+                related_filter_interface.policy_sequence += 1
+                related_filter_interface.save()
+
+        filter_interface.policy_sequence = new_sequence
+        filter_interface.save()
+        return filter_interface
+
+
 def update_filter_interface(
     *, actor, tenant_id, filter_interface_id, direction=None, policy_sequence=None, enable=None
 ):
-    require_write_tenant(actor, tenant_id)
-    filter_interface = FilterInterface.objects.get(id=filter_interface_id, tenant_id=tenant_id)
+    if not getattr(actor, "is_superuser", False):
+        require_write_tenant(actor, tenant_id)
+    filter_interface = FilterInterface.objects.select_related("filter", "interface_direction__interface__device").get(
+        id=filter_interface_id
+    )
+
+    if filter_interface.filter.tenant_id != tenant_id:
+        raise PermissionDenied(f"Filter interface {filter_interface.id} does not belong to tenant {tenant_id}.")
+
     if direction is not None:
         filter_interface.direction = direction
-    if policy_sequence is not None:
-        filter_interface.policy_sequence = policy_sequence
     if enable is not None:
         filter_interface.enable = enable
     filter_interface.save()
+
+    if policy_sequence is not None:
+        return update_filter_interface_sequence(
+            actor=actor,
+            tenant_id=tenant_id,
+            filter_interface=filter_interface,
+            new_sequence=policy_sequence,
+        )
+
     return filter_interface
 
 

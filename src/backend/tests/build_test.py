@@ -469,7 +469,7 @@ class TestBuildPolicyFromObjects:
                 tenant_id=request_with_session.tenant_id,
                 interface_id=interface.id,
                 filter_id=new_filter.id,
-                policy_sequence=5,
+                policy_sequence=1,
                 enable=False,
                 direction="in",
             )
@@ -478,7 +478,7 @@ class TestBuildPolicyFromObjects:
                 tenant_id=request_with_session.tenant_id,
                 interface_id=interface.id,
                 filter_id=sample_filters[0].id,
-                policy_sequence=10,
+                policy_sequence=2,
                 enable=True,
                 direction="in",
             )
@@ -487,7 +487,7 @@ class TestBuildPolicyFromObjects:
                 tenant_id=request_with_session.tenant_id,
                 interface_id=interface.id,
                 filter_id=sample_filters[1].id,
-                policy_sequence=20,
+                policy_sequence=3,
                 enable=True,
                 direction="in",
             )
@@ -501,8 +501,8 @@ class TestBuildPolicyFromObjects:
             )
 
             assert len(policies) == 2
-            assert policies[0].policy_sequence == 10
-            assert policies[1].policy_sequence == 20
+            assert policies[0].policy_sequence == 2
+            assert policies[1].policy_sequence == 3
 
             policy_1 = policies[0]
             policy_2 = policies[1]
@@ -613,8 +613,8 @@ class TestBuildPolicyFromObjects:
         assert merged_filters[0]["header"]["comment"] == policy_1.YAMLConfig["filters"][0]["header"]["comment"]
         assert merged_filters[1]["header"]["comment"] == policy_2.YAMLConfig["filters"][0]["header"]["comment"]
 
-        assert merged_filters[0]["header"]["targets"] == {"juniper": merged_policy.name}
-        assert merged_filters[1]["header"]["targets"] == {"juniper": merged_policy.name}
+        assert merged_filters[0]["header"]["targets"] == {"juniper": policy_1.name}
+        assert merged_filters[1]["header"]["targets"] == {"juniper": policy_2.name}
 
         logger.info(
             "Generated merged policy YAML:\n%s",
