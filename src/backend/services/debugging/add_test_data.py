@@ -2,11 +2,20 @@ from django.contrib.auth.models import User
 
 from backend.objects.attributes.tag import Tag
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
-from backend.services.attribute_objects.create_attribute_objects import get_or_create_address, get_or_create_service, get_or_create_tag
+from backend.services.attribute_objects.create_attribute_objects import (
+    get_or_create_address,
+    get_or_create_service,
+    get_or_create_tag,
+)
 from backend.services.filter_objects.create_filter_objects import get_or_create_filter, get_or_create_rule
 from backend.services.tenant_objects.create_tenant_objects import get_or_create_device
 from backend.services.helper_user_tenant import require_write_tenant
-from backend.services.membership import add_devices_to_group, add_filter_to_interface, add_objects_to_rule, add_tag_to_object
+from backend.services.membership import (
+    add_devices_to_group,
+    add_filter_to_interface,
+    add_objects_to_rule,
+    add_tag_to_object,
+)
 from backend.services.tenant_objects.create_tenant_objects import (
     get_or_create_device_group,
     get_or_create_interface,
@@ -96,9 +105,8 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
                     (f"{tenant_prefix}-router-10", "Juniper", f"Campus router for {tenant_label} testing.", "router"),
                 ]
             )
-      
 
-        f1=get_or_create_filter(
+        f1 = get_or_create_filter(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-allow-http",
@@ -127,8 +135,8 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             port_end=80,
         )[0]
         add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r1.id, match_type="any", objects=[s1])
-        
-        f2=get_or_create_filter(
+
+        f2 = get_or_create_filter(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-allow-https",
@@ -157,7 +165,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         )[0]
         add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r2.id, match_type="any", objects=[s2])
 
-        f3=get_or_create_filter(
+        f3 = get_or_create_filter(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-allow-ssh",
@@ -186,7 +194,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         )[0]
         add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r3.id, match_type="any", objects=[s3])
 
-        f4=get_or_create_filter(
+        f4 = get_or_create_filter(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-deny-external",
@@ -215,7 +223,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         )[0]
         add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r4.id, match_type="source", objects=[a1])
 
-        f5=get_or_create_filter(
+        f5 = get_or_create_filter(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-allow-dns",
@@ -244,7 +252,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         )[0]
         add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r5.id, match_type="any", objects=[s5])
 
-        f6=get_or_create_filter(
+        f6 = get_or_create_filter(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-allow-internal",
@@ -273,7 +281,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         )[0]
         add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r6.id, match_type="source", objects=[a2])
 
-        f7=get_or_create_filter(
+        f7 = get_or_create_filter(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-deny-all",
@@ -302,9 +310,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         )[0]
         add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r7.id, match_type="any", objects=[a3])
 
-
         tenant_filters = [f1, f2, f3, f4, f5, f6, f7]
-        
 
         created_devices = []
         for name, platform, description, device_type in device_specs:
@@ -344,7 +350,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             )
 
             for i, filter in enumerate(tenant_filters):
-                if i % 2 == 0: 
+                if i % 2 == 0:
                     add_filter_to_interface(
                         actor=actor,
                         tenant_id=target_tenant.id,
@@ -443,7 +449,6 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             )[0]
         logger.info(f"Created {interface} for device={device.id} and tenant={target_tenant.id}")
         logger.info(f"Created {interface2} for device={device3.id} and tenant={target_tenant.id}")
-
 
         address, _, _ = get_or_create_address(
             actor=actor,

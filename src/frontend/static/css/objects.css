@@ -309,6 +309,11 @@ Spectific table layout
     width: 20%;
 }
 
+.objects-table--interfaces .col-1,
+.objects-table--interfaces .col-2 {
+    width: 50%;
+}
+
 /*
 ====================================================================
 Global Rows

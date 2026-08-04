@@ -286,6 +286,4 @@ def resolve_platform_direction(vendor: str, direction: str) -> str:
     try:
         return capabilities.direction_tokens[normalized_direction]
     except KeyError as exc:
-        raise ValueError(
-            f"Vendor '{vendor}' does not define a token for direction '{normalized_direction}'."
-        ) from exc
+        raise ValueError(f"Vendor '{vendor}' does not define a token for direction '{normalized_direction}'.") from exc
