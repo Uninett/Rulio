@@ -20,6 +20,7 @@ from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.interface import Interface
 
+from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.services.helper_user_tenant import is_superadmin, require_read_tenant
 from backend.services.serialize import serialize_rule_object
 from backend.utils.logger import set_up_logger
@@ -473,8 +474,12 @@ def get_all_interfaces_from_device(actor: User, tenant_id: int, device_id: int) 
     return Interface.objects.filter(device=device)
 
 
-def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: int) -> QuerySet[Filter]:
+def get_all_filters_from_interface(
+    actor: User, tenant_id: int, interface_id: int, direction: str = "any"
+) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
+    if direction not in ["in", "out", "any"]:
+        raise ValueError(f"Invalid direction: {direction}. Must be 'in', 'out', or 'any'.")
 
     interface = Interface.objects.filter(id=interface_id).first()
     if interface is None:
@@ -482,12 +487,24 @@ def get_all_filters_from_interface(actor: User, tenant_id: int, interface_id: in
 
     if not is_superadmin(actor) and interface.device.tenant_id != tenant_id:
         raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
+    if direction == "any":
+        requested_filters = Filter.objects.filter(filterinterface__interface_id=interface_id)
+    elif direction == "in":
+        interface_direction = InterfaceDirection.objects.filter(interface_id=interface_id, direction="in").first()
+        if interface_direction is None:
+            raise ObjectDoesNotExist(f"No 'in' direction found for interface with ID {interface_id}.")
+        requested_filters = Filter.objects.filter(filterinterface__interface_direction=interface_direction)
+    elif direction == "out":
+        interface_direction = InterfaceDirection.objects.filter(interface_id=interface_id, direction="out").first()
+        if interface_direction is None:
+            raise ObjectDoesNotExist(f"No 'out' direction found for interface with ID {interface_id}.")
+        requested_filters = Filter.objects.filter(filterinterface__interface_direction=interface_direction)
 
-    requested_filters = Filter.objects.filter(filterinterface__interface_id=interface_id)
     requested_filters = requested_filters.annotate(
         policy_sequence=F("filterinterface__policy_sequence"),
         interface_enable=F("filterinterface__enable"),
-    ).order_by("policy_sequence")
+        interface_direction=F("filterinterface__interface_direction__direction"),
+    ).order_by("interface_direction", "policy_sequence")
 
     return requested_filters
 
