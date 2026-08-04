@@ -5,9 +5,13 @@ from django.urls import reverse
 
 from backend.services.filter_objects.create_filter_objects import create_filter
 from backend.services.helper_user_tenant import can_write_tenant
+from backend.services.membership import add_tag_to_object
 from backend.services.update import update_filter
-from backend.services.delete import delete_filter
+from backend.services.delete import delete_filter, remove_tag_from_object
 from backend.views.session import get_tenant_context
+
+from backend.objects.attributes.tag import Tag
+
 
 from backend.views.search import get_global_search_results
 from backend.services.get import (
@@ -36,7 +40,6 @@ def get_filters_page(request):
             "object_type": "filters",
             "object_extra_type": "rules",
             "add_button_label": "Add Filter",
-            "add_extra_button_label": "Add Rule",
             "filters": get_filters_view(request),  # Address data for the page
             "search_results": get_global_search_results(request),
             **get_tenant_context(request),
@@ -57,7 +60,6 @@ def get_filters_content(request):
             "object_type": "filters",
             "object_extra_type": "rules",
             "add_button_label": "Add Filter",
-            "add_extra_button_label": "Add Rule",
             "filters": get_filters_view(request),
             **get_tenant_context(request),
         },
@@ -167,10 +169,50 @@ def update_filter_view(request, object_id):
     description = request.POST.get("description")
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
 
+    if tenant_id is None:
+        return HttpResponse("No tenant selected.", status=400)
+
     try:
         updated_filter = update_filter(
-            actor=request.user, tenant_id=tenant_id, filter_id=object_id, name=name, description=description
+            actor=request.user,
+            tenant_id=tenant_id,
+            filter_id=object_id,
+            name=name,
+            description=description,
         )
+
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
+
+        current_tags = get_all_tags_from_object(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_id=object_id,
+            object_type="filter",
+        )
+        current_tag_ids = {tag.id for tag in current_tags}
+
+        tag_ids_to_add = submitted_tag_ids - current_tag_ids
+        tag_ids_to_remove = current_tag_ids - submitted_tag_ids
+
+        for tag_id in tag_ids_to_add:
+            tag = Tag.objects.get(id=tag_id)
+
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=updated_filter,
+            )
+
+        for tag_id in tag_ids_to_remove:
+            remove_tag_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_id=object_id,
+                object_type="filter",
+                tag_id=tag_id,
+            )
+
     except Exception as e:
         return render(
             request,
@@ -184,25 +226,7 @@ def update_filter_view(request, object_id):
             status=400,
         )
 
-    row = {
-        "id": f"filter-{updated_filter.id}",
-        "cells": [
-            "▶",
-            getattr(updated_filter, "name", "") or "",
-            getattr(updated_filter, "description", "") or "",
-            "",
-            [],
-        ],
-        "expand": [],
-    }
-
-    return render(
-        request,
-        "partials/objects/_tableRow.html",
-        {
-            "row": row,
-        },
-    )
+    return HttpResponse(status=204)
 
 
 @login_required(login_url="login")
@@ -212,7 +236,25 @@ def post_filter_view(request):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
 
     try:
-        created_filter = create_filter(actor=request.user, name=name, description=description, tenant_id=tenant_id)
+        created_filter = create_filter(
+            actor=request.user,
+            name=name,
+            description=description,
+            tenant_id=tenant_id,
+        )
+
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
+
+        for tag_id in submitted_tag_ids:
+            tag = Tag.objects.get(id=tag_id)
+
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=created_filter,
+            )
+
     except Exception as e:
         return render(
             request,

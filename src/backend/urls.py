@@ -84,6 +84,7 @@ from backend.views.rule_page import (
     get_rules_content,
     get_rule_selector_modal,
     post_rule_view,
+    reorder_rule_view,
     update_rule_view,
 )
 
@@ -157,6 +158,7 @@ urlpatterns = [
     path("rules/", get_rule_page, name="rules-page"),
     path("rules/content/", get_rules_content, name="rules-content"),
     path("rules/create/", post_rule_view, name="post-rule-view"),
+    path("rules/reorder/", reorder_rule_view, name="reorder-rule-view"),
     path("rules/<int:rule_id>/update/", update_rule_view, name="update-rule-view"),
     path("rules/<int:rule_id>/delete/", delete_rule_view, name="delete-rule-view"),
 ]

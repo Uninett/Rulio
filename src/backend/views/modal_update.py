@@ -176,7 +176,7 @@ def get_update_modal(request, row_id):
     selected_ids = []
     object_tags = []
 
-    if object_type in ["address", "addressgroup", "service", "servicegroup"] and tenant_id is not None:
+    if object_type in ["address", "addressgroup", "service", "servicegroup", "rule", "filter"] and tenant_id is not None:
         try:
             object_tags = get_all_tags_from_object(
                 actor=request.user,

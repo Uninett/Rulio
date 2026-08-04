@@ -485,12 +485,25 @@ function expandRow(rowId) {
 
     if (!detailsRow || !openedRow) return;
 
+    const toggleVisibilityIcon = (isExpanded) => {
+        const icon = openedRow.querySelector(".row-visibility-icon");
+        if (!icon) return;
+
+        const openIcon = icon.dataset.eyeOpen;
+        const closedIcon = icon.dataset.eyeClosed;
+        if (!openIcon || !closedIcon) return;
+
+        icon.src = isExpanded ? closedIcon : openIcon;
+    };
+
     if (detailsRow.style.display === "table-row") {
         detailsRow.style.display = "none";
         openedRow.classList.remove("expanded-row");
+        toggleVisibilityIcon(false);
     } else {
         detailsRow.style.display = "table-row";
         openedRow.classList.add("expanded-row");
+        toggleVisibilityIcon(true);
     }
 }
 
@@ -532,6 +545,183 @@ function focusAndExpandFromUrl() {
 
 /*
 ====================================================================
+Rule Reordering
+====================================================================
+*/
+
+function getCsrfToken() {
+    const cookieValue = document.cookie
+        .split(";")
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith("csrftoken="));
+
+    if (!cookieValue) return "";
+
+    return decodeURIComponent(cookieValue.split("=")[1]);
+}
+
+function getRuleMainRows(rulesBody) {
+    return Array.from(rulesBody.querySelectorAll("tr[id^='row-rule-']"));
+}
+
+function getRuleIdFromMainRow(mainRow) {
+    const fullId = mainRow?.id || "";
+    if (!fullId.startsWith("row-rule-")) return null;
+
+    const idValue = Number(fullId.replace("row-rule-", ""));
+    return Number.isInteger(idValue) ? idValue : null;
+}
+
+function getDetailsRowForMainRow(mainRow) {
+    if (!mainRow?.id) return null;
+    return document.getElementById(mainRow.id.replace("row-", "details-"));
+}
+
+function moveRuleRowPair(draggedMainRow, targetMainRow, placeBefore) {
+    if (!draggedMainRow || !targetMainRow || draggedMainRow === targetMainRow) return;
+
+    const draggedDetailsRow = getDetailsRowForMainRow(draggedMainRow);
+    const targetDetailsRow = getDetailsRowForMainRow(targetMainRow);
+
+    if (placeBefore) {
+        targetMainRow.parentNode.insertBefore(draggedMainRow, targetMainRow);
+        if (draggedDetailsRow) {
+            targetMainRow.parentNode.insertBefore(draggedDetailsRow, targetMainRow);
+        }
+    } else {
+        const insertionAnchor = targetDetailsRow?.nextSibling || targetMainRow.nextSibling;
+        targetMainRow.parentNode.insertBefore(draggedMainRow, insertionAnchor);
+        if (draggedDetailsRow) {
+            targetMainRow.parentNode.insertBefore(draggedDetailsRow, insertionAnchor);
+        }
+    }
+}
+
+function refreshRulesTableContent(rulesBody) {
+    if (!rulesBody) return;
+
+    const contentUrl = rulesBody.dataset.contentUrl;
+    const filterId = rulesBody.dataset.filterId;
+    if (!contentUrl || !filterId) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const filterName = params.get("filter_name") || "";
+    const refreshUrl = `${contentUrl}?filter_id=${encodeURIComponent(filterId)}&filter_name=${encodeURIComponent(filterName)}`;
+
+    const refreshTarget = "#filters-content";
+    const contentRoot = document.querySelector(refreshTarget);
+    let savedScrollTop = 0;
+
+    if (contentRoot) {
+        const scrollContainer = contentRoot.querySelector(".table-container");
+        if (scrollContainer) {
+            savedScrollTop = scrollContainer.scrollTop;
+        }
+    }
+
+    htmx.ajax("GET", refreshUrl, {
+        target: refreshTarget,
+        swap: "innerHTML",
+    }).then(() => {
+        const updatedRoot = document.querySelector(refreshTarget);
+        if (!updatedRoot) return;
+
+        const updatedScrollContainer = updatedRoot.querySelector(".table-container");
+        if (updatedScrollContainer) {
+            updatedScrollContainer.scrollTop = savedScrollTop;
+        }
+    });
+}
+
+function initializeRuleRowDragAndDrop(root = document) {
+    const rulesBody = root.querySelector("#rules-table");
+    if (!rulesBody || rulesBody.dataset.dragInitialized === "true") return;
+
+    const reorderUrl = rulesBody.dataset.reorderUrl;
+    const filterId = rulesBody.dataset.filterId;
+
+    if (!reorderUrl || !filterId) return;
+
+    rulesBody.dataset.dragInitialized = "true";
+
+    let draggedMainRow = null;
+
+    rulesBody.querySelectorAll("tr[data-rules-draggable='true']").forEach((row) => {
+        row.addEventListener("dragstart", (event) => {
+            draggedMainRow = row;
+            row.classList.add("dragging");
+
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", row.id);
+            }
+        });
+
+        row.addEventListener("dragend", () => {
+            row.classList.remove("dragging");
+            draggedMainRow = null;
+        });
+    });
+
+    rulesBody.addEventListener("dragover", (event) => {
+        if (!draggedMainRow) return;
+
+        event.preventDefault();
+
+        const targetMainRow = event.target.closest("tr[id^='row-rule-']");
+        if (!targetMainRow || targetMainRow === draggedMainRow) return;
+
+        const rect = targetMainRow.getBoundingClientRect();
+        const placeBefore = event.clientY < rect.top + rect.height / 2;
+
+        moveRuleRowPair(draggedMainRow, targetMainRow, placeBefore);
+    });
+
+    rulesBody.addEventListener("drop", async (event) => {
+        if (!draggedMainRow) return;
+
+        event.preventDefault();
+
+        const ruleId = getRuleIdFromMainRow(draggedMainRow);
+        if (!ruleId) return;
+
+        const mainRows = getRuleMainRows(rulesBody);
+        const newSequence = mainRows.findIndex((row) => row === draggedMainRow) + 1;
+        if (newSequence < 1) return;
+
+        const csrfToken = getCsrfToken();
+
+        try {
+            const response = await fetch(reorderUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "X-CSRFToken": csrfToken,
+                },
+                body: new URLSearchParams({
+                    rule_id: String(ruleId),
+                    filter_id: String(filterId),
+                    new_sequence: String(newSequence),
+                }),
+            });
+
+            if (!response.ok) {
+                console.error("Failed to reorder rules.", await response.text());
+                refreshRulesTableContent(rulesBody);
+                return;
+            }
+
+            refreshRulesTableContent(rulesBody);
+        } catch (error) {
+            console.error("Error while reordering rules.", error);
+            refreshRulesTableContent(rulesBody);
+        }
+    });
+}
+
+
+/*
+====================================================================
 Event Listeners
 ====================================================================
 */
@@ -545,12 +735,14 @@ document.addEventListener("click", handleBackdropClickSuppression, true);
 document.addEventListener("DOMContentLoaded", function () {
     initDraggableModals();
     initializeMembershipSelectors(document);
+    initializeRuleRowDragAndDrop(document);
     focusAndExpandFromUrl();
 });
 
 document.addEventListener("htmx:afterSwap", function (event) {
     initDraggableModals();
     initializeMembershipSelectors(event.target);
+    initializeRuleRowDragAndDrop(event.target);
     focusAndExpandFromUrl();
 });
 
