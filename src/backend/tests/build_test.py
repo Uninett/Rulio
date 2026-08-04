@@ -242,8 +242,10 @@ class TestBuildPolicyFromObjects:
         assert rule_4_tcp["destination-port"] == ["ACL_HTTP", "ACL_HTTPS", "ACL_DNS_TCP"]
         assert rule_4_udp["destination-port"] == ["ACL_DNS_UDP"]
 
-        assert len(policy.build_warnings) == 2
-        assert all("was split into multiple terms" in warning for warning in policy.build_warnings)
+        assert len(policy.build_warnings) == 1
+        assert policy.build_warnings[0].code == "rule_split"
+        assert "sequences 2 and 4" in policy.build_warnings[0].message
+        assert "split into multiple terms" in policy.build_warnings[0].message
 
         for address in realistic_acl_addresses:
             assert address.name in policy.networks["networks"]
