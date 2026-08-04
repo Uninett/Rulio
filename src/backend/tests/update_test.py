@@ -1,6 +1,10 @@
 import ipaddress
 import pytest
 
+from backend.objects.tenant_objects.filter_interface import FilterInterface
+from backend.objects.tenant_objects.interface_direction import InterfaceDirection
+from backend.services.filter_objects.create_filter_objects import create_filter
+from backend.services.membership import add_filter_to_interface
 from backend.services.update import (
     update_address,
     update_service,
@@ -11,6 +15,7 @@ from backend.services.update import (
     update_device,
     update_device_group,
     update_interface,
+    update_filter_interface,
     update_tag,
 )
 
@@ -255,3 +260,115 @@ class TestUpdate:
             assert rule.log_type == "start"
             assert rule.hit_count == 123
             assert rule.rule_sequence == rule.rule_sequence
+
+    def test_superuser_can_attach_filter_to_interface(self, request_with_session, sample_interfaces):
+        interface = sample_interfaces[0]
+        filter_obj = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Superuser_Interface_Filter",
+            description="Superuser can attach filters to interfaces",
+        )
+
+        interface_result, filter_result = add_filter_to_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=filter_obj.id,
+            interface_id=interface.id,
+            policy_sequence=1,
+            enable=True,
+            direction="in",
+        )
+
+        assert interface_result.id == interface.id
+        assert filter_result.id == filter_obj.id
+
+    def test_filter_interface_policy_sequence_reindexes(self, request_with_session, sample_interfaces):
+        interface = sample_interfaces[0]
+        interface_direction = InterfaceDirection.objects.get(interface=interface, direction="in")
+        first_filter = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Interface_Filter_1",
+            description="First filter for policy sequence test",
+        )
+        second_filter = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Interface_Filter_2",
+            description="Second filter for policy sequence test",
+        )
+        third_filter = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Interface_Filter_3",
+            description="Third filter for policy sequence test",
+        )
+
+        add_filter_to_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=first_filter.id,
+            interface_id=interface.id,
+            policy_sequence=1,
+            enable=True,
+            direction="in",
+        )
+        add_filter_to_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=second_filter.id,
+            interface_id=interface.id,
+            policy_sequence=2,
+            enable=True,
+            direction="in",
+        )
+        add_filter_to_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_id=third_filter.id,
+            interface_id=interface.id,
+            policy_sequence=2,
+            enable=True,
+            direction="in",
+        )
+
+        first_link = FilterInterface.objects.get(filter=first_filter, interface_direction=interface_direction)
+        second_link = FilterInterface.objects.get(filter=second_filter, interface_direction=interface_direction)
+        third_link = FilterInterface.objects.get(filter=third_filter, interface_direction=interface_direction)
+
+        assert first_link.policy_sequence == 1
+        assert second_link.policy_sequence == 3
+        assert third_link.policy_sequence == 2
+
+        out_of_range_filter = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Interface_Filter_4",
+            description="Out-of-range filter for policy sequence test",
+        )
+        with pytest.raises(ValueError, match="out of bounds"):
+            add_filter_to_interface(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                filter_id=out_of_range_filter.id,
+                interface_id=interface.id,
+                policy_sequence=5,
+                enable=True,
+                direction="in",
+            )
+
+        update_filter_interface(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            filter_interface_id=second_link.id,
+            policy_sequence=1,
+        )
+
+        first_link.refresh_from_db()
+        second_link.refresh_from_db()
+        third_link.refresh_from_db()
+
+        assert first_link.policy_sequence == 2
+        assert second_link.policy_sequence == 1
+        assert third_link.policy_sequence == 3

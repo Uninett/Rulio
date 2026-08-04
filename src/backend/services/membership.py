@@ -23,6 +23,7 @@ from backend.objects.tenant_objects.device_group_member import DeviceGroupMember
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.services.helper_user_tenant import is_superadmin, require_write_tenant
+from backend.services.update import update_filter_interface_sequence
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
 
@@ -361,7 +362,8 @@ def add_filter_to_interface(
     enable: bool,
     direction: Literal["in", "out"],
 ):
-    require_write_tenant(actor, tenant_id)
+    if not getattr(actor, "is_superuser", False):
+        require_write_tenant(actor, tenant_id)
     if not (
         Filter.objects.filter(id=filter_id, tenant_id=tenant_id).exists()
         or Filter.objects.filter(id=filter_id, tenant_id=GLOBAL_TENANT_ID).exists()
@@ -372,22 +374,31 @@ def add_filter_to_interface(
     filter = Filter.objects.get(id=filter_id)
     interface = Interface.objects.get(id=interface_id)
 
+    interface_direction = InterfaceDirection.objects.get(interface=interface, direction=direction)
     filter_interface, created = interface.filterinterface_set.get_or_create(
-        interface_direction=InterfaceDirection.objects.get(interface=interface, direction=direction),
+        interface_direction=interface_direction,
         filter=filter,
-        defaults={"policy_sequence": policy_sequence, "enable": enable},
+        defaults={"policy_sequence": 0, "direction": direction, "enable": enable},
+    )
+
+    filter_interface.direction = direction
+    filter_interface.enable = enable
+    filter_interface.save()
+
+    update_filter_interface_sequence(
+        actor=actor,
+        tenant_id=tenant_id,
+        filter_interface=filter_interface,
+        new_sequence=policy_sequence,
     )
 
     if not created:
-        filter_interface.policy_sequence = policy_sequence
-        filter_interface.enable = enable
-        filter_interface.save()
         logger.info(
-            f"Updated Filter {filter.id} on Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}"
+            f"Updated Filter {filter.id} on Interface {interface.id} with policy_sequence {filter_interface.policy_sequence} and enable {enable}"
         )
     else:
         logger.info(
-            f"Added Filter {filter.id} to Interface {interface.id} with policy_sequence {policy_sequence} and enable {enable}"
+            f"Added Filter {filter.id} to Interface {interface.id} with policy_sequence {filter_interface.policy_sequence} and enable {enable}"
         )
 
     return interface, filter

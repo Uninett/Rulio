@@ -143,7 +143,7 @@ class TestGenerateInterfaceConfigResults:
             interface_id=interface.id,
             filter_id=filter_in.id,
             direction="in",
-            policy_sequence=10,
+            policy_sequence=1,
             enable=True,
         )
         add_filter_to_interface(
@@ -152,7 +152,7 @@ class TestGenerateInterfaceConfigResults:
             interface_id=interface.id,
             filter_id=filter_out.id,
             direction="out",
-            policy_sequence=20,
+            policy_sequence=1,
             enable=True,
         )
 
@@ -187,7 +187,7 @@ class TestGenerateInterfaceConfigResults:
             interface_id=interface.id,
             filter_id=filter_out.id,
             direction="out",
-            policy_sequence=20,
+            policy_sequence=1,
             enable=True,
         )
 
@@ -227,7 +227,7 @@ class TestGenerateInterfaceConfigResults:
             interface_id=interface.id,
             filter_id=filter_in.id,
             direction="in",
-            policy_sequence=10,
+            policy_sequence=1,
             enable=True,
         )
 
@@ -358,7 +358,7 @@ class TestGenerateInterfaceConfigResults:
             interface_id=interface.id,
             filter_id=filter_obj.id,
             direction="in",
-            policy_sequence=10,
+            policy_sequence=1,
             enable=True,
         )
 

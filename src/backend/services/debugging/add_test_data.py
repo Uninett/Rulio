@@ -349,24 +349,28 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
                 type="vlan",
             )
 
+            in_sequence = 0
+            out_sequence = 0
             for i, filter in enumerate(tenant_filters):
                 if i % 2 == 0:
+                    in_sequence += 1
                     add_filter_to_interface(
                         actor=actor,
                         tenant_id=target_tenant.id,
                         interface_id=interface_obj.id,
                         filter_id=filter.id,
-                        policy_sequence=3,
+                        policy_sequence=in_sequence,
                         enable=True,
                         direction="in",
                     )
                 else:
+                    out_sequence += 1
                     add_filter_to_interface(
                         actor=actor,
                         tenant_id=target_tenant.id,
                         interface_id=interface_obj.id,
                         filter_id=filter.id,
-                        policy_sequence=4,
+                        policy_sequence=out_sequence,
                         enable=True,
                         direction="out",
                     )
