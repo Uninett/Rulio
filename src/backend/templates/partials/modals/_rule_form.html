@@ -3,7 +3,7 @@
 <div class="form-group">
     <label for="action">Action</label>
     <select id="action" name="action">
-        <option value="allow" {% if object_data.action == "allow" %}selected{% endif %}>Allow</option>
+        <option value="accept" {% if object_data.action == "accept" %}selected{% endif %}>Allow</option>
         <option value="deny" {% if object_data.action == "deny" %}selected{% endif %}>Deny</option>
         <option value="reject" {% if object_data.action == "reject" %}selected{% endif %}>Reject</option>
     </select>
