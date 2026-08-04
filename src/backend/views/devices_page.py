@@ -1,11 +1,16 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 
 from backend.utils.logger import set_up_logger
 from backend.views.session import get_tenant_context
 
 from backend.views.search import get_global_search_results
-from backend.services.get import get_all_device_groups_and_devices_with_tags_from_tenant
+from backend.services.get import (
+    get_all_device_groups_and_devices_with_tags_from_tenant,
+    get_all_filters_from_interface,
+    get_object_by_type_and_id,
+)
 from backend.services.get import get_device_group_members
 from backend.services.get import get_all_tags_from_object
 from backend.services.get import get_all_interfaces_from_device
@@ -144,9 +149,23 @@ def get_devices_view(request):
         interfaces_for_device = []
 
         for interface in interfaces_from_device:
+            interface_name = getattr(interface, "name", "") or ""
             interfaces_for_device.append(
                 [
-                    getattr(interface, "name", "") or "",
+                    {
+                        "value": interface_name,
+                        "url": reverse(
+                            "interface-filters-view",
+                            kwargs={
+                                "device_id": device.id,
+                                "interface_id": interface.id,
+                                # "interface_name": interface_name,
+                                # "device_name": device.name,
+                                # "interface_name": interface.name,
+                            },
+                        ),
+                    },
+                    # getattr(interface, "name", "") or "",
                     getattr(interface, "type", "") or "",
                     getattr(interface, "VRF", "") or "",
                     getattr(interface, "description", "") or "",
@@ -186,3 +205,103 @@ def get_devices_view(request):
         "headers": headers,
         "rows": rows,
     }
+
+
+# @login_required(login_url="login")
+# def get_interface_page(request):
+#     request.session["active_page"] = "interfaces"
+#     return render(
+#         request,
+#         "interface_filters.html",
+#         {
+#             "active_page": "interfaces",
+#             "page_title": "Interfaces",
+#             "object_type": "interfaces",
+#             "add_button_label": "Add filter",
+#             "interfaces": interface_filters_view(request),
+#             "search_results": get_global_search_results(request),
+#             **get_tenant_context(request),
+#         },
+#     )
+
+
+def interface_filters_view(request, device_id, interface_id):
+    tenant_id = request.session.get("current_tenant_id")
+
+    if not tenant_id:
+        return render(
+            request,
+            "interface_filters.html",
+            {
+                "page_title": "Interfaces",
+                "device": None,
+                "interface": None,
+                "filters": [],
+            },
+        )
+
+    headers = ["Filter Name", "Filter Description", "Direction", "Enable", ""]
+    rows = []
+    tenant_id = int(tenant_id)
+
+    device = get_object_by_type_and_id(
+        actor=request.user,
+        tenant_id=tenant_id,
+        object_type="device",
+        object_id=device_id,
+    )
+    print(f"Device: {device.name} ({device.id})")
+
+    device_interfaces = get_all_interfaces_from_device(
+        actor=request.user,
+        tenant_id=tenant_id,
+        device_id=device_id,
+        # interface_id=interface_id,
+    )
+    print(f"Device interfaces: {[interface.id for interface in device_interfaces]}")
+
+    selected_interface = next(
+        (interface for interface in device_interfaces if interface.id == interface_id),
+        None,
+    )
+    print(f"Selected interface: {selected_interface.name} ({selected_interface.id})")
+
+    filter_objects = get_all_filters_from_interface(
+        actor=request.user,
+        tenant_id=tenant_id,
+        interface_id=selected_interface.id,
+    )
+    print(f"Filter objects: {[filter_object.name for filter_object in filter_objects]}")
+
+    for filter_object in filter_objects:
+        rows.append(
+            {
+                "id": f"filter-{filter_object.id}",
+                "is_global": filter_object.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, device.tenant_id),
+                "cells": [
+                    getattr(filter_object, "name", "") or "",
+                    getattr(filter_object, "description", "") or "",
+                    getattr(filter_object, "direction", "") or "",
+                    getattr(filter_object, "enable", "") or "",
+                ],
+            }
+        )
+
+    return render(
+        request,
+        "interface_filters.html",
+        {
+            "device": device,
+            "interface": selected_interface,
+            "page_title": f"{device.name} → {selected_interface.name}",
+            # "page_title": "Interfaces",
+            "object_type": "interfaces",
+            "search_results": get_global_search_results(request),
+            **get_tenant_context(request),
+            "filters": {
+                "headers": headers,
+                "rows": rows,
+            },
+        },
+    )

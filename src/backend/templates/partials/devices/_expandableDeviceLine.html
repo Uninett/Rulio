@@ -13,7 +13,13 @@
         <div class="objects-interface-table-row">
             {% for interface_value in interface_row %}
             <div class="objects-interface-table-cell">
+                {% if interface_value.url %}
+                <a href="{{ interface_value.url }}" class="interface-filter-link">
+                    {{ interface_value.value }}
+                </a>
+                {% else %}
                 {{ interface_value }}
+                {% endif %}
             </div>
             {% endfor %}
         </div>
