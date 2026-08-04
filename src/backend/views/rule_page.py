@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
 from backend.services.delete import delete_rule
+from backend.services.helper_user_tenant import can_write_tenant
 from backend.services.membership import add_objects_to_rule, update_objects_in_rule
 from constants import GLOBAL_TENANT_ID
 
@@ -177,6 +178,8 @@ def get_rules_view(request):
             {
                 "id": f"rule-{rule['rule_id']}",
                 "is_group": False,
+                "is_global": rule["rule_tenant_id"] == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, rule["rule_tenant_id"]),
                 # Main row: description is no longer here.
                 "cells": [
                     rule["rule_name"],
@@ -611,9 +614,6 @@ def update_rule_view(request, rule_id):
     return HttpResponse(status=204)
 
 
-
-
-
 @login_required(login_url="login")
 def delete_rule_view(request, rule_id):
     tenant_id_raw = request.session.get("current_tenant_id")
@@ -631,8 +631,6 @@ def delete_rule_view(request, rule_id):
         )
 
     except Exception as exc:
-
-
         return HttpResponse(
             f"Could not delete rule: {exc}",
             status=400,
