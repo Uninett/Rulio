@@ -1,9 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
-from backend.services.delete import delete_rule
 from backend.services.helper_user_tenant import can_write_tenant
-from backend.services.membership import add_objects_to_rule, update_objects_in_rule
 from constants import GLOBAL_TENANT_ID
 
 from backend.objects.attributes.address import Address
@@ -19,9 +17,18 @@ from django.urls import reverse
 
 from django.http import HttpResponse, HttpResponseBadRequest
 
+from backend.objects.attributes.tag import Tag
+from backend.services.delete import delete_rule, remove_tag_from_object
 from backend.services.get import (
     get_all_rules_with_objects_from_filter,
+    get_all_tags_from_object,
 )
+from backend.services.membership import (
+    add_objects_to_rule,
+    add_tag_to_object,
+    update_objects_in_rule,
+)
+from backend.services.update import update_rule_sequence
 
 from django.db import transaction
 
@@ -121,10 +128,10 @@ def get_rules_view(request):
     for rule in rules:
         try:
             rule_obj = Rule.objects.get(id=rule["rule_id"])
-            rule_tag_names = [tag.name for tag in rule_obj.get_tags()]
+            rule_tags = list(rule_obj.get_tags())
         except Exception as exc:
             print(f"Error fetching tags for rule {rule['rule_id']}: {exc}")
-            rule_tag_names = []
+            rule_tags = []
 
         source_address_objects = []
         destination_address_objects = []
@@ -186,7 +193,7 @@ def get_rules_view(request):
                     rule["rule_action"],
                     rule["rule_log_type"],
                     str(rule["rule_hit_count"]),
-                    rule_tag_names,
+                    rule_tags,
                 ],
                 # Expandable row content.
                 "expand": [
@@ -221,27 +228,11 @@ def post_rule_view(request):
     filter_id = request.POST.get("filter_id", "").strip()
     enable = request.POST.get("enable") == "on"
 
-    # These values must contain typed IDs, for example:
-    #
-    # source_address_ids:
-    #     address-1,addressgroup-2
-    #
-    # source_service_ids:
-    #     service-3,servicegroup-4
-    #
     source_address_ids_raw = request.POST.get("source_address_ids", "")
-    destination_address_ids_raw = request.POST.get(
-        "destination_address_ids",
-        "",
-    )
+    destination_address_ids_raw = request.POST.get("destination_address_ids", "")
     source_service_ids_raw = request.POST.get("source_service_ids", "")
-    destination_service_ids_raw = request.POST.get(
-        "destination_service_ids",
-        "",
-    )
+    destination_service_ids_raw = request.POST.get("destination_service_ids", "")
 
-    # Keep submitted values so the modal can be rendered again after a
-    # validation or processing error.
     object_data = {
         "name": name,
         "description": description,
@@ -273,28 +264,27 @@ def post_rule_view(request):
         return render_form_error("Missing required fields.")
 
     tenant_id_raw = request.session.get("current_tenant_id")
-
     if not tenant_id_raw:
         return render_form_error("Tenant not set.")
 
     try:
         tenant_id = int(tenant_id_raw)
+
+        # Added: selected tag IDs from the form.
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
     except (TypeError, ValueError):
-        return render_form_error("Invalid tenant.")
+        return render_form_error("Invalid tenant or tag selection.")
 
     filter_obj = Filter.objects.filter(id=filter_id).first()
-
     if not filter_obj:
         return render_form_error(f"Filter with ID {filter_id} does not exist.")
 
     try:
-        # Parse every selector separately.
         source_address_ordered, source_address_grouped = parse_typed_ids(source_address_ids_raw)
         destination_address_ordered, destination_address_grouped = parse_typed_ids(destination_address_ids_raw)
         source_service_ordered, source_service_grouped = parse_typed_ids(source_service_ids_raw)
         destination_service_ordered, destination_service_grouped = parse_typed_ids(destination_service_ids_raw)
 
-        # Reject a service submitted through an address selector, and vice versa.
         validate_rule_selector_types(
             source_address_ordered,
             allowed_types=ADDRESS_OBJECT_TYPES,
@@ -316,43 +306,23 @@ def post_rule_view(request):
             field_name="destination_service_ids",
         )
 
-        # Bulk-fetch the selected objects separately for each selector.
-        source_address_cache = fetch_objects_by_type(
-            source_address_grouped,
-            tenant_id,
-        )
-        destination_address_cache = fetch_objects_by_type(
-            destination_address_grouped,
-            tenant_id,
-        )
-        source_service_cache = fetch_objects_by_type(
-            source_service_grouped,
-            tenant_id,
-        )
-        destination_service_cache = fetch_objects_by_type(
-            destination_service_grouped,
-            tenant_id,
-        )
-
         source_address_objects = build_ordered_object_list(
             source_address_ordered,
-            source_address_cache,
+            fetch_objects_by_type(source_address_grouped, tenant_id),
         )
         destination_address_objects = build_ordered_object_list(
             destination_address_ordered,
-            destination_address_cache,
+            fetch_objects_by_type(destination_address_grouped, tenant_id),
         )
         source_service_objects = build_ordered_object_list(
             source_service_ordered,
-            source_service_cache,
+            fetch_objects_by_type(source_service_grouped, tenant_id),
         )
         destination_service_objects = build_ordered_object_list(
             destination_service_ordered,
-            destination_service_cache,
+            fetch_objects_by_type(destination_service_grouped, tenant_id),
         )
 
-        # If any later operation fails, do not leave a partially created Rule
-        # or only some RuleMatch records in the database.
         with transaction.atomic():
             new_rule = create_rule(
                 actor=request.user,
@@ -384,8 +354,6 @@ def post_rule_view(request):
                     objects=destination_address_objects,
                 )
 
-            # Services use "source" and "destination" as well.
-            # Their model/content type tells Django that they are services.
             if source_service_objects:
                 add_objects_to_rule(
                     actor=request.user,
@@ -404,12 +372,22 @@ def post_rule_view(request):
                     objects=destination_service_objects,
                 )
 
-    except Exception as exc:
-        # Prefer logging this exception with your project's logger rather than
-        # exposing internal exception details to an end user.
-        print(f"Error creating rule: {exc}")
+            # Added: apply selected tags to the newly created rule.
+            for tag_id in submitted_tag_ids:
+                tag = Tag.objects.get(
+                    id=tag_id,
+                    tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
+                )
+                add_tag_to_object(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    tag=tag,
+                    obj=new_rule,
+                )
 
-        return render_form_error("Unable to create the rule. Please verify the selected objects and try again.")
+    except Exception as exc:
+        print(f"Error creating rule: {exc}")
+        return render_form_error("Unable to create the rule. Please verify the selected objects and tags.")
 
     return HttpResponse(status=204)
 
@@ -437,19 +415,11 @@ def update_rule_view(request, rule_id):
     log_type = request.POST.get("log_type", "").strip()
     enable = request.POST.get("enable") == "on"
 
-    # New four-selector contract.
     source_address_ids_raw = request.POST.get("source_address_ids", "")
-    destination_address_ids_raw = request.POST.get(
-        "destination_address_ids",
-        "",
-    )
+    destination_address_ids_raw = request.POST.get("destination_address_ids", "")
     source_service_ids_raw = request.POST.get("source_service_ids", "")
-    destination_service_ids_raw = request.POST.get(
-        "destination_service_ids",
-        "",
-    )
+    destination_service_ids_raw = request.POST.get("destination_service_ids", "")
 
-    # Preserve submitted form values if an error causes the modal to re-render.
     object_data = {
         "name": name,
         "description": description,
@@ -481,24 +451,23 @@ def update_rule_view(request, rule_id):
         return render_form_error("Missing required fields.")
 
     tenant_id_raw = request.session.get("current_tenant_id")
-
     if not tenant_id_raw:
         return render_form_error("Tenant not set.")
 
     try:
         tenant_id = int(tenant_id_raw)
+
+        # Added: selected tag IDs from the form.
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
     except (TypeError, ValueError):
-        return render_form_error("Invalid tenant.")
+        return render_form_error("Invalid tenant or tag selection.")
 
     try:
-        # Parse each of the four submitted selector fields.
         source_address_ordered, source_address_grouped = parse_typed_ids(source_address_ids_raw)
         destination_address_ordered, destination_address_grouped = parse_typed_ids(destination_address_ids_raw)
         source_service_ordered, source_service_grouped = parse_typed_ids(source_service_ids_raw)
         destination_service_ordered, destination_service_grouped = parse_typed_ids(destination_service_ids_raw)
 
-        # Prevent an address selector from accepting a service typed-ID,
-        # and prevent a service selector from accepting an address typed-ID.
         validate_rule_selector_types(
             source_address_ordered,
             allowed_types=ADDRESS_OBJECT_TYPES,
@@ -520,50 +489,23 @@ def update_rule_view(request, rule_id):
             field_name="destination_service_ids",
         )
 
-        # Fetch selected address objects.
-        source_address_cache = fetch_objects_by_type(
-            source_address_grouped,
-            tenant_id,
-        )
-        destination_address_cache = fetch_objects_by_type(
-            destination_address_grouped,
-            tenant_id,
-        )
-
-        # Fetch selected service objects.
-        source_service_cache = fetch_objects_by_type(
-            source_service_grouped,
-            tenant_id,
-        )
-        destination_service_cache = fetch_objects_by_type(
-            destination_service_grouped,
-            tenant_id,
-        )
-
         source_address_objects = build_ordered_object_list(
             source_address_ordered,
-            source_address_cache,
+            fetch_objects_by_type(source_address_grouped, tenant_id),
         )
         destination_address_objects = build_ordered_object_list(
             destination_address_ordered,
-            destination_address_cache,
+            fetch_objects_by_type(destination_address_grouped, tenant_id),
         )
         source_service_objects = build_ordered_object_list(
             source_service_ordered,
-            source_service_cache,
+            fetch_objects_by_type(source_service_grouped, tenant_id),
         )
         destination_service_objects = build_ordered_object_list(
             destination_service_ordered,
-            destination_service_cache,
+            fetch_objects_by_type(destination_service_grouped, tenant_id),
         )
 
-        # RuleMatch.match represents direction only:
-        #
-        # - source
-        # - destination
-        #
-        # The actual object type (address, addressgroup, service, or
-        # servicegroup) is determined through RuleMatch.object_type.
         source_objects = source_address_objects + source_service_objects
         destination_objects = destination_address_objects + destination_service_objects
 
@@ -583,9 +525,6 @@ def update_rule_view(request, rule_id):
                 ]
             )
 
-            # Call once per direction. Do NOT separately call this for
-            # addresses and services if this function replaces all objects
-            # for the supplied match_type.
             update_objects_in_rule(
                 actor=request.user,
                 tenant_id=tenant_id,
@@ -602,10 +541,39 @@ def update_rule_view(request, rule_id):
                 objects=destination_objects,
             )
 
+            # Added: synchronize tag assignments.
+            current_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_id=rule.id,
+                object_type="rule",
+            )
+            current_tag_ids = {tag.id for tag in current_tags}
+
+            for tag_id in submitted_tag_ids - current_tag_ids:
+                tag = Tag.objects.get(
+                    id=tag_id,
+                    tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
+                )
+                add_tag_to_object(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    tag=tag,
+                    obj=rule,
+                )
+
+            for tag_id in current_tag_ids - submitted_tag_ids:
+                remove_tag_from_object(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    object_id=rule.id,
+                    object_type="rule",
+                    tag_id=tag_id,
+                )
+
     except Exception as exc:
         print(f"Error updating rule {rule_id}: {exc}")
-
-        return render_form_error("Unable to update the rule. Please verify the selected objects and try again.")
+        return render_form_error("Unable to update the rule. Please verify the selected objects and tags.")
 
     return HttpResponse(status=204)
 
@@ -631,6 +599,50 @@ def delete_rule_view(request, rule_id):
             f"Could not delete rule: {exc}",
             status=400,
         )
+
+    return HttpResponse(status=204)
+
+
+@login_required(login_url="login")
+def reorder_rule_view(request):
+    if request.method != "POST":
+        return HttpResponse("Method not allowed.", status=405)
+
+    tenant_id_raw = request.session.get("current_tenant_id")
+    if not tenant_id_raw:
+        return HttpResponse("No tenant selected.", status=400)
+
+    rule_id_raw = request.POST.get("rule_id")
+    filter_id_raw = request.POST.get("filter_id")
+    new_sequence_raw = request.POST.get("new_sequence")
+
+    if not all([rule_id_raw, filter_id_raw, new_sequence_raw]):
+        return HttpResponse("Missing rule reorder data.", status=400)
+
+    try:
+        tenant_id = int(tenant_id_raw)
+        rule_id = int(rule_id_raw)
+        filter_id = int(filter_id_raw)
+        new_sequence = int(new_sequence_raw)
+    except (TypeError, ValueError):
+        return HttpResponse("Invalid rule reorder data.", status=400)
+
+    rule = Rule.objects.select_related("filter").filter(id=rule_id, tenant_id=tenant_id).first()
+    if not rule:
+        return HttpResponse("Rule not found.", status=404)
+
+    if rule.filter_id != filter_id:
+        return HttpResponse("Rule does not belong to the requested filter.", status=400)
+
+    try:
+        update_rule_sequence(
+            actor=request.user,
+            tenant_id=tenant_id,
+            rule=rule,
+            new_sequence=new_sequence,
+        )
+    except Exception as exc:
+        return HttpResponse(f"Could not reorder rule: {exc}", status=400)
 
     return HttpResponse(status=204)
 

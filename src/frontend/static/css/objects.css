@@ -164,6 +164,39 @@ Objects Cells
     text-align: center;
 }
 
+.rule-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.row-visibility-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: none;
+    background: transparent;
+    padding: 0.15rem;
+    margin: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.row-visibility-control:hover,
+.row-visibility-control:focus {
+    background: var(--sds-color-brand-primary-subtle);
+}
+
+.row-visibility-icon {
+    width: 1rem;
+    height: 1rem;
+    object-fit: contain;
+}
+
 /*
 ====================================================================
 Objects Details Row
