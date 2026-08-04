@@ -434,6 +434,7 @@ def get_interface_page(request):
     )
 
 
+@login_required(login_url="login")
 def interface_filters_view(request, device_id, interface_id):
     tenant_id = request.session.get("current_tenant_id")
 
