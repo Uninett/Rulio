@@ -309,9 +309,8 @@ def add_objects_to_rule(
         "error_count": len(errors),
     }
 
-def update_objects_in_rule(
-        *, actor: User, tenant_id: int, rule_id: int, match_type: str, objects: list
-):
+
+def update_objects_in_rule(*, actor: User, tenant_id: int, rule_id: int, match_type: str, objects: list):
     require_write_tenant(actor, tenant_id)
     if not Rule.objects.filter(id=rule_id, tenant_id=tenant_id).exists():
         raise PermissionDenied(f"Rule with ID {rule_id} does not exist in tenant {tenant_id}.")
@@ -319,10 +318,9 @@ def update_objects_in_rule(
 
     RuleMatch.objects.filter(rule=rule, match=match_type).delete()
 
-    return add_objects_to_rule(actor=actor, tenant_id=tenant_id, rule_id=rule_id, match_type=match_type, objects=objects)
-
-
-
+    return add_objects_to_rule(
+        actor=actor, tenant_id=tenant_id, rule_id=rule_id, match_type=match_type, objects=objects
+    )
 
 
 def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int):

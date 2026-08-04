@@ -12,8 +12,6 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.filter import Filter
-from backend.services.attribute_objects.get_address_objects import get_address_group_members
-from backend.services.attribute_objects.get_service_objects import get_service_group_members
 from backend.services.filter_objects.create_filter_objects import create_rule
 from backend.views.modal import get_group_options_view, get_item_options_view
 from backend.views.session import get_tenant_context
@@ -21,6 +19,9 @@ from django.urls import reverse
 
 from django.http import HttpResponse, HttpResponseBadRequest
 
+from backend.services.get import (
+    get_all_rules_with_objects_from_filter,
+)
 
 from django.db import transaction
 
@@ -28,11 +29,7 @@ from django.db import transaction
 ADDRESS_OBJECT_TYPES = {"address", "addressgroup"}
 SERVICE_OBJECT_TYPES = {"service", "servicegroup"}
 
-from backend.services.get import (
-    get_all_objects_from_rule,
-    get_filters_with_rules_with_tags_from_tenant,
-    get_all_rules_with_objects_from_filter,
-)
+
 
 """
 ====================================================================
