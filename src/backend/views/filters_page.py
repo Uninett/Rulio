@@ -15,6 +15,8 @@ from backend.services.get import (
 )
 from constants import GLOBAL_TENANT_ID
 
+from backend.services.get import get_all_tags_from_object
+
 """
 ====================================================================
 Filters Page
@@ -112,9 +114,14 @@ def get_filters_view(request):
 
     for filter_obj in filters:
         try:
-            filter_tag_names = [tag.name for tag in filter_obj.get_tags()]
+            filter_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=int(tenant_id),
+                object_type="filter",
+                object_id=filter_obj.id,
+            )
         except Exception:
-            filter_tag_names = []
+            filter_tags = []
 
         try:
             filter_rule_names = [rule.name for rule in rules if rule.filter_id == filter_obj.id]
@@ -133,7 +140,7 @@ def get_filters_view(request):
                     getattr(filter_obj, "name", "") or "",
                     getattr(filter_obj, "description", "") or "",
                     ", ".join(filter_rule_names),
-                    filter_tag_names,
+                    filter_tags,
                 ],
                 "expand": [
                     {
@@ -142,7 +149,7 @@ def get_filters_view(request):
                     },
                     {
                         "label": "Tags",
-                        "value": filter_tag_names,
+                        "value": filter_tags,
                     },
                 ],
             }
