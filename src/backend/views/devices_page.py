@@ -26,7 +26,6 @@ from backend.services.config_generation.generate_interface_config import (
 )
 
 
-
 logger = set_up_logger(__name__)
 
 """
@@ -373,7 +372,11 @@ def download_interface_configs(request, interface_id):
         getattr(first_interface_direction.interface, "name", "") if first_interface_direction else "",
         fallback=f"interface_{interface_id}",
     )
-    device_name = Device.objects.filter(id=first_interface_direction.interface.device_id).first().name if first_interface_direction else ""
+    device_name = (
+        Device.objects.filter(id=first_interface_direction.interface.device_id).first().name
+        if first_interface_direction
+        else ""
+    )
 
     inbound_file = _extract_single_generated_file(
         result.inbound.config,
@@ -406,12 +409,29 @@ def download_interface_configs(request, interface_id):
     response["Content-Disposition"] = f'attachment; filename="{device_name}_{interface_name}_configs.zip"'
     return response
 
+
 # def build_interface_filters(interface):
 #     filter_links = (
 #         FilterInterface.objects.filter(interface_id=interface.id, enable=True)
 #         .select_related("filter", "interface_direction")
 #         .order_by("policy_sequence")
 #     )
+@login_required(login_url="login")
+def get_interface_page(request):
+    request.session["active_page"] = "interfaces"
+    return render(
+        request,
+        "interface_filters.html",
+        {
+            "active_page": "interfaces",
+            "page_title": "Interfaces",
+            "object_type": "interfaces",
+            "add_button_label": "Add filter",
+            "interfaces": interface_filters_view(request),
+            "search_results": get_global_search_results(request),
+            **get_tenant_context(request),
+        },
+    )
 
 
 def interface_filters_view(request, device_id, interface_id):
@@ -429,9 +449,12 @@ def interface_filters_view(request, device_id, interface_id):
             },
         )
 
-    headers = ["Filter Name", "Filter Description", "Direction", "Enable", ""]
-    rows = []
     tenant_id = int(tenant_id)
+    # headers = ["Filter Name", "Filter Description", "Direction", "Policy Sequence", "Enable", ""]
+    # rows_ingoing = []
+    # rows_outgoing = []
+    headers = ["Direction", "Filters", ""]
+    rows = []
 
     device = get_object_by_type_and_id(
         actor=request.user,
@@ -455,24 +478,50 @@ def interface_filters_view(request, device_id, interface_id):
     )
     print(f"Selected interface: {selected_interface.name} ({selected_interface.id})")
 
-    filter_objects = get_all_filters_from_interface(
-        actor=request.user,
-        tenant_id=tenant_id,
-        interface_id=selected_interface.id,
-    )
-    print(f"Filter objects: {[filter_object.name for filter_object in filter_objects]}")
+    for direction in ["in", "out"]:
+        filter_objects = get_all_filters_from_interface(
+            actor=request.user,
+            tenant_id=tenant_id,
+            interface_id=selected_interface.id,
+            direction=direction,
+        )
 
-    for filter_object in filter_objects:
-        rows.append(
-            {
-                "id": f"filter-{filter_object.id}",
-                "is_global": filter_object.tenant_id == GLOBAL_TENANT_ID,
-                "can_write": can_write_tenant(request.user, device.tenant_id),
-                "cells": [
+        filters_for_direction = []
+
+        for filter_object in filter_objects:
+            filters_for_direction.append(
+                [
                     getattr(filter_object, "name", "") or "",
                     getattr(filter_object, "description", "") or "",
-                    getattr(filter_object, "direction", "") or "",
-                    getattr(filter_object, "enable", "") or "",
+                    "Enabled" if getattr(filter_object, "interface_enable", False) else "Disabled",
+                    getattr(filter_object, "policy_sequence", "") or "",
+                ]
+            )
+
+        direction_label = "Ingoing" if direction == "in" else "Outgoing"
+
+        rows.append(
+            {
+                "id": f"interface-{selected_interface.id}-{direction}",
+                "is_global": device.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, device.tenant_id),
+                "cells": [
+                    direction_label,
+                    len(filters_for_direction),
+                ],
+                "expand": [
+                    {
+                        "label": "Filters",
+                        "headers": [
+                            "Filter Name",
+                            "Description",
+                            "Enabled",
+                            "Sequence",
+                            "",
+                        ],
+                        "value": filters_for_direction,
+                        "modal_on_dblclick": True,
+                    },
                 ],
             }
         )
@@ -481,16 +530,16 @@ def interface_filters_view(request, device_id, interface_id):
         request,
         "interface_filters.html",
         {
+            "active_page": "interfaces",
+            "page_title": f"{device.name} → {selected_interface.name}",
+            "object_type": "interfaces",
             "device": device,
             "interface": selected_interface,
-            "page_title": f"{device.name} → {selected_interface.name}",
-            # "page_title": "Interfaces",
-            "object_type": "interfaces",
             "search_results": get_global_search_results(request),
-            **get_tenant_context(request),
             "filters": {
                 "headers": headers,
                 "rows": rows,
             },
+            **get_tenant_context(request),
         },
     )
