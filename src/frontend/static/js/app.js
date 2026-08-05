@@ -780,18 +780,33 @@ function refreshRulesTableContent(rulesBody) {
 
 function initializeRuleRowDragAndDrop(root = document) {
     const rulesBody = root.querySelector("#rules-table");
-    if (!rulesBody || rulesBody.dataset.dragInitialized === "true") return;
+
+    if (!rulesBody || rulesBody.dataset.dragInitialized === "true") {
+        return;
+    }
 
     const reorderUrl = rulesBody.dataset.reorderUrl;
     const filterId = rulesBody.dataset.filterId;
 
-    if (!reorderUrl || !filterId) return;
+    if (!reorderUrl || !filterId) {
+        return;
+    }
 
     rulesBody.dataset.dragInitialized = "true";
 
     let draggedMainRow = null;
 
-    rulesBody.querySelectorAll("tr[data-rules-draggable='true']").forEach((row) => {
+    // Only include actual draggable rule rows.
+    // Do not include any expanded/detail/child rows in the sequence calculation.
+    const getMainRows = () => {
+        return Array.from(
+            rulesBody.querySelectorAll(
+                "tr[data-rules-draggable='true'][id^='row-rule-']"
+            )
+        );
+    };
+
+    getMainRows().forEach((row) => {
         row.addEventListener("dragstart", (event) => {
             draggedMainRow = row;
             row.classList.add("dragging");
@@ -809,12 +824,19 @@ function initializeRuleRowDragAndDrop(root = document) {
     });
 
     rulesBody.addEventListener("dragover", (event) => {
-        if (!draggedMainRow) return;
+        if (!draggedMainRow) {
+            return;
+        }
 
         event.preventDefault();
 
-        const targetMainRow = event.target.closest("tr[id^='row-rule-']");
-        if (!targetMainRow || targetMainRow === draggedMainRow) return;
+        const targetMainRow = event.target.closest(
+            "tr[data-rules-draggable='true'][id^='row-rule-']"
+        );
+
+        if (!targetMainRow || targetMainRow === draggedMainRow) {
+            return;
+        }
 
         const rect = targetMainRow.getBoundingClientRect();
         const placeBefore = event.clientY < rect.top + rect.height / 2;
@@ -823,16 +845,29 @@ function initializeRuleRowDragAndDrop(root = document) {
     });
 
     rulesBody.addEventListener("drop", async (event) => {
-        if (!draggedMainRow) return;
+        if (!draggedMainRow) {
+            return;
+        }
 
         event.preventDefault();
 
         const ruleId = getRuleIdFromMainRow(draggedMainRow);
-        if (!ruleId) return;
 
-        const mainRows = getRuleMainRows(rulesBody);
-        const newSequence = mainRows.findIndex((row) => row === draggedMainRow) + 1;
-        if (newSequence < 1) return;
+        if (!ruleId) {
+            return;
+        }
+
+        // Get the rows after moveRuleRowPair() has updated the DOM.
+        const mainRows = getMainRows();
+        const rowIndex = mainRows.indexOf(draggedMainRow);
+
+        if (rowIndex === -1) {
+            return;
+        }
+
+        // The backend expects a 1-indexed sequence:
+        // first row = 1, second row = 2, etc.
+        const newSequence = rowIndex + 1;
 
         const csrfToken = getCsrfToken();
 
