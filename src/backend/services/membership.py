@@ -181,7 +181,9 @@ def add_addresses_to_group(
             added_address_ids.append(address_id)
             already_present_address_ids.add(address_id)
 
-    returned_already_present_address_ids = [address_id for address_id in address_ids if address_id not in added_address_ids]
+    returned_already_present_address_ids = [
+        address_id for address_id in address_ids if address_id not in added_address_ids
+    ]
 
     if request_type != "seeding":
         logger.info(
@@ -416,7 +418,9 @@ def add_objects_to_rule(
     }
 
 
-def update_objects_in_rule(*, actor: User, tenant_id: int, rule_id: int, match_type: str, objects: list) -> dict[str, Any]:
+def update_objects_in_rule(
+    *, actor: User, tenant_id: int, rule_id: int, match_type: str, objects: list
+) -> dict[str, Any]:
     require_write_tenant(actor, tenant_id)
 
     rule = Rule.objects.filter(
@@ -554,7 +558,9 @@ def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, d
     not_found_ids = requested_ids - found_ids
 
     if not_found_ids:
-        raise PermissionDenied(f"One or more devices do not exist in tenant {tenant_id}. Invalid device IDs: {sorted(not_found_ids)}")
+        raise PermissionDenied(
+            f"One or more devices do not exist in tenant {tenant_id}. Invalid device IDs: {sorted(not_found_ids)}"
+        )
 
     already_present_ids = set(
         DeviceGroupMember.objects.filter(

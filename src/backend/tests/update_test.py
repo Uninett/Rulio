@@ -288,9 +288,7 @@ class TestUpdate:
         assert original_rule.filter_id == target_filter.id
         assert original_rule.rule_sequence == 1
 
-        remaining_rules = list(
-            Rule.objects.filter(filter_id=original_filter_id).order_by("rule_sequence")
-        )
+        remaining_rules = list(Rule.objects.filter(filter_id=original_filter_id).order_by("rule_sequence"))
         assert [rule.rule_sequence for rule in remaining_rules] == [1]
 
     def test_superuser_can_attach_filter_to_interface(self, request_with_session, sample_interfaces):
