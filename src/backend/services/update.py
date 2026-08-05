@@ -13,6 +13,7 @@ from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface import Interface
 from backend.services.helper_user_tenant import require_write_tenant
+from constants import GLOBAL_TENANT_ID
 
 
 def update_address(
@@ -184,7 +185,10 @@ def update_interface(*, actor, tenant_id, interface_id, name=None, description=N
 
 def update_filter(*, actor, tenant_id, filter_id, name=None, description=None):
     require_write_tenant(actor, tenant_id)
-    filter = Filter.objects.get(id=filter_id, tenant_id=tenant_id)
+    permitted_tenant_ids = [tenant_id]
+    if getattr(actor, "is_superuser", False):
+        permitted_tenant_ids.append(GLOBAL_TENANT_ID)
+    filter = Filter.objects.filter(id=filter_id, tenant_id__in=permitted_tenant_ids).first()
     if name is not None:
         filter.name = name
     if description is not None:
