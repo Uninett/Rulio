@@ -489,7 +489,6 @@ def interface_filters_view(request, device_id, interface_id):
         (interface for interface in device_interfaces if interface.id == interface_id),
         None,
     )
-    print(f"Selected interface: {selected_interface.name} ({selected_interface.id})")
 
     for direction in ["in", "out"]:
         filter_objects = get_all_filters_from_interface(
