@@ -627,7 +627,7 @@ def reorder_rule_view(request):
     except (TypeError, ValueError):
         return HttpResponse("Invalid rule reorder data.", status=400)
 
-    rule = Rule.objects.select_related("filter").filter(id=rule_id, tenant_id=tenant_id).first()
+    rule = Rule.objects.select_related("filter").filter(id=rule_id, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).first()
     if not rule:
         return HttpResponse("Rule not found.", status=404)
 
