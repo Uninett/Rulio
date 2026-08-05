@@ -359,6 +359,195 @@ function focusAndExpandFromUrl() {
     }, 200);
 }
 
+function focusAndExpandRow(rowId) {
+    const row = document.getElementById(`row-${rowId}`);
+    const detailsRow = document.getElementById(`details-${rowId}`);
+
+    if (!row || !detailsRow) return;
+
+    if (window.getComputedStyle(detailsRow).display !== "table-row") {
+        expandRow(rowId);
+    }
+
+    row.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+    });
+}
+
+/*
+====================================================================
+Generate Config For Interface
+====================================================================
+*/
+
+async function handleGenerateConfig(interfaceId) {
+    const response = await fetch(`/devices/interfaces/${interfaceId}/check-config/`, {
+        method: "GET",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    });
+
+    // Error handling for non-OK responses
+    if (!response.ok) {
+        throw new Error(`Config check failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Config check response:", data);
+
+    const errors = [
+        ...(Array.isArray(data.errors) ? data.errors : []),
+        ...(Array.isArray(data.inbound?.errors) ? data.inbound.errors : []),
+        ...(Array.isArray(data.outbound?.errors) ? data.outbound.errors : [])
+    ];
+
+    const warnings = [
+        ...(Array.isArray(data.warnings) ? data.warnings : []),
+        ...(Array.isArray(data.inbound?.warnings) ? data.inbound.warnings : []),
+        ...(Array.isArray(data.outbound?.warnings) ? data.outbound.warnings : [])
+    ];
+
+    // Error case: If the response is not ok, show an error modal
+    if (errors.length > 0) {
+        showConfigResultModal({
+            title: "Error generating config",
+            errors,
+            warnings,
+            allowCancel: false,
+            onConfirm: null
+        });
+        return;
+    }
+
+    // Warning case: If there are warnings, show a warning modal
+    if (warnings.length > 0) {
+        showConfigResultModal({
+            title: "Warnings while generating config",
+            errors: [],
+            warnings,
+            allowCancel: true,
+            onConfirm: () => {
+                if (data.download_url) {
+                    window.location.href = data.download_url;
+                }
+            }
+        });
+        return;
+    }
+
+    // Success case: If there are no errors or warnings, proceed to download the config
+    if (data.can_download && data.download_url) {
+        window.location.href = data.download_url;
+    }
+}
+
+function showConfigResultModal({ title, errors = [], warnings = [], allowCancel = false, onConfirm = null }) {
+    // Link the modal elements
+    const modal = document.getElementById("config-result-modal");
+    const titleEl = document.getElementById("config-result-modal-title");
+    const bodyEl = document.getElementById("config-result-modal-body");
+    const confirmBtn = document.getElementById("config-result-modal-confirm");
+    const cancelBtn = document.getElementById("config-result-modal-cancel");
+
+    if (!modal || !titleEl || !bodyEl || !confirmBtn || !cancelBtn) {
+        console.error("Config result modal elements are missing from the DOM.");
+        return;
+    }
+
+    titleEl.textContent = title; // TextContent is safer than innerHTML to avoid XSS vulnerabilities
+    bodyEl.innerHTML = ""; // Clear previous content
+
+    // Display errors if any
+    if (errors.length > 0) {
+        const errorsHeader = document.createElement("h4");
+        errorsHeader.textContent = "Errors";
+        bodyEl.appendChild(errorsHeader);
+
+        const errorsList = document.createElement("ul");
+        errors.forEach((errorText) => {
+            const li = document.createElement("li"); // Create a new list item for each error
+            li.textContent = errorText;
+            errorsList.appendChild(li);
+        });
+        bodyEl.appendChild(errorsList); // Append the list of errors to the modal body
+    }
+
+    // Display warnings if any
+    if (warnings.length > 0) {
+        const warningsHeader = document.createElement("h4");
+        warningsHeader.textContent = "Warnings";
+        bodyEl.appendChild(warningsHeader);
+
+        const warningsList = document.createElement("ul");
+        warnings.forEach((warningText) => {
+            const li = document.createElement("li"); // Create a new list item for each warning
+            li.textContent = warningText;
+            warningsList.appendChild(li);
+        });
+        bodyEl.appendChild(warningsList); // Append the list of warnings to the modal body
+    }
+
+    cancelBtn.style.display = allowCancel ? "inline-block" : "none"; // Display the cancel button based if the allowCancel flag is true
+
+    confirmBtn.onclick = () => {
+        closeConfigResultModal();
+        if (typeof onConfirm === "function") {
+            onConfirm();
+        }
+    };
+
+    cancelBtn.onclick = () => {
+        closeConfigResultModal();
+    };
+
+    modal.hidden = false;
+}
+
+function closeConfigResultModal() {
+    const modal = document.getElementById("config-result-modal");
+    const bodyEl = document.getElementById("config-result-modal-body");
+    const confirmBtn = document.getElementById("config-result-modal-confirm");
+    const cancelBtn = document.getElementById("config-result-modal-cancel");
+
+    if (!modal) return;
+
+    modal.hidden = true;
+
+    if (bodyEl) {
+        bodyEl.innerHTML = "";
+    }
+
+    if (confirmBtn) {
+        confirmBtn.onclick = null;
+    }
+
+    if (cancelBtn) {
+        cancelBtn.onclick = null;
+    }
+}
+
+function handleGenerateConfigButtonClick(event) {
+    const button = event.target.closest(".generate-config-btn");
+    console.log("Generate Config button clicked:", button);
+    if (!button) return;
+
+    const interfaceId = button.dataset.interfaceId;
+    if (!interfaceId) return;
+
+    handleGenerateConfig(interfaceId).catch((error) => {
+        showConfigResultModal({
+            title: "Error generating config",
+            errors: ["An unexpected error occurred while checking config generation."],
+            warnings: [],
+            allowCancel: false,
+            onConfirm: null
+        });
+        console.error(error);
+    });
+}
+
 
 /*
 ====================================================================
@@ -385,3 +574,4 @@ document.addEventListener("htmx:afterSwap", function (event) {
 });
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
+document.addEventListener("click", handleGenerateConfigButtonClick);

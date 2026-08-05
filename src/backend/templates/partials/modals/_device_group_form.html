@@ -1,0 +1,35 @@
+<hr>
+
+<!-- List all devices  as a dual list selection with drag and drop -->
+<div class="modal-header">
+    <h2 class="membership-header">Devices</h2>
+</div>
+
+<p class="form-help">Choose any devices you want to add to this devices group.</p>
+
+<div class="membership-selector" data-input-name="device_ids">
+    <div class="membership-column">
+        <div class="membership-list membership-list-available" data-list-type="available">
+            {% for device in item_options %}
+            {% if device.id not in selected_device_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ device.id }}">
+                {{ device.name }}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="membership-column">
+        <div class="membership-list membership-list-selected" data-list-type="selected">
+            {% for device in item_options %}
+            {% if device.id in selected_device_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ device.id }}">
+                {{ device.name }}
+                <input type="hidden" name="device_ids" value="{{ device.id }}">
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>

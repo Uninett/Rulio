@@ -1,4 +1,6 @@
 {% load static %}
+<tr id="row-{{ row.id }}" class="main-row {% if row.is_group %}group-row{% endif %}" onclick="expandRow('{{ row.id }}')"
+    hx-get="{% url 'modal-update' row.id %}" hx-trigger="dblclick" hx-target="#modal-container" hx-swap="innerHTML">
 
 {% if object_type == "tags" %}
 <tr id="row-{{ row.id }}"
@@ -11,7 +13,7 @@
     {% endif %}
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}
 
-    {% if row.can_write %}
+    {% if can_write_current_tenant %}
     <td class="actions-column">
         <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.id %}" hx-target="#modal-container"
             hx-swap="innerHTML" onclick="event.stopPropagation()">
@@ -21,8 +23,8 @@
     {% else %}
     <td class="actions-column">
         <button type="button" class="actions-btn actions-btn-disabled"
-            title="{% if row.is_global %}Need superuser permission to update global {{ object_type }}.{% else %}Need tenant admin permission to update {{ object_type }}.{% endif %}">
-            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
+            title="{% if selected_tenant|stringformat:'s' == '1' %}Need superuser permission to update {{ object_type }}.{% else %}Need tenant admin permission to update {{ object_type }}.{% endif %}">
+            <img class="btn-icon actions-icon" src="{% static 'images/actions.svg' %}" alt="" aria-hidden="true">
         </button>
     </td>
     {% endif %}

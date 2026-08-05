@@ -12,22 +12,22 @@ def seed_services(actor, tenant_id: int) -> tuple[int, list[Service]]:
         # ---------------------------------------------------------------------
         # IP Protocol Objects
         # ---------------------------------------------------------------------
-        get_or_create_service(
-            actor=actor,
-            tenant_id=tenant_id,
-            request_type="seeding",
-            name="ICMP_RFC792",
-            description="Internet Control Message Protocol for IPv4 diagnostic and error reporting messages, as defined by RFC792.",
-            protocol="icmp",
-        ),
-        get_or_create_service(
-            actor=actor,
-            tenant_id=tenant_id,
-            request_type="seeding",
-            name="ICMPv6_RFC4443",
-            description="Internet Control Message Protocol for IPv6 diagnostic and error reporting messages, as defined by RFC4443.",
-            protocol="icmpv6",
-        ),
+        # get_or_create_service(
+        #     actor=actor,
+        #     tenant_id=tenant_id,
+        #     request_type="seeding",
+        #     name="ICMP_RFC792",
+        #     description="Internet Control Message Protocol for IPv4 diagnostic and error reporting messages, as defined by RFC792.",
+        #     protocol="icmp",
+        # ),
+        # get_or_create_service(
+        #     actor=actor,
+        #     tenant_id=tenant_id,
+        #     request_type="seeding",
+        #     name="ICMPv6_RFC4443",
+        #     description="Internet Control Message Protocol for IPv6 diagnostic and error reporting messages, as defined by RFC4443.",
+        #     protocol="icmpv6",
+        # ),
         get_or_create_service(
             actor=actor,
             tenant_id=tenant_id,

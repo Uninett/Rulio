@@ -102,3 +102,16 @@ def clear_logs(name: str) -> None:
         if os.path.exists(path):
             with open(path, "w"):
                 pass
+
+
+def set_log_level(logger: logging.Logger, level: int) -> None:
+    """
+    Sets the logging level for the specified logger and its handlers.
+
+    Args:
+        logger (logging.Logger): The logger whose level is to be set.
+        level (int): The logging level to set (e.g., logging.INFO, logging.DEBUG).
+    """
+    logger.setLevel(level)
+    for handler in logger.handlers:
+        handler.setLevel(level)

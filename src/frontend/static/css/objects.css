@@ -172,6 +172,9 @@ Objects Details Row
     gap: 0.35rem;
 }
 
+.objects-group-member-name:hover {
+    cursor: pointer;
+}
 
 /*
 ====================================================================
@@ -286,6 +289,31 @@ Spectific table layout
     width: 65%;
 }
 
+.objects-table--devices .col-1 {
+    width: 5%;
+}
+
+.objects-table--devices .col-2 {
+    width: 10%;
+}
+
+.objects-table--devices .col-3 {
+    width: 35%;
+}
+
+.objects-table--devices .col-4 {
+    width: 25%;
+}
+
+.objects-table--devices .col-5 {
+    width: 20%;
+}
+
+.objects-table--interfaces .col-1,
+.objects-table--interfaces .col-2 {
+    width: 50%;
+}
+
 /*
 ====================================================================
 Global Rows
@@ -304,4 +332,56 @@ Global Rows
 .objects-table .details-row.readonly-row .details-content {
     background-color: var(--sds-color-layout-surface-2);
     color: var(--sds-color-text-secondary);
+    background-color: #f1f1f1;
+    color: #7a7a7a;
+}
+
+
+
+/*
+====================================================================
+Objects Interface Table
+====================================================================
+*/
+
+.objects-interface-table-header-row,
+.objects-interface-table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 2fr;
+    column-gap: 1rem;
+}
+
+.objects-interface-table-header-row {
+    /* padding: 0.4rem 0.6rem; */
+    font-weight: 600;
+    padding-top: 0.5rem;
+}
+
+.objects-interface-table-row {
+    padding-top: 0.2rem;
+    /* padding: 0.45rem 0.6rem; */
+}
+
+.objects-interface-table-cell {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.objects-interface-empty {
+    padding: 0.5rem 0.6rem;
+}
+
+
+
+
+.interface-filter-link {
+    color: black;
+    text-decoration: none;
+}
+
+
+.interface-filter-link:hover {
+    cursor: pointer;
 }

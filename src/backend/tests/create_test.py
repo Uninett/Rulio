@@ -340,7 +340,7 @@ class TestCreateRule:
             name="Test Rule",
             description="This is a test rule",
             rule_sequence=1,
-            action="allow",
+            action="accept",
             log_type="log",
             hit_count=0,
         )
@@ -348,7 +348,7 @@ class TestCreateRule:
         assert rule.name == "Test Rule"
         assert rule.description == "This is a test rule"
         assert rule.tenant_id == request_with_session.tenant_id
-        assert rule.action == "allow"
+        assert rule.action == "accept"
         assert rule.log_type == "log"
 
 

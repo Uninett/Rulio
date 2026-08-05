@@ -38,7 +38,16 @@ from .views.management_tenants import get_management_tenants, post_tenant_view, 
 
 from .views.devices_page import (
     get_devices_page,
+    interface_filters_view,
+    check_interface_config_generation,
+    download_interface_configs,
+    post_device_view,
 )
+
+from .views.device_groups import (
+    post_device_group_view,
+)
+
 
 from .views.filters_page import (
     get_filters_page,
@@ -108,6 +117,23 @@ urlpatterns = [
     path("management/tenants/<int:object_id>/delete/", delete_tenant_view, name="delete-tenant-view"),
     # Device Page
     path("devices/", get_devices_page, name="devices"),
+    path(
+        "management/devices/<int:device_id>/interfaces/<int:interface_id>/filters/",
+        interface_filters_view,
+        name="interface-filters-view",
+    ),
+    path(
+        "devices/interfaces/<int:interface_id>/check-config/",
+        check_interface_config_generation,
+        name="check-interface-config",
+    ),
+    path(
+        "devices/interfaces/<int:interface_id>/download-config/",
+        download_interface_configs,
+        name="download-interface-config",
+    ),
+    path("devices/add/", post_device_view, name="post-device-view"),
+    path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
     # Objects Page: Address

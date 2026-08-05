@@ -7,6 +7,10 @@
     {% if title == "Devices" %}
     {% include "partials/devices/_devicesTable.html" %}
 
+    {% elif object_type == "interfaces" %}
+    {% include "partials/devices/_interfaceTable.html" %}
+    <!-- {% include "partials/devices/_generateButton.html" %} -->
+
     {% elif title == "Filters" %}
     No filters to display.
 
