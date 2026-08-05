@@ -444,6 +444,27 @@ def update_objects_in_rule(
 def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int) -> Rule:
     require_write_tenant(actor, tenant_id)
 
+    rule = Rule.objects.filter(
+        id=rule_id,
+        tenant_id__in=_editable_tenant_ids(actor, tenant_id),
+    ).first()
+    if rule is None:
+        raise PermissionDenied(f"Rule with ID {rule_id} does not exist in tenant {tenant_id}.")
+
+    RuleMatch.objects.filter(rule=rule, match=match_type).delete()
+
+    return add_objects_to_rule(
+        actor=actor,
+        tenant_id=tenant_id,
+        rule_id=rule_id,
+        match_type=match_type,
+        objects=objects,
+    )
+
+
+def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int) -> Rule:
+    require_write_tenant(actor, tenant_id)
+
     source_rule = Rule.objects.filter(
         id=rule_id,
         tenant_id__in=_reference_tenant_ids(tenant_id),
