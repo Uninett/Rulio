@@ -256,10 +256,14 @@ def update_filter_interface_sequence(*, actor, tenant_id, filter_interface, new_
     if filter_interface.filter_id is None:
         raise ValueError("FilterInterface must be linked to a filter before updating its sequence.")
 
-    filter_interface = FilterInterface.objects.select_related("filter", "interface_direction__interface__device").filter(
-        id=filter_interface.id,
-        filter__tenant_id__in=_editable_tenant_ids(actor, tenant_id),
-    ).first()
+    filter_interface = (
+        FilterInterface.objects.select_related("filter", "interface_direction__interface__device")
+        .filter(
+            id=filter_interface.id,
+            filter__tenant_id__in=_editable_tenant_ids(actor, tenant_id),
+        )
+        .first()
+    )
     if filter_interface is None:
         raise PermissionDenied("Filter interface does not exist in the current tenant scope.")
 
@@ -351,10 +355,14 @@ def update_filter_interface(
 ):
     require_write_tenant(actor, tenant_id)
 
-    filter_interface = FilterInterface.objects.select_related("filter", "interface_direction__interface__device").filter(
-        id=filter_interface_id,
-        filter__tenant_id__in=_editable_tenant_ids(actor, tenant_id),
-    ).first()
+    filter_interface = (
+        FilterInterface.objects.select_related("filter", "interface_direction__interface__device")
+        .filter(
+            id=filter_interface_id,
+            filter__tenant_id__in=_editable_tenant_ids(actor, tenant_id),
+        )
+        .first()
+    )
     if filter_interface is None:
         raise PermissionDenied(f"Filter interface {filter_interface_id} does not belong to tenant {tenant_id}.")
 
@@ -375,13 +383,41 @@ def update_filter_interface(
     return filter_interface
 
 
+def _reorder_rules_after_removal(rule, old_filter_id, old_sequence):
+    with transaction.atomic():
+        for related_rule in Rule.objects.filter(filter_id=old_filter_id, rule_sequence__gt=old_sequence).order_by(
+            "rule_sequence"
+        ):
+            related_rule.rule_sequence -= 1
+            related_rule.save()
+
+
+def _insert_rule_into_filter(rule, target_filter, new_sequence):
+    target_rules = Rule.objects.filter(filter=target_filter).order_by("rule_sequence")
+    if new_sequence < 1 or new_sequence > target_rules.count() + 1:
+        raise ValueError(f"New sequence {new_sequence} is out of bounds for filter with id={target_filter.id}.")
+
+    for related_rule in target_rules.filter(rule_sequence__gte=new_sequence):
+        related_rule.rule_sequence += 1
+        related_rule.save()
+
+    rule.rule_sequence = new_sequence
+    rule.filter = target_filter
+    rule.save()
+    return rule
+
+
 def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
     require_write_tenant(actor, tenant_id)
 
-    scoped_rule = Rule.objects.select_related("filter").filter(
-        id=rule.id,
-        tenant_id__in=_editable_tenant_ids(actor, tenant_id),
-    ).first()
+    scoped_rule = (
+        Rule.objects.select_related("filter")
+        .filter(
+            id=rule.id,
+            tenant_id__in=_editable_tenant_ids(actor, tenant_id),
+        )
+        .first()
+    )
     if scoped_rule is None:
         raise PermissionDenied(f"Rule with id={rule.id} does not belong to tenant {tenant_id}.")
 
@@ -457,6 +493,10 @@ def update_rule(
     if rule is None:
         raise PermissionDenied(f"Rule with ID {rule_id} does not exist in tenant {tenant_id}.")
 
+    original_filter_id = rule.filter_id
+    original_rule_sequence = rule.rule_sequence
+    target_filter = None
+
     if filter is not None:
         validated_filter = Filter.objects.filter(
             id=filter.id,
@@ -464,6 +504,7 @@ def update_rule(
         ).first()
         if validated_filter is None:
             raise PermissionDenied(f"Filter with ID {filter.id} does not exist in tenant {tenant_id}.")
+        target_filter = validated_filter
         rule.filter = validated_filter
 
     if name is not None:
@@ -476,6 +517,12 @@ def update_rule(
         rule.enable = enable
     if rule_sequence is not None:
         rule.rule_sequence = rule_sequence
+
+    if filter is not None and rule_sequence is not None and original_filter_id != target_filter.id:
+        _reorder_rules_after_removal(rule, original_filter_id, original_rule_sequence)
+        return _insert_rule_into_filter(rule, target_filter, rule_sequence)
+
+    if rule_sequence is not None:
         update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule_sequence)
     if log_type is not None:
         rule.log_type = log_type

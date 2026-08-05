@@ -58,7 +58,7 @@ class TestBuildPolicyFromObjects:
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             filter_id=filter_obj.id,
-            policy_sequence=10,
+            policy_sequence=1,
             vendor="juniper",
             target_spec=None,
         )
@@ -67,7 +67,7 @@ class TestBuildPolicyFromObjects:
         assert policy.name == filter_obj.name.replace(" ", "_")
         assert policy.vendor == "juniper"
         assert policy.target_spec is None
-        assert policy.policy_sequence == 10
+        assert policy.policy_sequence == 1
         assert policy.build_warnings == []
 
         yaml_config = policy.YAMLConfig
@@ -178,7 +178,7 @@ class TestBuildPolicyFromObjects:
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             filter_id=filter_id,
-            policy_sequence=10,
+            policy_sequence=1,
             vendor="juniper",
             target_spec=None,
         )
@@ -197,7 +197,7 @@ class TestBuildPolicyFromObjects:
 
         assert policy.name == target_filter.name.replace(" ", "_")
         assert policy.vendor == "juniper"
-        assert policy.policy_sequence == 10
+        assert policy.policy_sequence == 1
 
         # Rule 1: source addresses only
         rule_1_name = sample_rules[0].name.replace(" ", "_")[:62]

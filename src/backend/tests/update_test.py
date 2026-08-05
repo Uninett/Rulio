@@ -1,6 +1,7 @@
 import ipaddress
 import pytest
 
+from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.services.filter_objects.create_filter_objects import create_filter
@@ -260,6 +261,37 @@ class TestUpdate:
             assert rule.log_type == "start"
             assert rule.hit_count == 123
             assert rule.rule_sequence == rule.rule_sequence
+
+    def test_update_rule_moves_rule_between_filters_and_reorders_sequences(
+        self,
+        request_with_session,
+        sample_rules,
+    ):
+        original_rule = sample_rules[0]
+        original_filter_id = original_rule.filter.id
+        target_filter = create_filter(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Target_Filter_For_Move",
+            description="Target filter for move sequence test",
+        )
+
+        update_rule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            rule_id=original_rule.id,
+            filter=target_filter,
+            rule_sequence=1,
+        )
+
+        original_rule.refresh_from_db()
+        assert original_rule.filter_id == target_filter.id
+        assert original_rule.rule_sequence == 1
+
+        remaining_rules = list(
+            Rule.objects.filter(filter_id=original_filter_id).order_by("rule_sequence")
+        )
+        assert [rule.rule_sequence for rule in remaining_rules] == [1]
 
     def test_superuser_can_attach_filter_to_interface(self, request_with_session, sample_interfaces):
         interface = sample_interfaces[0]

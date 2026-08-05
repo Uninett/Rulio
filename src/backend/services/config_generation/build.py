@@ -154,6 +154,7 @@ def build_policies_for_interface(
             raise ValueError(f"No filters found for interface with ID {interface_id} for direction '{direction}'.")
 
         policies: list[Policy] = []
+        next_sequence = 1
         for filter_interface in filter_interfaces:
             if filter_interface.enable is False:
                 logger.info(
@@ -168,11 +169,12 @@ def build_policies_for_interface(
                 actor=actor,
                 tenant_id=tenant_id,
                 filter_id=filter_obj.id,
-                policy_sequence=filter_interface.policy_sequence,
+                policy_sequence=next_sequence,
                 vendor=vendor,
                 target_spec=target_spec,
             )
             policies.append(policy)
+            next_sequence += 1
 
         logger.info(f"Built {len(policies)} policies for interface id={interface_id} direction='{direction}'")
         logger.debug(f"Policies: {[policy.YAMLConfig for policy in policies]}")

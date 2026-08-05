@@ -519,6 +519,8 @@ def add_filter_to_interface(
         new_sequence=policy_sequence,
     )
 
+    filter_interface.refresh_from_db()
+
     if not created:
         logger.info(
             "Updated Filter %s on Interface %s with policy_sequence %s and enable %s",
