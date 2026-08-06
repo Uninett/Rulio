@@ -1,6 +1,4 @@
 {% load static %}
-<tr id="row-{{ row.id }}" class="main-row {% if row.is_group %}group-row{% endif %}" onclick="expandRow('{{ row.id }}')"
-    hx-get="{% url 'modal-update' row.id %}" hx-trigger="dblclick" hx-target="#modal-container" hx-swap="innerHTML">
 
     {% if object_type == "tags" %}
 <tr id="row-{{ row.id }}"
