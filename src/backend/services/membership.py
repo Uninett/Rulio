@@ -441,7 +441,6 @@ def update_objects_in_rule(
     )
 
 
-
 def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int) -> Rule:
     require_write_tenant(actor, tenant_id)
 
