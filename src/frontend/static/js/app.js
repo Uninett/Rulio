@@ -366,6 +366,11 @@ Membership Selectors
 
 function initializeMembershipSelectors(root = document) {
     root.querySelectorAll(".membership-selector").forEach((selector) => {
+        if (selector.dataset.membershipInitialized === "true") {
+            return;
+        }
+        selector.dataset.membershipInitialized = "true";
+
         const inputName = selector.dataset.inputName;
         const availableList = selector.querySelector(".membership-list-available");
         const selectedList = selector.querySelector(".membership-list-selected");
