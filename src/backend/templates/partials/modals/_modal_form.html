@@ -16,7 +16,7 @@
 
             <div id="modal-form-content" class="modal-form-content">
 
-                {% if modal_object_type != "users" and modal_object_type != "tenants" and modal_object_type != "rule-selector" %}
+                {% if modal_object_type != "users" and modal_object_type != "tenants" and modal_object_type != "rule-selector" and modal_object_type != "interfaces" %}
                 <div class="form-group">
                     <label for="name">Name<span class="required"> *</span></label>
                     <input id="name" name="name" value="{{ object_data.name|default:'' }}" type="text" required>

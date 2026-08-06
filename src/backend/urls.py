@@ -42,6 +42,8 @@ from .views.devices_page import (
     check_interface_config_generation,
     download_interface_configs,
     post_device_view,
+    post_interface_view,
+    get_interface_filter_selector_modal,
 )
 
 from .views.device_groups import (
@@ -147,6 +149,7 @@ urlpatterns = [
         name="download-interface-config",
     ),
     path("devices/add/", post_device_view, name="post-device-view"),
+    path("interfaces/update/", post_interface_view, name="post-interface-view"),
     path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
@@ -181,6 +184,11 @@ urlpatterns = [
     path("modal/add/<str:object_type>/<str:type>/form/", get_add_modal_form_content, name="modal-add-form-content"),
     path("modal/update/<str:row_id>/", get_update_modal, name="modal-update"),
     path("modal/rule-selector/<str:selector_type>/", get_rule_selector_modal, name="rule-selector-modal"),
+    path(
+        "modal/interface-selector/<str:selector_type>/",
+        get_interface_filter_selector_modal,
+        name="interface-selector-modal",
+    ),
     path("rules/", get_rule_page, name="rules-page"),
     path("rules/content/", get_rules_content, name="rules-content"),
     path("rules/create/", post_rule_view, name="post-rule-view"),

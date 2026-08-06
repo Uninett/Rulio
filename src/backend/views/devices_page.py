@@ -5,8 +5,12 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+from django.db import transaction
 
 from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.filter_interface import FilterInterface
+from backend.objects.filters.filter import Filter
+from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.utils.logger import set_up_logger
 from backend.views.session import get_tenant_context
@@ -30,6 +34,7 @@ from backend.services.tenant_objects.create_tenant_objects import (
 )
 
 from backend.services.membership import add_tag_to_object
+from backend.services.membership import add_filter_to_interface
 from backend.objects.attributes.tag import Tag
 
 
@@ -438,7 +443,7 @@ def get_interface_page(request):
             "active_page": "interfaces",
             "page_title": "Interfaces",
             "object_type": "interfaces",
-            "add_button_label": "Add filter",
+            "add_button_label": "Add Filter",
             "interfaces": interface_filters_view(request),
             "search_results": get_global_search_results(request),
             **get_tenant_context(request),
@@ -451,16 +456,21 @@ def interface_filters_view(request, device_id, interface_id):
     tenant_id = request.session.get("current_tenant_id")
 
     if not tenant_id:
-        return render(
-            request,
-            "interface_filters.html",
-            {
-                "page_title": "Interfaces",
-                "device": None,
-                "interface": None,
-                "filters": [],
-            },
-        )
+        context = {
+            "active_page": "interfaces",
+            "title": "Interfaces",
+            "page_title": "Interfaces",
+            "object_type": "interfaces",
+            "device": None,
+            "interface": None,
+            "filters": {"headers": ["Direction", "Filters", ""], "rows": []},
+            **get_tenant_context(request),
+        }
+
+        if request.headers.get("HX-Request") == "true":
+            return render(request, "partials/_page_content.html", context)
+
+        return render(request, "interface_filters.html", context)
 
     tenant_id = int(tenant_id)
     # headers = ["Filter Name", "Filter Description", "Direction", "Policy Sequence", "Enable", ""]
@@ -538,24 +548,183 @@ def interface_filters_view(request, device_id, interface_id):
             }
         )
 
-    return render(
-        request,
-        "interface_filters.html",
-        {
-            "active_page": "interfaces",
-            "page_title": f"{device.name} → {selected_interface.name}",
-            "object_type": "interfaces",
-            "device": device,
-            "interface": selected_interface,
-            "add_button_label": "Add filter",
-            "search_results": get_global_search_results(request),
-            "filters": {
-                "headers": headers,
-                "rows": rows,
-            },
-            **get_tenant_context(request),
+    page_title = f"{device.name} → {selected_interface.name}"
+    context = {
+        "active_page": "interfaces",
+        "title": page_title,
+        "page_title": page_title,
+        "object_type": "interfaces",
+        "device": device,
+        "interface": selected_interface,
+        "current_device_id": device.id,
+        "current_interface_id": selected_interface.id,
+        "add_button_label": "Add filter",
+        "search_results": get_global_search_results(request),
+        "filters": {
+            "headers": headers,
+            "rows": rows,
         },
+        **get_tenant_context(request),
+    }
+
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "partials/_page_content.html", context)
+
+    return render(request, "interface_filters.html", context)
+
+
+@login_required(login_url="login")
+def post_interface_view(request):
+    tenant_id_raw = request.session.get("current_tenant_id")
+    interface_id_raw = request.POST.get("interface_id", "").strip()
+    enable = request.POST.get("enable") == "on"
+
+    ingoing_filter_ids_raw = request.POST.get("ingoing_filter_ids", "")
+    outgoing_filter_ids_raw = request.POST.get("outgoing_filter_ids", "")
+
+    object_data = {
+        "interface_id": interface_id_raw,
+        "enable": enable,
+        "ingoing_filter_ids": [value.strip() for value in ingoing_filter_ids_raw.split(",") if value.strip()],
+        "outgoing_filter_ids": [value.strip() for value in outgoing_filter_ids_raw.split(",") if value.strip()],
+        "ingoing_filter_names": [],
+        "outgoing_filter_names": [],
+    }
+
+    def render_form_error(error_message: str, status: int = 400):
+        return render(
+            request,
+            "partials/modals/_modal_form.html",
+            {
+                "modal_object_type": "interfaces",
+                "modal_content_partial": "partials/modals/_interface_form.html",
+                "modal_supports_types": False,
+                "object_data": object_data,
+                "error_message": error_message,
+            },
+            status=status,
+        )
+
+    if not tenant_id_raw:
+        return render_form_error("Tenant not set.")
+
+    try:
+        tenant_id = int(tenant_id_raw)
+        interface_id = int(interface_id_raw)
+    except (TypeError, ValueError):
+        return render_form_error("Invalid tenant or interface id.")
+
+    interface = Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).first()
+    if interface is None:
+        return render_form_error("Interface not found.")
+
+    try:
+        ingoing_filter_ids = [int(value) for value in ingoing_filter_ids_raw.split(",") if value.strip()]
+        outgoing_filter_ids = [int(value) for value in outgoing_filter_ids_raw.split(",") if value.strip()]
+    except ValueError:
+        return render_form_error("Invalid filter ids.")
+
+    valid_filter_ids = set(
+        Filter.objects.filter(
+            id__in=set(ingoing_filter_ids + outgoing_filter_ids), tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]
+        ).values_list("id", flat=True)
     )
+
+    invalid_ids = [
+        filter_id for filter_id in ingoing_filter_ids + outgoing_filter_ids if filter_id not in valid_filter_ids
+    ]
+    if invalid_ids:
+        return render_form_error(
+            f"Invalid filter selection: {', '.join(str(value) for value in sorted(set(invalid_ids)))}"
+        )
+
+    try:
+        with transaction.atomic():
+            for sequence, filter_id in enumerate(ingoing_filter_ids, start=1):
+                add_filter_to_interface(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    filter_id=filter_id,
+                    interface_id=interface_id,
+                    policy_sequence=sequence,
+                    enable=enable,
+                    direction="in",
+                )
+
+            for sequence, filter_id in enumerate(outgoing_filter_ids, start=1):
+                add_filter_to_interface(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    filter_id=filter_id,
+                    interface_id=interface_id,
+                    policy_sequence=sequence,
+                    enable=enable,
+                    direction="out",
+                )
+
+            FilterInterface.objects.filter(
+                interface_id=interface_id,
+                direction="in",
+            ).exclude(filter_id__in=ingoing_filter_ids).delete()
+
+            FilterInterface.objects.filter(
+                interface_id=interface_id,
+                direction="out",
+            ).exclude(filter_id__in=outgoing_filter_ids).delete()
+
+    except Exception as exc:
+        return render_form_error(f"Unable to update interface filters: {exc}")
+
+    return HttpResponse(status=204)
+
+
+@login_required(login_url="login")
+def get_interface_filter_selector_modal(request, selector_type: str):
+    supported_selector_types = {
+        "ingoing_filter",
+        "outgoing_filter",
+    }
+
+    if selector_type not in supported_selector_types:
+        return HttpResponse(f"Unsupported interface selector type: {selector_type!r}", status=400)
+
+    tenant_id_raw = request.session.get("current_tenant_id")
+    if not tenant_id_raw:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        tenant_id = int(tenant_id_raw)
+    except (TypeError, ValueError):
+        return HttpResponse("Invalid tenant selected.", status=400)
+
+    selected_ids_raw = request.GET.get("selected_ids", "")
+    selected_object_ids = {value.strip() for value in selected_ids_raw.split(",") if value.strip()}
+
+    filters = Filter.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).order_by("name")
+    item_options = [
+        {
+            "selector_id": str(filter_obj.id),
+            "name": filter_obj.name,
+        }
+        for filter_obj in filters
+    ]
+
+    direction_label = "Ingoing" if selector_type == "ingoing_filter" else "Outgoing"
+
+    context = {
+        "modal_title": f"Edit {direction_label} Filters",
+        "modal_mode": "submodal",
+        "modal_object_type": "rule-selector",
+        "modal_content_partial": "partials/modals/_interface_selector_modal.html",
+        "modal_instance_id": f"submodal-{selector_type}",
+        "modal_is_submodal": True,
+        "selector_type": selector_type,
+        "object_kind": "filters",
+        "selected_object_ids": selected_object_ids,
+        "item_options": item_options,
+    }
+
+    return render(request, "partials/_modal.html", context)
 
 
 # Handles creation of a new device from modal form submission.

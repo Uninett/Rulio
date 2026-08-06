@@ -109,6 +109,18 @@ const RULE_SELECTOR_CONFIG = {
         summaryId: "rule-destination-services-summary",
         emptyText: "No destination services selected.",
     },
+
+    ingoing_filter: {
+        inputId: "interface-ingoing-filter-ids",
+        summaryId: "interface-ingoing-filters-summary",
+        emptyText: "No ingoing filters selected.",
+    },
+
+    outgoing_filter: {
+        inputId: "interface-outgoing-filter-ids",
+        summaryId: "interface-outgoing-filters-summary",
+        emptyText: "No outgoing filters selected.",
+    },
 };
 
 

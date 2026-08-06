@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib.auth.models import User
+from backend.services.get import get_all_filters_from_interface
 from backend.views.search import get_tags_search_results
 
 from backend.objects.tenant_objects.tenant import Tenant
@@ -139,6 +140,16 @@ def get_add_modal_config(object_type):
             "refresh_url": reverse("tags"),
             "modal_refresh_target": "#tags-content",
         },
+        "interfaces": {
+            "title": "Edit Interface Filters",
+            "supports_types": False,
+            "form_partial": "partials/modals/_interface_form.html",
+            "post_url": reverse("post-interface-view"),
+            "target": "#modal-container",
+            "swap": "innerHTML",
+            "refresh_url": "",
+            "modal_refresh_target": "#devices-content",
+        },
     }
     config = configs.get(object_type)
     if config is None:  # Throw error if object_type is not found in configs
@@ -150,6 +161,7 @@ def get_add_modal_config(object_type):
 # Render the Add modal with the default form for the selected object type.
 @login_required(login_url="login")
 def get_add_modal(request, object_type):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     config = get_add_modal_config(object_type)
 
     if config.get("supports_types"):
@@ -181,6 +193,49 @@ def get_add_modal(request, object_type):
             # Optional: preserve the title shown by get_rules_content().
             if filter_name:
                 modal_refresh_url += f"&filter_name={filter_name}"
+
+    if object_type == "interfaces":
+        interface_id_raw = request.GET.get("interface_id", "")
+        device_id_raw = request.GET.get("device_id", "")
+
+        if not tenant_id:
+            raise Http404("No tenant selected for interface modal.")
+
+        try:
+            interface_id = int(interface_id_raw)
+            device_id = int(device_id_raw)
+        except (TypeError, ValueError):
+            raise Http404("Missing or invalid interface/device id.")
+
+        ingoing_filters = get_all_filters_from_interface(
+            actor=request.user,
+            tenant_id=tenant_id,
+            interface_id=interface_id,
+            direction="in",
+        )
+        outgoing_filters = get_all_filters_from_interface(
+            actor=request.user,
+            tenant_id=tenant_id,
+            interface_id=interface_id,
+            direction="out",
+        )
+
+        modal_refresh_url = reverse(
+            "interface-filters-view",
+            kwargs={
+                "device_id": device_id,
+                "interface_id": interface_id,
+            },
+        )
+
+        object_data = {
+            "interface_id": interface_id,
+            "ingoing_filter_ids": [f.id for f in ingoing_filters],
+            "ingoing_filter_names": [f.name for f in ingoing_filters],
+            "outgoing_filter_ids": [f.id for f in outgoing_filters],
+            "outgoing_filter_names": [f.name for f in outgoing_filters],
+            "enable": True,
+        }
 
     context = {
         "modal_title": config["title"],

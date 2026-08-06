@@ -1,0 +1,40 @@
+<p class="form-help">
+    Choose filters for this interface direction.
+</p>
+
+<div class="membership-selector" data-selector-type="{{ selector_type }}" data-input-name="selected_ids">
+
+    <div class="membership-column">
+        <h4>Available</h4>
+
+        <div class="membership-list membership-list-available" data-list-type="available">
+
+            {% for item in item_options %}
+            {% if item.selector_id not in selected_object_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ item.selector_id }}"
+                data-name="{{ item.name }}">
+                {{ item.name }}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="membership-column">
+        <h4>Selected</h4>
+
+        <div class="membership-list membership-list-selected" data-list-type="selected">
+
+            {% for item in item_options %}
+            {% if item.selector_id in selected_object_ids %}
+            <div class="membership-list-item" draggable="true" data-id="{{ item.selector_id }}"
+                data-name="{{ item.name }}">
+                {{ item.name }}
+
+                <input type="hidden" name="selected_ids" value="{{ item.selector_id }}">
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
