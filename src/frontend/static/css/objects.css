@@ -79,14 +79,16 @@ Objects Main Rows
 
 .objects-table .main-row {
     cursor: pointer;
+    
 }
 
-.objects-table .main-row:hover {
-    background-color: var(--sds-color-brand-primary-subtle);
+.objects-table .main-row:hover,
+.objects-table .main-row:focus {
+    background-color: var(--sds-color-brand-primary-subtler-hover);
 }
 
 .objects-table .main-row.expanded-row {
-    background-color: var(--sds-color-brand-primary-subtle);
+    background-color: var(--sds-color-brand-primary-subtler-hover);
 }
 
 /*
@@ -196,7 +198,7 @@ Objects Details Row
     text-align: left;
     padding: 0.5rem 1rem;
     line-height: 1.2;
-    background-color: var(--sds-color-layout-surface-2);
+    background-color: var(--sds-color-brand-primary-subtle);
     font-size: small;
 }
 

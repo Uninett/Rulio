@@ -41,9 +41,10 @@ Typography
     --sds-color-layout-surface-2: #F1F1F1;
 
     --sds-color-brand-primary-strong: #7351FB;
-    --sds-color-brand-primary-strong-hover: #643FFA;
+    --sds-color-brand-primary-strong-hover: #643ffa;
     --sds-color-brand-primary-subtle: #EBE6FE;
     --sds-color-brand-primary-subtle-hover: #C2BCFF;
+    --sds-color-brand-primary-subtler-hover: #cac6fd;
 
     --sds-color-interaction-neutral-subtle: #E0E0E0;
     --sds-color-interaction-neutral-subtle-hover: #D6D6D6;
