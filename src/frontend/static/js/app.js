@@ -753,7 +753,10 @@ function refreshRulesTableContent(rulesBody) {
     const filterName = params.get("filter_name") || "";
     const refreshUrl = `${contentUrl}?filter_id=${encodeURIComponent(filterId)}&filter_name=${encodeURIComponent(filterName)}`;
 
-    const refreshTarget = "#filters-content";
+    // Rules are rendered in different content roots depending on page context.
+    const refreshTarget = document.querySelector("#rules-content")
+        ? "#rules-content"
+        : "#filters-content";
     const contentRoot = document.querySelector(refreshTarget);
     let savedScrollTop = 0;
 
