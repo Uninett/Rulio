@@ -2,11 +2,20 @@ from django.contrib.auth.models import User
 
 from backend.objects.attributes.tag import Tag
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
-from backend.services.attribute_objects.create_attribute_objects import get_or_create_address, get_or_create_tag
-from backend.services.filter_objects.create_filter_objects import get_or_create_filter
+from backend.services.attribute_objects.create_attribute_objects import (
+    get_or_create_address,
+    get_or_create_service,
+    get_or_create_tag,
+)
+from backend.services.filter_objects.create_filter_objects import get_or_create_filter, get_or_create_rule
 from backend.services.tenant_objects.create_tenant_objects import get_or_create_device
 from backend.services.helper_user_tenant import require_write_tenant
-from backend.services.membership import add_devices_to_group, add_filter_to_interface, add_tag_to_object
+from backend.services.membership import (
+    add_devices_to_group,
+    add_filter_to_interface,
+    add_objects_to_rule,
+    add_tag_to_object,
+)
 from backend.services.tenant_objects.create_tenant_objects import (
     get_or_create_device_group,
     get_or_create_interface,
@@ -43,13 +52,13 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         device_specs = [
             (
                 f"{tenant_prefix}-edge-fw-01",
-                "FortiGate",
+                "Juniper",
                 f"Primary edge firewall for {tenant_label} office.",
                 "firewall",
             ),
             (
                 f"{tenant_prefix}-edge-fw-02",
-                "FortiGate",
+                "Juniper",
                 f"Secondary edge firewall for {tenant_label} office.",
                 "firewall",
             ),
@@ -70,13 +79,13 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
                 [
                     (
                         f"{tenant_prefix}-edge-fw-03",
-                        "FortiGate",
+                        "Juniper",
                         f"Additional edge firewall for {tenant_label} testing.",
                         "firewall",
                     ),
                     (
                         f"{tenant_prefix}-edge-fw-04",
-                        "FortiGate",
+                        "Juniper",
                         f"Additional edge firewall for {tenant_label} testing.",
                         "firewall",
                     ),
@@ -97,6 +106,212 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
                 ]
             )
 
+        f1 = get_or_create_filter(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-http",
+            description=f"Allow HTTP traffic for {tenant_label} office.",
+        )[0]
+
+        r1 = get_or_create_rule(
+            actor=actor,
+            filter=f1,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-http-rule",
+            description=f"Allow HTTP traffic for {tenant_label} office.",
+            action="accept",
+            enable=True,
+            log_type="log",
+            hit_count=0,
+            rule_sequence=1,
+        )[0]
+        s1 = get_or_create_service(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-http-service",
+            description=f"HTTP service for {tenant_label} office.",
+            protocol="tcp",
+            port_start=80,
+            port_end=80,
+        )[0]
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r1.id, match_type="any", objects=[s1])
+
+        f2 = get_or_create_filter(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-https",
+            description=f"Allow HTTPS traffic for {tenant_label} office.",
+        )[0]
+        r2 = get_or_create_rule(
+            actor=actor,
+            filter=f2,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-https-rule",
+            description=f"Allow HTTPS traffic for {tenant_label} office.",
+            action="accept",
+            enable=True,
+            log_type="log",
+            hit_count=0,
+            rule_sequence=1,
+        )[0]
+        s2 = get_or_create_service(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-https-service",
+            description=f"HTTPS service for {tenant_label} office.",
+            protocol="tcp",
+            port_start=443,
+            port_end=443,
+        )[0]
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r2.id, match_type="any", objects=[s2])
+
+        f3 = get_or_create_filter(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-ssh",
+            description=f"Allow SSH traffic for {tenant_label} office.",
+        )[0]
+        r3 = get_or_create_rule(
+            actor=actor,
+            filter=f3,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-ssh-rule",
+            description=f"Allow SSH traffic for {tenant_label} office.",
+            action="accept",
+            enable=True,
+            log_type="log",
+            hit_count=0,
+            rule_sequence=1,
+        )[0]
+        s3 = get_or_create_service(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-ssh-service",
+            description=f"SSH service for {tenant_label} office.",
+            protocol="tcp",
+            port_start=22,
+            port_end=22,
+        )[0]
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r3.id, match_type="any", objects=[s3])
+
+        f4 = get_or_create_filter(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-deny-external",
+            description=f"Deny external traffic for {tenant_label} office.",
+        )[0]
+        r4 = get_or_create_rule(
+            actor=actor,
+            filter=f4,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-deny-external-rule",
+            description=f"Deny external traffic for {tenant_label} office.",
+            action="deny",
+            enable=True,
+            log_type="log",
+            hit_count=0,
+            rule_sequence=1,
+        )[0]
+        a1 = get_or_create_address(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-external-network",
+            description=f"External network for {tenant_label} office.",
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="10.0.0.0/8",
+        )[0]
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r4.id, match_type="source", objects=[a1])
+
+        f5 = get_or_create_filter(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-dns",
+            description=f"Allow DNS traffic for {tenant_label} office.",
+        )[0]
+        r5 = get_or_create_rule(
+            actor=actor,
+            filter=f5,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-dns-rule",
+            description=f"Allow DNS traffic for {tenant_label} office.",
+            action="accept",
+            enable=True,
+            log_type="log",
+            hit_count=0,
+            rule_sequence=1,
+        )[0]
+        s5 = get_or_create_service(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-dns-service",
+            description=f"DNS service for {tenant_label} office.",
+            protocol="udp",
+            port_start=53,
+            port_end=53,
+        )[0]
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r5.id, match_type="any", objects=[s5])
+
+        f6 = get_or_create_filter(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-internal",
+            description=f"Allow internal traffic for {tenant_label} office.",
+        )[0]
+        r6 = get_or_create_rule(
+            actor=actor,
+            filter=f6,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-allow-internal-rule",
+            description=f"Allow internal traffic for {tenant_label} office.",
+            action="accept",
+            enable=True,
+            log_type="log",
+            hit_count=0,
+            rule_sequence=1,
+        )[0]
+        a2 = get_or_create_address(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-internal-network",
+            description=f"Internal network for {tenant_label} office.",
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="192.168.0.0/16",
+        )[0]
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r6.id, match_type="source", objects=[a2])
+
+        f7 = get_or_create_filter(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-deny-all",
+            description=f"Deny all traffic for {tenant_label} office.",
+        )[0]
+        r7 = get_or_create_rule(
+            actor=actor,
+            filter=f7,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-deny-all-rule",
+            description=f"Deny all traffic for {tenant_label} office.",
+            action="deny",
+            enable=True,
+            log_type="log",
+            hit_count=0,
+            rule_sequence=1,
+        )[0]
+        a3 = get_or_create_address(
+            actor=actor,
+            tenant_id=target_tenant.id,
+            name=f"{tenant_prefix}-all-network",
+            description=f"All network for {tenant_label} office.",
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="0.0.0.0/0",
+        )[0]
+        add_objects_to_rule(actor=actor, tenant_id=target_tenant.id, rule_id=r7.id, match_type="any", objects=[a3])
+
+        tenant_filters = [f1, f2, f3, f4, f5, f6, f7]
+
         created_devices = []
         for name, platform, description, device_type in device_specs:
             device_obj = get_or_create_device(
@@ -114,14 +329,52 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
 
         created_interfaces = []
         for index, device_obj in enumerate(created_devices):
+            for i in range(3):  # Create 3 interfaces for each device
+                interface_obj, _, _, _, _, _ = get_or_create_interface(
+                    actor=actor,
+                    tenant_id=target_tenant.id,
+                    device_id=device_obj.id,
+                    name=f"eth{i}",
+                    description=f"Interface {i} for {device_obj.name}.",
+                    type="physical",
+                )
+                created_interfaces.append(interface_obj)
+                logger.info(f"Created {interface_obj} for device={device_obj.id} and tenant={target_tenant.id}")
             interface_obj, _, _, _, _, _ = get_or_create_interface(
                 actor=actor,
                 tenant_id=target_tenant.id,
                 device_id=device_obj.id,
-                name=f"port{index + 1}",
-                description=f"Interface {index + 1} for {device_obj.name}.",
-                type="physical",
+                name=f"vlan{20 if index % 2 == 0 else 30}",
+                description=f"Vlan interface for {device_obj.name}.",
+                type="vlan",
             )
+
+            in_sequence = 0
+            out_sequence = 0
+            for i, filter in enumerate(tenant_filters):
+                if i % 2 == 0:
+                    in_sequence += 1
+                    add_filter_to_interface(
+                        actor=actor,
+                        tenant_id=target_tenant.id,
+                        interface_id=interface_obj.id,
+                        filter_id=filter.id,
+                        policy_sequence=in_sequence,
+                        enable=True,
+                        direction="in",
+                    )
+                else:
+                    out_sequence += 1
+                    add_filter_to_interface(
+                        actor=actor,
+                        tenant_id=target_tenant.id,
+                        interface_id=interface_obj.id,
+                        filter_id=filter.id,
+                        policy_sequence=out_sequence,
+                        enable=True,
+                        direction="out",
+                    )
+
             created_interfaces.append(interface_obj)
             logger.info(f"Created {interface_obj} for device={device_obj.id} and tenant={target_tenant.id}")
 
@@ -201,24 +454,6 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         logger.info(f"Created {interface} for device={device.id} and tenant={target_tenant.id}")
         logger.info(f"Created {interface2} for device={device3.id} and tenant={target_tenant.id}")
 
-        filter1, _ = get_or_create_filter(
-            actor=actor,
-            tenant_id=target_tenant.id,
-            name="Allow HTTP",
-            description="Allow HTTP traffic.",
-        )
-        logger.info(f"Created {filter1} for tenant={target_tenant.id}")
-
-        add_filter_to_interface(
-            actor=actor,
-            tenant_id=target_tenant.id,
-            interface_id=interface2.id,
-            filter_id=filter1.id,
-            policy_sequence=1,
-            enable=True,
-            direction="in",
-        )
-
         address, _, _ = get_or_create_address(
             actor=actor,
             tenant_id=target_tenant.id,
@@ -238,7 +473,6 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
 
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=device3)
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=interface2)
-        add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=filter1)
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=address)
 
         tag2, tag2_id, tag2_created = get_or_create_tag(
@@ -262,7 +496,6 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=device_group2)
             add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=interface)
             add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=interface2)
-            add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=filter1)
             add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=default_tag, obj=address)
 
         tenant_admin, created_admin = User.objects.get_or_create(

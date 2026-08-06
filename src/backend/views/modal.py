@@ -1,5 +1,10 @@
 from backend.utils.logger import set_up_logger
 
+from backend.services.get import (
+    get_all_device_groups_and_devices_with_tags_from_tenant,
+)
+
+
 from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
@@ -25,6 +30,20 @@ def get_group_options_view(request, object_type):
 
     try:
         tenant_id = int(tenant_id)
+
+        if object_type == "devices":
+            device_groups, _ = get_all_device_groups_and_devices_with_tags_from_tenant(
+                actor=request.user,
+                tenant_id=tenant_id,
+            )
+
+            return [
+                {
+                    "id": device_group.id,
+                    "name": device_group.name or "",
+                }
+                for device_group in device_groups
+            ]
 
         if object_type == "addresses":
             objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
@@ -70,6 +89,20 @@ def get_item_options_view(request, object_type):
 
     try:
         tenant_id = int(tenant_id)
+
+        if object_type == "devices":
+            _, devices = get_all_device_groups_and_devices_with_tags_from_tenant(
+                actor=request.user,
+                tenant_id=tenant_id,
+            )
+
+            return [
+                {
+                    "id": device.id,
+                    "name": device.name or "",
+                }
+                for device in devices
+            ]
 
         if object_type == "addresses":
             objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(

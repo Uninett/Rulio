@@ -1,21 +1,85 @@
+{% load static %}
+
 {% for cell in row.cells %}
-<td class="{% if forloop.first %}first-column-cell{% endif %} col-{{ forloop.counter }}">
-    {% if forloop.last %}
-    {% if object_type == "addresses" or object_type == "services" or object_type == "devices" %}
-    <div class="tag-list-container">
-        {% for item in cell %}
-        {% if item %}
-        <span class="cell-text tag-item" style="--tag-color: {{ item.color }};" title="{{ item.name }}">
-            {{ item.name }}
-        </span>
+<td class="{% if forloop.first %}first-column-cell{% if object_type == 'filters' %} inspect-column{% endif %}{% endif %} col-{{ forloop.counter }}">
+
+    {% if forloop.first and object_type == "filters" %}
+        <a href="{{ row.inspect_url }}"
+           class="row-visibility-control inspect-link"
+           onclick="event.stopPropagation();"
+           aria-label="Open rules for this filter">
+            <img class="row-visibility-icon"
+                 src="{% static 'images/Eye.svg' %}"
+                 data-eye-open="{% static 'images/Eye.svg' %}"
+                 data-eye-closed="{% static 'images/EyeSlash.svg' %}"
+                 alt="">
+        </a>
+
+    {% elif forloop.first and object_type == "rules" %}
+        <div class="rule-name-cell">
+            <button type="button"
+                    class="row-visibility-control"
+                    onclick="event.stopPropagation(); expandRow('{{ row.id }}');"
+                    aria-label="Toggle rule details">
+                <img class="row-visibility-icon"
+                     src="{% static 'images/Eye.svg' %}"
+                     data-eye-open="{% static 'images/Eye.svg' %}"
+                     data-eye-closed="{% static 'images/EyeSlash.svg' %}"
+                     alt="">
+            </button>
+            <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
+        </div>
+
+    {% elif forloop.last %}
+        {% if object_type == "addresses" or object_type == "services" or object_type == "devices" or object_type == "filters" or object_type == "rules" %}
+            <div class="tag-list-container">
+                {% for item in cell %}
+                    {% if item %}
+                        <span class="cell-text tag-item"
+                              style="--tag-color: {{ item.color }};"
+                              title="{{ item.name }}">
+                            {{ item.name }}
+                        </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+        {% elif object_type == "rules" %}
+            <div class="tag-list-container">
+                {% for item in cell %}
+                    {% if item %}
+                        <span class="cell-text tag-item tag-item-default"
+                              title="{{ item }}">
+                            {{ item }}
+                        </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
         {% endif %}
-        {% endfor %}
-    </div>
+
+    {% elif object_type == "rules" %}
+        {% if forloop.counter == 2 or forloop.counter == 3 or forloop.counter == 4 or forloop.counter == 5 %}
+            <div class="rule-object-list">
+                {% for item in cell %}
+                    {% if item %}
+                        <div class="rule-object-item"
+                             title="{{ item.hover_text }}"
+                             onclick="event.stopPropagation();"
+                             ondblclick="event.stopPropagation(); window.location.href='{{ item.navigate_url }}';">
+                            {{ item.name }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
+        {% endif %}
+
     {% else %}
-    <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
-    {% endif %}
-    {% else %}
-    <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
+        <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
     {% endif %}
 </td>
 {% endfor %}

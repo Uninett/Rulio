@@ -11,7 +11,10 @@
                 {% for value in field.value %}
                 <div hx-get="{% url 'modal-update' value.row_id %}" hx-trigger="dblclick" hx-target="#modal-container"
                     hx-swap="innerHTML" title="{{ value.hover_text }}">
-                    {{ value.name }}
+                    <a class="objects-group-member-name" onclick="focusAndExpandRow('{{ value.row_id }}')">
+                        {{ value.name }}
+                    </a>
+
 
                     <div>
                         {% if value.description %}
@@ -54,14 +57,24 @@
 
         {% else %}
         {% for field in row.expand %}
+
         {% if field.label == "Tags" %}
         {% include "partials/objects/_stylingTags.html" with row=row field=field %}
+
+        {% elif field.label == "Interfaces" %}
+        {% include "partials/devices/_expandableDeviceLine.html" with row=row field=field %}
+
+        {% elif field.label == "Filters" %}
+        {% include "partials/devices/_expandableFiltersLine.html" with row=row field=field %}
+
+
         {% else %}
         <p>
             <strong>{{ field.label }}:</strong>
             {{ field.value }}
         </p>
         {% endif %}
+
         {% endfor %}
         {% endif %}
     </section>
