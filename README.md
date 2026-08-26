@@ -1,3 +1,8 @@
+# Argus
+[![test badge](https://github.com/Uninett/Argus/actions/workflows/python.yml/badge.svg)](https://github.com/Uninett/Rulio/actions)
+[![codecov badge](https://codecov.io/gh/Uninett/Argus/branch/main/graph/badge.svg)]([https://codecov.io/gh/Uninett/Argus](https://app.codecov.io/gh/Uninett/Rulio/tree/main/src%2Fbackend))
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 # Rulio
 
 A simple vendor agnostic web interface to generate router ACLs, powered by the [Aerleon](https://github.com/aerleon/aerleon) project.
