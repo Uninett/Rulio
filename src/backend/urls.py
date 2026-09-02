@@ -18,6 +18,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from backend.views.generate_config import check_interface_config_generation, download_interface_configs
+from backend.views.interfaces import get_interface_filter_selector_modal, interface_filters_view, post_interface_view
 from backend.views.rule_page import (
     delete_rule_view,
     get_rule_page,
@@ -37,13 +39,8 @@ from .views.device_groups import (
     update_device_group_view,
 )
 from .views.devices_page import (
-    check_interface_config_generation,
-    download_interface_configs,
     get_devices_page,
-    get_interface_filter_selector_modal,
-    interface_filters_view,
     post_device_view,
-    post_interface_view,
 )
 from .views.filters_page import (
     delete_filter_view,
