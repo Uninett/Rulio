@@ -39,8 +39,10 @@ from .views.device_groups import (
     update_device_group_view,
 )
 from .views.devices_page import (
+    delete_device_view,
     get_devices_page,
     post_device_view,
+    update_device_view,
 )
 from .views.filters_page import (
     delete_filter_view,
@@ -133,6 +135,8 @@ urlpatterns = [
     ),
     path("devices/add/", post_device_view, name="post-device-view"),
     path("interfaces/update/", post_interface_view, name="post-interface-view"),
+    path("devices/<int:object_id>/update/", update_device_view, name="update-device-view"),
+    path("devices/<int:object_id>/delete/", delete_device_view, name="delete-device-view"),
     path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
     path("device-groups/<int:object_id>/update/", update_device_group_view, name="update-device-group-view"),
     path("device-groups/<int:object_id>/delete/", delete_device_group_view, name="delete-device-group-view"),
