@@ -30,6 +30,10 @@ logger = set_up_logger(__name__)
 
 
 def _editable_tenant_ids(actor: User, tenant_id: int) -> list[int]:
+    """
+    Returns a list of tenant IDs that the actor can edit, including the specified tenant_id.
+    If the actor is a superadmin, the global tenant ID is also included.
+    """
     tenant_ids = [tenant_id]
     if getattr(actor, "is_superuser", False):
         tenant_ids.append(GLOBAL_TENANT_ID)
@@ -37,6 +41,11 @@ def _editable_tenant_ids(actor: User, tenant_id: int) -> list[int]:
 
 
 def _reference_tenant_ids(tenant_id: int, *, include_global: bool = True) -> list[int]:
+    """
+    Returns a list of tenant IDs that can be referenced, including the specified tenant_id.
+    If include_global is True, the global tenant ID is also included.
+    Different from _editable_tenant_ids, this function does not require the actor to have write permissions, as it is used for reference purposes.
+    """
     tenant_ids = [tenant_id]
     if include_global:
         tenant_ids.append(GLOBAL_TENANT_ID)
@@ -44,10 +53,15 @@ def _reference_tenant_ids(tenant_id: int, *, include_global: bool = True) -> lis
 
 
 def _validate_member_for_group(*, group_tenant_id: int, member_tenant_id: int, member_label: str) -> None:
+    """
+    Validates that a member can be added to a group based on tenant IDs.
+    Raises PermissionDenied if the member cannot be added to the group.
+    """
     if group_tenant_id == GLOBAL_TENANT_ID and member_tenant_id != GLOBAL_TENANT_ID:
         raise PermissionDenied(f"Cannot add tenant-scoped {member_label} to a global group.")
 
 
+@transaction.atomic
 def add_address_to_group(actor: User, tenant_id: int, address_group_id: int, address_id: int) -> None:
     require_write_tenant(actor, tenant_id)
 
@@ -82,6 +96,7 @@ def add_address_to_group(actor: User, tenant_id: int, address_group_id: int, add
         logger.info("Address id=%s is already a member of address group id=%s.", address_id, address_group_id)
 
 
+@transaction.atomic
 def add_service_to_group(actor: User, tenant_id: int, service_group_id: int, service_id: int) -> ServiceGroup:
     require_write_tenant(actor, tenant_id)
 
@@ -118,6 +133,7 @@ def add_service_to_group(actor: User, tenant_id: int, service_group_id: int, ser
     return service_group
 
 
+@transaction.atomic
 def add_addresses_to_group(
     actor: User,
     tenant_id: int,
@@ -167,17 +183,16 @@ def add_addresses_to_group(
 
     added_address_ids: list[int] = []
 
-    with transaction.atomic():
-        for address_id in address_ids:
-            if address_id in already_present_address_ids:
-                continue
+    for address_id in address_ids:
+        if address_id in already_present_address_ids:
+            continue
 
-            AddressGroupMember.objects.create(
-                group=address_group,
-                address_id=address_id,
-            )
-            added_address_ids.append(address_id)
-            already_present_address_ids.add(address_id)
+        AddressGroupMember.objects.create(
+            group=address_group,
+            address_id=address_id,
+        )
+        added_address_ids.append(address_id)
+        already_present_address_ids.add(address_id)
 
     returned_already_present_address_ids = [
         address_id for address_id in address_ids if address_id not in added_address_ids
@@ -200,7 +215,12 @@ def add_addresses_to_group(
     }
 
 
+@transaction.atomic
 def remove_address_from_group(actor: User, tenant_id: int, address_group_id: int, address_id: int) -> None:
+    """
+    Legacy function to remove a single address from an address group. 
+    For future always use remove_addresses_from_group when removing address(es) from a group.
+    """
     require_write_tenant(actor, tenant_id)
 
     address_group = AddressGroup.objects.filter(
@@ -225,6 +245,55 @@ def remove_address_from_group(actor: User, tenant_id: int, address_group_id: int
         logger.warning("Address id=%s is not a member of address group id=%s.", address_id, address_group_id)
 
 
+@transaction.atomic
+def remove_addresses_from_group(actor: User, tenant_id: int, address_group_id: int, address_ids: list[int]) -> dict[str, Any]:
+    require_write_tenant(actor, tenant_id)
+
+    address_group = AddressGroup.objects.filter(
+        id=address_group_id,
+        tenant_id__in=_editable_tenant_ids(actor, tenant_id),
+    ).first()
+    if address_group is None:
+        raise PermissionDenied(f"Address group with ID {address_group_id} does not exist in tenant {tenant_id}.")
+
+    if not address_ids:
+        logger.info("No address IDs provided for removal from address group id=%s.", address_group_id)
+        return {
+            "address_group_id": address_group.id,
+            "removed_count": 0,
+        }
+
+    for address_id in address_ids:
+        address = Address.objects.filter(
+            id=address_id,
+            tenant_id__in=_reference_tenant_ids(tenant_id),
+        ).first()
+        if address is None:
+            raise PermissionDenied(f"Address with ID {address_id} does not exist in tenant {tenant_id}.")
+
+        _validate_member_for_group(
+            group_tenant_id=address_group.tenant_id,
+            member_tenant_id=address.tenant_id,
+            member_label="addresses",
+        )
+    deleted_count, _ = AddressGroupMember.objects.filter(
+        group=address_group,
+        address__id__in=address_ids,
+    ).delete()
+
+    logger.info(
+        "Removed %s addresses from Address Group %s.",
+        deleted_count,
+        address_group.id,
+    )
+
+    return {
+        "address_group_id": address_group.id,
+        "removed_count": deleted_count,
+    }
+
+
+@transaction.atomic
 def add_services_to_group(
     actor: User,
     tenant_id: int,
@@ -282,18 +351,17 @@ def add_services_to_group(
     added_service_ids: list[int] = []
     already_present_service_ids: list[int] = []
 
-    with transaction.atomic():
-        for service_id in service_ids:
-            if service_id in existing_member_ids:
-                already_present_service_ids.append(service_id)
-                continue
+    for service_id in service_ids:
+        if service_id in existing_member_ids:
+            already_present_service_ids.append(service_id)
+            continue
 
-            ServiceGroupMember.objects.create(
-                group=service_group,
-                service_id=service_id,
-            )
-            added_service_ids.append(service_id)
-            existing_member_ids.add(service_id)
+        ServiceGroupMember.objects.create(
+            group=service_group,
+            service_id=service_id,
+        )
+        added_service_ids.append(service_id)
+        existing_member_ids.add(service_id)
 
     if request_type != "seeding":
         logger.info(
@@ -312,6 +380,7 @@ def add_services_to_group(
     }
 
 
+@transaction.atomic
 def remove_service_from_group(actor: User, tenant_id: int, service_group_id: int, service_id: int) -> None:
     require_write_tenant(actor, tenant_id)
 
@@ -337,6 +406,7 @@ def remove_service_from_group(actor: User, tenant_id: int, service_group_id: int
         logger.warning("Service id=%s is not a member of service group id=%s.", service_id, service_group_id)
 
 
+@transaction.atomic
 def add_objects_to_rule(
     *,
     actor: User,
@@ -416,6 +486,7 @@ def add_objects_to_rule(
     }
 
 
+@transaction.atomic
 def update_objects_in_rule(
     *, actor: User, tenant_id: int, rule_id: int, match_type: str, objects: list
 ) -> dict[str, Any]:
@@ -438,7 +509,42 @@ def update_objects_in_rule(
         objects=objects,
     )
 
+@transaction.atomic
+def remove_objects_from_rule(
+    *, actor: User, tenant_id: int, rule_id: int, match_type: str, object_ids: list[int]
+) -> dict[str, Any]:
+    require_write_tenant(actor, tenant_id)
 
+    rule = Rule.objects.filter(
+        id=rule_id,
+        tenant_id__in=_editable_tenant_ids(actor, tenant_id),
+    ).first()
+    if rule is None:
+        raise PermissionDenied(f"Rule with ID {rule_id} does not exist in tenant {tenant_id}.")
+
+    for object_id in object_ids:
+        if not RuleMatch.objects.filter(rule=rule, match=match_type, object_id=object_id).exists():
+            raise PermissionDenied(
+                f"Object with ID {object_id} is not associated with Rule {rule_id} and match_type {match_type}."
+            )
+
+    deleted_count, _ = RuleMatch.objects.filter(rule=rule, match=match_type, object_id__in=object_ids).delete()
+
+    logger.info(
+        "Removed %s objects from Rule %s with match_type %s.",
+        deleted_count,
+        rule.id,
+        match_type,
+    )
+
+    return {
+        "rule_id": rule_id,
+        "match_type": match_type,
+        "removed_count": deleted_count,
+    }
+
+
+@transaction.atomic
 def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id: int, rule_sequence: int) -> Rule:
     require_write_tenant(actor, tenant_id)
 
@@ -480,6 +586,7 @@ def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id:
     return new_rule
 
 
+@transaction.atomic
 def add_filter_to_interface(
     *,
     actor: User,
@@ -499,7 +606,7 @@ def add_filter_to_interface(
     if filter_obj is None:
         raise PermissionDenied(f"Filter with ID {filter_id} does not exist in tenant {tenant_id}.")
 
-    interface = Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).first()
+    interface = Interface.objects.filter(id=interface_id, device__tenant_id__in=_editable_tenant_ids(actor, tenant_id)).first()
     if interface is None:
         raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
 
@@ -542,7 +649,60 @@ def add_filter_to_interface(
 
     return interface, filter_obj
 
+@transaction.atomic
+def remove_filters_from_interface(
+    *,
+    actor: User,
+    tenant_id: int,
+    filter_ids: list[int],
+    interface_id: int,
+    direction: Literal["in", "out"],
+):
+    require_write_tenant(actor, tenant_id)
 
+    for filter_id in filter_ids:
+        filter_obj = Filter.objects.filter(
+            id=filter_id,
+            tenant_id__in=_reference_tenant_ids(tenant_id),
+        ).first()
+        if filter_obj is None:
+            raise PermissionDenied(f"Filter with ID {filter_id} does not exist in tenant {tenant_id}.")
+
+    interface = Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).first()
+    if interface is None:
+        raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
+
+    for filter_id in filter_ids:
+        filter_obj = Filter.objects.get(id=filter_id)
+        interface_direction = InterfaceDirection.objects.get(interface=interface, direction=direction)
+        deleted_count, _ = interface.filterinterface_set.filter(
+            interface_direction=interface_direction,
+            filter=filter_obj,
+        ).delete()
+        if deleted_count == 0:
+            logger.warning(
+                "Filter %s was not associated with Interface %s in direction %s.",
+                filter_obj.id,
+                interface.id,
+                direction,
+            )
+        else:
+            update_filter_interface_sequence(
+                actor=actor,
+                tenant_id=tenant_id,
+                filter_interface=None,
+                new_sequence=None,
+            )
+
+    logger.info(
+        "Removed Filter %s from Interface %s in direction %s.",
+        filter_obj.id,
+        interface.id,
+        direction,
+    )
+
+
+@transaction.atomic
 def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, device_ids: list[int]) -> dict[str, Any]:
     require_write_tenant(actor, tenant_id)
 
@@ -570,8 +730,7 @@ def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, d
     new_ids = found_ids - already_present_ids
     new_members = [DeviceGroupMember(device_group=device_group, device_id=device_id) for device_id in new_ids]
 
-    with transaction.atomic():
-        DeviceGroupMember.objects.bulk_create(new_members)
+    DeviceGroupMember.objects.bulk_create(new_members)
 
     added_ids = sorted(new_ids)
 
@@ -582,7 +741,43 @@ def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, d
         "not_found_device_ids": [],
     }
 
+@transaction.atomic
+def remove_devices_from_group(*, actor: User, tenant_id: int, device_group_id: int, device_ids: list[int]) -> dict[str, Any]:
+    require_write_tenant(actor, tenant_id)
 
+    device_group = DeviceGroup.objects.filter(id=device_group_id, tenant_id=tenant_id).first()
+    if device_group is None:
+        raise PermissionDenied(f"Device group with ID {device_group_id} does not exist in tenant {tenant_id}.")
+
+    for device_id in device_ids:
+        if not Device.objects.filter(id=device_id, tenant_id=tenant_id).exists():
+            raise PermissionDenied(f"Device with ID {device_id} does not exist in tenant {tenant_id}.")
+
+        deleted_count, _ = DeviceGroupMember.objects.filter(
+            device_group=device_group,
+            device__id=device_id,
+        ).delete()
+
+        if deleted_count == 0:
+            logger.warning(
+                "Device %s was not associated with Device Group %s.",
+                device_id,
+                device_group.id,
+            )
+
+    logger.info(
+        "Removed %s devices from Device Group %s.",
+        deleted_count,
+        device_group.id,
+    )
+
+    return {
+        "device_group_id": device_group.id,
+        "removed_count": deleted_count,
+    }
+
+
+@transaction.atomic
 def add_tag_to_object(
     *,
     actor: User,
@@ -609,3 +804,25 @@ def add_tag_to_object(
 
     if request_type != "seeding":
         logger.info("Added tag %s to object %s.", tag.id, obj)
+
+@transaction.atomic
+def remove_tag_from_object(
+    *,
+    actor: User,
+    tenant_id: int,
+    tag_id: int,
+    obj: object,
+    include_global: bool = True,
+) -> int:
+    require_write_tenant(actor, tenant_id)
+
+    permitted_tenant_ids = _reference_tenant_ids(tenant_id, include_global=include_global)
+    if not Tag.objects.filter(id=tag_id, tenant_id__in=permitted_tenant_ids).exists() and not is_superadmin(actor):
+        raise PermissionDenied(f"Tag with ID {tag_id} does not exist in tenant {tenant_id}.")
+
+    content_type = ContentType.objects.get_for_model(obj)
+    deleted_count, _ = TagConnection.objects.filter(tag_id=tag_id, content_type=content_type, object_id=obj.id).delete()
+
+    logger.info("Removed tag %s from object %s. Deleted connections: %s.", tag_id, obj, deleted_count)
+
+    return deleted_count
