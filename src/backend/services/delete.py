@@ -168,6 +168,7 @@ def delete_interface(actor: User, tenant_id: int, interface_id: int) -> None:
     logger.info(f"Deleted interface id={interface_id} from tenant={tenant_id}.")
     return {"status": "success", "interface": {"id": interface_id}}
 
+
 @transaction.atomic
 def delete_device_group(actor: User, tenant_id: int, device_group_id: int) -> None:
     require_write_tenant(actor, tenant_id)
@@ -179,6 +180,7 @@ def delete_device_group(actor: User, tenant_id: int, device_group_id: int) -> No
     device_group.delete()
     logger.info(f"Deleted device group id={device_group_id} from tenant={tenant_id}.")
     return {"status": "success", "device_group": {"id": device_group_id}}
+
 
 @transaction.atomic
 def delete_filter(actor: User, tenant_id: int, filter_id: int) -> None:

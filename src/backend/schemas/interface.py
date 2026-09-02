@@ -1,4 +1,3 @@
-
 from ninja import Schema
 from pydantic import Field
 

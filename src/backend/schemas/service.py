@@ -1,4 +1,3 @@
-
 from ninja import Field, Schema
 from pydantic import ConfigDict, model_validator
 

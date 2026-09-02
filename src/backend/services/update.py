@@ -441,9 +441,7 @@ def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
 
     if not rules_in_filter.exists():
         if new_sequence != 1:
-            raise ValueError(
-                f"There are no rules in filter with id={filter_obj.id}, so the only valid sequence is 1."
-            )
+            raise ValueError(f"There are no rules in filter with id={filter_obj.id}, so the only valid sequence is 1.")
         scoped_rule.rule_sequence = new_sequence
         scoped_rule.save()
         return scoped_rule

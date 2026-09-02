@@ -218,7 +218,7 @@ def add_addresses_to_group(
 @transaction.atomic
 def remove_address_from_group(actor: User, tenant_id: int, address_group_id: int, address_id: int) -> None:
     """
-    Legacy function to remove a single address from an address group. 
+    Legacy function to remove a single address from an address group.
     For future always use remove_addresses_from_group when removing address(es) from a group.
     """
     require_write_tenant(actor, tenant_id)
@@ -246,7 +246,9 @@ def remove_address_from_group(actor: User, tenant_id: int, address_group_id: int
 
 
 @transaction.atomic
-def remove_addresses_from_group(actor: User, tenant_id: int, address_group_id: int, address_ids: list[int]) -> dict[str, Any]:
+def remove_addresses_from_group(
+    actor: User, tenant_id: int, address_group_id: int, address_ids: list[int]
+) -> dict[str, Any]:
     require_write_tenant(actor, tenant_id)
 
     address_group = AddressGroup.objects.filter(
@@ -509,6 +511,7 @@ def update_objects_in_rule(
         objects=objects,
     )
 
+
 @transaction.atomic
 def remove_objects_from_rule(
     *, actor: User, tenant_id: int, rule_id: int, match_type: str, object_ids: list[int]
@@ -606,7 +609,9 @@ def add_filter_to_interface(
     if filter_obj is None:
         raise PermissionDenied(f"Filter with ID {filter_id} does not exist in tenant {tenant_id}.")
 
-    interface = Interface.objects.filter(id=interface_id, device__tenant_id__in=_editable_tenant_ids(actor, tenant_id)).first()
+    interface = Interface.objects.filter(
+        id=interface_id, device__tenant_id__in=_editable_tenant_ids(actor, tenant_id)
+    ).first()
     if interface is None:
         raise PermissionDenied(f"Interface with ID {interface_id} does not belong to tenant {tenant_id}.")
 
@@ -648,6 +653,7 @@ def add_filter_to_interface(
         )
 
     return interface, filter_obj
+
 
 @transaction.atomic
 def remove_filters_from_interface(
@@ -741,8 +747,11 @@ def add_devices_to_group(*, actor: User, tenant_id: int, device_group_id: int, d
         "not_found_device_ids": [],
     }
 
+
 @transaction.atomic
-def remove_devices_from_group(*, actor: User, tenant_id: int, device_group_id: int, device_ids: list[int]) -> dict[str, Any]:
+def remove_devices_from_group(
+    *, actor: User, tenant_id: int, device_group_id: int, device_ids: list[int]
+) -> dict[str, Any]:
     require_write_tenant(actor, tenant_id)
 
     device_group = DeviceGroup.objects.filter(id=device_group_id, tenant_id=tenant_id).first()
@@ -804,6 +813,7 @@ def add_tag_to_object(
 
     if request_type != "seeding":
         logger.info("Added tag %s to object %s.", tag.id, obj)
+
 
 @transaction.atomic
 def remove_tag_from_object(
