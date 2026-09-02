@@ -1,0 +1,10 @@
+{% load static %}
+<button
+    class="btn-generate generate-config-btn"
+    type="button"
+    data-interface-id="{{ interface.id }}"
+    aria-label="Generate ACL for {{ interface.name }}"
+>
+    Generate ACL
+    <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+</button>

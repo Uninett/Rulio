@@ -1,17 +1,3 @@
-{% extends "base.html" %}
-{% load static %}
-
-{% block title %}Devices | Rulio{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/objects.css' %}" />
-{% endblock %}
-
-{% block content %}
-<div id="devices-content">
-    {% include "partials/_page_content.html" with title=page_title %}
-</div>
-
 <div
     id="config-result-modal"
     class="modal-backdrop"
@@ -52,4 +38,3 @@
         </div>
     </div>
 </div>
-{% endblock %}

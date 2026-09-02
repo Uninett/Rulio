@@ -3,12 +3,13 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib.auth.models import User
+from backend.services.get import get_all_filters_from_interface
 from backend.views.search import get_tags_search_results
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
 from backend.views.modal import get_group_options_view, get_item_options_view
+
 
 logger = set_up_logger(__name__)
 
@@ -55,11 +56,34 @@ def get_add_modal_config(object_type):
                 "item": "partials/modals/_device_form.html",
                 "group": "partials/modals/_device_group_form.html",
             },
+            "post_urls": {
+                "item": reverse("post-device-view"),
+                "group": reverse("post-device-group-view"),
+            },
+            "target": "#devices-table",
+            "swap": "beforeend",
+            "refresh_url": reverse("devices"),
+            "modal_refresh_target": "#devices-content",
         },
         "filters": {
             "title": "Add Filter",
             "supports_types": False,
             "form_partial": "partials/modals/_filter_form.html",
+            "post_url": reverse("post-filter-view"),
+            "target": "#filters-content",
+            "swap": "innerHTML",
+            "refresh_url": reverse("filters-content"),
+            "modal_refresh_target": "#filters-content",
+        },
+        "rules": {
+            "title": "Add Rule",
+            "supports_types": False,
+            "form_partial": "partials/modals/_rule_form.html",
+            "post_url": reverse("post-rule-view"),
+            "target": "#modal-container",
+            "swap": "innerHTML",
+            "refresh_url": reverse("rules-content"),
+            "modal_refresh_target": "#rules-content",
         },
         "addresses": {
             "title": "Add Address",
@@ -116,6 +140,16 @@ def get_add_modal_config(object_type):
             "refresh_url": reverse("tags"),
             "modal_refresh_target": "#tags-content",
         },
+        "interfaces": {
+            "title": "Edit Interface Filters",
+            "supports_types": False,
+            "form_partial": "partials/modals/_interface_form.html",
+            "post_url": reverse("post-interface-view"),
+            "target": "#modal-container",
+            "swap": "innerHTML",
+            "refresh_url": "",
+            "modal_refresh_target": "#devices-content",
+        },
     }
     config = configs.get(object_type)
     if config is None:  # Throw error if object_type is not found in configs
@@ -127,9 +161,9 @@ def get_add_modal_config(object_type):
 # Render the Add modal with the default form for the selected object type.
 @login_required(login_url="login")
 def get_add_modal(request, object_type):
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     config = get_add_modal_config(object_type)
 
-    # Check if modal supports multiple types
     if config.get("supports_types"):
         selected_type = config["default_type"]
         modal_content_partial = config["types"][selected_type]
@@ -140,6 +174,68 @@ def get_add_modal(request, object_type):
     modal_post_url = config.get("post_url")
     if config.get("supports_types") and config.get("post_urls"):
         modal_post_url = config["post_urls"].get(selected_type)
+
+    object_data = {}
+
+    object_data = {}
+    modal_refresh_url = config.get("refresh_url")
+
+    if object_type == "rules":
+        filter_id = request.GET.get("filter_id", "")
+        filter_name = request.GET.get("filter_name", "")
+
+        object_data["filter_id"] = filter_id
+
+        # get_rules_view() needs filter_id to load the correct rules.
+        if filter_id:
+            modal_refresh_url = f"{reverse('rules-content')}?filter_id={filter_id}"
+
+            # Optional: preserve the title shown by get_rules_content().
+            if filter_name:
+                modal_refresh_url += f"&filter_name={filter_name}"
+
+    if object_type == "interfaces":
+        interface_id_raw = request.GET.get("interface_id", "")
+        device_id_raw = request.GET.get("device_id", "")
+
+        if not tenant_id:
+            raise Http404("No tenant selected for interface modal.")
+
+        try:
+            interface_id = int(interface_id_raw)
+            device_id = int(device_id_raw)
+        except (TypeError, ValueError):
+            raise Http404("Missing or invalid interface/device id.")
+
+        ingoing_filters = get_all_filters_from_interface(
+            actor=request.user,
+            tenant_id=tenant_id,
+            interface_id=interface_id,
+            direction="in",
+        )
+        outgoing_filters = get_all_filters_from_interface(
+            actor=request.user,
+            tenant_id=tenant_id,
+            interface_id=interface_id,
+            direction="out",
+        )
+
+        modal_refresh_url = reverse(
+            "interface-filters-view",
+            kwargs={
+                "device_id": device_id,
+                "interface_id": interface_id,
+            },
+        )
+
+        object_data = {
+            "interface_id": interface_id,
+            "ingoing_filter_ids": [f.id for f in ingoing_filters],
+            "ingoing_filter_names": [f.name for f in ingoing_filters],
+            "outgoing_filter_ids": [f.id for f in outgoing_filters],
+            "outgoing_filter_names": [f.name for f in outgoing_filters],
+            "enable": True,
+        }
 
     context = {
         "modal_title": config["title"],
@@ -154,10 +250,11 @@ def get_add_modal(request, object_type):
         "modal_target": config.get("target"),
         "modal_swap": config.get("swap"),
         "modal_submit_handler": config.get("submit_handler"),
-        "modal_refresh_url": config.get("refresh_url"),
+        "modal_refresh_url": modal_refresh_url,
         "modal_refresh_target": config.get("modal_refresh_target"),
-        "object_data": {},
+        "object_data": object_data,
         "selected_group_ids": [],
+        "selected_device_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
         "search_results": get_tags_search_results(request, ""),
@@ -165,14 +262,14 @@ def get_add_modal(request, object_type):
     }
 
     # If object_type is address, service or device, then show all groups
-    if object_type in ["addresses", "services"]:
+    if object_type in ["addresses", "services", "devices"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
 
     if object_type == "users":
         context["tenant_options"] = [
             {"id": tenant.id, "name": tenant.tenant_name}
-            for tenant in Tenant.objects.exclude(id=GLOBAL_TENANT_ID).order_by("tenant_name")
+            for tenant in Tenant.objects.exclude(id=1).order_by("tenant_name")
         ]
 
     if object_type == "tenants":
@@ -215,6 +312,7 @@ def get_add_modal_form_content(request, object_type, type):
             "description": request.GET.get("description", ""),
         },
         "selected_group_ids": [],
+        "selected_device_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
         "search_results": get_tags_search_results(request, ""),
@@ -222,7 +320,7 @@ def get_add_modal_form_content(request, object_type, type):
     }
 
     # If object_type is address, service or device, then show all groups
-    if object_type in ["addresses", "services"]:
+    if object_type in ["addresses", "services", "devices"]:
         context["group_options"] = get_group_options_view(request, object_type)
         context["item_options"] = get_item_options_view(request, object_type)
 

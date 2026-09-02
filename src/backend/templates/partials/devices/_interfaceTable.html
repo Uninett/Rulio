@@ -1,0 +1,21 @@
+<section class="objects-table-container table-container">
+    <table class="objects-table objects-table--interfaces">
+        <thead>
+            <tr>
+                {% for header in filters.headers %}
+                <th class="col-{{ forloop.counter }}">{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="interfaces-table">
+            {% for row in filters.rows %}
+            {% include "partials/objects/_tableRow.html" with row=row headers=filters.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ filters.headers|length }}">No filters found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% include "partials/devices/_generateButton.html" with interface=interface %}

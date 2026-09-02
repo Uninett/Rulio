@@ -15,11 +15,28 @@
 
     {% if add_button_label %}
     {% if can_write_current_tenant or request.user.is_superuser %}
+
+    {% if object_type == "rules" %}
+    <button class="btn-add" type="button" hx-get="{% url 'modal-add' object_type %}?filter_id={{ current_filter_id }}"
+        hx-target="#modal-container" hx-swap="innerHTML">
+        {{ add_button_label }}
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+    </button>
+    {% elif object_type == "interfaces" %}
+    <button class="btn-add" type="button"
+        hx-get="{% url 'modal-add' object_type %}?interface_id={{ current_interface_id }}&device_id={{ current_device_id }}"
+        hx-target="#modal-container" hx-swap="innerHTML">
+        {{ add_button_label }}
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+    </button>
+    {% else %}
     <button class="btn-add" type="button" hx-get="{% url 'modal-add' object_type %}" hx-target="#modal-container"
         hx-swap="innerHTML">
         {{ add_button_label }}
         <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
     </button>
+    {% endif %}
+
     {% else %}
     <button class="btn-add btn-add-disabled" type="button"
         title="{% if selected_tenant|stringformat:'s' == '1' %}Need superuser permission to add {{ object_type }}.{% else %}Need tenant admin permission to add {{ object_type }}.{% endif %}">
@@ -27,5 +44,13 @@
         <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
     </button>
     {% endif %}
+    {% endif %}
+
+    {% if add_extra_button_label %}
+    <button class="btn-add" type="button" hx-get="{% url 'modal-add' object_extra_type %}" hx-target="#modal-container"
+        hx-swap="innerHTML">
+        {{ add_extra_button_label }}
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+    </button>
     {% endif %}
 </div>

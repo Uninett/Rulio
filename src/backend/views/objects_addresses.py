@@ -226,22 +226,6 @@ def get_addresses_view(request):
 
         expand = []
 
-        field_map = [
-            ("IPv4 Type", "ipv4_type"),
-            ("IPv6 Type", "ipv6_type"),
-            ("IPv4 Network", "ipv4Network"),
-            ("IPv6 Network", "ipv6Network"),
-            ("IPv4 Start", "ipv4Address_start"),
-            ("IPv4 End", "ipv4Address_end"),
-            ("IPv6 Start", "ipv6Address_start"),
-            ("IPv6 End", "ipv6Address_end"),
-        ]
-
-        for label, attr in field_map:
-            value = getattr(address, attr, None)
-            if value:
-                expand.append({"label": label, "value": value})
-
         if tag_names:
             expand.append({"label": "Tags", "value": address_tags})
 

@@ -14,7 +14,7 @@ __pycache__/
 TODO.txt
 /logs/
 src/logs/
-
+*.diff
 
 .*
 

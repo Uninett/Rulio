@@ -1,0 +1,49 @@
+<div class="form-group">
+    <label for="enable">
+        Enable
+        <input type="checkbox" id="enable" name="enable" {% if object_data.enable %}checked{% endif %}>
+    </label>
+</div>
+
+<input type="hidden" name="interface_id" value="{{ object_data.interface_id|default:'' }}">
+
+<div class="form-group">
+    <label>Ingoing Filters</label>
+
+    <div id="interface-ingoing-filters-summary" class="selector-summary">
+        {% for name in object_data.ingoing_filter_names %}
+        <div>{{ name }}</div>
+        {% empty %}
+        No ingoing filters selected.
+        {% endfor %}
+    </div>
+    <input type="hidden" name="ingoing_filter_ids" id="interface-ingoing-filter-ids"
+        value="{% for id in object_data.ingoing_filter_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button" class="btn-secondary"
+        data-selector-url="{% url 'interface-selector-modal' 'ingoing_filter' %}"
+        onclick="openRuleSelectorModal('ingoing_filter', this.dataset.selectorUrl)">
+        Edit Ingoing Filters
+    </button>
+</div>
+
+<div class="form-group">
+    <label>Outgoing Filters</label>
+
+    <div id="interface-outgoing-filters-summary" class="selector-summary">
+        {% for name in object_data.outgoing_filter_names %}
+        <div>{{ name }}</div>
+        {% empty %}
+        No outgoing filters selected.
+        {% endfor %}
+    </div>
+
+    <input type="hidden" name="outgoing_filter_ids" id="interface-outgoing-filter-ids"
+        value="{% for id in object_data.outgoing_filter_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button" class="btn-secondary"
+        data-selector-url="{% url 'interface-selector-modal' 'outgoing_filter' %}"
+        onclick="openRuleSelectorModal('outgoing_filter', this.dataset.selectorUrl)">
+        Edit Outgoing Filters
+    </button>
+</div>

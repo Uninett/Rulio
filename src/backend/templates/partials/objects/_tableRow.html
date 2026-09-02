@@ -1,14 +1,25 @@
 {% load static %}
 
-{% if object_type == "tags" %}
+    {% if object_type == "tags" %}
 <tr id="row-{{ row.id }}"
     class="main-row tag-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
     style="--tag-color: {{ row.color }};" onclick="expandRow('{{ row.id }}')">
+
+    {% elif object_type == "rules" and row.can_write %}
+<tr id="row-{{ row.id }}"
+    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %}"
+    draggable="true" data-rules-draggable="true">
+
+    {% elif object_type == "rules" %}
+<tr id="row-{{ row.id }}"
+    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} readonly-row">
+
     {% else %}
 <tr id="row-{{ row.id }}"
     class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
     onclick="expandRow('{{ row.id }}')">
     {% endif %}
+
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}
 
     {% if row.can_write %}

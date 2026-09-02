@@ -1,0 +1,134 @@
+<input type="hidden" name="filter_id" value="{{ object_data.filter_id|default:'' }}">
+
+<div class="form-group">
+    <label for="action">Action</label>
+    <select id="action" name="action">
+        <option value="accept" {% if object_data.action == "accept" %}selected{% endif %}>Accept</option>
+        <option value="deny" {% if object_data.action == "deny" %}selected{% endif %}>Deny</option>
+        <option value="reject" {% if object_data.action == "reject" %}selected{% endif %}>Reject</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="log_type">Log Type</label>
+    <select id="log_type" name="log_type">
+        <option value="None" {% if object_data.log_type == "None" %}selected{% endif %}>None</option>
+        <option value="Start" {% if object_data.log_type == "Start" %}selected{% endif %}>Start</option>
+        <option value="End" {% if object_data.log_type == "End" %}selected{% endif %}>End</option>
+        <option value="Both" {% if object_data.log_type == "Both" %}selected{% endif %}>Both</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="enable">
+        Enable
+        <input type="checkbox"
+               id="enable"
+               name="enable"
+               {% if object_data.enable %}checked{% endif %}>
+    </label>
+</div>
+
+<div class="form-group">
+    <label>Source Addresses</label>
+
+    <div id="rule-source-addresses-summary" class="selector-summary">
+        {% for name in object_data.source_address_names %}
+            {{ name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No source addresses selected.
+        {% endfor %}
+    </div>
+
+    <input type="hidden"
+           name="source_address_ids"
+           id="rule-source-address-ids"
+           value="{% for id in object_data.source_address_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button"
+            class="btn-secondary"
+            onclick="openRuleSelectorModal(
+                'source_address',
+                '{% url 'rule-selector-modal' 'source_address' %}'
+            )">
+        Edit Source Addresses
+    </button>
+</div>
+
+<div class="form-group">
+    <label>Destination Addresses</label>
+
+    <div id="rule-destination-addresses-summary" class="selector-summary">
+        {% for name in object_data.destination_address_names %}
+            {{ name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No destination addresses selected.
+        {% endfor %}
+    </div>
+
+    <input type="hidden"
+           name="destination_address_ids"
+           id="rule-destination-address-ids"
+           value="{% for id in object_data.destination_address_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button"
+            class="btn-secondary"
+            onclick="openRuleSelectorModal(
+                'destination_address',
+                '{% url 'rule-selector-modal' 'destination_address' %}'
+            )">
+        Edit Destination Addresses
+    </button>
+</div>
+
+<div class="form-group">
+    <label>Source Services</label>
+
+    <div id="rule-source-services-summary" class="selector-summary">
+        {% for name in object_data.source_service_names %}
+            {{ name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No source services selected.
+        {% endfor %}
+    </div>
+
+    <input type="hidden"
+           name="source_service_ids"
+           id="rule-source-service-ids"
+           value="{% for id in object_data.source_service_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button"
+            class="btn-secondary"
+            onclick="openRuleSelectorModal(
+                'source_service',
+                '{% url 'rule-selector-modal' 'source_service' %}'
+            )">
+        Edit Source Services
+    </button>
+</div>
+
+<div class="form-group">
+    <label>Destination Services</label>
+
+    <div id="rule-destination-services-summary" class="selector-summary">
+        {% for name in object_data.destination_service_names %}
+            {{ name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No destination services selected.
+        {% endfor %}
+    </div>
+
+    <input type="hidden"
+           name="destination_service_ids"
+           id="rule-destination-service-ids"
+           value="{% for id in object_data.destination_service_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+    <button type="button"
+            class="btn-secondary"
+            onclick="openRuleSelectorModal(
+                'destination_service',
+                '{% url 'rule-selector-modal' 'destination_service' %}'
+            )">
+        Edit Destination Services
+    </button>
+</div>

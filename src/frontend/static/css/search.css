@@ -2,6 +2,7 @@
     box-sizing: border-box;
     border: none;
     border-bottom: 1px solid var(--sds-color-layout-border-subtle);
+    width: 20rem;
     min-height: 2.5rem;
     padding: 0 0.75rem;
     border: 1px solid var(--sds-color-layout-border-strong);
@@ -21,6 +22,7 @@
     display: none;
     position: absolute;
     background-color: var(--sds-color-layout-surface-2);
+    width: 20rem;
     overflow: auto;
     border: 1px solid var(--sds-color-layout-border-subtle);
     z-index: 3;
