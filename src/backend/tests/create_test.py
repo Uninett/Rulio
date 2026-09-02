@@ -5,10 +5,10 @@ from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.rule_match import RuleMatch
 from backend.services.attribute_objects.create_attribute_objects import (
-    create_address,
     create_address_group,
     create_service,
     create_service_group,
+    get_or_create_address,
     get_or_create_address_group,
 )
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
@@ -26,7 +26,7 @@ logger = set_up_logger(__name__)
 class TestCreateAddress:
     def test_create_address(self, request_with_session, create_testing_tenant):
 
-        address = create_address(
+        address = get_or_create_address(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Test Address",
@@ -36,7 +36,7 @@ class TestCreateAddress:
             ipv6_type="standard",
             ipv4Network="192.168.1.1",
             ipv6Network="2001:db8::1",
-        )
+        )[0]
         assert address is not None
         assert address.name == "Test Address"
         assert address.description == "This is a test address"
@@ -47,7 +47,7 @@ class TestCreateAddress:
         assert address.ipv6_type == "standard"
 
     def test_create_address_with_custom_range(self, request_with_session, create_testing_tenant):
-        address = create_address(
+        address = get_or_create_address(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Test Address Range",
@@ -59,7 +59,7 @@ class TestCreateAddress:
             ipv4Address_end="192.168.1.255",
             ipv6Address_start="2001:db8::1",
             ipv6Address_end="2001:db8::ffff",
-        )
+        )[0]
         assert address is not None
         assert address.name == "Test Address Range"
         assert address.description == "This is a test address range"

@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from backend.objects.attributes.tag import Tag
 from backend.services.attribute_objects.create_attribute_objects import (
-    create_address,
+    get_or_create_address,
 )
 from backend.services.attribute_objects.get_address_objects import (
     get_address_group_members,
@@ -343,7 +343,7 @@ def post_address_view(request):
         )
 
     try:
-        created_address = create_address(
+        created_address = get_or_create_address(
             actor=request.user,
             tenant_id=tenant_id,
             name=name,
@@ -357,7 +357,7 @@ def post_address_view(request):
             ipv4Address_end=ipv4Address_end,
             ipv6Address_start=ipv6Address_start,
             ipv6Address_end=ipv6Address_end,
-        )
+        )[0]
 
         submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
 
