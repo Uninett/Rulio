@@ -1,13 +1,12 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from django.shortcuts import render
 
-from backend.views.session import get_tenant_context
-from backend.views.search import get_global_search_results
 from backend.views.management_helpers import get_management_toolbar_context
-from backend.views.management_users import get_users_view
 from backend.views.management_tenants import get_tenants_view
-
+from backend.views.management_users import get_users_view
+from backend.views.search import get_global_search_results
+from backend.views.session import get_tenant_context
 
 """
 ====================================================================

@@ -5,7 +5,6 @@ from backend.services.attribute_objects.create_attribute_objects import get_or_c
 from backend.services.attribute_objects.get_address_objects import get_all_addresses_from_tenant_by_names
 from backend.utils.logger import set_up_logger
 
-
 logger = set_up_logger(__name__)
 
 

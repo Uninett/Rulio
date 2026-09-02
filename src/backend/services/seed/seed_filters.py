@@ -2,9 +2,7 @@ from django.contrib.auth.models import User
 
 from backend.objects.filters.filter import Filter
 from backend.services.filter_objects.create_filter_objects import get_or_create_filter
-
 from backend.utils.logger import set_up_logger
-
 
 logger = set_up_logger(__name__)
 

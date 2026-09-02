@@ -1,8 +1,8 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.test import Client
 
 from backend.objects.tenant_objects.tenant import Tenant
-from django.contrib.auth import get_user_model
 
 
 @pytest.mark.django_db

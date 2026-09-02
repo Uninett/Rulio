@@ -1,13 +1,13 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseForbidden
 from django.contrib.auth.models import User
+from django.http import HttpResponse, HttpResponseForbidden
+from django.shortcuts import render
 from django.urls import reverse
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
-from backend.views.management_helpers import get_management_toolbar_context
 from backend.utils.logger import set_up_logger
+from backend.views.management_helpers import get_management_toolbar_context
 
 logger = set_up_logger(__name__)
 

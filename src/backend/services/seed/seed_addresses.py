@@ -1,8 +1,8 @@
 from django.contrib.auth.models import User
+
 from backend.objects.attributes.address import Address
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address
 from backend.utils.logger import set_up_logger
-
 
 logger = set_up_logger(__name__)
 

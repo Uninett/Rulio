@@ -18,101 +18,85 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-
-from .api import (
-    api,
-)
-
-from .views.session import (
-    get_login_page,
-    logout_view,
-    set_tenant_view,
-)
-
-from .views.management_page import (
-    get_management_page,
-)
-
-from .views.management_users import get_management_users, post_user_view, update_user_view, delete_user_view
-from .views.management_tenants import get_management_tenants, post_tenant_view, update_tenant_view, delete_tenant_view
-
-from .views.devices_page import (
-    get_devices_page,
-    interface_filters_view,
-    check_interface_config_generation,
-    download_interface_configs,
-    post_device_view,
-    post_interface_view,
-    get_interface_filter_selector_modal,
-)
-
-from .views.device_groups import (
-    post_device_group_view,
-)
-
-
-from .views.filters_page import (
-    get_filters_page,
-    update_filter_view,
-    post_filter_view,
-    get_filters_content,
-    delete_filter_view,
-)
-
-from .views.objects_page import (
-    get_objects_page,
-)
-
-from .views.objects_addresses import (
-    get_objects_addresses,
-    post_address_view,
-    update_address_view,
-    delete_address_view,
-)
-
-from .views.objects_address_groups import (
-    post_address_group_view,
-    update_address_group_view,
-    delete_address_group_view,
-)
-
-from .views.objects_services import (
-    get_objects_services,
-    post_service_view,
-    update_service_view,
-    delete_service_view,
-)
-
-from .views.objects_service_groups import (
-    post_service_group_view,
-    update_service_group_view,
-    delete_service_group_view,
-)
-
 from backend.views.rule_page import (
     delete_rule_view,
     get_rule_page,
-    get_rules_content,
     get_rule_selector_modal,
+    get_rules_content,
     post_rule_view,
     reorder_rule_view,
     update_rule_view,
 )
 
-from .views.tags_page import (
-    get_tags_page,
-    post_tag_view,
-    update_tag_view,
-    delete_tag_view,
+from .api import (
+    api,
 )
-
+from .views.device_groups import (
+    post_device_group_view,
+)
+from .views.devices_page import (
+    check_interface_config_generation,
+    download_interface_configs,
+    get_devices_page,
+    get_interface_filter_selector_modal,
+    interface_filters_view,
+    post_device_view,
+    post_interface_view,
+)
+from .views.filters_page import (
+    delete_filter_view,
+    get_filters_content,
+    get_filters_page,
+    post_filter_view,
+    update_filter_view,
+)
+from .views.management_page import (
+    get_management_page,
+)
+from .views.management_tenants import delete_tenant_view, get_management_tenants, post_tenant_view, update_tenant_view
+from .views.management_users import delete_user_view, get_management_users, post_user_view, update_user_view
 from .views.modal_add import (
     get_add_modal,
     get_add_modal_form_content,
 )
-
 from .views.modal_update import (
     get_update_modal,
+)
+from .views.objects_address_groups import (
+    delete_address_group_view,
+    post_address_group_view,
+    update_address_group_view,
+)
+from .views.objects_addresses import (
+    delete_address_view,
+    get_objects_addresses,
+    post_address_view,
+    update_address_view,
+)
+from .views.objects_page import (
+    get_objects_page,
+)
+from .views.objects_service_groups import (
+    delete_service_group_view,
+    post_service_group_view,
+    update_service_group_view,
+)
+from .views.objects_services import (
+    delete_service_view,
+    get_objects_services,
+    post_service_view,
+    update_service_view,
+)
+from .views.session import (
+    get_login_page,
+    logout_view,
+    set_tenant_view,
+)
+from .views.tags_page import (
+    delete_tag_view,
+    get_tags_page,
+    post_tag_view,
+    update_tag_view,
 )
 
 urlpatterns = [

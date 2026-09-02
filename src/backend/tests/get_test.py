@@ -1,8 +1,8 @@
 import pytest
-
 from django.core.exceptions import ObjectDoesNotExist
+
 from backend.objects.attributes.address import Address
-from backend.services.get import get_object_by_type_and_id, get_all_objects_with_certain_tag
+from backend.services.get import get_all_objects_with_certain_tag, get_object_by_type_and_id
 from backend.services.membership import add_tag_to_object
 from backend.utils.logger import set_up_logger
 

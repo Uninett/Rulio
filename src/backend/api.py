@@ -1,105 +1,101 @@
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from ninja import NinjaAPI, Status
 from ninja.security import django_auth
-from django.conf import settings
 
-
+from backend.objects.attributes.address import Address
+from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
+from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
+from backend.schemas.address import CreateAddressSchema
 from backend.schemas.address_group import CreateGroupSchema
+from backend.schemas.create_user import CreateUserSchema
 from backend.schemas.device import CreateDeviceSchema
 from backend.schemas.filter import CreateFilterSchema
 from backend.schemas.interface import CreateInterfaceSchema
+from backend.schemas.login import LoginSchema
+from backend.schemas.message import MessageSchema
+from backend.schemas.rule import CreateRuleSchema
+from backend.schemas.service import CreateServiceSchema
+from backend.schemas.tag import CreateTagSchema
+from backend.schemas.tag_object import CreateTagObjectSchema
+from backend.schemas.tenant import CreateTenantSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
+from backend.services.attribute_objects.create_attribute_objects import (
+    create_address,
+    create_address_group,
+    create_address_group_and_add_addresses,
+    create_and_add_address_to_groups,
+    create_and_add_service_to_groups,
+    create_and_add_tag_to_object,
+    create_service,
+    create_service_group,
+    create_service_group_and_add_services,
+    create_tag,
+)
+from backend.services.attribute_objects.get_address_objects import (
+    get_address_groups_and_addresses_from_tenant,
+    get_all_addresses_and_groups_with_tags_from_tenant,
+)
+from backend.services.attribute_objects.get_service_objects import (
+    get_all_services_and_groups_with_tags_from_tenant,
+    get_service_groups_and_services_from_tenant,
+)
 from backend.services.authentication import require_read_tenantd, require_superadmind, require_write_tenantd
+from backend.services.config_generation.build import build_policies_for_interface
+from backend.services.config_generation.generate_config import generate_multi_policy_config
+from backend.services.create import (
+    create_tenant_user_member,
+)
 from backend.services.debugging.add_test_data import create_interfaces_devices_devicegroups_tags
 from backend.services.delete import (
     clear_all_tags_from_object,
     delete_device,
     delete_filter,
     delete_interface,
-    delete_tag_from_tenant,
-    remove_tag_from_object,
     delete_rule,
+    delete_tag_from_tenant,
     delete_tenant,
+    remove_tag_from_object,
 )
-from backend.services.config_generation.generate_config import generate_multi_policy_config
-from backend.services.attribute_objects.get_address_objects import (
-    get_address_groups_and_addresses_from_tenant,
-    get_all_addresses_and_groups_with_tags_from_tenant,
-)
-from backend.services.attribute_objects.get_service_objects import (
-    get_service_groups_and_services_from_tenant,
-    get_all_services_and_groups_with_tags_from_tenant,
-)
+from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 from backend.services.get import (
+    DJANGO_MODEL_MAPPING,
     get_all_devices_from_tenant,
     get_all_filters_from_interface,
     get_all_filters_from_tenant,
     get_all_interfaces_from_device,
-    get_all_tags_from_object,
-    get_all_tags_from_tenant,
     get_all_rules_from_tenant,
     get_all_rules_with_objects_from_tenant,
+    get_all_tags_from_object,
+    get_all_tags_from_tenant,
 )
-from backend.services.attribute_objects.create_attribute_objects import (
-    create_address,
-    create_address_group_and_add_addresses,
-    create_service,
-    create_service_group_and_add_services,
-    create_and_add_address_to_groups,
-    create_and_add_service_to_groups,
-    create_address_group,
-    create_service_group,
-    create_tag,
-    create_and_add_tag_to_object,
+from backend.services.helper_user_tenant import (
+    can_read_tenant,
+    is_superadmin,
 )
-
+from backend.services.membership import (
+    add_address_to_group,
+    add_addresses_to_group,
+    add_devices_to_group,
+    add_filter_to_interface,
+    add_objects_to_rule,
+    add_service_to_group,
+    add_services_to_group,
+    add_tag_to_object,
+)
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
     create_device_group,
     create_interface,
     create_tenant,
 )
-
-from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
-from backend.services.config_generation.build import build_policies_for_interface
-from backend.services.create import (
-    create_tenant_user_member,
-)
-from backend.schemas.address import CreateAddressSchema
-from backend.schemas.tag import CreateTagSchema
-from backend.schemas.tag_object import CreateTagObjectSchema
-from backend.schemas.service import CreateServiceSchema
-from backend.schemas.login import LoginSchema
-from backend.schemas.create_user import CreateUserSchema
-from backend.schemas.tenant import CreateTenantSchema
-from backend.schemas.message import MessageSchema
-from backend.schemas.rule import CreateRuleSchema
-from backend.objects.attributes.address import Address
-from backend.objects.attributes.address_group import AddressGroup
-from backend.objects.attributes.service_group import ServiceGroup
-from backend.services.get import DJANGO_MODEL_MAPPING
-from backend.objects.tenant_objects.tenant import Tenant
-from backend.services.helper_user_tenant import (
-    is_superadmin,
-    can_read_tenant,
-)
-from backend.services.membership import (
-    add_address_to_group,
-    add_filter_to_interface,
-    add_objects_to_rule,
-    add_service_to_group,
-    add_addresses_to_group,
-    add_services_to_group,
-    add_devices_to_group,
-    add_tag_to_object,
-)
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
-
 
 # Logger setup
 logger = set_up_logger(__name__)

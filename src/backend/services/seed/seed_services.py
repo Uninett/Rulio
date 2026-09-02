@@ -2,7 +2,6 @@ from backend.objects.attributes.service import Service
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_service
 from backend.utils.logger import set_up_logger
 
-
 logger = set_up_logger(__name__)
 
 

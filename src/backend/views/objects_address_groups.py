@@ -1,21 +1,17 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
 from django.http import HttpResponse
-from backend.utils.logger import set_up_logger
+from django.shortcuts import render
+from django.urls import reverse
 
-from backend.views.modal import get_item_options_view
-
+from backend.objects.attributes.tag import Tag
 from backend.services.attribute_objects.create_attribute_objects import create_address_group
 from backend.services.attribute_objects.get_address_objects import get_address_group_members
-from backend.services.membership import add_addresses_to_group, remove_address_from_group
-from backend.services.update import update_address_group
-from backend.services.delete import delete_address_group
-
+from backend.services.delete import delete_address_group, remove_tag_from_object
 from backend.services.get import get_all_tags_from_object, get_object_by_type_and_id
-from backend.services.membership import add_tag_to_object
-from backend.services.delete import remove_tag_from_object
-from backend.objects.attributes.tag import Tag
+from backend.services.membership import add_addresses_to_group, add_tag_to_object, remove_address_from_group
+from backend.services.update import update_address_group
+from backend.utils.logger import set_up_logger
+from backend.views.modal import get_item_options_view
 
 logger = set_up_logger(__name__)
 

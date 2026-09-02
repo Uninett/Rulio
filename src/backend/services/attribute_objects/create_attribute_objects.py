@@ -1,23 +1,23 @@
-from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.contrib.auth.models import User
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
-from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
+
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.address_group_member import AddressGroupMember
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.tag import Tag
-from backend.services.helper_user_tenant import require_write_tenant
-from backend.utils.logger import set_up_logger
 from backend.services.get import get_object_by_type_and_id
+from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import (
     add_addresses_to_group,
     add_services_to_group,
 )
-
+from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
 

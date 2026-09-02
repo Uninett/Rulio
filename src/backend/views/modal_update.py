@@ -1,34 +1,30 @@
-from django.db.models import ObjectDoesNotExist
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
-from django.http import HttpResponse
-from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
 from django.contrib.auth.models import User
+from django.db.models import ObjectDoesNotExist
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.urls import reverse
+
+from backend.objects.attributes.tag import Tag
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
-from backend.objects.attributes.tag import Tag
-from backend.views.search import get_tags_search_results
-
-from backend.views.modal import get_group_options_view, get_item_options_view
-from backend.views.objects_addresses import build_ip_input
-
 from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
-
+from backend.services.attribute_objects.get_service_objects import (
+    get_all_services_and_groups_with_tags_from_tenant,
+)
 from backend.services.get import (
     get_all_objects_from_rule,
     get_all_tags_from_object,
     get_filter_with_rules_and_tags,
     get_rule_with_tags_from_tenant,
 )
-
-from backend.services.attribute_objects.get_service_objects import (
-    get_all_services_and_groups_with_tags_from_tenant,
-)
-
+from backend.utils.logger import set_up_logger
+from backend.views.modal import get_group_options_view, get_item_options_view
+from backend.views.objects_addresses import build_ip_input
+from backend.views.search import get_tags_search_results
+from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 

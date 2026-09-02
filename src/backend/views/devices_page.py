@@ -1,42 +1,38 @@
 import zipfile
 from io import BytesIO
 
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from django.db import transaction
 
+from backend.objects.attributes.tag import Tag
+from backend.objects.filters.filter import Filter
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.filter_interface import FilterInterface
-from backend.objects.filters.filter import Filter
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
-from backend.utils.logger import set_up_logger
-from backend.views.session import get_tenant_context
-from backend.views.search import get_global_search_results
-from backend.services.get import (
-    get_all_device_groups_and_devices_with_tags_from_tenant,
-    get_all_filters_from_interface,
-    get_object_by_type_and_id,
-)
-from backend.services.get import get_device_group_members
-from backend.services.get import get_all_tags_from_object
-from backend.services.get import get_all_interfaces_from_device
-from constants import GLOBAL_TENANT_ID
-from backend.services.helper_user_tenant import can_write_tenant
 from backend.services.config_generation.generate_interface_config import (
     generate_interface_config_results,
 )
-
+from backend.services.get import (
+    get_all_device_groups_and_devices_with_tags_from_tenant,
+    get_all_filters_from_interface,
+    get_all_interfaces_from_device,
+    get_all_tags_from_object,
+    get_device_group_members,
+    get_object_by_type_and_id,
+)
+from backend.services.helper_user_tenant import can_write_tenant
+from backend.services.membership import add_filter_to_interface, add_tag_to_object
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
 )
-
-from backend.services.membership import add_tag_to_object
-from backend.services.membership import add_filter_to_interface
-from backend.objects.attributes.tag import Tag
-
+from backend.utils.logger import set_up_logger
+from backend.views.search import get_global_search_results
+from backend.views.session import get_tenant_context
+from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 

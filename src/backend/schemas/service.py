@@ -1,6 +1,7 @@
-from ninja import Schema, Field
 from typing import Optional
-from pydantic import model_validator, ConfigDict
+
+from ninja import Field, Schema
+from pydantic import ConfigDict, model_validator
 
 
 class CreateServiceSchema(Schema):

@@ -1,9 +1,8 @@
 from django.core.exceptions import PermissionDenied
 
 from backend.objects.tenant_objects.tenant import Tenant
-from backend.utils.logger import set_up_logger
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
-
+from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
 

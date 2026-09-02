@@ -1,7 +1,8 @@
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from typing import Literal, Optional
+
 from ninja import Schema
-from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
-from typing import Optional, Literal
-from pydantic import Field, model_validator, ConfigDict
+from pydantic import ConfigDict, Field, model_validator
 
 
 class CreateAddressSchema(Schema):

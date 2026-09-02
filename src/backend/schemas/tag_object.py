@@ -1,4 +1,4 @@
-from ninja import Schema, Field
+from ninja import Field, Schema
 
 
 class CreateTagObjectSchema(Schema):

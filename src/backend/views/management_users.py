@@ -1,13 +1,14 @@
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
-from constants import GLOBAL_TENANT_ID
+from django.urls import reverse
+
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.utils.logger import set_up_logger
 from backend.views.management_helpers import get_management_toolbar_context
+from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 

@@ -1,6 +1,6 @@
-from datetime import datetime
 import logging
 import os
+from datetime import datetime
 
 
 def write_configuration_to_file(

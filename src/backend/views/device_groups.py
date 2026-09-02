@@ -1,16 +1,13 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from backend.utils.logger import set_up_logger
-from constants import GLOBAL_TENANT_ID
-from backend.services.helper_user_tenant import can_write_tenant
+from django.shortcuts import render
 
-from backend.views.modal import get_item_options_view
-
-from backend.services.tenant_objects.create_tenant_objects import create_device_group
-from backend.services.membership import add_devices_to_group
-
-from backend.services.membership import add_tag_to_object
 from backend.objects.attributes.tag import Tag
+from backend.services.helper_user_tenant import can_write_tenant
+from backend.services.membership import add_devices_to_group, add_tag_to_object
+from backend.services.tenant_objects.create_tenant_objects import create_device_group
+from backend.utils.logger import set_up_logger
+from backend.views.modal import get_item_options_view
+from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 

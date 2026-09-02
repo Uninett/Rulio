@@ -1,15 +1,13 @@
-from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
 
+from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.objects.tenant_objects.tenant import Tenant
-from backend.objects.tenant_objects.device import Device
-from backend.objects.tenant_objects.device_group import DeviceGroup
-
 from backend.services.helper_user_tenant import require_superadmin, require_write_tenant
 from backend.utils.logger import set_up_logger
-
 
 logger = set_up_logger(__name__)
 

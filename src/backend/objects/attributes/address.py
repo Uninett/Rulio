@@ -1,6 +1,7 @@
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, summarize_address_range
+
 from django.core.exceptions import ValidationError
 from django.db import models
-from ipaddress import summarize_address_range, IPv4Address, IPv6Address, IPv4Network, IPv6Network
 
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 

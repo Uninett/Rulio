@@ -12,13 +12,13 @@ from backend.objects.tenant_objects.interface import Interface
 from backend.services.delete import (
     delete_address,
     delete_address_group,
+    delete_device,
+    delete_filter,
+    delete_interface,
+    delete_rule,
     delete_service,
     delete_service_group,
     delete_tag_from_tenant,
-    delete_rule,
-    delete_device,
-    delete_interface,
-    delete_filter,
 )
 
 

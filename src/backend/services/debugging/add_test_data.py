@@ -8,7 +8,6 @@ from backend.services.attribute_objects.create_attribute_objects import (
     get_or_create_tag,
 )
 from backend.services.filter_objects.create_filter_objects import get_or_create_filter, get_or_create_rule
-from backend.services.tenant_objects.create_tenant_objects import get_or_create_device
 from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import (
     add_devices_to_group,
@@ -17,11 +16,11 @@ from backend.services.membership import (
     add_tag_to_object,
 )
 from backend.services.tenant_objects.create_tenant_objects import (
+    get_or_create_device,
     get_or_create_device_group,
     get_or_create_interface,
 )
 from backend.utils.logger import set_up_logger
-
 
 logger = set_up_logger(__name__)
 

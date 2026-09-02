@@ -1,16 +1,15 @@
 from datetime import datetime, timezone
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.contrib.auth.models import User
 
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.versionControl import VersionControl
+from backend.services.helper_user_tenant import get_tenant_by_id, require_write_tenant
 from backend.services.update import update_rule_sequence
 from backend.utils.logger import set_up_logger
-from backend.services.helper_user_tenant import get_tenant_by_id, require_write_tenant
-from django.db import transaction, IntegrityError
-
 
 logger = set_up_logger(__name__)
 

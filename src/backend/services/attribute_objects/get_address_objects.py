@@ -1,16 +1,13 @@
 from django.contrib.auth.models import User
-from django.db.models import QuerySet
 from django.core.exceptions import PermissionDenied
+from django.db.models import QuerySet
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.address_group_member import AddressGroupMember
-
-
 from backend.services.helper_user_tenant import require_read_tenant
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
-
 
 # Setup logger
 logger = set_up_logger(__name__)

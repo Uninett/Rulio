@@ -1,9 +1,9 @@
+import json
+
 import pytest
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
-import json
-
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag

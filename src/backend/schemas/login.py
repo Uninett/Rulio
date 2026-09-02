@@ -1,5 +1,5 @@
 from ninja import Schema
-from pydantic import Field, ConfigDict
+from pydantic import ConfigDict, Field
 
 
 class LoginSchema(Schema):

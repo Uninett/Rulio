@@ -1,13 +1,12 @@
-from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from django.shortcuts import redirect, render
 
-from constants import GLOBAL_TENANT_ID
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
-from backend.services.helper_user_tenant import is_superadmin, can_write_tenant
-
+from backend.services.helper_user_tenant import can_write_tenant, is_superadmin
+from constants import GLOBAL_TENANT_ID
 
 """
 ====================================================================

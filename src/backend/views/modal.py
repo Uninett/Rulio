@@ -1,17 +1,13 @@
-from backend.utils.logger import set_up_logger
-
-from backend.services.get import (
-    get_all_device_groups_and_devices_with_tags_from_tenant,
-)
-
-
 from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
-
 from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
+from backend.services.get import (
+    get_all_device_groups_and_devices_with_tags_from_tenant,
+)
+from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
 

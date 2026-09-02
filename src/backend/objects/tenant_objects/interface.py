@@ -1,4 +1,5 @@
 from django.db import models
+
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
 

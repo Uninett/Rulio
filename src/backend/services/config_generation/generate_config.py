@@ -1,8 +1,8 @@
-from collections import Counter, defaultdict
-from dataclasses import dataclass, field
 import copy
 import logging
 import re
+from collections import Counter, defaultdict
+from dataclasses import dataclass, field
 
 from aerleon import api as aerleon_api
 from aerleon.lib import naming
@@ -22,7 +22,6 @@ from backend.services.config_generation.platform_capabilities import vendor_supp
 from backend.services.get import DJANGO_MODEL_MAPPING
 from backend.utils.logger import set_up_logger
 from constants import DIRECTION_CHOICES
-
 
 logger = set_up_logger(__name__)
 

@@ -6,20 +6,18 @@ from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.rule_match import RuleMatch
 from backend.services.attribute_objects.create_attribute_objects import (
     create_address,
-    create_service,
     create_address_group,
+    create_service,
     create_service_group,
     get_or_create_address_group,
 )
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 from backend.services.membership import (
     add_addresses_to_group,
-    add_services_to_group,
     add_objects_to_rule,
+    add_services_to_group,
 )
-
 from backend.utils.logger import set_up_logger
-
 
 logger = set_up_logger(__name__)
 

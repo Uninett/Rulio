@@ -2,19 +2,18 @@ from django.contrib.auth.models import User
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.tenant import Tenant
+from backend.services.get import get_object_by_type_and_id
 from backend.services.helper_user_tenant import require_superadmin, require_write_tenant
 from backend.utils.logger import set_up_logger
-from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
-from backend.services.get import get_object_by_type_and_id
-from backend.objects.attributes.tag import Tag
-from backend.objects.filters.rule import Rule
-from backend.objects.tenant_objects.tenant import Tenant
-
 
 logger = set_up_logger(__name__)
 
