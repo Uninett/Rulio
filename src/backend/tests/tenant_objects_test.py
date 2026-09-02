@@ -1,9 +1,9 @@
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.device_group_member import DeviceGroupMember
+from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.tenant import Tenant
-from backend.objects.tenant_objects.filter_interface import FilterInterface
 
 
 class TestTenantObjectsImports:

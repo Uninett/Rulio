@@ -1,13 +1,11 @@
 from django.urls import reverse
 
-
 from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant,
 )
 from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
-
 from backend.services.get import (
     get_all_tags_from_tenant,
 )

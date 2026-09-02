@@ -11,7 +11,6 @@ from backend.services.get import get_platform_from_device
 from backend.services.helper_user_tenant import require_read_tenant
 from backend.utils.logger import set_up_logger
 
-
 logger = set_up_logger(__name__)
 
 

@@ -1,10 +1,10 @@
 from django.contrib.auth.models import User
+
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.services.filter_objects.create_filter_objects import get_or_create_rule
 from backend.services.membership import add_objects_to_rule
 from backend.utils.logger import set_up_logger
-
 
 logger = set_up_logger(__name__)
 

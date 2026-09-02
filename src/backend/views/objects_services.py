@@ -1,36 +1,30 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
 from django.http import HttpResponse
-from backend.utils.logger import set_up_logger
+from django.shortcuts import render
+from django.urls import reverse
 
-from constants import GLOBAL_TENANT_ID
-from backend.services.helper_user_tenant import can_write_tenant
-from backend.views.objects_helpers import get_objects_toolbar_context
-from backend.views.session import get_tenant_context
-
+from backend.objects.attributes.tag import Tag
 from backend.services.attribute_objects.create_attribute_objects import (
     create_service,
 )
-
 from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
     get_service_group_members,
 )
-
+from backend.services.delete import (
+    delete_service,
+    remove_tag_from_object,
+)
+from backend.services.get import get_all_tags_from_object, get_object_by_type_and_id
+from backend.services.helper_user_tenant import can_write_tenant
+from backend.services.membership import add_tag_to_object
 from backend.services.update import (
     update_service,
 )
-
-from backend.services.delete import (
-    delete_service,
-)
-
-from backend.services.get import get_all_tags_from_object, get_object_by_type_and_id
-from backend.services.membership import add_tag_to_object
-from backend.services.delete import remove_tag_from_object
-from backend.objects.attributes.tag import Tag
-
+from backend.utils.logger import set_up_logger
+from backend.views.objects_helpers import get_objects_toolbar_context
+from backend.views.session import get_tenant_context
+from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 

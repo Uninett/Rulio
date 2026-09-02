@@ -1,6 +1,5 @@
-from ninja import Schema, Field
-from typing import Optional
-from pydantic import model_validator, ConfigDict
+from ninja import Field, Schema
+from pydantic import ConfigDict, model_validator
 
 
 class CreateServiceSchema(Schema):
@@ -8,8 +7,8 @@ class CreateServiceSchema(Schema):
     name: str = Field(..., min_length=1, max_length=255)
     description: str
     protocol: str = Field(..., min_length=1, max_length=255, json_schema_extra={"example": "TCP"})
-    port_start: Optional[int] = Field(None, json_schema_extra={"example": 80}, ge=1, le=65535)
-    port_end: Optional[int] = Field(None, json_schema_extra={"example": 80}, ge=1, le=65535)
+    port_start: int | None = Field(None, json_schema_extra={"example": 80}, ge=1, le=65535)
+    port_end: int | None = Field(None, json_schema_extra={"example": 80}, ge=1, le=65535)
 
     @model_validator(mode="after")
     def validate_ports(self):

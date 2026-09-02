@@ -1,28 +1,24 @@
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
-from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
-from backend.utils.logger import set_up_logger
-
-from constants import GLOBAL_TENANT_ID
-from backend.services.helper_user_tenant import can_write_tenant
-from backend.views.search import get_global_search_results
-from backend.views.session import get_tenant_context
 
 from backend.services.attribute_objects.create_attribute_objects import create_tag
-
-from backend.services.get import (
-    get_all_tags_from_tenant,
-    get_all_objects_with_certain_tag,
-)
-
-from backend.services.update import (
-    update_tag,
-)
-
 from backend.services.delete import (
     delete_tag_from_tenant,
 )
+from backend.services.get import (
+    get_all_objects_with_certain_tag,
+    get_all_tags_from_tenant,
+)
+from backend.services.helper_user_tenant import can_write_tenant
+from backend.services.update import (
+    update_tag,
+)
+from backend.utils.logger import set_up_logger
+from backend.views.search import get_global_search_results
+from backend.views.session import get_tenant_context
+from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 

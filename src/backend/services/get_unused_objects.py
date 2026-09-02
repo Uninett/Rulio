@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
-from django.db.models import Exists, OuterRef, QuerySet
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Exists, OuterRef, QuerySet
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup

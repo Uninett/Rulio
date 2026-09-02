@@ -1,4 +1,5 @@
 import copy
+
 import pytest
 
 from backend.services.config_generation.generate_config import (
@@ -10,7 +11,6 @@ from backend.services.config_generation.platform_capabilities import get_platfor
 from backend.utils.logger import clear_logs, set_up_logger
 from backend.utils.write_to_file import write_configuration_to_file
 from constants import TEST_LOGPATH
-
 
 logger = set_up_logger(__name__)
 clear_logs(__name__)

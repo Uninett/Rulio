@@ -1,15 +1,14 @@
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import Http404
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from django.contrib.auth.models import User
-from backend.services.get import get_all_filters_from_interface
-from backend.views.search import get_tags_search_results
 
 from backend.objects.tenant_objects.tenant import Tenant
+from backend.services.get import get_all_filters_from_interface
 from backend.utils.logger import set_up_logger
 from backend.views.modal import get_group_options_view, get_item_options_view
-
+from backend.views.search import get_tags_search_results
 
 logger = set_up_logger(__name__)
 

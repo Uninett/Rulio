@@ -1,42 +1,45 @@
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
+from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.tenant import Tenant
+from backend.services.get import get_object_by_type_and_id
 from backend.services.helper_user_tenant import require_superadmin, require_write_tenant
 from backend.utils.logger import set_up_logger
-from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
-from backend.services.get import get_object_by_type_and_id
-from backend.objects.attributes.tag import Tag
-from backend.objects.filters.rule import Rule
-from backend.objects.tenant_objects.tenant import Tenant
-
 
 logger = set_up_logger(__name__)
 
 
+@transaction.atomic
 def clear_all_tags_from_object(actor: User, tenant_id: int, object_id: int, object_type: str) -> int:
     require_write_tenant(actor, tenant_id)
 
     obj = get_object_by_type_and_id(actor, tenant_id, object_type, object_id)
     if not isinstance(obj, TaggableMixin):
-        raise ValueError(f"Object of type {object_type} does not support tagging.")
+        raise TypeError(f"Object of type {object_type} does not support tagging.")
 
     deleted_count = obj.clear_tags()
     logger.info(f"Cleared {deleted_count} tags from {object_type} with id={object_id}.")
     return deleted_count
 
 
+@transaction.atomic
 def remove_tag_from_object(actor: User, tenant_id: int, object_id: int, object_type: str, tag_id: int) -> int:
     require_write_tenant(actor, tenant_id)
 
     obj = get_object_by_type_and_id(actor, tenant_id, object_type, object_id)
     if not isinstance(obj, TaggableMixin):
-        raise ValueError(f"Object of type {object_type} does not support tagging.")
+        raise TypeError(f"Object of type {object_type} does not support tagging.")
 
     try:
         tag = Tag.objects.get(id=tag_id)
@@ -50,6 +53,7 @@ def remove_tag_from_object(actor: User, tenant_id: int, object_id: int, object_t
     return deleted_count
 
 
+@transaction.atomic
 def delete_tag_from_tenant(
     actor: User,
     tenant_id: int,
@@ -67,6 +71,7 @@ def delete_tag_from_tenant(
     return deleted_count
 
 
+@transaction.atomic
 def delete_address(actor: User, tenant_id: int, address_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -78,6 +83,7 @@ def delete_address(actor: User, tenant_id: int, address_id: int) -> None:
     logger.info(f"Deleted address id={address_id} from tenant={tenant_id}.")
 
 
+@transaction.atomic
 def delete_address_group(actor: User, tenant_id: int, address_group_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -89,6 +95,7 @@ def delete_address_group(actor: User, tenant_id: int, address_group_id: int) -> 
     logger.info(f"Deleted address group id={address_group_id} from tenant={tenant_id}.")
 
 
+@transaction.atomic
 def delete_service(actor: User, tenant_id: int, service_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -100,6 +107,7 @@ def delete_service(actor: User, tenant_id: int, service_id: int) -> None:
     logger.info(f"Deleted service id={service_id} from tenant={tenant_id}.")
 
 
+@transaction.atomic
 def delete_service_group(actor: User, tenant_id: int, service_group_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -111,6 +119,7 @@ def delete_service_group(actor: User, tenant_id: int, service_group_id: int) -> 
     logger.info(f"Deleted service group id={service_group_id} from tenant={tenant_id}.")
 
 
+@transaction.atomic
 def delete_rule(actor: User, tenant_id: int, rule_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -122,6 +131,7 @@ def delete_rule(actor: User, tenant_id: int, rule_id: int) -> None:
     logger.info(f"Deleted rule id={rule_id} from tenant={tenant_id}.")
 
 
+@transaction.atomic
 def delete_tenant(actor: User, tenant_id: int) -> None:
     require_superadmin(actor)
     try:
@@ -133,6 +143,7 @@ def delete_tenant(actor: User, tenant_id: int) -> None:
     logger.info(f"Deleted tenant id={tenant_id}.")
 
 
+@transaction.atomic
 def delete_device(actor: User, tenant_id: int, device_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -145,6 +156,7 @@ def delete_device(actor: User, tenant_id: int, device_id: int) -> None:
     return {"status": "success", "device": {"id": device_id}}
 
 
+@transaction.atomic
 def delete_interface(actor: User, tenant_id: int, interface_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:
@@ -157,6 +169,20 @@ def delete_interface(actor: User, tenant_id: int, interface_id: int) -> None:
     return {"status": "success", "interface": {"id": interface_id}}
 
 
+@transaction.atomic
+def delete_device_group(actor: User, tenant_id: int, device_group_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
+    try:
+        device_group = DeviceGroup.objects.get(id=device_group_id, tenant_id=tenant_id)
+    except DeviceGroup.DoesNotExist:
+        raise ValueError(f"Device group with id={device_group_id} does not exist in tenant={tenant_id}.")
+
+    device_group.delete()
+    logger.info(f"Deleted device group id={device_group_id} from tenant={tenant_id}.")
+    return {"status": "success", "device_group": {"id": device_group_id}}
+
+
+@transaction.atomic
 def delete_filter(actor: User, tenant_id: int, filter_id: int) -> None:
     require_write_tenant(actor, tenant_id)
     try:

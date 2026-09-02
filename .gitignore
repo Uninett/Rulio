@@ -15,6 +15,7 @@ TODO.txt
 /logs/
 src/logs/
 *.diff
+notes.md
 
 .*
 

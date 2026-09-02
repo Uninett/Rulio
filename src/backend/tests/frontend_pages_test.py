@@ -1,7 +1,6 @@
 import pytest
 from django.test import Client
 
-
 PUBLIC_PAGES = [
     {
         "url": "/login/",

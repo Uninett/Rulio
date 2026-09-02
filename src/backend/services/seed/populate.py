@@ -1,21 +1,21 @@
-from django.db import transaction
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.seed.seed_address_groups import seed_addressgroups
 from backend.services.seed.seed_addresses import seed_addresses
+from backend.services.seed.seed_filters import seed_filters
+from backend.services.seed.seed_rules import seed_rules
 from backend.services.seed.seed_service_groups import seed_servicegroups
 from backend.services.seed.seed_services import seed_services
-from backend.services.seed.seed_rules import seed_rules
-from backend.services.seed.seed_filters import seed_filters
 from backend.services.seed.seed_tags import (
     add_tags_to_default_address_groups,
-    seed_tags,
     add_tags_to_default_addresses,
-    add_tags_to_default_services,
-    add_tags_to_default_service_groups,
-    add_tags_to_default_rules,
     add_tags_to_default_filters,
+    add_tags_to_default_rules,
+    add_tags_to_default_service_groups,
+    add_tags_to_default_services,
+    seed_tags,
 )
 from constants import GLOBAL_TENANT_ID
 

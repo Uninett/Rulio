@@ -1,20 +1,20 @@
 from datetime import datetime, timezone
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.contrib.auth.models import User
 
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.versionControl import VersionControl
+from backend.services.helper_user_tenant import get_tenant_by_id, require_write_tenant
 from backend.services.update import update_rule_sequence
 from backend.utils.logger import set_up_logger
-from backend.services.helper_user_tenant import get_tenant_by_id, require_write_tenant
-from django.db import transaction, IntegrityError
-
 
 logger = set_up_logger(__name__)
 
 
+@transaction.atomic
 def create_rule(
     *,
     actor: User,
@@ -32,40 +32,40 @@ def create_rule(
     tenant = get_tenant_by_id(tenant_id)
     now = datetime.now(timezone.utc)
     try:
-        with transaction.atomic():
-            if rule_sequence == 0:
-                # If rule_sequence is 0, we will append the new rule to the end of the sequence.
-                rule_sequence = Rule.objects.filter(filter=filter, tenant=tenant).count() + 1
-            rule = Rule(
-                name=name,
-                description=description,
-                filter=filter,
-                tenant=tenant,
-                action=action,
-                enable=enable,
-                log_type=log_type,
-                hit_count=hit_count,
-                rule_sequence=rule_sequence,
-                date_created=now,
-                date_changed=now,
-                created_by=actor.id,
-                changed_by=actor.id,
-            )
-            try:
-                rule.full_clean()
-            except DjangoValidationError as e:
-                logger.warning(f"Rule validation failed: {e.message_dict}")
-                raise ValueError(e.message_dict) from e
+        if rule_sequence == 0:
+            # If rule_sequence is 0, we will append the new rule to the end of the sequence.
+            rule_sequence = Rule.objects.filter(filter=filter, tenant=tenant).count() + 1
+        rule = Rule(
+            name=name,
+            description=description,
+            filter=filter,
+            tenant=tenant,
+            action=action,
+            enable=enable,
+            log_type=log_type,
+            hit_count=hit_count,
+            rule_sequence=rule_sequence,
+            date_created=now,
+            date_changed=now,
+            created_by=actor.id,
+            changed_by=actor.id,
+        )
+        try:
+            rule.full_clean()
+        except DjangoValidationError as e:
+            logger.warning(f"Rule validation failed: {e.message_dict}")
+            raise ValueError(e.message_dict) from e
 
-            rule.save()
-            update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule_sequence)
-            logger.info(f"Created {rule} for tenant={rule.tenant_id}")
-            return rule
+        rule.save()
+        update_rule_sequence(actor=actor, tenant_id=tenant_id, rule=rule, new_sequence=rule_sequence)
+        logger.info(f"Created {rule} for tenant={rule.tenant_id}")
+        return rule
     except IntegrityError as e:
         logger.warning(f"Rule creation failed due to integrity error: {e}")
         raise ValueError("Rule creation failed due to integrity error.") from e
 
 
+@transaction.atomic
 def get_or_create_rule(
     *,
     actor: User,
@@ -109,6 +109,7 @@ def get_or_create_rule(
     return rule, created
 
 
+@transaction.atomic
 def create_filter(
     *,
     actor: User,
@@ -134,6 +135,7 @@ def create_filter(
     return filter_obj
 
 
+@transaction.atomic
 def get_or_create_filter(
     *,
     actor: User,
@@ -160,6 +162,7 @@ def get_or_create_filter(
     return filter_obj, created
 
 
+@transaction.atomic
 def create_version_control(
     *,
     actor: User,

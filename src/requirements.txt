@@ -5,3 +5,4 @@ psycopg2-binary>=2.9.0
 aerleon>=0.1.0
 pytest-django>=4.0.0
 pytest-cov>=7.0.0
+ruff>=0.16

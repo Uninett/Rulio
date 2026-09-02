@@ -1,4 +1,5 @@
 import ipaddress
+
 import pytest
 
 from backend.objects.filters.rule import Rule
@@ -8,15 +9,15 @@ from backend.services.filter_objects.create_filter_objects import create_filter
 from backend.services.membership import add_filter_to_interface
 from backend.services.update import (
     update_address,
-    update_service,
     update_address_group,
-    update_service_group,
-    update_rule,
-    update_filter,
     update_device,
     update_device_group,
-    update_interface,
+    update_filter,
     update_filter_interface,
+    update_interface,
+    update_rule,
+    update_service,
+    update_service_group,
     update_tag,
 )
 

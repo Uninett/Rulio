@@ -1,25 +1,21 @@
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 
+from backend.objects.attributes.tag import Tag
+from backend.services.delete import delete_filter, remove_tag_from_object
 from backend.services.filter_objects.create_filter_objects import create_filter
+from backend.services.get import (
+    get_all_tags_from_object,
+    get_filters_with_rules_with_tags_from_tenant,
+)
 from backend.services.helper_user_tenant import can_write_tenant
 from backend.services.membership import add_tag_to_object
 from backend.services.update import update_filter
-from backend.services.delete import delete_filter, remove_tag_from_object
-from backend.views.session import get_tenant_context
-
-from backend.objects.attributes.tag import Tag
-
-
 from backend.views.search import get_global_search_results
-from backend.services.get import (
-    get_filters_with_rules_with_tags_from_tenant,
-)
+from backend.views.session import get_tenant_context
 from constants import GLOBAL_TENANT_ID
-
-from backend.services.get import get_all_tags_from_object
 
 """
 ====================================================================

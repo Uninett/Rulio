@@ -1,16 +1,16 @@
 import pytest
-
-from django.test import Client, RequestFactory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
+from django.test import Client, RequestFactory
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
 from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
-
 from backend.objects.tenant_objects.tenant import Tenant
+from backend.services.attribute_objects.create_attribute_objects import create_tag, get_or_create_address
 from backend.services.config_generation.build import build_policies_for_interface, build_policy_from_filter
+from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 from backend.services.membership import (
     add_addresses_to_group,
     add_devices_to_group,
@@ -18,9 +18,6 @@ from backend.services.membership import (
     add_objects_to_rule,
     add_services_to_group,
 )
-from backend.services.attribute_objects.create_attribute_objects import create_tag, get_or_create_address
-from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
-
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
     create_interface,

@@ -1,16 +1,17 @@
+from collections import defaultdict
 from typing import Any
 
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from django.db.models import QuerySet
-from django.db.models import F
+from django.db.models import F, QuerySet
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
-from backend.objects.attributes.service_group import ServiceGroup
-from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service import Service
+from backend.objects.attributes.service_group import ServiceGroup
+from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.tag import Tag
 from backend.objects.attributes.tag_connection import TagConnection
 from backend.objects.filters.filter import Filter
@@ -19,16 +20,11 @@ from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.interface import Interface
-
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.services.helper_user_tenant import is_superadmin, require_read_tenant
 from backend.services.serialize import serialize_rule_object
 from backend.utils.logger import set_up_logger
 from constants import GLOBAL_TENANT_ID
-
-from collections import defaultdict
-from django.contrib.contenttypes.models import ContentType
-
 
 # Setup logger
 logger = set_up_logger(__name__)

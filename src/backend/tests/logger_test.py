@@ -1,9 +1,9 @@
 import logging
+
 import pytest
 
-
 from backend.utils.logger import set_up_logger, set_up_root_logger
-from constants import LOGPATH, ERROR_LOGPATH
+from constants import ERROR_LOGPATH, LOGPATH
 
 
 # Fixtures required for tests

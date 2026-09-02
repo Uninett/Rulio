@@ -1,13 +1,15 @@
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
-from constants import GLOBAL_TENANT_ID
+from django.urls import reverse
+
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.utils.logger import set_up_logger
 from backend.views.management_helpers import get_management_toolbar_context
+from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 
@@ -93,6 +95,7 @@ def get_user_modal_context(object_data=None, selected_permissions=None, error_me
 
 
 @login_required(login_url="login")
+@transaction.atomic
 def post_user_view(request):
     if not request.user.is_superuser:
         return HttpResponseForbidden("Forbidden")
@@ -217,6 +220,7 @@ def post_user_view(request):
 
 
 @login_required(login_url="login")
+@transaction.atomic
 def update_user_view(request, object_id):
     if not request.user.is_superuser:
         return HttpResponseForbidden("Forbidden")
@@ -272,6 +276,7 @@ def update_user_view(request, object_id):
 
 
 @login_required(login_url="login")
+@transaction.atomic
 def delete_user_view(request, object_id):
     if not request.user.is_superuser:
         return HttpResponseForbidden("Forbidden")

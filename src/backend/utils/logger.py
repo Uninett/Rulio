@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from constants import LOGPATH, ERROR_LOGPATH
+from constants import ERROR_LOGPATH, LOGPATH
 
 
 def add_file_handler(logger: logging.Logger, file: str, level=logging.INFO, mode="a") -> None:

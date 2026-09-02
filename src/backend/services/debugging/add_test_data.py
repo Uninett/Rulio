@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from backend.objects.attributes.tag import Tag
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
@@ -8,7 +9,6 @@ from backend.services.attribute_objects.create_attribute_objects import (
     get_or_create_tag,
 )
 from backend.services.filter_objects.create_filter_objects import get_or_create_filter, get_or_create_rule
-from backend.services.tenant_objects.create_tenant_objects import get_or_create_device
 from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import (
     add_devices_to_group,
@@ -17,15 +17,16 @@ from backend.services.membership import (
     add_tag_to_object,
 )
 from backend.services.tenant_objects.create_tenant_objects import (
+    get_or_create_device,
     get_or_create_device_group,
     get_or_create_interface,
 )
 from backend.utils.logger import set_up_logger
 
-
 logger = set_up_logger(__name__)
 
 
+@transaction.atomic
 def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, tenants: list):
     require_write_tenant(actor, tenant_id)
 

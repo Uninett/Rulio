@@ -1,24 +1,25 @@
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from typing import Literal
+
 from ninja import Schema
-from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
-from typing import Optional, Literal
-from pydantic import Field, model_validator, ConfigDict
+from pydantic import ConfigDict, Field, model_validator
 
 
 class CreateAddressSchema(Schema):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(..., min_length=1, max_length=255)
     description: str = ""
-    ipv4Network: Optional[IPv4Network] = Field(None, json_schema_extra={"example": "192.168.0.0/24"})
-    ipv4Address_start: Optional[IPv4Address] = Field(None, json_schema_extra={"example": None})
-    ipv4Address_end: Optional[IPv4Address] = Field(None, json_schema_extra={"example": None})
+    ipv4Network: IPv4Network | None = Field(None, json_schema_extra={"example": "192.168.0.0/24"})
+    ipv4Address_start: IPv4Address | None = Field(None, json_schema_extra={"example": None})
+    ipv4Address_end: IPv4Address | None = Field(None, json_schema_extra={"example": None})
 
-    ipv6Network: Optional[IPv6Network] = Field(None, json_schema_extra={"example": "2001:db8::/32"})
-    ipv6Address_start: Optional[IPv6Address] = Field(None, json_schema_extra={"example": None})
-    ipv6Address_end: Optional[IPv6Address] = Field(None, json_schema_extra={"example": None})
+    ipv6Network: IPv6Network | None = Field(None, json_schema_extra={"example": "2001:db8::/32"})
+    ipv6Address_start: IPv6Address | None = Field(None, json_schema_extra={"example": None})
+    ipv6Address_end: IPv6Address | None = Field(None, json_schema_extra={"example": None})
 
     addr_type: Literal["host", "network", "range"] = Field(..., json_schema_extra={"example": "network"})
-    ipv4_type: Optional[Literal["standard", "custom_range"]] = None
-    ipv6_type: Optional[Literal["standard", "custom_range"]] = None
+    ipv4_type: Literal["standard", "custom_range"] | None = None
+    ipv6_type: Literal["standard", "custom_range"] | None = None
 
     @model_validator(mode="after")
     def validate_ip_ranges(self):

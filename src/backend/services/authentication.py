@@ -1,11 +1,12 @@
 from functools import wraps
 
 from ninja import Status
+
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.helper_user_tenant import (
-    is_superadmin,
-    can_write_tenant,
     can_read_tenant,
+    can_write_tenant,
+    is_superadmin,
 )
 
 

@@ -23,6 +23,7 @@ def _editable_tenant_ids(actor, tenant_id: int) -> list[int]:
     return tenant_ids
 
 
+@transaction.atomic
 def update_address(
     *,
     actor,
@@ -83,6 +84,7 @@ def update_address(
     return address
 
 
+@transaction.atomic
 def update_service(
     *,
     actor,
@@ -118,6 +120,7 @@ def update_service(
     return service
 
 
+@transaction.atomic
 def update_address_group(*, actor, tenant_id, address_group_id, name=None, description=None, addr_type=None):
     require_write_tenant(actor, tenant_id)
 
@@ -139,6 +142,7 @@ def update_address_group(*, actor, tenant_id, address_group_id, name=None, descr
     return address_group
 
 
+@transaction.atomic
 def update_service_group(*, actor, tenant_id, service_group_id, name=None, description=None, service_type=None):
     require_write_tenant(actor, tenant_id)
 
@@ -160,6 +164,7 @@ def update_service_group(*, actor, tenant_id, service_group_id, name=None, descr
     return service_group
 
 
+@transaction.atomic
 def update_device(*, actor, tenant_id, device_id, name=None, description=None, platform=None, type=None):
     require_write_tenant(actor, tenant_id)
 
@@ -180,6 +185,7 @@ def update_device(*, actor, tenant_id, device_id, name=None, description=None, p
     return device
 
 
+@transaction.atomic
 def update_device_group(*, actor, tenant_id, device_group_id, name=None, description=None):
     require_write_tenant(actor, tenant_id)
 
@@ -196,6 +202,7 @@ def update_device_group(*, actor, tenant_id, device_group_id, name=None, descrip
     return device_group
 
 
+@transaction.atomic
 def update_tag(*, actor, tenant_id, tag_id, name=None, description=None, color=None):
     require_write_tenant(actor, tenant_id)
 
@@ -214,6 +221,7 @@ def update_tag(*, actor, tenant_id, tag_id, name=None, description=None, color=N
     return tag
 
 
+@transaction.atomic
 def update_interface(*, actor, tenant_id, interface_id, name=None, description=None, type=None, VRF=None):
     require_write_tenant(actor, tenant_id)
 
@@ -234,6 +242,7 @@ def update_interface(*, actor, tenant_id, interface_id, name=None, description=N
     return interface
 
 
+@transaction.atomic
 def update_filter(*, actor, tenant_id, filter_id, name=None, description=None):
     require_write_tenant(actor, tenant_id)
 
@@ -250,6 +259,7 @@ def update_filter(*, actor, tenant_id, filter_id, name=None, description=None):
     return filter_obj
 
 
+@transaction.atomic
 def update_filter_interface_sequence(*, actor, tenant_id, filter_interface, new_sequence):
     require_write_tenant(actor, tenant_id)
 
@@ -267,47 +277,24 @@ def update_filter_interface_sequence(*, actor, tenant_id, filter_interface, new_
     if filter_interface is None:
         raise PermissionDenied("Filter interface does not exist in the current tenant scope.")
 
-    with transaction.atomic():
-        interface_direction = filter_interface.interface_direction
-        matching_filter_interfaces = FilterInterface.objects.filter(interface_direction=interface_direction).order_by(
-            "policy_sequence"
-        )
-        is_placeholder = filter_interface.policy_sequence == 0
+    interface_direction = filter_interface.interface_direction
+    matching_filter_interfaces = FilterInterface.objects.filter(interface_direction=interface_direction).order_by(
+        "policy_sequence"
+    )
+    is_placeholder = filter_interface.policy_sequence == 0
 
-        if new_sequence is None:
-            new_sequence = filter_interface.policy_sequence
-        if new_sequence == 0:
-            new_sequence = (
-                matching_filter_interfaces.exclude(id=filter_interface.id).count()
-                if is_placeholder
-                else matching_filter_interfaces.count()
-            ) + 1
+    if new_sequence is None:
+        new_sequence = filter_interface.policy_sequence
+    if new_sequence == 0:
+        new_sequence = (
+            matching_filter_interfaces.exclude(id=filter_interface.id).count()
+            if is_placeholder
+            else matching_filter_interfaces.count()
+        ) + 1
 
-        if is_placeholder:
-            sibling_filter_interfaces = matching_filter_interfaces.exclude(id=filter_interface.id)
-            if not sibling_filter_interfaces.exists():
-                if new_sequence != 1:
-                    raise ValueError(
-                        f"There are no filters attached to interface direction {interface_direction.id}, so the only valid sequence is 1."
-                    )
-                filter_interface.policy_sequence = new_sequence
-                filter_interface.save()
-                return filter_interface
-
-            if new_sequence < 1 or new_sequence > sibling_filter_interfaces.count() + 1:
-                raise ValueError(
-                    f"New policy sequence {new_sequence} is out of bounds for interface direction {interface_direction.id}."
-                )
-
-            for related_filter_interface in sibling_filter_interfaces.filter(policy_sequence__gte=new_sequence):
-                related_filter_interface.policy_sequence += 1
-                related_filter_interface.save()
-
-            filter_interface.policy_sequence = new_sequence
-            filter_interface.save()
-            return filter_interface
-
-        if not matching_filter_interfaces.exists():
+    if is_placeholder:
+        sibling_filter_interfaces = matching_filter_interfaces.exclude(id=filter_interface.id)
+        if not sibling_filter_interfaces.exists():
             if new_sequence != 1:
                 raise ValueError(
                     f"There are no filters attached to interface direction {interface_direction.id}, so the only valid sequence is 1."
@@ -316,34 +303,57 @@ def update_filter_interface_sequence(*, actor, tenant_id, filter_interface, new_
             filter_interface.save()
             return filter_interface
 
-        if new_sequence < 1 or new_sequence > matching_filter_interfaces.count() + 1:
+        if new_sequence < 1 or new_sequence > sibling_filter_interfaces.count() + 1:
             raise ValueError(
                 f"New policy sequence {new_sequence} is out of bounds for interface direction {interface_direction.id}."
             )
 
-        if filter_interface.policy_sequence == new_sequence:
-            return filter_interface
-
-        if filter_interface.policy_sequence < new_sequence:
-            for related_filter_interface in matching_filter_interfaces.filter(
-                policy_sequence__gt=filter_interface.policy_sequence,
-                policy_sequence__lte=new_sequence,
-            ):
-                related_filter_interface.policy_sequence -= 1
-                related_filter_interface.save()
-        else:
-            for related_filter_interface in matching_filter_interfaces.filter(
-                policy_sequence__lt=filter_interface.policy_sequence,
-                policy_sequence__gte=new_sequence,
-            ):
-                related_filter_interface.policy_sequence += 1
-                related_filter_interface.save()
+        for related_filter_interface in sibling_filter_interfaces.filter(policy_sequence__gte=new_sequence):
+            related_filter_interface.policy_sequence += 1
+            related_filter_interface.save()
 
         filter_interface.policy_sequence = new_sequence
         filter_interface.save()
         return filter_interface
 
+    if not matching_filter_interfaces.exists():
+        if new_sequence != 1:
+            raise ValueError(
+                f"There are no filters attached to interface direction {interface_direction.id}, so the only valid sequence is 1."
+            )
+        filter_interface.policy_sequence = new_sequence
+        filter_interface.save()
+        return filter_interface
 
+    if new_sequence < 1 or new_sequence > matching_filter_interfaces.count() + 1:
+        raise ValueError(
+            f"New policy sequence {new_sequence} is out of bounds for interface direction {interface_direction.id}."
+        )
+
+    if filter_interface.policy_sequence == new_sequence:
+        return filter_interface
+
+    if filter_interface.policy_sequence < new_sequence:
+        for related_filter_interface in matching_filter_interfaces.filter(
+            policy_sequence__gt=filter_interface.policy_sequence,
+            policy_sequence__lte=new_sequence,
+        ):
+            related_filter_interface.policy_sequence -= 1
+            related_filter_interface.save()
+    else:
+        for related_filter_interface in matching_filter_interfaces.filter(
+            policy_sequence__lt=filter_interface.policy_sequence,
+            policy_sequence__gte=new_sequence,
+        ):
+            related_filter_interface.policy_sequence += 1
+            related_filter_interface.save()
+
+    filter_interface.policy_sequence = new_sequence
+    filter_interface.save()
+    return filter_interface
+
+
+@transaction.atomic
 def update_filter_interface(
     *,
     actor,
@@ -383,15 +393,16 @@ def update_filter_interface(
     return filter_interface
 
 
+@transaction.atomic
 def _reorder_rules_after_removal(rule, old_filter_id, old_sequence):
-    with transaction.atomic():
-        for related_rule in Rule.objects.filter(filter_id=old_filter_id, rule_sequence__gt=old_sequence).order_by(
-            "rule_sequence"
-        ):
-            related_rule.rule_sequence -= 1
-            related_rule.save()
+    for related_rule in Rule.objects.filter(filter_id=old_filter_id, rule_sequence__gt=old_sequence).order_by(
+        "rule_sequence"
+    ):
+        related_rule.rule_sequence -= 1
+        related_rule.save()
 
 
+@transaction.atomic
 def _insert_rule_into_filter(rule, target_filter, new_sequence):
     target_rules = Rule.objects.filter(filter=target_filter).order_by("rule_sequence")
     if new_sequence < 1 or new_sequence > target_rules.count() + 1:
@@ -407,6 +418,7 @@ def _insert_rule_into_filter(rule, target_filter, new_sequence):
     return rule
 
 
+@transaction.atomic
 def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
     require_write_tenant(actor, tenant_id)
 
@@ -421,57 +433,55 @@ def update_rule_sequence(*, actor, tenant_id, rule, new_sequence):
     if scoped_rule is None:
         raise PermissionDenied(f"Rule with id={rule.id} does not belong to tenant {tenant_id}.")
 
-    with transaction.atomic():
-        filter_obj = scoped_rule.filter
-        if filter_obj is None:
-            raise ValueError(f"Rule with id={scoped_rule.id} does not belong to any filter.")
+    filter_obj = scoped_rule.filter
+    if filter_obj is None:
+        raise ValueError(f"Rule with id={scoped_rule.id} does not belong to any filter.")
 
-        rules_in_filter = Rule.objects.filter(filter=filter_obj).order_by("rule_sequence")
+    rules_in_filter = Rule.objects.filter(filter=filter_obj).order_by("rule_sequence")
 
-        if not rules_in_filter.exists():
-            if new_sequence != 1:
-                raise ValueError(
-                    f"There are no rules in filter with id={filter_obj.id}, so the only valid sequence is 1."
-                )
-            scoped_rule.rule_sequence = new_sequence
-            scoped_rule.save()
-            return scoped_rule
+    if not rules_in_filter.exists():
+        if new_sequence != 1:
+            raise ValueError(f"There are no rules in filter with id={filter_obj.id}, so the only valid sequence is 1.")
+        scoped_rule.rule_sequence = new_sequence
+        scoped_rule.save()
+        return scoped_rule
 
-        if new_sequence < 1 or new_sequence > rules_in_filter.count() + 1:
-            raise ValueError(f"New sequence {new_sequence} is out of bounds for filter with id={filter_obj.id}.")
+    if new_sequence < 1 or new_sequence > rules_in_filter.count() + 1:
+        raise ValueError(f"New sequence {new_sequence} is out of bounds for filter with id={filter_obj.id}.")
 
-        if scoped_rule.rule_sequence == 0:
-            for related_rule in rules_in_filter.filter(rule_sequence__gte=new_sequence):
-                related_rule.rule_sequence += 1
-                related_rule.save()
-
-            scoped_rule.rule_sequence = new_sequence
-            scoped_rule.save()
-            return scoped_rule
-
-        if scoped_rule.rule_sequence == new_sequence:
-            return scoped_rule
-
-        if scoped_rule.rule_sequence < new_sequence:
-            for related_rule in rules_in_filter.filter(
-                rule_sequence__gt=scoped_rule.rule_sequence,
-                rule_sequence__lte=new_sequence,
-            ):
-                related_rule.rule_sequence -= 1
-                related_rule.save()
-        else:
-            for related_rule in rules_in_filter.filter(
-                rule_sequence__lt=scoped_rule.rule_sequence,
-                rule_sequence__gte=new_sequence,
-            ):
-                related_rule.rule_sequence += 1
-                related_rule.save()
+    if scoped_rule.rule_sequence == 0:
+        for related_rule in rules_in_filter.filter(rule_sequence__gte=new_sequence):
+            related_rule.rule_sequence += 1
+            related_rule.save()
 
         scoped_rule.rule_sequence = new_sequence
         scoped_rule.save()
         return scoped_rule
 
+    if scoped_rule.rule_sequence == new_sequence:
+        return scoped_rule
 
+    if scoped_rule.rule_sequence < new_sequence:
+        for related_rule in rules_in_filter.filter(
+            rule_sequence__gt=scoped_rule.rule_sequence,
+            rule_sequence__lte=new_sequence,
+        ):
+            related_rule.rule_sequence -= 1
+            related_rule.save()
+    else:
+        for related_rule in rules_in_filter.filter(
+            rule_sequence__lt=scoped_rule.rule_sequence,
+            rule_sequence__gte=new_sequence,
+        ):
+            related_rule.rule_sequence += 1
+            related_rule.save()
+
+    scoped_rule.rule_sequence = new_sequence
+    scoped_rule.save()
+    return scoped_rule
+
+
+@transaction.atomic
 def update_rule(
     *,
     actor,

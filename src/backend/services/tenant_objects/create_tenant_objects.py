@@ -1,19 +1,19 @@
-from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 
+from backend.objects.tenant_objects.device import Device
+from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.objects.tenant_objects.tenant import Tenant
-from backend.objects.tenant_objects.device import Device
-from backend.objects.tenant_objects.device_group import DeviceGroup
-
 from backend.services.helper_user_tenant import require_superadmin, require_write_tenant
 from backend.utils.logger import set_up_logger
-
 
 logger = set_up_logger(__name__)
 
 
+@transaction.atomic
 def create_tenant(actor: User, name: str):
     require_superadmin(actor)
     tenant = Tenant.objects.create(tenant_name=name)
@@ -21,6 +21,7 @@ def create_tenant(actor: User, name: str):
     return tenant
 
 
+@transaction.atomic
 def create_device(*, actor: User, tenant_id: int, name: str, platform: str, description: str, type: str) -> Device:
 
     require_write_tenant(actor, tenant_id)
@@ -43,6 +44,7 @@ def create_device(*, actor: User, tenant_id: int, name: str, platform: str, desc
     return device
 
 
+@transaction.atomic
 def get_or_create_device(
     *, actor: User, tenant_id: int, name: str, platform: str, description: str, type: str
 ) -> Device:
@@ -62,6 +64,7 @@ def get_or_create_device(
     return device
 
 
+@transaction.atomic
 def create_device_group(*, actor: User, tenant_id: int, name: str, description: str) -> DeviceGroup:
     require_write_tenant(actor, tenant_id)
 
@@ -81,6 +84,7 @@ def create_device_group(*, actor: User, tenant_id: int, name: str, description: 
     return device_group
 
 
+@transaction.atomic
 def get_or_create_device_group(*, actor: User, tenant_id: int, name: str, description: str) -> DeviceGroup:
     require_write_tenant(actor, tenant_id)
 
@@ -96,6 +100,7 @@ def get_or_create_device_group(*, actor: User, tenant_id: int, name: str, descri
     return device_group
 
 
+@transaction.atomic
 def create_interface(
     *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
 ) -> Interface:
@@ -135,6 +140,7 @@ def create_interface(
     return interface
 
 
+@transaction.atomic
 def get_or_create_interface(
     *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
 ) -> tuple[Interface, bool, InterfaceDirection, bool, InterfaceDirection, bool]:
