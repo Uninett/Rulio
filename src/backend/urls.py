@@ -32,7 +32,9 @@ from .api import (
     api,
 )
 from .views.device_groups import (
+    delete_device_group_view,
     post_device_group_view,
+    update_device_group_view,
 )
 from .views.devices_page import (
     check_interface_config_generation,

@@ -1,10 +1,15 @@
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.shortcuts import render
+from django.urls import reverse
 
 from backend.objects.attributes.tag import Tag
+from backend.services.delete import delete_device_group, remove_tag_from_object
+from backend.services.get import get_all_tags_from_object, get_device_group_members, get_object_by_type_and_id
 from backend.services.helper_user_tenant import can_write_tenant
-from backend.services.membership import add_devices_to_group, add_tag_to_object
+from backend.services.membership import add_devices_to_group, add_tag_to_object, remove_devices_from_group
 from backend.services.tenant_objects.create_tenant_objects import create_device_group
+from backend.services.update import update_device_group
 from backend.utils.logger import set_up_logger
 from backend.views.modal import get_item_options_view
 from constants import GLOBAL_TENANT_ID
@@ -168,7 +173,7 @@ def update_device_group_view(request, object_id):
         device_ids_to_add = submitted_device_ids - current_device_ids  # Find what to add
 
         for device_id in device_ids_to_remove:
-            remove_device_from_group(
+            remove_devices_from_group(
                 actor=request.user,
                 tenant_id=tenant_id,
                 device_group_id=object_id,

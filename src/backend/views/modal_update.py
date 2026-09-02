@@ -15,6 +15,7 @@ from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
 from backend.services.get import (
+    get_all_device_groups_and_devices_with_tags_from_tenant,
     get_all_objects_from_rule,
     get_all_tags_from_object,
     get_filter_with_rules_and_tags,
