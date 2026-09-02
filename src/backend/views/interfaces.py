@@ -22,6 +22,7 @@ from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 
+
 # def build_interface_filters(interface):
 #     filter_links = (
 #         FilterInterface.objects.filter(interface_id=interface.id, enable=True)
@@ -44,7 +45,6 @@ def get_interface_page(request):
             **get_tenant_context(request),
         },
     )
-
 
 
 @login_required(login_url="login")

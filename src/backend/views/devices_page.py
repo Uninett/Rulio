@@ -309,13 +309,10 @@ def post_device_view(request):
         },
     )
 
+
 @login_required(login_url="login")
 def update_device_view(request, object_id):
-    tenant_id = (
-        int(request.session.get("current_tenant_id"))
-        if request.session.get("current_tenant_id")
-        else None
-    )
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
 
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
@@ -368,11 +365,7 @@ def update_device_view(request, object_id):
             type=device_type,
         )
 
-        submitted_tag_ids = {
-            int(tag_id)
-            for tag_id in request.POST.getlist("tag_ids")
-            if tag_id
-        }
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
 
         current_tags = get_all_tags_from_object(
             actor=request.user,
@@ -444,11 +437,7 @@ def update_device_view(request, object_id):
 
 @login_required(login_url="login")
 def delete_device_view(request, object_id):
-    tenant_id = (
-        int(request.session.get("current_tenant_id"))
-        if request.session.get("current_tenant_id")
-        else None
-    )
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
 
     if not tenant_id:
         return HttpResponse("No tenant selected.", status=400)

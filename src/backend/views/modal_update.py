@@ -236,7 +236,7 @@ def get_update_modal(request, row_id):
 
             selected_ids = list(TenantUserMember.objects.filter(tenant=tenant).values_list("user_id", flat=True))
             options_context["selected_user_ids"] = selected_ids
-            
+
     elif object_type in ["device", "devicegroup"]:
         if tenant_id is None:
             return HttpResponse("No tenant selected.", status=400)
@@ -267,8 +267,7 @@ def get_update_modal(request, row_id):
                 )
 
                 options_context["selected_group_ids"] = [
-                    membership.device_group_id
-                    for membership in device.devicegroupmember_set.all()
+                    membership.device_group_id for membership in device.devicegroupmember_set.all()
                 ]
 
         elif object_type == "devicegroup":
@@ -290,8 +289,7 @@ def get_update_modal(request, row_id):
                 )
 
                 options_context["selected_device_ids"] = [
-                    membership.device_id
-                    for membership in device_group.devicegroupmember_set.all()
+                    membership.device_id for membership in device_group.devicegroupmember_set.all()
                 ]
 
     elif object_type in ["address", "addressgroup"]:

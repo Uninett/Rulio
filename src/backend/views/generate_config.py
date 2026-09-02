@@ -13,6 +13,7 @@ from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
 
+
 def _sanitize_zip_name(name: str, *, fallback: str) -> str:
     if not isinstance(name, str):
         return fallback

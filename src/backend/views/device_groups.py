@@ -107,6 +107,7 @@ def post_device_group_view(request):
 
     return render(request, "partials/objects/_tableRow.html", {"row": row})
 
+
 @login_required(login_url="login")
 def update_device_group_view(request, object_id):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
@@ -254,6 +255,7 @@ def update_device_group_view(request, object_id):
         )
 
     return HttpResponse(status=204)
+
 
 # Handles deletion of an device group from the backend.
 @login_required(login_url="login")
