@@ -100,12 +100,4 @@ def post_device_group_view(request):
         ],
     }
 
-    return render(
-        request,
-        "partials/objects/_tableRow.html",
-        {
-            "row": row,
-            "headers": ["Type", "Name", "Description", "Platform", "Tags", ""],
-            "object_type": "devices",
-        },
-    )
+    return render(request, "partials/objects/_tableRow.html", {"row": row})
