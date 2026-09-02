@@ -135,6 +135,8 @@ urlpatterns = [
     path("devices/add/", post_device_view, name="post-device-view"),
     path("interfaces/update/", post_interface_view, name="post-interface-view"),
     path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
+    path("device-groups/<int:object_id>/update/", update_device_group_view, name="update-device-group-view"),
+    path("device-groups/<int:object_id>/delete/", delete_device_group_view, name="delete-device-group-view"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
     path("filters/create/", post_filter_view, name="post-filter-view"),
