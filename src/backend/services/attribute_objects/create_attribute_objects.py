@@ -24,52 +24,6 @@ logger = set_up_logger(__name__)
 
 
 @transaction.atomic
-def create_address(
-    *,
-    actor: User,
-    tenant_id: int,
-    name: str,
-    description: str,
-    addr_type: str | None = "host",
-    ipv4_type: str | None = None,
-    ipv6_type: str | None = None,
-    ipv4Network: IPv4Network | None = None,
-    ipv6Network: IPv6Network | None = None,
-    ipv4Address_start: IPv4Address | None = None,
-    ipv4Address_end: IPv4Address | None = None,
-    ipv6Address_start: IPv6Address | None = None,
-    ipv6Address_end: IPv6Address | None = None,
-) -> Address:
-
-    require_write_tenant(actor, tenant_id)
-
-    address = Address(
-        name=name,
-        description=description,
-        tenant_id=tenant_id,
-        addr_type=addr_type,
-        ipv4_type=ipv4_type,
-        ipv6_type=ipv6_type,
-        ipv4Network=str(ipv4Network) if ipv4Network else None,
-        ipv6Network=str(ipv6Network) if ipv6Network else None,
-        ipv4Address_start=str(ipv4Address_start) if ipv4Address_start else None,
-        ipv4Address_end=str(ipv4Address_end) if ipv4Address_end else None,
-        ipv6Address_start=str(ipv6Address_start) if ipv6Address_start else None,
-        ipv6Address_end=str(ipv6Address_end) if ipv6Address_end else None,
-    )
-
-    try:
-        address.full_clean()
-    except DjangoValidationError as e:
-        logger.warning(f"Address validation failed: {e.message_dict}")
-        raise ValueError(e.message_dict) from e
-
-    address.save()
-    logger.info(f"Created {address} for tenant={address.tenant_id}")
-    return address
-
-
-@transaction.atomic
 def create_and_add_address_to_groups(
     *,
     actor: User,
@@ -90,7 +44,7 @@ def create_and_add_address_to_groups(
 
     require_write_tenant(actor, tenant_id)
 
-    address = create_address(
+    address = get_or_create_address(
         actor=actor,
         tenant_id=tenant_id,
         name=name,
@@ -104,7 +58,7 @@ def create_and_add_address_to_groups(
         ipv4Address_end=ipv4Address_end,
         ipv6Address_start=ipv6Address_start,
         ipv6Address_end=ipv6Address_end,
-    )
+    )[0]
 
     if group_ids:
         AddressGroupMember.objects.bulk_create(
