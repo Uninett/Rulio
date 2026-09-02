@@ -18,6 +18,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from backend.views.generate_config import check_interface_config_generation, download_interface_configs
+from backend.views.interfaces import get_interface_filter_selector_modal, interface_filters_view, post_interface_view
 from backend.views.rule_page import (
     delete_rule_view,
     get_rule_page,
@@ -32,16 +34,15 @@ from .api import (
     api,
 )
 from .views.device_groups import (
+    delete_device_group_view,
     post_device_group_view,
+    update_device_group_view,
 )
 from .views.devices_page import (
-    check_interface_config_generation,
-    download_interface_configs,
+    delete_device_view,
     get_devices_page,
-    get_interface_filter_selector_modal,
-    interface_filters_view,
     post_device_view,
-    post_interface_view,
+    update_device_view,
 )
 from .views.filters_page import (
     delete_filter_view,
@@ -134,7 +135,11 @@ urlpatterns = [
     ),
     path("devices/add/", post_device_view, name="post-device-view"),
     path("interfaces/update/", post_interface_view, name="post-interface-view"),
+    path("devices/<int:object_id>/update/", update_device_view, name="update-device-view"),
+    path("devices/<int:object_id>/delete/", delete_device_view, name="delete-device-view"),
     path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
+    path("device-groups/<int:object_id>/update/", update_device_group_view, name="update-device-group-view"),
+    path("device-groups/<int:object_id>/delete/", delete_device_group_view, name="delete-device-group-view"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
     path("filters/create/", post_filter_view, name="post-filter-view"),
