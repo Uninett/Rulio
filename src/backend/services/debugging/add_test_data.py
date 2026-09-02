@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from backend.objects.attributes.tag import Tag
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
@@ -25,6 +26,7 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
+@transaction.atomic
 def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, tenants: list):
     require_write_tenant(actor, tenant_id)
 

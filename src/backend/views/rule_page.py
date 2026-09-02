@@ -215,6 +215,7 @@ def get_rules_view(request):
 
 
 @login_required(login_url="login")
+@transaction.atomic
 def post_rule_view(request):
     name = request.POST.get("name", "").strip()
     description = request.POST.get("description", "").strip()
@@ -318,67 +319,66 @@ def post_rule_view(request):
             fetch_objects_by_type(destination_service_grouped, tenant_id),
         )
 
-        with transaction.atomic():
-            new_rule = create_rule(
+        new_rule = create_rule(
+            actor=request.user,
+            name=name,
+            description=description,
+            action=action,
+            log_type=log_type,
+            filter=filter_obj,
+            tenant_id=tenant_id,
+            hit_count=0,
+            enable=enable,
+        )
+
+        if source_address_objects:
+            add_objects_to_rule(
                 actor=request.user,
-                name=name,
-                description=description,
-                action=action,
-                log_type=log_type,
-                filter=filter_obj,
                 tenant_id=tenant_id,
-                hit_count=0,
-                enable=enable,
+                rule_id=new_rule.id,
+                match_type="source",
+                objects=source_address_objects,
             )
 
-            if source_address_objects:
-                add_objects_to_rule(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    rule_id=new_rule.id,
-                    match_type="source",
-                    objects=source_address_objects,
-                )
+        if destination_address_objects:
+            add_objects_to_rule(
+                actor=request.user,
+                tenant_id=tenant_id,
+                rule_id=new_rule.id,
+                match_type="destination",
+                objects=destination_address_objects,
+            )
 
-            if destination_address_objects:
-                add_objects_to_rule(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    rule_id=new_rule.id,
-                    match_type="destination",
-                    objects=destination_address_objects,
-                )
+        if source_service_objects:
+            add_objects_to_rule(
+                actor=request.user,
+                tenant_id=tenant_id,
+                rule_id=new_rule.id,
+                match_type="source",
+                objects=source_service_objects,
+            )
 
-            if source_service_objects:
-                add_objects_to_rule(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    rule_id=new_rule.id,
-                    match_type="source",
-                    objects=source_service_objects,
-                )
+        if destination_service_objects:
+            add_objects_to_rule(
+                actor=request.user,
+                tenant_id=tenant_id,
+                rule_id=new_rule.id,
+                match_type="destination",
+                objects=destination_service_objects,
+            )
 
-            if destination_service_objects:
-                add_objects_to_rule(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    rule_id=new_rule.id,
-                    match_type="destination",
-                    objects=destination_service_objects,
-                )
-
-            # Added: apply selected tags to the newly created rule.
-            for tag_id in submitted_tag_ids:
-                tag = Tag.objects.get(
-                    id=tag_id,
-                    tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
-                )
-                add_tag_to_object(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    tag=tag,
-                    obj=new_rule,
-                )
+        # Added: apply selected tags to the newly created rule.
+        for tag_id in submitted_tag_ids:
+            tag = Tag.objects.get(
+                id=tag_id,
+                tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
+            )
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=new_rule,
+            )
 
     except Exception as exc:
         print(f"Error creating rule: {exc}")
@@ -388,6 +388,7 @@ def post_rule_view(request):
 
 
 @login_required(login_url="login")
+@transaction.atomic
 def update_rule_view(request, rule_id):
     rule = Rule.objects.select_related("filter").filter(id=rule_id).first()
 
@@ -504,67 +505,66 @@ def update_rule_view(request, rule_id):
         source_objects = source_address_objects + source_service_objects
         destination_objects = destination_address_objects + destination_service_objects
 
-        with transaction.atomic():
-            rule.name = name
-            rule.description = description
-            rule.action = action
-            rule.log_type = log_type
-            rule.enable = enable
-            rule.save(
-                update_fields=[
-                    "name",
-                    "description",
-                    "action",
-                    "log_type",
-                    "enable",
-                ]
-            )
+        rule.name = name
+        rule.description = description
+        rule.action = action
+        rule.log_type = log_type
+        rule.enable = enable
+        rule.save(
+            update_fields=[
+                "name",
+                "description",
+                "action",
+                "log_type",
+                "enable",
+            ]
+        )
 
-            update_objects_in_rule(
+        update_objects_in_rule(
+            actor=request.user,
+            tenant_id=tenant_id,
+            rule_id=rule.id,
+            match_type="source",
+            objects=source_objects,
+        )
+
+        update_objects_in_rule(
+            actor=request.user,
+            tenant_id=tenant_id,
+            rule_id=rule.id,
+            match_type="destination",
+            objects=destination_objects,
+        )
+
+        # Added: synchronize tag assignments.
+        current_tags = get_all_tags_from_object(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_id=rule.id,
+            object_type="rule",
+        )
+        current_tag_ids = {tag.id for tag in current_tags}
+
+        for tag_id in submitted_tag_ids - current_tag_ids:
+            tag = Tag.objects.get(
+                id=tag_id,
+                tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
+            )
+            add_tag_to_object(
                 actor=request.user,
                 tenant_id=tenant_id,
-                rule_id=rule.id,
-                match_type="source",
-                objects=source_objects,
+                tag=tag,
+                obj=rule,
             )
 
-            update_objects_in_rule(
-                actor=request.user,
-                tenant_id=tenant_id,
-                rule_id=rule.id,
-                match_type="destination",
-                objects=destination_objects,
-            )
-
-            # Added: synchronize tag assignments.
-            current_tags = get_all_tags_from_object(
+        for tag_id in current_tag_ids - submitted_tag_ids:
+            remove_tag_from_object(
                 actor=request.user,
                 tenant_id=tenant_id,
                 object_id=rule.id,
                 object_type="rule",
+                tag_id=tag_id,
             )
-            current_tag_ids = {tag.id for tag in current_tags}
-
-            for tag_id in submitted_tag_ids - current_tag_ids:
-                tag = Tag.objects.get(
-                    id=tag_id,
-                    tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
-                )
-                add_tag_to_object(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    tag=tag,
-                    obj=rule,
-                )
-
-            for tag_id in current_tag_ids - submitted_tag_ids:
-                remove_tag_from_object(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    object_id=rule.id,
-                    object_type="rule",
-                    tag_id=tag_id,
-                )
 
     except Exception as exc:
         print(f"Error updating rule {rule_id}: {exc}")

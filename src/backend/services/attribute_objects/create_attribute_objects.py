@@ -2,6 +2,7 @@ from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
@@ -22,6 +23,7 @@ from backend.utils.logger import set_up_logger
 logger = set_up_logger(__name__)
 
 
+@transaction.atomic
 def create_address(
     *,
     actor: User,
@@ -67,6 +69,7 @@ def create_address(
     return address
 
 
+@transaction.atomic
 def create_and_add_address_to_groups(
     *,
     actor: User,
@@ -112,6 +115,7 @@ def create_and_add_address_to_groups(
     return address
 
 
+@transaction.atomic
 def get_or_create_address(
     *,
     actor: User,
@@ -156,6 +160,7 @@ def get_or_create_address(
     return address, address.id, created
 
 
+@transaction.atomic
 def create_service(
     *,
     actor: User,
@@ -192,6 +197,7 @@ def create_service(
     return service
 
 
+@transaction.atomic
 def create_and_add_service_to_groups(
     *,
     actor: User,
@@ -229,6 +235,7 @@ def create_and_add_service_to_groups(
     return service
 
 
+@transaction.atomic
 def get_or_create_service(
     *,
     actor: User,
@@ -265,6 +272,7 @@ def get_or_create_service(
     return service, service.id, created
 
 
+@transaction.atomic
 def create_service_group(
     *,
     actor: User,
@@ -295,6 +303,7 @@ def create_service_group(
     return service_group
 
 
+@transaction.atomic
 def create_service_group_and_add_services(
     *,
     actor: User,
@@ -320,6 +329,7 @@ def create_service_group_and_add_services(
     return service_group
 
 
+@transaction.atomic
 def get_or_create_service_group(
     *,
     actor: User,
@@ -370,6 +380,7 @@ def get_or_create_service_group(
     return service_group, service_group.id, created
 
 
+@transaction.atomic
 def create_address_group(
     *,
     actor: User,
@@ -401,6 +412,7 @@ def create_address_group(
     return address_group
 
 
+@transaction.atomic
 def create_address_group_and_add_addresses(
     *,
     actor: User,
@@ -433,6 +445,7 @@ def create_address_group_and_add_addresses(
     return address_group
 
 
+@transaction.atomic
 def get_or_create_address_group(
     *,
     actor: User,
@@ -481,6 +494,7 @@ def get_or_create_address_group(
     return address_group, address_group.id, created
 
 
+@transaction.atomic
 def create_tag(
     *,
     actor: User,
@@ -513,6 +527,7 @@ def create_tag(
     return tag
 
 
+@transaction.atomic
 def get_or_create_tag(
     *,
     actor: User,
@@ -544,6 +559,7 @@ def get_or_create_tag(
     return tag, tag.id, created
 
 
+@transaction.atomic
 def create_and_add_tag_to_object(
     *,
     actor: User,

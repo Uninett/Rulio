@@ -570,6 +570,7 @@ def interface_filters_view(request, device_id, interface_id):
 
 
 @login_required(login_url="login")
+@transaction.atomic
 def post_interface_view(request):
     tenant_id_raw = request.session.get("current_tenant_id")
     interface_id_raw = request.POST.get("interface_id", "").strip()
@@ -635,38 +636,37 @@ def post_interface_view(request):
         )
 
     try:
-        with transaction.atomic():
-            for sequence, filter_id in enumerate(ingoing_filter_ids, start=1):
-                add_filter_to_interface(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    filter_id=filter_id,
-                    interface_id=interface_id,
-                    policy_sequence=sequence,
-                    enable=enable,
-                    direction="in",
-                )
-
-            for sequence, filter_id in enumerate(outgoing_filter_ids, start=1):
-                add_filter_to_interface(
-                    actor=request.user,
-                    tenant_id=tenant_id,
-                    filter_id=filter_id,
-                    interface_id=interface_id,
-                    policy_sequence=sequence,
-                    enable=enable,
-                    direction="out",
-                )
-
-            FilterInterface.objects.filter(
+        for sequence, filter_id in enumerate(ingoing_filter_ids, start=1):
+            add_filter_to_interface(
+                actor=request.user,
+                tenant_id=tenant_id,
+                filter_id=filter_id,
                 interface_id=interface_id,
+                policy_sequence=sequence,
+                enable=enable,
                 direction="in",
-            ).exclude(filter_id__in=ingoing_filter_ids).delete()
+            )
 
-            FilterInterface.objects.filter(
+        for sequence, filter_id in enumerate(outgoing_filter_ids, start=1):
+            add_filter_to_interface(
+                actor=request.user,
+                tenant_id=tenant_id,
+                filter_id=filter_id,
                 interface_id=interface_id,
+                policy_sequence=sequence,
+                enable=enable,
                 direction="out",
-            ).exclude(filter_id__in=outgoing_filter_ids).delete()
+            )
+
+        FilterInterface.objects.filter(
+            interface_id=interface_id,
+            direction="in",
+        ).exclude(filter_id__in=ingoing_filter_ids).delete()
+
+        FilterInterface.objects.filter(
+            interface_id=interface_id,
+            direction="out",
+        ).exclude(filter_id__in=outgoing_filter_ids).delete()
 
     except Exception as exc:
         return render_form_error(f"Unable to update interface filters: {exc}")
