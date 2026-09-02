@@ -1,4 +1,4 @@
-import django.db.models as models
+from django.db import models
 
 
 class AddressGroupMember(models.Model):

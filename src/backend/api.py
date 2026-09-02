@@ -1027,12 +1027,12 @@ def get_interfaces_for_device_endpoint(request, device_id: int):
             ],
         )
     except Exception as e:
-        logger.error(f"Error retrieving interfaces for device with id {device_id}: {str(e)}")
+        logger.error(f"Error retrieving interfaces for device with id {device_id}: {e!s}")
         return Status(
             403,
             {
                 "status": "error",
-                "message": f"Error retrieving interfaces for device with id {device_id}: {str(e)}",
+                "message": f"Error retrieving interfaces for device with id {device_id}: {e!s}",
             },
         )
 
@@ -1061,7 +1061,7 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
             },
         )
     except Exception as e:
-        logger.error(f"create_device endpoint failed: {str(e)}")
+        logger.error(f"create_device endpoint failed: {e!s}")
         return Status(
             403,
             {
@@ -1199,7 +1199,7 @@ def create_interface_endpoint(request, payload: CreateInterfaceSchema):
             },
         )
     except Exception as e:
-        logger.error(f"create_interface endpoint failed: {str(e)}")
+        logger.error(f"create_interface endpoint failed: {e!s}")
         return Status(
             403,
             {
@@ -1219,12 +1219,12 @@ def delete_device_endpoint(request, device_id: int):
     try:
         response = delete_device(request.user, request.session["current_tenant_id"], device_id)
     except Exception as e:
-        logger.error(f"Error deleting device with id {device_id}: {str(e)}")
+        logger.error(f"Error deleting device with id {device_id}: {e!s}")
         return Status(
             403,
             {
                 "status": "error",
-                "message": f"Error deleting device with id {device_id}: {str(e)}",
+                "message": f"Error deleting device with id {device_id}: {e!s}",
             },
         )
     logger.info(f"Device deleted: {response['device']}")
@@ -1253,12 +1253,12 @@ def delete_interface_endpoint(request, interface_id: int):
             },
         )
     except Exception as e:
-        logger.error(f"Error deleting interface with id {interface_id}: {str(e)}")
+        logger.error(f"Error deleting interface with id {interface_id}: {e!s}")
         return Status(
             403,
             {
                 "status": "error",
-                "message": f"Error deleting interface with id {interface_id}: {str(e)}",
+                "message": f"Error deleting interface with id {interface_id}: {e!s}",
             },
         )
 

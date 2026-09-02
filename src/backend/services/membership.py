@@ -1,10 +1,9 @@
-from typing import Any
+from typing import Any, Literal
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from typing_extensions import Literal
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.address_group import AddressGroup
