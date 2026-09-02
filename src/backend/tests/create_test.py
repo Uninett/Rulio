@@ -75,6 +75,207 @@ class TestCreateAddress:
         assert address.ipv4_type == "custom_range"
         assert address.ipv6_type == "custom_range"
 
+    def test_get_or_create_address_with_ipv4_auto_host(self, request_with_session, create_testing_tenant):
+        address, _, created = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Auto IPv4 Host",
+            description="Auto detected IPv4 host",
+            ipv4_auto="192.168.10.5",
+        )
+
+        assert created is True
+        assert address is not None
+        assert address.addr_type == "host"
+        assert address.ipv4_type == "standard"
+        assert address.ipv6_type is None
+        assert str(address.get_address()[0][0]) == "192.168.10.5/32"
+
+    def test_get_or_create_address_with_ipv4_auto_network(self, request_with_session, create_testing_tenant):
+        address, _, created = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Auto IPv4 Network",
+            description="Auto detected IPv4 network",
+            ipv4_auto="192.168.20.0/24",
+        )
+
+        assert created is True
+        assert address is not None
+        assert address.addr_type == "network"
+        assert address.ipv4_type == "standard"
+        assert address.ipv6_type is None
+        assert str(address.get_address()[0][0]) == "192.168.20.0/24"
+
+    def test_get_or_create_address_with_ipv4_auto_range(self, request_with_session, create_testing_tenant):
+        address, _, created = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Auto IPv4 Range",
+            description="Auto detected IPv4 range",
+            ipv4_auto="192.168.30.10-192.168.30.20",
+        )
+
+        assert created is True
+        assert address is not None
+        assert address.addr_type == "range"
+        assert address.ipv4_type == "custom_range"
+        assert address.ipv6_type is None
+
+        ipv4_networks, _ = address.get_address()
+        assert str(ipv4_networks[0]) == "192.168.30.10/31"
+        assert str(ipv4_networks[-1]) == "192.168.30.20/32"
+
+    def test_get_or_create_address_with_ipv6_auto_host(self, request_with_session, create_testing_tenant):
+        address, _, created = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Auto IPv6 Host",
+            description="Auto detected IPv6 host",
+            ipv6_auto="2001:db8::10",
+        )
+
+        assert created is True
+        assert address is not None
+        assert address.addr_type == "host"
+        assert address.ipv4_type is None
+        assert address.ipv6_type == "standard"
+        assert str(address.get_address()[1][0]) == "2001:db8::10/128"
+
+    def test_get_or_create_address_with_ipv6_auto_network(self, request_with_session, create_testing_tenant):
+        address, _, created = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Auto IPv6 Network",
+            description="Auto detected IPv6 network",
+            ipv6_auto="2001:db8:20::/64",
+        )
+
+        assert created is True
+        assert address is not None
+        assert address.addr_type == "network"
+        assert address.ipv4_type is None
+        assert address.ipv6_type == "standard"
+        assert str(address.get_address()[1][0]) == "2001:db8:20::/64"
+
+    def test_get_or_create_address_with_ipv6_auto_range(self, request_with_session, create_testing_tenant):
+        address, _, created = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Auto IPv6 Range",
+            description="Auto detected IPv6 range",
+            ipv6_auto="2001:db8:30::10-2001:db8:30::20",
+        )
+
+        assert created is True
+        assert address is not None
+        assert address.addr_type == "range"
+        assert address.ipv4_type is None
+        assert address.ipv6_type == "custom_range"
+
+        _, ipv6_networks = address.get_address()
+        assert str(ipv6_networks[0]) == "2001:db8:30::10/124"
+        assert str(ipv6_networks[-1]) == "2001:db8:30::20/128"
+
+    def test_get_or_create_address_with_matching_ipv4_ipv6_auto_range(
+        self, request_with_session, create_testing_tenant
+    ):
+        address, _, created = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Auto Dual Stack Range",
+            description="Auto detected dual stack range",
+            ipv4_auto="192.168.60.10-192.168.60.20",
+            ipv6_auto="2001:db8:60::10-2001:db8:60::20",
+        )
+
+        assert created is True
+        assert address is not None
+        assert address.addr_type == "range"
+        assert address.ipv4_type == "custom_range"
+        assert address.ipv6_type == "custom_range"
+
+        ipv4_networks, ipv6_networks = address.get_address()
+        assert str(ipv4_networks[0]) == "192.168.60.10/31"
+        assert str(ipv4_networks[-1]) == "192.168.60.20/32"
+        assert str(ipv6_networks[0]) == "2001:db8:60::10/124"
+        assert str(ipv6_networks[-1]) == "2001:db8:60::20/128"
+
+    def test_get_or_create_address_rejects_mixed_ipv4_host_and_ipv6_range(
+        self, request_with_session, create_testing_tenant
+    ):
+        with pytest.raises(TypeError, match="Address type mismatch"):
+            get_or_create_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Mixed Host Range",
+                description="Should fail",
+                ipv4_auto="192.168.70.10",
+                ipv6_auto="2001:db8:70::10-2001:db8:70::20",
+            )
+
+    def test_get_or_create_address_rejects_mixed_ipv4_range_and_ipv6_host(
+        self, request_with_session, create_testing_tenant
+    ):
+        with pytest.raises(TypeError, match="Address type mismatch"):
+            get_or_create_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Mixed Range Host",
+                description="Should fail",
+                ipv4_auto="192.168.80.10-192.168.80.20",
+                ipv6_auto="2001:db8::80",
+            )
+
+    def test_get_or_create_address_rejects_invalid_ipv4_range_with_cidr(
+        self, request_with_session, create_testing_tenant
+    ):
+        with pytest.raises(ValueError, match="Invalid IPv4 range format"):
+            get_or_create_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Invalid IPv4 Range",
+                description="Should fail",
+                ipv4_auto="192.168.90.0/24-192.168.90.20",
+            )
+
+    def test_get_or_create_address_rejects_invalid_ipv6_range_with_cidr(
+        self, request_with_session, create_testing_tenant
+    ):
+        with pytest.raises(ValueError, match="Invalid IPv6 range format"):
+            get_or_create_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Invalid IPv6 Range",
+                description="Should fail",
+                ipv6_auto="2001:db8:90::/64-2001:db8:90::20",
+            )
+
+    def test_get_or_create_address_rejects_mixed_ipv4_host_and_ipv6_network(
+        self, request_with_session, create_testing_tenant
+    ):
+        with pytest.raises(TypeError, match="Address type mismatch"):
+            get_or_create_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Mixed Host Network",
+                description="Should fail",
+                ipv4_auto="192.168.100.10",
+                ipv6_auto="2001:db8:100::/64",
+            )
+
+    def test_get_or_create_address_rejects_mixed_ipv4_network_and_ipv6_host(
+        self, request_with_session, create_testing_tenant
+    ):
+        with pytest.raises(TypeError, match="Address type mismatch"):
+            get_or_create_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Mixed Network Host",
+                description="Should fail",
+                ipv4_auto="192.168.110.0/24",
+                ipv6_auto="2001:db8::110",
+            )
 
 @pytest.mark.django_db
 class TestCreateService:
