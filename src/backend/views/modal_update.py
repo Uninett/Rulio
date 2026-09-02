@@ -68,6 +68,13 @@ def get_update_modal_config(object_type):
         "devicegroup": {
             "title": "Update Device Group",
             "modal_object_type": "devices",
+            "modal_type": "group",
+            "content_partial": "partials/modals/_device_group_form.html",
+            "post_url_name": "update-device-group-view",
+            "delete_url_name": "delete-device-group-view",
+            "refresh_url_name": "devices",
+            "modal_refresh_target": "#devices-content",
+            "submit_handler": None,
         },
         "filter": {
             "title": "Update Filter",
@@ -173,7 +180,7 @@ def get_update_modal(request, row_id):
     object_tags = []
 
     if (
-        object_type in ["address", "addressgroup", "service", "servicegroup", "rule", "filter"]
+        object_type in ["device", "devicegroup", "address", "addressgroup", "service", "servicegroup", "rule", "filter"]
         and tenant_id is not None
     ):
         try:
@@ -221,6 +228,39 @@ def get_update_modal(request, row_id):
 
             selected_ids = list(TenantUserMember.objects.filter(tenant=tenant).values_list("user_id", flat=True))
             options_context["selected_user_ids"] = selected_ids
+
+        elif object_type in ["device", "devicegroup"]:
+            if tenant_id is None:
+                return HttpResponse("No tenant selected.", status=400)
+
+            tenant_id = int(tenant_id)
+
+            objects, _, _ = get_all_device_groups_and_devices_with_tags_from_tenant(
+                actor=request.user,
+                tenant_id=tenant_id,
+                include_global_tenant=True,
+            )
+
+            # Fetch the specific object data based on type and id
+            if object_type == "device":
+                object_data = next(
+                    (item for item in objects if item.get("type") == "Device" and item.get("id") == object_id),
+                    None,
+                )
+                if object_data:
+                    options_context["group_options"] = get_group_options_view(request, "devices")
+                    selected_ids = [int(item["id"]) for item in object_data.get("device_groups", [])]
+                    options_context["selected_group_ids"] = selected_ids
+
+            elif object_type == "devicegroups":
+                object_data = next(
+                    (item for item in objects if item.get("type") == "DeviceGroups" and item.get("id") == object_id),
+                    None,
+                )
+                if object_data:
+                    options_context["item_options"] = get_item_options_view(request, "devices")
+                    selected_ids = [int(item["id"]) for item in object_data.get("devices", [])]
+                    options_context["selected_device_ids"] = selected_ids
 
     elif object_type in ["address", "addressgroup"]:
         if tenant_id is None:
