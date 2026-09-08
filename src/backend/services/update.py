@@ -1,3 +1,5 @@
+
+
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
@@ -19,7 +21,12 @@ from backend.services.attribute_objects.ip_parsing import (
     parse_ipv6_auto,
 )
 from backend.services.helper_user_tenant import require_write_tenant
+from backend.utils.logger import set_log_level, set_up_logger
 from constants import GLOBAL_TENANT_ID
+
+logger = set_up_logger(__name__)
+set_log_level(logger, "INFO")
+
 
 
 def _editable_tenant_ids(actor, tenant_id: int) -> list[int]:
@@ -246,9 +253,14 @@ def update_device_group(*, actor, tenant_id, device_group_id, name=None, descrip
 @transaction.atomic
 def update_tag(*, actor, tenant_id, tag_id, name=None, description=None, color=None):
     require_write_tenant(actor, tenant_id)
+    logger.debug(f"Updating tag with ID {tag_id} in tenant {tenant_id}. by actor {actor} with editable tenant IDs {_editable_tenant_ids(actor, tenant_id)}")
+    logger.debug(f"New values - name: {name}, description: {description}, color: {color}")
+
 
     tag = Tag.objects.filter(id=tag_id, tenant_id__in=_editable_tenant_ids(actor, tenant_id)).first()
     if tag is None:
+        logger.debug(f"Tag with ID {tag_id} not found in tenant {tenant_id}.")
+        logger.debug(f"Editable tenant IDs for actor {actor} and tenant {tenant_id}: {_editable_tenant_ids(actor, tenant_id)}")
         raise PermissionDenied(f"Tag with ID {tag_id} does not exist in tenant {tenant_id}.")
 
     if name is not None:
