@@ -1,4 +1,5 @@
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, summarize_address_range
+from typing import ClassVar
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -25,11 +26,11 @@ class Address(TaggableMixin, models.Model):
     \nipv6Address_end (str): The ending IPv6 address for a custom range.
     """
 
-    TYPE_CHOICES = [
+    TYPE_CHOICES: ClassVar[list[tuple[str, str]]] = [
         ("standard", "Ip address that can be written with a subnet mask (e.g. 192.168.0.1/24)"),
         ("custom_range", "IP Range"),
     ]
-    ADDR_TYPE_CHOICES = [
+    ADDR_TYPE_CHOICES: ClassVar[list[tuple[str, str]]] = [
         ("host", "Host"),
         ("network", "Network"),
         ("range", "Range"),
@@ -46,6 +47,7 @@ class Address(TaggableMixin, models.Model):
     ipv4Address_end = models.GenericIPAddressField(protocol="IPv4", null=True, blank=True)
     ipv6Address_start = models.GenericIPAddressField(protocol="IPv6", null=True, blank=True)
     ipv6Address_end = models.GenericIPAddressField(protocol="IPv6", null=True, blank=True)
+    
 
     def clean(self):
         errors = {}
@@ -53,16 +55,14 @@ class Address(TaggableMixin, models.Model):
         if self.ipv4_type is None and self.ipv6_type is None:
             errors["ipv4_type"] = "At least one of ipv4_type or ipv6_type must be set."
             errors["ipv6_type"] = "At least one of ipv4_type or ipv6_type must be set."
-        if self.ipv4_type is None:
-            if self.ipv4Network or self.ipv4Address_start or self.ipv4Address_end:
-                errors["ipv4_type"] = (
-                    "ipv4Network, ipv4Address_start, and ipv4Address_end must be null if ipv4_type is not set."
-                )
-        if self.ipv6_type is None:
-            if self.ipv6Network or self.ipv6Address_start or self.ipv6Address_end:
-                errors["ipv6_type"] = (
-                    "ipv6Network, ipv6Address_start, and ipv6Address_end must be null if ipv6_type is not set."
-                )
+        if self.ipv4_type is None and (self.ipv4Network or self.ipv4Address_start or self.ipv4Address_end):
+            errors["ipv4_type"] = (
+                "ipv4Network, ipv4Address_start, and ipv4Address_end must be null if ipv4_type is not set."
+            )
+        if self.ipv6_type is None and (self.ipv6Network or self.ipv6Address_start or self.ipv6Address_end):
+            errors["ipv6_type"] = (
+                "ipv6Network, ipv6Address_start, and ipv6Address_end must be null if ipv6_type is not set."
+            )
 
         # Validate IPv4 standard
         if self.ipv4_type == "standard":
