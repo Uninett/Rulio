@@ -233,12 +233,12 @@ Device Interface Manager
 
 .device-interface-table th:nth-child(1),
 .device-interface-table td:nth-child(1) {
-    width: 22%;
+    width: 23%;
 }
 
 .device-interface-table th:nth-child(2),
 .device-interface-table td:nth-child(2) {
-    width: 32%;
+    width: 38%;
 }
 
 .device-interface-table th:nth-child(3),
@@ -252,7 +252,7 @@ Device Interface Manager
 }
 
 .device-interface-actions-column {
-    width: 14%;
+    width: 5%;
     text-align: right !important;
 }
 
@@ -267,6 +267,44 @@ Device Interface Manager
     height: 2rem;
     box-sizing: border-box;
     padding: 0 0.5rem;
+}
+
+.device-interface-actions-column {
+    width: 7%;
+    text-align: center !important;
+}
+
+.device-interface-table .device-interface-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    padding: 0;
+
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 50%;
+}
+
+.device-interface-table .device-interface-icon-button:hover {
+    border-color: transparent;
+}
+
+.device-interface-table .device-interface-add-button:hover {
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+}
+
+.device-interface-table .device-interface-delete-button:hover {
+    background-color: var(--sds-color-support-critical-subtle);
+}
+
+.device-interface-table .device-interface-icon-button .actions-icon {
+    display: block;
+    width: 1.2rem;
+    height: 1.2rem;
 }
 
 /*

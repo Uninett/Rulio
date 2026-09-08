@@ -1,3 +1,5 @@
+{% load static %}
+
 <div class="device-interface-manager">
     <table class="device-interface-table">
         <thead>
@@ -26,10 +28,14 @@
                     {{ interface.VRF|default:"" }}
                 </td>
                 <td class="device-interface-actions-column">
-                    <button type="button" class="btn-secondary" disabled>
-                        Delete
+                    <button type="button"
+                        class="actions-btn device-interface-icon-button device-interface-delete-button"
+                        id="delete-interface-draft-{{ interface.id }}" aria-label="Delete interface"
+                        title="Delete interface">
+                        <img class="btn-icon actions-icon" src="{% static 'images/delete.svg' %}" alt=""
+                            aria-hidden="true">
                     </button>
-                </td>elete-interface
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -50,8 +56,10 @@
                     <input id="new-interface-vrf" name="new_interface_vrf" type="text" placeholder="VRF">
                 </td>
                 <td class="device-interface-actions-column">
-                    <button type="button" class="btn-secondary" id="add-interface-draft">
-                        Add
+                    <button type="button" class="actions-btn device-interface-icon-button device-interface-add-button"
+                        id="add-interface-draft" aria-label="Add interface" title="Add interface">
+                        <img class="btn-icon actions-icon" src="{% static 'images/add.svg' %}" alt=""
+                            aria-hidden="true">
                     </button>
                 </td>
             </tr>
