@@ -13,10 +13,15 @@
 
     {% if object_data.interfaces %}
     <p class="device-interfaces">
-        {% for interface in object_data.interfaces %}
-        {{ interface.name }}{% if not forloop.last %}, {% endif %}
-        {% endfor %}
-        ({{ object_data.interfaces|length }})
+        <span class="device-interface-names">
+            {% for interface in object_data.interfaces %}
+            {{ interface.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </span>
+
+        <span class="device-interface-count">
+            ({{ object_data.interfaces|length }})
+        </span>
     </p>
     {% else %}
     <p class="empty-state">No interfaces are connected to this device.</p>

@@ -172,6 +172,31 @@ Form Layout
     cursor: pointer;
 }
 
+/*
+====================================================================
+Device Form Layout
+====================================================================
+*/
+
+.device-interfaces {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.device-interface-names {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.device-interface-count {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
 
 /*
 ====================================================================
