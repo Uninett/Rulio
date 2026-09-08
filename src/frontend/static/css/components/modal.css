@@ -320,3 +320,43 @@ Modal Actions
     color: var(--sds-color-text-critical);
     font-size: smaller;
 }
+
+.btn-cancel {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--sds-color-support-critical-strong);
+}
+
+.btn-cancel:hover {
+    background-color: var(--sds-color-support-critical-subtle);
+    border-color: var(--sds-color-support-critical-subtle);
+}
+
+/*
+====================================================================
+Modal Secondary Button
+====================================================================
+*/
+
+.modal .btn-secondary {
+    justify-self: start;
+    grid-column: 2;
+    width: fit-content;
+    margin-top: 0.25rem;
+    padding: 0.35rem 0.75rem;
+
+    font-size: smaller;
+    line-height: 1.2;
+
+    background-color: transparent;
+    border: 1px solid var(--sds-color-brand-primary-strong);
+    border-radius: 2rem;
+    color: var(--sds-color-brand-primary-strong);
+    cursor: pointer;
+}
+
+.modal .btn-secondary:hover {
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+    border-color: var(--sds-color-brand-primary-strong-hover);
+    color: var(--sds-color-brand-primary-strong-hover);
+}

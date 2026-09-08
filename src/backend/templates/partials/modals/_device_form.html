@@ -8,7 +8,7 @@
     <input id="type" name="type" value="{{ object_data.type|default:''  }}" type="text" required>
 </div>
 
-<div class="form-group">
+<div class="form-group device-interfaces-group">
     <label>Interfaces</label>
 
     {% if object_data.interfaces %}
@@ -18,7 +18,6 @@
             {{ interface.name }}{% if not forloop.last %}, {% endif %}
             {% endfor %}
         </span>
-
         <span class="device-interface-count">
             ({{ object_data.interfaces|length }})
         </span>
@@ -26,4 +25,8 @@
     {% else %}
     <p class="empty-state">No interfaces are connected to this device.</p>
     {% endif %}
+
+    <button type="button" class="btn-secondary">
+        Manage interfaces
+    </button>
 </div>
