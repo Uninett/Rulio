@@ -248,6 +248,13 @@ Objects Tags
     overflow: hidden;
     max-height: 1.5rem;
     line-height: 1.5rem;
+    white-space: nowrap;
+}
+
+.objects-table .tag-overflow-indicator {
+    cursor: default;
+    background-color: var(--sds-color-interaction-neutral-subtle);
+    border: 1px solid var(--sds-color-interaction-neutral-subtle);
 }
 
 .objects-table .tag-item,
@@ -303,7 +310,7 @@ Specific table layout
 /* Description */
 .objects-table--addresses .col-3,
 .objects-table--services .col-3 {
-    width: 30%;
+    width: 35%;
 }
 
 /* IP Value */
@@ -326,7 +333,7 @@ Specific table layout
 /* Tags */
 .objects-table--addresses .col-6,
 .objects-table--services .col-7 {
-    width: 20%;
+    width: 25%;
 }
 
 /* Name */
@@ -362,6 +369,31 @@ Specific table layout
 .objects-table--interfaces .col-1,
 .objects-table--interfaces .col-2 {
     width: 50%;
+}
+
+/* Inspect icon */
+.objects-table--filters .col-1 {
+    width: 4%;
+}
+
+/* Name */
+.objects-table--filters .col-2 {
+    width: 16%;
+}
+
+/* Description */
+.objects-table--filters .col-3 {
+    width: 30%;
+}
+
+/* Rules */
+.objects-table--filters .col-4 {
+    width: 24%;
+}
+
+/* Tags */
+.objects-table--filters .col-5 {
+    width: 21%;
 }
 
 /*
