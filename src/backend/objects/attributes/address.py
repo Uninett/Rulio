@@ -47,7 +47,6 @@ class Address(TaggableMixin, models.Model):
     ipv4Address_end = models.GenericIPAddressField(protocol="IPv4", null=True, blank=True)
     ipv6Address_start = models.GenericIPAddressField(protocol="IPv6", null=True, blank=True)
     ipv6Address_end = models.GenericIPAddressField(protocol="IPv6", null=True, blank=True)
-    
 
     def clean(self):
         errors = {}

@@ -11,7 +11,7 @@ class Interface(TaggableMixin, models.Model):
     type = models.CharField(max_length=255, null=True, blank=True)
     VRF = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(blank=True)
-    
+
     class Meta:
         constraints: ClassVar = [
             models.UniqueConstraint(fields=["device", "name"], name="unique_interface_name_per_device"),

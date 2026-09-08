@@ -6,14 +6,12 @@ from django.shortcuts import render
 from backend.objects.filters.filter import Filter
 from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface import Interface
-
 from backend.services.get import (
     get_all_filters_from_interface,
     get_all_interfaces_from_device,
     get_object_by_type_and_id,
 )
 from backend.services.helper_user_tenant import can_write_tenant
-
 from backend.services.membership import add_filter_to_interface
 from backend.utils.logger import set_up_logger
 from backend.views.search import get_global_search_results
