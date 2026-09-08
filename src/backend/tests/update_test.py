@@ -71,6 +71,205 @@ class TestUpdate:
                 assert address.ipv6_type == "standard"
                 assert str(address.ipv6Network) == str(convert_ipv4_to_ipv6(old_ipv4_network))
 
+    def test_update_address_with_ipv4_auto_host(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        update_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            address_id=address.id,
+            ipv4_auto="192.168.10.5",
+        )
+
+        address.refresh_from_db()
+        assert address.addr_type == "host"
+        assert address.ipv4_type == "standard"
+        assert str(address.get_address()[0][0]) == "192.168.10.5/32"
+
+    def test_update_address_with_ipv4_auto_network(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        update_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            address_id=address.id,
+            ipv4_auto="192.168.20.0/24",
+        )
+
+        address.refresh_from_db()
+        assert address.addr_type == "network"
+        assert address.ipv4_type == "standard"
+        assert str(address.get_address()[0][0]) == "192.168.20.0/24"
+
+    def test_update_address_with_ipv4_auto_range(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        update_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            address_id=address.id,
+            ipv4_auto="192.168.30.10-192.168.30.20",
+        )
+
+        address.refresh_from_db()
+        assert address.addr_type == "range"
+        assert address.ipv4_type == "custom_range"
+
+        ipv4_networks, _ = address.get_address()
+        assert str(ipv4_networks[0]) == "192.168.30.10/31"
+        assert str(ipv4_networks[-1]) == "192.168.30.20/32"
+
+    def test_update_address_with_ipv6_auto_host(self, request_with_session, sample_addresses):
+        address = sample_addresses[2]
+
+        update_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            address_id=address.id,
+            ipv6_auto="2001:db8::10",
+        )
+
+        address.refresh_from_db()
+        assert address.addr_type == "host"
+        assert address.ipv6_type == "standard"
+        assert str(address.get_address()[1][0]) == "2001:db8::10/128"
+
+    def test_update_address_with_ipv6_auto_network(self, request_with_session, sample_addresses):
+        address = sample_addresses[2]
+
+        update_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            address_id=address.id,
+            ipv6_auto="2001:db8:20::/64",
+        )
+
+        address.refresh_from_db()
+        assert address.addr_type == "network"
+        assert address.ipv6_type == "standard"
+        assert str(address.get_address()[1][0]) == "2001:db8:20::/64"
+
+    def test_update_address_with_ipv6_auto_range(self, request_with_session, sample_addresses):
+        address = sample_addresses[2]
+
+        update_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            address_id=address.id,
+            ipv4_auto="192.168.30.10-192.168.30.20",
+            ipv6_auto="2001:db8:30::10-2001:db8:30::20",
+        )
+
+        address.refresh_from_db()
+        assert address.addr_type == "range"
+        assert address.ipv6_type == "custom_range"
+
+        _, ipv6_networks = address.get_address()
+        assert str(ipv6_networks[0]) == "2001:db8:30::10/124"
+        assert str(ipv6_networks[-1]) == "2001:db8:30::20/128"
+
+    def test_update_address_with_matching_ipv4_ipv6_auto_range(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        update_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            address_id=address.id,
+            ipv4_auto="192.168.60.10-192.168.60.20",
+            ipv6_auto="2001:db8:60::10-2001:db8:60::20",
+        )
+
+        address.refresh_from_db()
+        assert address.addr_type == "range"
+        assert address.ipv4_type == "custom_range"
+        assert address.ipv6_type == "custom_range"
+
+    def test_update_address_allows_ipv4_range_and_ipv6_network(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        update_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            address_id=address.id,
+            ipv4_auto="192.168.65.10-192.168.65.20",
+            ipv6_auto="2001:db8:65::/64",
+        )
+
+        address.refresh_from_db()
+        assert address.addr_type == "range"
+        assert address.ipv4_type == "custom_range"
+        assert address.ipv6_type == "standard"
+
+    def test_update_address_rejects_mixed_ipv4_host_and_ipv6_range(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        with pytest.raises(TypeError, match="Address type mismatch"):
+            update_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                address_id=address.id,
+                ipv4_auto="192.168.70.10",
+                ipv6_auto="2001:db8:70::10-2001:db8:70::20",
+            )
+
+    def test_update_address_rejects_mixed_ipv4_range_and_ipv6_host(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        with pytest.raises(TypeError, match="Address type mismatch"):
+            update_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                address_id=address.id,
+                ipv4_auto="192.168.80.10-192.168.80.20",
+                ipv6_auto="2001:db8::80",
+            )
+
+    def test_update_address_rejects_invalid_ipv4_range_with_cidr(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        with pytest.raises(ValueError, match="Invalid IPv4 range format"):
+            update_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                address_id=address.id,
+                ipv4_auto="192.168.90.0/24-192.168.90.20",
+            )
+
+    def test_update_address_rejects_invalid_ipv6_range_with_cidr(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        with pytest.raises(ValueError, match="Invalid IPv6 range format"):
+            update_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                address_id=address.id,
+                ipv6_auto="2001:db8:90::/64-2001:db8:90::20",
+            )
+
+    def test_update_address_rejects_mixed_ipv4_host_and_ipv6_network(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        with pytest.raises(TypeError, match="Address type mismatch"):
+            update_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                address_id=address.id,
+                ipv4_auto="192.168.100.10",
+                ipv6_auto="2001:db8:100::/64",
+            )
+
+    def test_update_address_rejects_mixed_ipv4_network_and_ipv6_host(self, request_with_session, sample_addresses):
+        address = sample_addresses[0]
+
+        with pytest.raises(TypeError, match="Address type mismatch"):
+            update_address(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                address_id=address.id,
+                ipv4_auto="192.168.110.0/24",
+                ipv6_auto="2001:db8::110",
+            )
+
     def test_update_service(self, request_with_session, sample_services):
         for service in sample_services:
             new_name = f"{service.name}_updated"

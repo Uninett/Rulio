@@ -1,25 +1,3 @@
-<div class="form-group">
-    <label for="addr_type">Address type</label>
-    <select id="addr_type" name="addr_type">
-        {% if object_data.addr_type == "host" %}
-        <option value="host" selected>Host</option>
-        {% else %}
-        <option value="host">Host</option>
-        {% endif %}
-
-        {% if object_data.addr_type == "network" %}
-        <option value="network" selected>Network</option>
-        {% else %}
-        <option value="network">Network</option>
-        {% endif %}
-
-        {% if object_data.addr_type == "range" %}
-        <option value="range" selected>Range</option>
-        {% else %}
-        <option value="range">Range</option>
-        {% endif %}
-    </select>
-</div>
 
 <div class="ip-address">
     <div class="form-group">

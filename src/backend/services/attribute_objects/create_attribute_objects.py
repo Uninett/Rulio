@@ -12,6 +12,12 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.tag import Tag
+from backend.services.attribute_objects.ip_parsing import (
+    can_enable_automatic_ip_auto,
+    get_addr_type,
+    parse_ipv4_auto,
+    parse_ipv6_auto,
+)
 from backend.services.get import get_object_by_type_and_id
 from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import (
@@ -21,52 +27,6 @@ from backend.services.membership import (
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
-
-
-@transaction.atomic
-def create_address(
-    *,
-    actor: User,
-    tenant_id: int,
-    name: str,
-    description: str,
-    addr_type: str | None = "host",
-    ipv4_type: str | None = None,
-    ipv6_type: str | None = None,
-    ipv4Network: IPv4Network | None = None,
-    ipv6Network: IPv6Network | None = None,
-    ipv4Address_start: IPv4Address | None = None,
-    ipv4Address_end: IPv4Address | None = None,
-    ipv6Address_start: IPv6Address | None = None,
-    ipv6Address_end: IPv6Address | None = None,
-) -> Address:
-
-    require_write_tenant(actor, tenant_id)
-
-    address = Address(
-        name=name,
-        description=description,
-        tenant_id=tenant_id,
-        addr_type=addr_type,
-        ipv4_type=ipv4_type,
-        ipv6_type=ipv6_type,
-        ipv4Network=str(ipv4Network) if ipv4Network else None,
-        ipv6Network=str(ipv6Network) if ipv6Network else None,
-        ipv4Address_start=str(ipv4Address_start) if ipv4Address_start else None,
-        ipv4Address_end=str(ipv4Address_end) if ipv4Address_end else None,
-        ipv6Address_start=str(ipv6Address_start) if ipv6Address_start else None,
-        ipv6Address_end=str(ipv6Address_end) if ipv6Address_end else None,
-    )
-
-    try:
-        address.full_clean()
-    except DjangoValidationError as e:
-        logger.warning(f"Address validation failed: {e.message_dict}")
-        raise ValueError(e.message_dict) from e
-
-    address.save()
-    logger.info(f"Created {address} for tenant={address.tenant_id}")
-    return address
 
 
 @transaction.atomic
@@ -90,7 +50,7 @@ def create_and_add_address_to_groups(
 
     require_write_tenant(actor, tenant_id)
 
-    address = create_address(
+    address = get_or_create_address(
         actor=actor,
         tenant_id=tenant_id,
         name=name,
@@ -104,7 +64,7 @@ def create_and_add_address_to_groups(
         ipv4Address_end=ipv4Address_end,
         ipv6Address_start=ipv6Address_start,
         ipv6Address_end=ipv6Address_end,
-    )
+    )[0]
 
     if group_ids:
         AddressGroupMember.objects.bulk_create(
@@ -125,6 +85,8 @@ def get_or_create_address(
     addr_type: str | None = "host",
     ipv4_type: str | None = None,
     ipv6_type: str | None = None,
+    ipv4_auto: str | None = None,
+    ipv6_auto: str | None = None,
     ipv4Network: IPv4Network | None = None,
     ipv6Network: IPv6Network | None = None,
     ipv4Address_start: IPv4Address | None = None,
@@ -133,14 +95,37 @@ def get_or_create_address(
     ipv6Address_end: IPv6Address | None = None,
     request_type: str | None = "standard",
 ) -> tuple[Address, int, bool]:
-
     require_write_tenant(actor, tenant_id)
+
+    detected_ipv4_addr_type: str | None = None
+    detected_ipv6_addr_type: str | None = None
+    if can_enable_automatic_ip_auto(  # for ipv4
+        ip_auto=ipv4_auto,
+        ip_type=ipv4_type,
+        ipNetwork=ipv4Network,
+        ipAddress_start=ipv4Address_start,
+        ipAddress_end=ipv4Address_end,
+    ):
+        ipv4_type, ipv4Network, ipv4Address_start, ipv4Address_end, detected_ipv4_addr_type = parse_ipv4_auto(ipv4_auto)
+    if can_enable_automatic_ip_auto(  # for ipv6
+        ip_auto=ipv6_auto,
+        ip_type=ipv6_type,
+        ipNetwork=ipv6Network,
+        ipAddress_start=ipv6Address_start,
+        ipAddress_end=ipv6Address_end,
+    ):
+        ipv6_type, ipv6Network, ipv6Address_start, ipv6Address_end, detected_ipv6_addr_type = parse_ipv6_auto(ipv6_auto)
+
+    if ipv4_auto or ipv6_auto:
+        final_addr_type = get_addr_type(ipv4_type, ipv6_type, detected_ipv4_addr_type, detected_ipv6_addr_type)
+    else:
+        final_addr_type = addr_type
 
     address, created = Address.objects.get_or_create(
         name=name,
         description=description,
         tenant_id=tenant_id,
-        addr_type=addr_type,
+        addr_type=final_addr_type,
         ipv4_type=ipv4_type,
         ipv6_type=ipv6_type,
         ipv4Network=str(ipv4Network) if ipv4Network else None,
@@ -150,13 +135,13 @@ def get_or_create_address(
         ipv6Address_start=str(ipv6Address_start) if ipv6Address_start else None,
         ipv6Address_end=str(ipv6Address_end) if ipv6Address_end else None,
     )
-    if request_type == "seeding":
-        pass
-    else:
+
+    if request_type != "seeding":
         if created:
             logger.info(f"Created {address} for tenant={address.tenant_id}")
         else:
             logger.info(f"Address already exists: {address} for tenant={address.tenant_id}")
+
     return address, address.id, created
 
 

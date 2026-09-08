@@ -26,7 +26,6 @@ from backend.schemas.tag_object import CreateTagObjectSchema
 from backend.schemas.tenant import CreateTenantSchema
 from backend.schemas.tenant_user import CreateTenantUserSchema
 from backend.services.attribute_objects.create_attribute_objects import (
-    create_address,
     create_address_group,
     create_address_group_and_add_addresses,
     create_and_add_address_to_groups,
@@ -36,6 +35,7 @@ from backend.services.attribute_objects.create_attribute_objects import (
     create_service_group,
     create_service_group_and_add_services,
     create_tag,
+    get_or_create_address,
 )
 from backend.services.attribute_objects.get_address_objects import (
     get_address_groups_and_addresses_from_tenant,
@@ -183,7 +183,7 @@ def create_address_endpoint(
     request,
     payload: CreateAddressSchema,
 ):
-    address = create_address(
+    address = get_or_create_address(
         actor=request.user,
         tenant_id=request.session["current_tenant_id"],
         name=payload.name,
@@ -197,7 +197,7 @@ def create_address_endpoint(
         ipv4Address_end=payload.ipv4Address_end,
         ipv6Address_start=payload.ipv6Address_start,
         ipv6Address_end=payload.ipv6Address_end,
-    )
+    )[0]
     logger.info(f"create_address endpoint succeeded for address id={address.id}")
     return Status(
         200,

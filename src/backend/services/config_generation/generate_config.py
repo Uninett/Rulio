@@ -112,14 +112,13 @@ class PolicyRuleMember:
     - any
     """
 
-    VALID_TYPES = {"address", "addressgroup", "service", "servicegroup"}
-
     def __init__(
         self,
         obj_type: str,
         direction: str,
         object: Address | AddressGroup | Service | ServiceGroup,
     ):
+        self.VALID_TYPES = {"address", "addressgroup", "service", "servicegroup"}
         normalized_type = obj_type.lower().strip()
         normalized_direction = direction.lower().strip()
 
@@ -166,9 +165,6 @@ class PolicyRule:
     must be split to preserve semantics.
     """
 
-    PORT_BASED_PROTOCOLS = {"tcp", "udp"}
-    ICMP_PROTOCOLS = {"icmp", "icmpv6"}
-
     def __init__(
         self,
         actor: User,
@@ -178,6 +174,8 @@ class PolicyRule:
         rule_sequence: int,
         members: list[PolicyRuleMember],
     ):
+        self.PORT_BASED_PROTOCOLS = {"tcp", "udp"}
+        self.ICMP_PROTOCOLS = {"icmp", "icmpv6"}
         if not name or not name.strip():
             raise ValueError("PolicyRule name cannot be empty")
 

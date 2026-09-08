@@ -12,6 +12,12 @@ from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface import Interface
+from backend.services.attribute_objects.ip_parsing import (
+    can_enable_automatic_ip_auto,
+    get_addr_type,
+    parse_ipv4_auto,
+    parse_ipv6_auto,
+)
 from backend.services.helper_user_tenant import require_write_tenant
 from constants import GLOBAL_TENANT_ID
 
@@ -34,6 +40,8 @@ def update_address(
     addr_type=None,
     ipv4_type=None,
     ipv6_type=None,
+    ipv4_auto=None,
+    ipv6_auto=None,
     ipv4Network=None,
     ipv6Network=None,
     ipv4Address_start=None,
@@ -47,6 +55,28 @@ def update_address(
     if address is None:
         raise PermissionDenied(f"Address with ID {address_id} does not exist in tenant {tenant_id}.")
 
+    detected_ipv4_addr_type: str | None = None
+    detected_ipv6_addr_type: str | None = None
+    if can_enable_automatic_ip_auto(
+        ip_auto=ipv4_auto,
+        ip_type=ipv4_type,
+        ipNetwork=ipv4Network,
+        ipAddress_start=ipv4Address_start,
+        ipAddress_end=ipv4Address_end,
+    ):
+        ipv4_type, ipv4Network, ipv4Address_start, ipv4Address_end, detected_ipv4_addr_type = parse_ipv4_auto(ipv4_auto)
+    if can_enable_automatic_ip_auto(
+        ip_auto=ipv6_auto,
+        ip_type=ipv6_type,
+        ipNetwork=ipv6Network,
+        ipAddress_start=ipv6Address_start,
+        ipAddress_end=ipv6Address_end,
+    ):
+        ipv6_type, ipv6Network, ipv6Address_start, ipv6Address_end, detected_ipv6_addr_type = parse_ipv6_auto(ipv6_auto)
+
+    if ipv4_auto or ipv6_auto:
+        addr_type = get_addr_type(ipv4_type, ipv6_type, detected_ipv4_addr_type, detected_ipv6_addr_type)
+
     if name is not None:
         address.name = name
     if description is not None:
@@ -55,8 +85,19 @@ def update_address(
         address.addr_type = addr_type
     if ipv4_type is not None:
         address.ipv4_type = ipv4_type
+        # Switching type must clear the fields that belong to the other type.
+        if ipv4_type == "standard":
+            address.ipv4Address_start = None
+            address.ipv4Address_end = None
+        elif ipv4_type == "custom_range":
+            address.ipv4Network = None
     if ipv6_type is not None:
         address.ipv6_type = ipv6_type
+        if ipv6_type == "standard":
+            address.ipv6Address_start = None
+            address.ipv6Address_end = None
+        elif ipv6_type == "custom_range":
+            address.ipv6Network = None
     if ipv4Network is not None:
         address.ipv4Network = ipv4Network
     if ipv6Network is not None:
