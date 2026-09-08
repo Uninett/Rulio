@@ -922,6 +922,74 @@ function initializeRuleRowDragAndDrop(root = document) {
 
 /*
 ====================================================================
+Tag List Overflow
+====================================================================
+*/
+
+function initTagOverflow(root = document) {
+    root.querySelectorAll(".tag-list-container").forEach((container) => {
+        const previousIndicator = container.querySelector(".tag-overflow-indicator");
+        previousIndicator?.remove();
+
+        const items = Array.from(container.querySelectorAll(".tag-item"));
+        items.forEach((item) => {
+            item.style.display = "";
+        });
+
+        if (items.length === 0 || container.scrollWidth <= container.clientWidth) {
+            return;
+        }
+
+        const containerWidth = container.clientWidth;
+        const indicator = document.createElement("span");
+        indicator.className = "cell-text tag-item tag-overflow-indicator";
+        const indicatorWidth = measureIndicatorWidth(container, indicator);
+
+        let usedWidth = 0;
+        let firstHiddenIndex = items.length;
+        for (let i = 0; i < items.length; i += 1) {
+            usedWidth += outerWidth(items[i]);
+            if (usedWidth > containerWidth - indicatorWidth) {
+                firstHiddenIndex = i;
+                break;
+            }
+        }
+
+        const hiddenItems = items.slice(firstHiddenIndex);
+        if (hiddenItems.length === 0) {
+            return;
+        }
+
+        hiddenItems.forEach((item) => {
+            item.style.display = "none";
+        });
+
+        indicator.textContent = `+${hiddenItems.length}`;
+        indicator.title = hiddenItems.map((item) => item.title || item.textContent.trim()).join(", ");
+        container.appendChild(indicator);
+    });
+}
+
+function outerWidth(element) {
+    const marginRight = parseFloat(getComputedStyle(element).marginRight) || 0;
+    return element.offsetWidth + marginRight;
+}
+
+function measureIndicatorWidth(container, indicator) {
+    indicator.textContent = "+99";
+    indicator.style.visibility = "hidden";
+    indicator.style.position = "absolute";
+    container.appendChild(indicator);
+    const width = outerWidth(indicator);
+    indicator.remove();
+    indicator.style.visibility = "";
+    indicator.style.position = "";
+    return width;
+}
+
+
+/*
+====================================================================
 Event Listeners
 ====================================================================
 */
@@ -937,6 +1005,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initializeMembershipSelectors(document);
     initializeRuleRowDragAndDrop(document);
     focusAndExpandFromUrl();
+    initTagOverflow(document);
 });
 
 document.addEventListener("htmx:afterSwap", function (event) {
@@ -944,7 +1013,14 @@ document.addEventListener("htmx:afterSwap", function (event) {
     initializeMembershipSelectors(event.target);
     initializeRuleRowDragAndDrop(event.target);
     focusAndExpandFromUrl();
+    initTagOverflow(event.target);
 });
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
 document.addEventListener("click", handleGenerateConfigButtonClick);
+
+let tagOverflowResizeTimeout = null;
+window.addEventListener("resize", function () {
+    clearTimeout(tagOverflowResizeTimeout);
+    tagOverflowResizeTimeout = setTimeout(() => initTagOverflow(document), 150);
+});
