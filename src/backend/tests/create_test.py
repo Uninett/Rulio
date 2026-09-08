@@ -201,6 +201,24 @@ class TestCreateAddress:
         assert str(ipv6_networks[0]) == "2001:db8:60::10/124"
         assert str(ipv6_networks[-1]) == "2001:db8:60::20/128"
 
+    def test_get_or_create_address_allows_ipv4_range_and_ipv6_network(
+        self, request_with_session, create_testing_tenant
+    ):
+        address, _, created = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="IPv4 Range IPv6 Network",
+            description="IPv4 custom range paired with an IPv6 network",
+            ipv4_auto="192.168.65.10-192.168.65.20",
+            ipv6_auto="2001:db8:65::/64",
+        )
+
+        assert created is True
+        assert address is not None
+        assert address.addr_type == "range"
+        assert address.ipv4_type == "custom_range"
+        assert address.ipv6_type == "standard"
+
     def test_get_or_create_address_rejects_mixed_ipv4_host_and_ipv6_range(
         self, request_with_session, create_testing_tenant
     ):
@@ -276,6 +294,7 @@ class TestCreateAddress:
                 ipv4_auto="192.168.110.0/24",
                 ipv6_auto="2001:db8::110",
             )
+
 
 @pytest.mark.django_db
 class TestCreateService:
