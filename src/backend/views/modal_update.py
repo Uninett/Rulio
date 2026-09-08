@@ -15,6 +15,7 @@ from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant,
 )
 from backend.services.get import (
+    get_all_device_groups_and_devices_with_tags_from_tenant,
     get_all_objects_from_rule,
     get_all_tags_from_object,
     get_filter_with_rules_and_tags,
@@ -61,13 +62,27 @@ def get_update_modal_config(object_type):
             "modal_refresh_target": "#management-content",
             "submit_handler": None,
         },
-        "devices": {
+        "device": {
             "title": "Update Device",
             "modal_object_type": "devices",
+            "modal_type": "item",
+            "content_partial": "partials/modals/_device_form.html",
+            "post_url_name": "update-device-view",
+            "delete_url_name": "delete-device-view",
+            "refresh_url_name": "devices",
+            "modal_refresh_target": "#devices-content",
+            "submit_handler": None,
         },
         "devicegroup": {
             "title": "Update Device Group",
             "modal_object_type": "devices",
+            "modal_type": "group",
+            "content_partial": "partials/modals/_device_group_form.html",
+            "post_url_name": "update-device-group-view",
+            "delete_url_name": "delete-device-group-view",
+            "refresh_url_name": "devices",
+            "modal_refresh_target": "#devices-content",
+            "submit_handler": None,
         },
         "filter": {
             "title": "Update Filter",
@@ -173,7 +188,7 @@ def get_update_modal(request, row_id):
     object_tags = []
 
     if (
-        object_type in ["address", "addressgroup", "service", "servicegroup", "rule", "filter"]
+        object_type in ["device", "devicegroup", "address", "addressgroup", "service", "servicegroup", "rule", "filter"]
         and tenant_id is not None
     ):
         try:
@@ -221,6 +236,61 @@ def get_update_modal(request, row_id):
 
             selected_ids = list(TenantUserMember.objects.filter(tenant=tenant).values_list("user_id", flat=True))
             options_context["selected_user_ids"] = selected_ids
+
+    elif object_type in ["device", "devicegroup"]:
+        if tenant_id is None:
+            return HttpResponse("No tenant selected.", status=400)
+
+        device_groups, devices = get_all_device_groups_and_devices_with_tags_from_tenant(
+            actor=request.user,
+            tenant_id=tenant_id,
+        )
+
+        if object_type == "device":
+            device = next(
+                (item for item in devices if item.id == object_id),
+                None,
+            )
+
+            if device:
+                object_data = {
+                    "id": device.id,
+                    "name": device.name or "",
+                    "description": device.description or "",
+                    "platform": device.platform or "",
+                    "type": device.type or "",
+                }
+
+                options_context["group_options"] = get_group_options_view(
+                    request,
+                    "devices",
+                )
+
+                options_context["selected_group_ids"] = [
+                    membership.device_group_id for membership in device.devicegroupmember_set.all()
+                ]
+
+        elif object_type == "devicegroup":
+            device_group = next(
+                (item for item in device_groups if item.id == object_id),
+                None,
+            )
+
+            if device_group:
+                object_data = {
+                    "id": device_group.id,
+                    "name": device_group.name or "",
+                    "description": device_group.description or "",
+                }
+
+                options_context["item_options"] = get_item_options_view(
+                    request,
+                    "devices",
+                )
+
+                options_context["selected_device_ids"] = [
+                    membership.device_id for membership in device_group.devicegroupmember_set.all()
+                ]
 
     elif object_type in ["address", "addressgroup"]:
         if tenant_id is None:
