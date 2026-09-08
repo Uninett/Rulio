@@ -12,6 +12,12 @@ from backend.objects.attributes.service import Service
 from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.attributes.tag import Tag
+from backend.services.attribute_objects.ip_parsing import (
+    can_enable_automatic_ip_auto,
+    get_addr_type,
+    parse_ipv4_auto,
+    parse_ipv6_auto,
+)
 from backend.services.get import get_object_by_type_and_id
 from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import (
@@ -93,66 +99,27 @@ def get_or_create_address(
 
     detected_ipv4_addr_type: str | None = None
     detected_ipv6_addr_type: str | None = None
+    if can_enable_automatic_ip_auto(  # for ipv4
+        ip_auto=ipv4_auto,
+        ip_type=ipv4_type,
+        ipNetwork=ipv4Network,
+        ipAddress_start=ipv4Address_start,
+        ipAddress_end=ipv4Address_end,
+    ):
+        ipv4_type, ipv4Network, ipv4Address_start, ipv4Address_end, detected_ipv4_addr_type = parse_ipv4_auto(ipv4_auto)
+    if can_enable_automatic_ip_auto(  # for ipv6
+        ip_auto=ipv6_auto,
+        ip_type=ipv6_type,
+        ipNetwork=ipv6Network,
+        ipAddress_start=ipv6Address_start,
+        ipAddress_end=ipv6Address_end,
+    ):
+        ipv6_type, ipv6Network, ipv6Address_start, ipv6Address_end, detected_ipv6_addr_type = parse_ipv6_auto(ipv6_auto)
 
-    if ipv4_auto:
-        ipv4_auto = ipv4_auto.strip()
-        ipv4_is_range = "-" in ipv4_auto
-
-        if ipv4_is_range:
-            parts = ipv4_auto.split("-")
-            if len(parts) != 2:
-                raise ValueError("Invalid IPv4 range format. Use 'start-end' without CIDR notation.")
-
-            ipv4Address_start_str, ipv4Address_end_str = (part.strip() for part in parts)
-
-            if "/" in ipv4Address_start_str or "/" in ipv4Address_end_str:
-                raise ValueError("Invalid IPv4 range format. Use 'start-end' without CIDR notation.")
-
-            ipv4Address_start = IPv4Address(ipv4Address_start_str)
-            ipv4Address_end = IPv4Address(ipv4Address_end_str)
-            detected_ipv4_addr_type = "range"
-            ipv4_type = "custom_range"
-            ipv4Network = None
-        else:
-            ipv4Network = IPv4Network(ipv4_auto, strict=False)
-            detected_ipv4_addr_type = "host" if ipv4Network.prefixlen == 32 else "network"
-            ipv4_type = "standard"
-            ipv4Address_start = None
-            ipv4Address_end = None
-
-    if ipv6_auto:
-        ipv6_auto = ipv6_auto.strip()
-        ipv6_is_range = "-" in ipv6_auto
-
-        if ipv6_is_range:
-            parts = ipv6_auto.split("-")
-            if len(parts) != 2:
-                raise ValueError("Invalid IPv6 range format. Use 'start-end' without CIDR notation.")
-
-            ipv6Address_start_str, ipv6Address_end_str = (part.strip() for part in parts)
-
-            if "/" in ipv6Address_start_str or "/" in ipv6Address_end_str:
-                raise ValueError("Invalid IPv6 range format. Use 'start-end' without CIDR notation.")
-
-            ipv6Address_start = IPv6Address(ipv6Address_start_str)
-            ipv6Address_end = IPv6Address(ipv6Address_end_str)
-            detected_ipv6_addr_type = "range"
-            ipv6_type = "custom_range"
-            ipv6Network = None
-        else:
-            ipv6Network = IPv6Network(ipv6_auto, strict=False)
-            detected_ipv6_addr_type = "host" if ipv6Network.prefixlen == 128 else "network"
-            ipv6_type = "standard"
-            ipv6Address_start = None
-            ipv6Address_end = None
-
-    if detected_ipv4_addr_type and detected_ipv6_addr_type and detected_ipv4_addr_type != detected_ipv6_addr_type:
-        raise TypeError(
-            f"Address type mismatch: IPv4 type '{detected_ipv4_addr_type}' and IPv6 type "
-            f"'{detected_ipv6_addr_type}' need to match."
-        )
-
-    final_addr_type = detected_ipv4_addr_type or detected_ipv6_addr_type or addr_type
+    if ipv4_auto or ipv6_auto:
+        final_addr_type = get_addr_type(ipv4_type, ipv6_type, detected_ipv4_addr_type, detected_ipv6_addr_type)
+    else:
+        final_addr_type = addr_type
 
     address, created = Address.objects.get_or_create(
         name=name,
@@ -176,6 +143,7 @@ def get_or_create_address(
             logger.info(f"Address already exists: {address} for tenant={address.tenant_id}")
 
     return address, address.id, created
+
 
 @transaction.atomic
 def create_service(
