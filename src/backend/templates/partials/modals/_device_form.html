@@ -26,7 +26,15 @@
     <p class="empty-state">No interfaces are connected to this device.</p>
     {% endif %}
 
-    <button type="button" class="btn-secondary">
+    {% if object_data.id %}
+    <button type="button" class="btn-secondary" hx-get="{% url 'device-interfaces-modal' object_data.id %}"
+        hx-target="#submodal-container" hx-swap="innerHTML">
         Manage interfaces
     </button>
+    {% else %}
+    <button type="button" class="btn-secondary" hx-get="{% url 'new-device-interfaces-modal' %}"
+        hx-target="#submodal-container" hx-swap="innerHTML">
+        Manage interfaces
+    </button>
+    {% endif %}
 </div>

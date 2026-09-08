@@ -446,3 +446,74 @@ def delete_device_view(request, object_id):
         return HttpResponse(f"Could not delete device: {e}", status=400)
 
     return HttpResponse(status=204)
+
+# Update existing device, loads interface from database
+@login_required(login_url="login")
+def get_device_interfaces_modal(request, device_id):
+    tenant_id = (
+        int(request.session.get("current_tenant_id"))
+        if request.session.get("current_tenant_id")
+        else None
+    )
+
+    if not tenant_id:
+        return HttpResponse("No tenant selected.", status=400)
+
+    device = get_object_by_type_and_id(
+        actor=request.user,
+        tenant_id=tenant_id,
+        object_type="device",
+        object_id=device_id,
+    )
+
+    if device is None:
+        return HttpResponse("Device not found.", status=404)
+
+    interfaces = get_all_interfaces_from_device(
+        actor=request.user,
+        tenant_id=tenant_id,
+        device_id=device.id,
+    )
+
+    return render(
+        request,
+        "partials/_modal.html",
+        {
+            "modal_title": f"Manage interfaces",
+            "modal_mode": "submodal",
+            "modal_object_type": "interfaces",
+            "modal_content_partial": "partials/modals/_device_interface_form.html",
+            "modal_is_submodal": True,
+            "modal_instance_id": "device-interfaces-submodal",
+            "device": device,
+            "device_id": device.id,
+            "interfaces": interfaces,
+            "modal_post_url": None,
+            "modal_target": "#submodal-container",
+            "modal_swap": "innerHTML",
+            "modal_submit_handler": None,
+        },
+    )
+
+# Create new device, no device id yet nor initial interfaces
+@login_required(login_url="login")
+def get_new_device_interfaces_modal(request):
+    return render(
+        request,
+        "partials/_modal.html",
+        {
+            "modal_title": "Manage interfaces",
+            "modal_mode": "submodal",
+            "modal_object_type": "interfaces",
+            "modal_content_partial": "partials/modals/_device_interface_form.html",
+            "modal_is_submodal": True,
+            "modal_instance_id": "new-device-interfaces-submodal",
+            "device": None,
+            "device_id": None,
+            "interfaces": [],
+            "modal_post_url": None,
+            "modal_target": "#submodal-container",
+            "modal_swap": "innerHTML",
+            "modal_submit_handler": None,
+        },
+    )

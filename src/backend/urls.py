@@ -41,7 +41,9 @@ from .views.device_groups import (
 )
 from .views.devices_page import (
     delete_device_view,
+    get_device_interfaces_modal,
     get_devices_page,
+    get_new_device_interfaces_modal,
     post_device_view,
     update_device_view,
 )
@@ -125,6 +127,17 @@ urlpatterns = [
     path("management/tenants/<int:object_id>/delete/", delete_tenant_view, name="delete-tenant-view"),
     # Device Page
     path("devices/", get_devices_page, name="devices"),
+    path("devices/add/", post_device_view, name="post-device-view"),
+    path("interfaces/update/", post_interface_view, name="post-interface-view"),
+    path("devices/<int:object_id>/update/", update_device_view, name="update-device-view"),
+    path("devices/<int:object_id>/delete/", delete_device_view, name="delete-device-view"),
+    path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
+    path("device-groups/<int:object_id>/update/", update_device_group_view, name="update-device-group-view"),
+    path("device-groups/<int:object_id>/delete/", delete_device_group_view, name="delete-device-group-view"),
+    # Device Interface Page
+    path("modal/devices/<int:device_id>/interfaces/", get_device_interfaces_modal, name="device-interfaces-modal"),
+    path("modal/devices/interfaces/draft/", get_new_device_interfaces_modal, name="new-device-interfaces-modal"),
+    # Interface
     path(
         "devices/interfaces/<int:interface_id>/",
         interface_view,
@@ -140,13 +153,6 @@ urlpatterns = [
         download_interface_configs,
         name="download-interface-config",
     ),
-    path("devices/add/", post_device_view, name="post-device-view"),
-    path("interfaces/update/", post_interface_view, name="post-interface-view"),
-    path("devices/<int:object_id>/update/", update_device_view, name="update-device-view"),
-    path("devices/<int:object_id>/delete/", delete_device_view, name="delete-device-view"),
-    path("device-groups/add/", post_device_group_view, name="post-device-group-view"),
-    path("device-groups/<int:object_id>/update/", update_device_group_view, name="update-device-group-view"),
-    path("device-groups/<int:object_id>/delete/", delete_device_group_view, name="delete-device-group-view"),
     # Filters Page
     path("filters/", get_filters_page, name="filters"),
     path("filters/create/", post_filter_view, name="post-filter-view"),
