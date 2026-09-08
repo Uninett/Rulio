@@ -4,7 +4,6 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from backend.objects.attributes.tag import Tag
-
 from backend.services.delete import delete_device, remove_tag_from_object
 from backend.services.get import (
     get_all_device_groups_and_devices_with_tags_from_tenant,
