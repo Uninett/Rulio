@@ -151,6 +151,9 @@ def get_or_create_interface(
     except Device.DoesNotExist:
         raise ValueError(f"Device with id={device_id} does not exist in tenant={tenant_id}.")
 
+    # Check that no other interface with the same name exists for the device
+    if Interface.objects.filter(name=name, device_id=device_id).exists():
+        raise ValueError(f"An interface with name='{name}' already exists for device={device_id}.")
     interface, created = Interface.objects.get_or_create(
         name=name,
         description=description,
