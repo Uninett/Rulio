@@ -248,42 +248,12 @@ def get_addresses_view(request):
     }
 
 
-# Parse the IP input value and return a dictionary with the parsed data.
-def parse_ip_input(value, update=False):
-    value = (value or "").strip()
-
-    if not value:
-        return {
-            "type": "remove" if update else None,
-            "network": None,
-            "start": None,
-            "end": None,
-        }
-
-    if "-" in value:
-        start, end = [part.strip() for part in value.split("-", 1)]
-        return {
-            "type": "custom_range",
-            "network": None,
-            "start": start or None,
-            "end": end or None,
-        }
-
-    return {
-        "type": "standard",
-        "network": value,
-        "start": None,
-        "end": None,
-    }
-
-
 # Build the IP input value based on the provided type and values.
 def build_ip_input(ip_type, network, start, end):
     if ip_type == "standard":
         return network or ""
-    if ip_type == "custom_range":
-        if start and end:
-            return f"{start}-{end}"
+    if ip_type == "custom_range" and start and end:
+        return f"{start}-{end}"
     return ""
 
 
@@ -300,23 +270,10 @@ def post_address_view(request):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
-    addr_type = request.POST.get("addr_type", "host")
     ipv4_input = request.POST.get("ipv4_input", "")
     ipv6_input = request.POST.get("ipv6_input", "")
 
-    ipv4_parsed = parse_ip_input(ipv4_input)
-    ipv6_parsed = parse_ip_input(ipv6_input)
-
-    ipv4_type = ipv4_parsed["type"]
-    ipv6_type = ipv6_parsed["type"]
-    ipv4Network = ipv4_parsed["network"]
-    ipv6Network = ipv6_parsed["network"]
-    ipv4Address_start = ipv4_parsed["start"]
-    ipv4Address_end = ipv4_parsed["end"]
-    ipv6Address_start = ipv6_parsed["start"]
-    ipv6Address_end = ipv6_parsed["end"]
-
-    if not ipv4_type and not ipv6_type:
+    if not ipv4_input and not ipv6_input:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -333,11 +290,10 @@ def post_address_view(request):
                 "object_data": {
                     "name": name,
                     "description": description,
-                    "addr_type": addr_type,
                     "ipv4_input": ipv4_input,
                     "ipv6_input": ipv6_input,
                 },
-                "error_message": "At least one of IPv4 or IPv6 must be selected.",
+                "error_message": "At least one of IPv4 or IPv6 must have an address.",
             },
             status=400,
         )
@@ -348,15 +304,8 @@ def post_address_view(request):
             tenant_id=tenant_id,
             name=name,
             description=description,
-            addr_type=addr_type,
-            ipv4_type=ipv4_type,
-            ipv6_type=ipv6_type,
-            ipv4Network=ipv4Network,
-            ipv6Network=ipv6Network,
-            ipv4Address_start=ipv4Address_start,
-            ipv4Address_end=ipv4Address_end,
-            ipv6Address_start=ipv6Address_start,
-            ipv6Address_end=ipv6Address_end,
+            ipv4_auto=ipv4_input,
+            ipv6_auto=ipv6_input,
         )[0]
 
         submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
@@ -370,7 +319,7 @@ def post_address_view(request):
                 obj=created_address,
             )
 
-    except Exception as e:
+    except (ValueError, Tag.DoesNotExist) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -433,30 +382,6 @@ def update_address_view(request, object_id):
     ipv4_input = request.POST.get("ipv4_input", "")
     ipv6_input = request.POST.get("ipv6_input", "")
 
-    ipv4_parsed = parse_ip_input(ipv4_input, update=True)
-    ipv6_parsed = parse_ip_input(ipv6_input, update=True)
-
-    ipv4_type = ipv4_parsed["type"]
-    ipv6_type = ipv6_parsed["type"]
-    ipv4Network = ipv4_parsed["network"]
-    ipv6Network = ipv6_parsed["network"]
-    ipv4Address_start = ipv4_parsed["start"]
-    ipv4Address_end = ipv4_parsed["end"]
-    ipv6Address_start = ipv6_parsed["start"]
-    ipv6Address_end = ipv6_parsed["end"]
-
-    if ipv4_type == "standard":
-        ipv4Address_start = ""
-        ipv4Address_end = ""
-    elif ipv4_type == "custom_range":
-        ipv4Network = ""
-
-    if ipv6_type == "standard":
-        ipv6Address_start = ""
-        ipv6Address_end = ""
-    elif ipv6_type == "custom_range":
-        ipv6Network = ""
-
     object_data = {
         "name": name,
         "description": description,
@@ -497,14 +422,8 @@ def update_address_view(request, object_id):
             name=name,
             description=description,
             addr_type=addr_type,
-            ipv4_type=ipv4_type,
-            ipv6_type=ipv6_type,
-            ipv4Network=ipv4Network,
-            ipv6Network=ipv6Network,
-            ipv4Address_start=ipv4Address_start,
-            ipv4Address_end=ipv4Address_end,
-            ipv6Address_start=ipv6Address_start,
-            ipv6Address_end=ipv6Address_end,
+            ipv4_auto=ipv4_input if ipv4_input else None,
+            ipv6_auto=ipv6_input if ipv6_input else None,
         )
 
         submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
