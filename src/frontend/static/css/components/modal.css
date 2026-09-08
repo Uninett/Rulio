@@ -131,6 +131,11 @@ Form Layout
     padding-top: 0.55rem;
 }
 
+.modal .form-group p {
+    padding-top: 0.55rem;
+}
+
+
 .modal input,
 .modal select,
 .modal textarea {
