@@ -375,7 +375,7 @@ def get_update_modal(request, row_id):
             return HttpResponse("No tenant selected.", status=400)
 
         try:
-            tag = Tag.objects.get(id=object_id, tenant_id=tenant_id)
+            tag = Tag.objects.get(id=object_id)
             object_data = {
                 "name": tag.name,
                 "description": tag.description,
