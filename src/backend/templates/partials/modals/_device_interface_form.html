@@ -1,1 +1,60 @@
-<p>Interface content</p>
+<div class="device-interface-manager">
+    <table class="device-interface-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>VRF</th>
+                <th class="device-interface-actions-column"></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for interface in interfaces %}
+            <tr>
+                <td title="{{ interface.name }}">
+                    {{ interface.name|default:"" }}
+                </td>
+                <td title="{{ interface.description }}">
+                    {{ interface.description|default:"" }}
+                </td>
+                <td title="{{ interface.type }}">
+                    {{ interface.type|default:"" }}
+                </td>
+                <td title="{{ interface.VRF }}">
+                    {{ interface.VRF|default:"" }}
+                </td>
+                <td class="device-interface-actions-column">
+                    <button type="button" class="btn-secondary" disabled>
+                        Delete
+                    </button>
+                </td>elete-interface
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        <tfoot>
+            <tr class="device-interface-add-row">
+                <td>
+                    <input id="new-interface-name" name="new_interface_name" type="text" placeholder="Name">
+                </td>
+                <td>
+                    <input id="new-interface-description" name="new_interface_description" type="text"
+                        placeholder="Description">
+                </td>
+                <td>
+                    <input id="new-interface-type" name="new_interface_type" type="text" placeholder="Type">
+                </td>
+                <td>
+                    <input id="new-interface-vrf" name="new_interface_vrf" type="text" placeholder="VRF">
+                </td>
+                <td class="device-interface-actions-column">
+                    <button type="button" class="btn-secondary" id="add-interface-draft">
+                        Add
+                    </button>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

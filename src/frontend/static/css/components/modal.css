@@ -201,6 +201,76 @@ Device Form Layout
 
 /*
 ====================================================================
+Device Interface Manager
+====================================================================
+*/
+
+.device-interface-manager {
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.device-interface-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: smaller;
+    background-color: var(--sds-color-layout-surface-1);
+    border-radius: 0.5rem;
+}
+
+.device-interface-table th,
+.device-interface-table td {
+    padding: 0.55rem 0.65rem;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--sds-color-layout-border-subtle);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+.device-interface-table th:nth-child(1),
+.device-interface-table td:nth-child(1) {
+    width: 22%;
+}
+
+.device-interface-table th:nth-child(2),
+.device-interface-table td:nth-child(2) {
+    width: 32%;
+}
+
+.device-interface-table th:nth-child(3),
+.device-interface-table td:nth-child(3) {
+    width: 16%;
+}
+
+.device-interface-table th:nth-child(4),
+.device-interface-table td:nth-child(4) {
+    width: 16%;
+}
+
+.device-interface-actions-column {
+    width: 14%;
+    text-align: right !important;
+}
+
+.device-interface-table tfoot td {
+    border-bottom: none;
+    background-color: var(--sds-color-layout-surface-2);
+}
+
+.device-interface-table tfoot input {
+    width: 100%;
+    min-width: 0;
+    height: 2rem;
+    box-sizing: border-box;
+    padding: 0 0.5rem;
+}
+
+/*
+====================================================================
 Address Form Layout
 ====================================================================
 */
