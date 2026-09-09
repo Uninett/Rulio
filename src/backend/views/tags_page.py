@@ -15,12 +15,13 @@ from backend.services.helper_user_tenant import can_write_tenant
 from backend.services.update import (
     update_tag,
 )
-from backend.utils.logger import set_up_logger
+from backend.utils.logger import set_log_level, set_up_logger
 from backend.views.search import get_global_search_results
 from backend.views.session import get_tenant_context
 from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
+set_log_level(logger, "INFO")
 
 """
 ====================================================================
@@ -185,6 +186,7 @@ def update_tag_view(request, object_id):
     }
 
     if not tenant_id:
+        logger.debug(f"No tenant selected for updating tag {object_id}")
         return render(
             request,
             "partials/_modal.html",
@@ -209,6 +211,7 @@ def update_tag_view(request, object_id):
         )
 
     try:
+        logger.debug(f"Updating tag {object_id} with data: {object_data} INSIDE TRY EXCEPT")
         update_tag(
             actor=request.user,
             tenant_id=tenant_id,
@@ -218,6 +221,7 @@ def update_tag_view(request, object_id):
             color=color,
         )
     except Exception as e:
+        logger.debug(f"Error updating tag {object_id}: {e}")
         return render(
             request,
             "partials/_modal.html",
