@@ -433,7 +433,7 @@ Objects Interface Table
 
 .objects-filters-table .objects-interface-table-header-row,
 .objects-filters-table .objects-interface-table-row {
-    grid-template-columns: 1.5rem 1fr 2fr 3rem;
+    grid-template-columns: 3.5rem 1fr 2fr 3rem;
 }
 
 .objects-interface-table-header-row {
@@ -452,8 +452,43 @@ Objects Interface Table
     white-space: nowrap;
 }
 
+.objects-filters-table .objects-interface-table-header-row .interfaces-grid__header:last-child,
+.objects-filters-table .objects-interface-table-row .objects-interface-table-cell:last-child {
+    display: flex;
+    justify-content: center;
+}
+
 .objects-interface-empty {
     padding: 0.5rem 0.6rem;
+}
+
+.objects-interface-table-row.row-diff-added {
+    background-color: var(--sds-color-support-success-subtle);
+    color: var(--sds-color-support-success-strong);
+}
+
+.objects-interface-table-row.row-diff-removed {
+    background-color: var(--sds-color-support-critical-subtle);
+    color: var(--sds-color-support-critical-strong);
+    text-decoration: line-through;
+}
+
+.objects-interface-table-cell.cell-diff-enabled-on {
+    background-color: var(--sds-color-support-success-subtle);
+    color: var(--sds-color-support-success-strong);
+    border-radius: 0.25rem;
+}
+
+.objects-interface-table-cell.cell-diff-enabled-off {
+    background-color: var(--sds-color-support-critical-subtle);
+    color: var(--sds-color-support-critical-strong);
+    border-radius: 0.25rem;
+}
+
+.objects-interface-table-cell.cell-diff-sequence {
+    outline: 2px solid var(--sds-color-brand-primary-strong);
+    outline-offset: -2px;
+    border-radius: 0.25rem;
 }
 
 .interface-actions {
@@ -470,6 +505,33 @@ Objects Interface Table
 
 .page-content:has(.interface-actions) {
     padding-bottom: 4.5rem;
+}
+
+.btn-discard {
+    background-color: transparent;
+    border-color: var(--sds-color-support-critical-strong);
+    color: var(--sds-color-support-critical-strong);
+}
+
+.btn-discard:hover:not(:disabled) {
+    background-color: var(--sds-color-support-critical-subtle);
+    border-color: var(--sds-color-support-critical-strong-hover);
+    color: var(--sds-color-support-critical-strong-hover);
+}
+
+.btn-diff {
+    background-color: transparent;
+    border-color: var(--sds-color-brand-primary-strong);
+    color: var(--sds-color-brand-primary-strong);
+}
+
+.btn-diff:hover {
+    background-color: var(--sds-color-brand-primary-subtle);
+}
+
+.btn-diff.active {
+    background-color: var(--sds-color-brand-primary-strong);
+    color: var(--sds-color-text-on-strong);
 }
 
 .interface-filter-link {

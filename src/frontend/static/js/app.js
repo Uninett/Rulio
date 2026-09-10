@@ -233,10 +233,22 @@ Interface Filter Draft (Ingoing/Outgoing)
 */
 
 const interfaceFilterDraft = { in: null, out: null };
+const interfaceFilterBaseline = { in: null, out: null };
 let interfaceFiltersDirty = false;
+let showingInterfaceDifferences = false;
 
 function markInterfaceFiltersDirty() {
     interfaceFiltersDirty = true;
+    updateInterfaceActionButtonsState();
+}
+
+function updateInterfaceActionButtonsState() {
+    document.querySelectorAll(".interface-save-btn").forEach((btn) => {
+        btn.disabled = !interfaceFiltersDirty;
+    });
+    document.querySelectorAll(".interface-discard-btn").forEach((btn) => {
+        btn.disabled = !interfaceFiltersDirty;
+    });
 }
 
 function readInterfaceFilterListFromDom(direction) {
@@ -257,9 +269,77 @@ function readInterfaceFilterListFromDom(direction) {
 
 function ensureInterfaceFilterDraft(direction) {
     if (!interfaceFilterDraft[direction]) {
-        interfaceFilterDraft[direction] = readInterfaceFilterListFromDom(direction);
+        const initial = readInterfaceFilterListFromDom(direction);
+        interfaceFilterDraft[direction] = initial;
+        interfaceFilterBaseline[direction] = initial.map((item) => ({ ...item }));
     }
     return interfaceFilterDraft[direction];
+}
+
+function computeInterfaceFilterDiff(direction) {
+    const baseline = interfaceFilterBaseline[direction] || [];
+    const current = interfaceFilterDraft[direction] || [];
+    const currentIndexById = new Map(current.map((item, index) => [item.id, index]));
+    const baselineIds = new Set(baseline.map((item) => item.id));
+
+    const combined = baseline.map((item, baselineIndex) => {
+        const currentIndex = currentIndexById.get(item.id);
+        if (currentIndex === undefined) {
+            return { ...item, diffStatus: "removed" };
+        }
+        const currentItem = current[currentIndex];
+        return {
+            ...currentItem,
+            diffStatus: "unchanged",
+            enabledChanged: currentItem.enabled !== item.enabled,
+            previousEnabled: item.enabled,
+            sequenceChanged: currentIndex !== baselineIndex,
+            previousSequence: baselineIndex + 1,
+        };
+    });
+
+    current.forEach((item) => {
+        if (!baselineIds.has(item.id)) {
+            combined.push({ ...item, diffStatus: "added" });
+        }
+    });
+
+    return combined;
+}
+
+function discardInterfaceFilterChanges(button) {
+    if (!interfaceFiltersDirty) return;
+
+    const shouldDiscard = confirm("Discard all unsaved filter changes?");
+    if (!shouldDiscard) return;
+
+    ["in", "out"].forEach((direction) => {
+        ensureInterfaceFilterDraft(direction);
+        interfaceFilterDraft[direction] = (interfaceFilterBaseline[direction] || []).map((item) => ({ ...item }));
+    });
+
+    interfaceFiltersDirty = false;
+    showingInterfaceDifferences = false;
+    document.querySelectorAll(".interface-diff-btn").forEach((btn) => {
+        btn.classList.remove("active");
+        btn.textContent = "Show Differences";
+    });
+
+    renderInterfaceFilterRow("in");
+    renderInterfaceFilterRow("out");
+    updateInterfaceActionButtonsState();
+}
+
+function toggleInterfaceFilterDifferences(button) {
+    showingInterfaceDifferences = !showingInterfaceDifferences;
+
+    document.querySelectorAll(".interface-diff-btn").forEach((btn) => {
+        btn.classList.toggle("active", showingInterfaceDifferences);
+        btn.textContent = showingInterfaceDifferences ? "Hide Differences" : "Show Differences";
+    });
+
+    renderInterfaceFilterRow("in");
+    renderInterfaceFilterRow("out");
 }
 
 function toggleInterfaceFilterEnabled(direction, filterId, button) {
@@ -268,6 +348,13 @@ function toggleInterfaceFilterEnabled(direction, filterId, button) {
     if (!entry) return;
 
     entry.enabled = !entry.enabled;
+    markInterfaceFiltersDirty();
+
+    if (showingInterfaceDifferences) {
+        renderInterfaceFilterRow(direction);
+        return;
+    }
+
     button.dataset.enabled = entry.enabled ? "true" : "false";
     button.setAttribute("aria-checked", entry.enabled ? "true" : "false");
     button.setAttribute("aria-label", entry.enabled ? "Enabled" : "Disabled");
@@ -275,8 +362,6 @@ function toggleInterfaceFilterEnabled(direction, filterId, button) {
 
     const rowEl = button.closest(".objects-interface-table-row");
     if (rowEl) rowEl.dataset.filterEnabled = entry.enabled ? "true" : "false";
-
-    markInterfaceFiltersDirty();
 }
 
 function toggleSelectorFilterEnabled(button) {
@@ -358,12 +443,16 @@ function applyInterfaceRowFilterSelection(selectorType, direction, button) {
 }
 
 function renderInterfaceFilterRow(direction) {
-    const entries = interfaceFilterDraft[direction] || [];
+    ensureInterfaceFilterDraft(direction);
+    const currentEntries = interfaceFilterDraft[direction] || [];
+    const entries = showingInterfaceDifferences
+        ? computeInterfaceFilterDiff(direction)
+        : currentEntries;
 
     const countCell = document.querySelector(`[data-interface-filter-count="${direction}"]`);
     if (countCell) {
         const textEl = countCell.querySelector(".cell-text") || countCell;
-        textEl.textContent = entries.length;
+        textEl.textContent = currentEntries.length;
     }
 
     const listContainer = document.querySelector(
@@ -383,6 +472,8 @@ function renderInterfaceFilterRow(direction) {
     entries.forEach((entry, index) => {
         const rowEl = document.createElement("div");
         rowEl.className = "objects-interface-table-row";
+        if (entry.diffStatus === "added") rowEl.classList.add("row-diff-added");
+        if (entry.diffStatus === "removed") rowEl.classList.add("row-diff-removed");
         rowEl.dataset.filterId = entry.id;
         rowEl.dataset.filterName = entry.name;
         rowEl.dataset.filterDescription = entry.description;
@@ -405,11 +496,27 @@ function renderInterfaceFilterRow(direction) {
         rowEl.children[1].textContent = entry.name;
         rowEl.children[2].textContent = entry.description;
 
+        if (entry.sequenceChanged && entry.previousSequence !== index + 1) {
+            rowEl.children[0].textContent = `${entry.previousSequence}->${index + 1}`;
+            rowEl.children[0].classList.add("cell-diff-sequence");
+            rowEl.children[0].title = `Moved from position ${entry.previousSequence} to ${index + 1}`;
+        }
+
+        if (entry.enabledChanged) {
+            const enabledCell = rowEl.children[3];
+            enabledCell.classList.add(entry.enabled ? "cell-diff-enabled-on" : "cell-diff-enabled-off");
+            enabledCell.title = `Changed from ${entry.previousEnabled ? "Enabled" : "Disabled"} to ${entry.enabled ? "Enabled" : "Disabled"}`;
+        }
+
         const toggleButton = rowEl.querySelector(".filter-enabled-toggle");
-        toggleButton.addEventListener("click", (event) => {
-            event.stopPropagation();
-            toggleInterfaceFilterEnabled(direction, entry.id, toggleButton);
-        });
+        if (entry.diffStatus === "removed") {
+            toggleButton.disabled = true;
+        } else {
+            toggleButton.addEventListener("click", (event) => {
+                event.stopPropagation();
+                toggleInterfaceFilterEnabled(direction, entry.id, toggleButton);
+            });
+        }
 
         listContainer.appendChild(rowEl);
     });
@@ -448,11 +555,19 @@ async function saveInterfaceFilterChanges(button) {
         }
 
         interfaceFiltersDirty = false;
+        ["in", "out"].forEach((direction) => {
+            interfaceFilterBaseline[direction] = (interfaceFilterDraft[direction] || []).map((item) => ({ ...item }));
+        });
+        updateInterfaceActionButtonsState();
+        if (showingInterfaceDifferences) {
+            renderInterfaceFilterRow("in");
+            renderInterfaceFilterRow("out");
+        }
     } catch (error) {
         console.error("Error while saving interface filters.", error);
         alert("Unable to save filter changes. Please try again.");
     } finally {
-        button.disabled = false;
+        updateInterfaceActionButtonsState();
     }
 }
 
