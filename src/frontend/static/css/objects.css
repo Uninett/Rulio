@@ -460,7 +460,16 @@ Objects Interface Table
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
-    margin-top: 0.75rem;
+    position: sticky;
+    bottom: 0;
+    padding: 0.75rem 0;
+    background-color: var(--sds-color-layout-default);
+    box-shadow: 0 -1px 0 var(--sds-color-interaction-neutral-subtle);
+    z-index: 50;
+}
+
+.page-content:has(.interface-actions) {
+    padding-bottom: 4.5rem;
 }
 
 .interface-filter-link {
