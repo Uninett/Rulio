@@ -84,7 +84,6 @@ def interface_view(request, interface_id):
         object_id=selected_interface.device_id,
     )
 
-
     for direction in ["in", "out"]:
         filter_objects = get_all_filters_from_interface(
             actor=request.user,
