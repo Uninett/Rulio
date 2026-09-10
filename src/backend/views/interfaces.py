@@ -164,7 +164,6 @@ def interface_view(request, interface_id):
         "current_interface_id": selected_interface.id,
         "ingoing_filter_ids": ingoing_filter_ids,
         "outgoing_filter_ids": outgoing_filter_ids,
-        "add_button_label": "Add filter",
         "search_results": get_global_search_results(request),
         "filters": {
             "headers": headers,
@@ -250,9 +249,9 @@ def post_interface_view(request):
     all_selected_ids = set(ingoing_ids) | set(outgoing_ids)
 
     valid_filter_ids = set(
-        Filter.objects.filter(
-            id__in=all_selected_ids, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]
-        ).values_list("id", flat=True)
+        Filter.objects.filter(id__in=all_selected_ids, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).values_list(
+            "id", flat=True
+        )
     )
 
     invalid_ids = [filter_id for filter_id in all_selected_ids if filter_id not in valid_filter_ids]
@@ -300,7 +299,6 @@ def post_interface_view(request):
         return render_interface_form_error(request, object_data, f"Unable to update interface filters: {exc}")
 
     return HttpResponse(status=204)
-
 
 
 @login_required(login_url="login")
