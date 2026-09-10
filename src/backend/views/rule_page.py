@@ -42,6 +42,11 @@ Rule Page
 @login_required(login_url="login")
 def get_rule_page(request, filter_id):
     filter_name = getattr(Filter.objects.filter(id=filter_id).first(), "name", "")
+    breadcrumbs = [
+        {"label": "Filters", "url": reverse("filters")},
+        {"label": filter_name, "url": f"{reverse('filters')}?expand_id=filter-{filter_id}"},
+        {"label": "Rules", "url": None},
+    ]
 
     request.session["active_page"] = "Filters"
     return render(
@@ -49,7 +54,8 @@ def get_rule_page(request, filter_id):
         "rules.html",
         {
             "active_page": "Filters",
-            "page_title": "Filter -> " + filter_name,
+            "page_title": "Rules",
+            "breadcrumbs": breadcrumbs,
             "object_type": "rules",
             "add_button_label": "Add Rule",
             "current_filter_id": filter_id,
@@ -63,13 +69,19 @@ def get_rule_page(request, filter_id):
 @login_required(login_url="login")
 def get_rules_content(request, filter_id):
     filter_name = getattr(Filter.objects.filter(id=filter_id).first(), "name", "")
+    breadcrumbs = [
+        {"label": "Filters", "url": reverse("filters")},
+        {"label": filter_name, "url": f"{reverse('filters')}?expand_id=filter-{filter_id}"},
+        {"label": "Rules", "url": None},
+    ]
 
     return render(
         request,
         "partials/_page_content.html",
         {
-            "title": f"Filter -> {filter_name}" if filter_name else "Rules",
-            "page_title": f"Filter -> {filter_name}" if filter_name else "Rules",
+            "title": "Rules",
+            "page_title": "Rules",
+            "breadcrumbs": breadcrumbs,
             "object_type": "rules",
             "add_button_label": "Add Rule",
             "current_filter_id": filter_id,
