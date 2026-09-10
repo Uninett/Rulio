@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.shortcuts import render
+from django.urls import reverse
 
 from backend.objects.filters.filter import Filter
 from backend.objects.tenant_objects.filter_interface import FilterInterface
@@ -132,11 +133,17 @@ def interface_view(request, interface_id):
             }
         )
 
-    page_title = f"{device.name} → {selected_interface.name}"
+    page_title = selected_interface.name
+    breadcrumbs = [
+        {"label": "Devices", "url": reverse("devices")},
+        {"label": device.name, "url": f"{reverse('devices')}?expand_id=device-{device.id}"},
+        {"label": selected_interface.name, "url": None},
+    ]
     context = {
         "active_page": "interfaces",
-        "title": page_title,
+        "title": selected_interface.name,
         "page_title": page_title,
+        "breadcrumbs": breadcrumbs,
         "object_type": "interfaces",
         "device": device,
         "interface": selected_interface,
