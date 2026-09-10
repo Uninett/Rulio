@@ -72,6 +72,8 @@ def interface_view(request, interface_id):
     # rows_outgoing = []
     headers = ["Direction", "Filters", ""]
     rows = []
+    ingoing_filter_ids = []
+    outgoing_filter_ids = []
 
     try:
         selected_interface = Interface.objects.select_related("device").get(id=interface_id)
@@ -106,10 +108,15 @@ def interface_view(request, interface_id):
             )
 
         direction_label = "Ingoing" if direction == "in" else "Outgoing"
+        if direction == "in":
+            ingoing_filter_ids = [filter_object.id for filter_object in filter_objects]
+        else:
+            outgoing_filter_ids = [filter_object.id for filter_object in filter_objects]
 
         rows.append(
             {
                 "id": f"interface-{selected_interface.id}-{direction}",
+                "direction": direction,
                 "edit_url": (
                     f"{reverse('modal-add', kwargs={'object_type': 'interfaces'})}"
                     f"?interface_id={selected_interface.id}&device_id={device.id}&direction={direction}"
@@ -153,6 +160,8 @@ def interface_view(request, interface_id):
         "interface": selected_interface,
         "current_device_id": device.id,
         "current_interface_id": selected_interface.id,
+        "ingoing_filter_ids": ingoing_filter_ids,
+        "outgoing_filter_ids": outgoing_filter_ids,
         "add_button_label": "Add filter",
         "search_results": get_global_search_results(request),
         "filters": {
@@ -300,6 +309,8 @@ def get_interface_filter_selector_modal(request, selector_type: str):
         {
             "selector_id": str(filter_obj.id),
             "name": filter_obj.name,
+            "description": filter_obj.description,
+            "enabled": filter_obj.enable,
         }
         for filter_obj in filters
     ]
