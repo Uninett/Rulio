@@ -24,10 +24,17 @@
 
     {% if row.can_write %}
     <td class="actions-column">
+        {% if row.edit_url %}
+        <button type="button" class="actions-btn" hx-get="{{ row.edit_url }}" hx-target="#modal-container"
+            hx-swap="innerHTML" onclick="event.stopPropagation()">
+            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
+        </button>
+        {% else %}
         <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.id %}" hx-target="#modal-container"
             hx-swap="innerHTML" onclick="event.stopPropagation()">
             <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
         </button>
+        {% endif %}
     </td>
     {% else %}
     <td class="actions-column">

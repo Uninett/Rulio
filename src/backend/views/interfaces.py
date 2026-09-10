@@ -110,6 +110,10 @@ def interface_view(request, interface_id):
         rows.append(
             {
                 "id": f"interface-{selected_interface.id}-{direction}",
+                "edit_url": (
+                    f"{reverse('modal-add', kwargs={'object_type': 'interfaces'})}"
+                    f"?interface_id={selected_interface.id}&device_id={device.id}&direction={direction}"
+                ),
                 "is_global": device.tenant_id == GLOBAL_TENANT_ID,
                 "can_write": can_write_tenant(request.user, device.tenant_id),
                 "cells": [
