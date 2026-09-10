@@ -40,9 +40,8 @@ Rule Page
 
 
 @login_required(login_url="login")
-def get_rule_page(request):
-    filter_id = request.GET.get("filter_id", "")
-    filter_name = request.GET.get("filter_name", "")
+def get_rule_page(request, filter_id):
+    filter_name = getattr(Filter.objects.filter(id=filter_id).first(), "name", "")
 
     request.session["active_page"] = "Filters"
     return render(
@@ -55,16 +54,15 @@ def get_rule_page(request):
             "add_button_label": "Add Rule",
             "current_filter_id": filter_id,
             "current_filter_name": filter_name,
-            "rules": get_rules_view(request),
+            "rules": get_rules_view(request, filter_id),
             **get_tenant_context(request),
         },
     )
 
 
 @login_required(login_url="login")
-def get_rules_content(request):
-    filter_id = request.GET.get("filter_id", "")
-    filter_name = request.GET.get("filter_name", "")
+def get_rules_content(request, filter_id):
+    filter_name = getattr(Filter.objects.filter(id=filter_id).first(), "name", "")
 
     return render(
         request,
@@ -76,13 +74,13 @@ def get_rules_content(request):
             "add_button_label": "Add Rule",
             "current_filter_id": filter_id,
             "current_filter_name": filter_name,
-            "rules": get_rules_view(request),
+            "rules": get_rules_view(request, filter_id),
             **get_tenant_context(request),
         },
     )
 
 
-def get_rules_view(request):
+def get_rules_view(request, filter_id):
     tenant_id = request.session.get("current_tenant_id")
 
     if not tenant_id:
@@ -102,8 +100,6 @@ def get_rules_view(request):
         "Count",
         "Tags",
     ]
-
-    filter_id = request.GET.get("filter_id")
 
     if not filter_id:
         return {"headers": headers, "rows": []}

@@ -763,12 +763,9 @@ function refreshRulesTableContent(rulesBody) {
     if (!rulesBody) return;
 
     const contentUrl = rulesBody.dataset.contentUrl;
-    const filterId = rulesBody.dataset.filterId;
-    if (!contentUrl || !filterId) return;
+    if (!contentUrl) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const filterName = params.get("filter_name") || "";
-    const refreshUrl = `${contentUrl}?filter_id=${encodeURIComponent(filterId)}&filter_name=${encodeURIComponent(filterName)}`;
+    const refreshUrl = contentUrl;
 
     // Rules are rendered in different content roots depending on page context.
     const refreshTarget = document.querySelector("#rules-content")
