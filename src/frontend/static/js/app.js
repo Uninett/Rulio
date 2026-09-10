@@ -228,6 +228,237 @@ function applyRuleSelectorSelection(selectorType, button) {
 
 /*
 ====================================================================
+Interface Filter Draft (Ingoing/Outgoing)
+====================================================================
+*/
+
+const interfaceFilterDraft = { in: null, out: null };
+let interfaceFiltersDirty = false;
+
+function markInterfaceFiltersDirty() {
+    interfaceFiltersDirty = true;
+}
+
+function readInterfaceFilterListFromDom(direction) {
+    const container = document.querySelector(
+        `.objects-interface-table[data-interface-filter-list="${direction}"]`
+    );
+    if (!container) return [];
+
+    return Array.from(
+        container.querySelectorAll(".objects-interface-table-row[data-filter-id]")
+    ).map((rowEl) => ({
+        id: rowEl.dataset.filterId,
+        name: rowEl.dataset.filterName || "",
+        description: rowEl.dataset.filterDescription || "",
+        enabled: rowEl.dataset.filterEnabled === "true",
+    }));
+}
+
+function ensureInterfaceFilterDraft(direction) {
+    if (!interfaceFilterDraft[direction]) {
+        interfaceFilterDraft[direction] = readInterfaceFilterListFromDom(direction);
+    }
+    return interfaceFilterDraft[direction];
+}
+
+function toggleInterfaceFilterEnabled(direction, filterId, button) {
+    const draft = ensureInterfaceFilterDraft(direction);
+    const entry = draft.find((item) => item.id === filterId);
+    if (!entry) return;
+
+    entry.enabled = !entry.enabled;
+    button.dataset.enabled = entry.enabled ? "true" : "false";
+    button.setAttribute("aria-checked", entry.enabled ? "true" : "false");
+    button.setAttribute("aria-label", entry.enabled ? "Enabled" : "Disabled");
+    button.title = entry.enabled ? "Enabled" : "Disabled";
+
+    const rowEl = button.closest(".objects-interface-table-row");
+    if (rowEl) rowEl.dataset.filterEnabled = entry.enabled ? "true" : "false";
+
+    markInterfaceFiltersDirty();
+}
+
+function toggleSelectorFilterEnabled(button) {
+    const isEnabled = button.dataset.enabled === "true";
+    const nowEnabled = !isEnabled;
+    button.dataset.enabled = nowEnabled ? "true" : "false";
+    button.setAttribute("aria-checked", nowEnabled ? "true" : "false");
+    button.setAttribute("aria-label", nowEnabled ? "Enabled" : "Disabled");
+    button.title = nowEnabled ? "Enabled" : "Disabled";
+
+    const item = button.closest(".membership-list-item");
+    if (item) item.dataset.enabled = button.dataset.enabled;
+}
+
+
+function openInterfaceRowFilterEditor(direction, baseUrl) {
+    const draft = ensureInterfaceFilterDraft(direction);
+    const selectedIds = draft.map((item) => item.id).join(",");
+
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    const fullUrl = `${baseUrl}${separator}selected_ids=${encodeURIComponent(selectedIds)}`;
+
+    htmx.ajax("GET", fullUrl, {
+        target: "#modal-container",
+        swap: "innerHTML",
+    }).then(() => reconcileInterfaceSelectorWithDraft(direction));
+}
+
+function reconcileInterfaceSelectorWithDraft(direction) {
+    const draft = ensureInterfaceFilterDraft(direction);
+    const selectedList = document.querySelector("#modal-container .membership-list-selected");
+    const availableList = document.querySelector("#modal-container .membership-list-available");
+    if (!selectedList || !availableList) return;
+
+    const itemsById = new Map();
+    [...selectedList.children, ...availableList.children].forEach((item) => {
+        itemsById.set(item.dataset.id, item);
+    });
+
+    draft.forEach((entry) => {
+        const item = itemsById.get(String(entry.id));
+        if (!item) return;
+
+        item.dataset.enabled = entry.enabled ? "true" : "false";
+
+        const toggle = item.querySelector(".filter-enabled-toggle");
+        if (toggle) {
+            toggle.dataset.enabled = item.dataset.enabled;
+            toggle.setAttribute("aria-checked", item.dataset.enabled);
+            toggle.setAttribute("aria-label", entry.enabled ? "Enabled" : "Disabled");
+            toggle.title = entry.enabled ? "Enabled" : "Disabled";
+        }
+
+        selectedList.appendChild(item);
+    });
+}
+
+function applyInterfaceRowFilterSelection(selectorType, direction, button) {
+    const modal = button.closest(".draggable-modal");
+    if (!modal) return;
+
+    const selectedList = modal.querySelector(".membership-list-selected");
+    if (!selectedList) return;
+
+    const items = Array.from(selectedList.querySelectorAll(".membership-list-item"));
+
+    interfaceFilterDraft[direction] = items.map((item) => ({
+        id: item.dataset.id,
+        name: item.dataset.name || "",
+        description: item.dataset.description || "",
+        enabled: item.dataset.enabled !== "false",
+    }));
+
+    renderInterfaceFilterRow(direction);
+    markInterfaceFiltersDirty();
+
+    const modalContainer = document.getElementById("modal-container");
+    if (modalContainer) modalContainer.innerHTML = "";
+}
+
+function renderInterfaceFilterRow(direction) {
+    const entries = interfaceFilterDraft[direction] || [];
+
+    const countCell = document.querySelector(`[data-interface-filter-count="${direction}"]`);
+    if (countCell) {
+        const textEl = countCell.querySelector(".cell-text") || countCell;
+        textEl.textContent = entries.length;
+    }
+
+    const listContainer = document.querySelector(
+        `.objects-interface-table[data-interface-filter-list="${direction}"]`
+    );
+    if (!listContainer) return;
+
+    listContainer.querySelectorAll(".objects-interface-table-row").forEach((rowEl) => rowEl.remove());
+    const emptyEl = listContainer.querySelector(".objects-interface-empty");
+
+    if (entries.length === 0) {
+        if (emptyEl) emptyEl.style.display = "";
+        return;
+    }
+    if (emptyEl) emptyEl.style.display = "none";
+
+    entries.forEach((entry, index) => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "objects-interface-table-row";
+        rowEl.dataset.filterId = entry.id;
+        rowEl.dataset.filterName = entry.name;
+        rowEl.dataset.filterDescription = entry.description;
+        rowEl.dataset.filterEnabled = entry.enabled ? "true" : "false";
+
+        rowEl.innerHTML = `
+            <div class="objects-interface-table-cell"></div>
+            <div class="objects-interface-table-cell"></div>
+            <div class="objects-interface-table-cell"></div>
+            <div class="objects-interface-table-cell">
+                <button type="button" class="filter-enabled-toggle" role="switch"
+                    aria-checked="${entry.enabled ? "true" : "false"}" data-enabled="${entry.enabled ? "true" : "false"}"
+                    aria-label="${entry.enabled ? "Enabled" : "Disabled"}" title="${entry.enabled ? "Enabled" : "Disabled"}">
+                    <span class="filter-enabled-toggle-check"></span>
+                </button>
+            </div>
+        `;
+
+        rowEl.children[0].textContent = index + 1;
+        rowEl.children[1].textContent = entry.name;
+        rowEl.children[2].textContent = entry.description;
+
+        const toggleButton = rowEl.querySelector(".filter-enabled-toggle");
+        toggleButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            toggleInterfaceFilterEnabled(direction, entry.id, toggleButton);
+        });
+
+        listContainer.appendChild(rowEl);
+    });
+}
+
+function encodeInterfaceFilterSelection(direction) {
+    const draft = ensureInterfaceFilterDraft(direction);
+    return draft.map((item) => `${item.id}:${item.enabled ? "true" : "false"}`).join(",");
+}
+
+async function saveInterfaceFilterChanges(button) {
+    const interfaceId = button.dataset.interfaceId;
+    const saveUrl = button.dataset.saveUrl;
+    if (!interfaceId || !saveUrl) return;
+
+    button.disabled = true;
+
+    try {
+        const response = await fetch(saveUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "X-CSRFToken": getCsrfToken(),
+            },
+            body: new URLSearchParams({
+                interface_id: interfaceId,
+                ingoing_filter_ids: encodeInterfaceFilterSelection("in"),
+                outgoing_filter_ids: encodeInterfaceFilterSelection("out"),
+            }),
+        });
+
+        if (!response.ok) {
+            console.error("Failed to save interface filters.", await response.text());
+            alert("Unable to save filter changes. Please try again.");
+            return;
+        }
+
+        interfaceFiltersDirty = false;
+    } catch (error) {
+        console.error("Error while saving interface filters.", error);
+        alert("Unable to save filter changes. Please try again.");
+    } finally {
+        button.disabled = false;
+    }
+}
+
+
+/*
+====================================================================
 Draggable Modal
 ====================================================================
 */
@@ -372,6 +603,8 @@ function initializeMembershipSelectors(root = document) {
         selector.dataset.membershipInitialized = "true";
 
         const inputName = selector.dataset.inputName;
+        const isFilterSelector = selector.dataset.selectorType === "ingoing_filter"
+            || selector.dataset.selectorType === "outgoing_filter";
         const availableList = selector.querySelector(".membership-list-available");
         const selectedList = selector.querySelector(".membership-list-selected");
 
@@ -420,6 +653,38 @@ function initializeMembershipSelectors(root = document) {
             }
         }
 
+        function ensureFilterEnabledToggle(item) {
+            if (item.querySelector(".filter-enabled-toggle")) return;
+
+            if (item.dataset.enabled === undefined) {
+                item.dataset.enabled = "true";
+            }
+
+            const enabled = item.dataset.enabled !== "false";
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "filter-enabled-toggle";
+            button.setAttribute("role", "switch");
+            button.dataset.enabled = enabled ? "true" : "false";
+            button.setAttribute("aria-checked", enabled ? "true" : "false");
+            button.setAttribute("aria-label", enabled ? "Enabled" : "Disabled");
+            button.title = enabled ? "Enabled" : "Disabled";
+            button.addEventListener("click", (event) => {
+                event.stopPropagation();
+                toggleSelectorFilterEnabled(button);
+            });
+
+            const check = document.createElement("span");
+            check.className = "filter-enabled-toggle-check";
+            button.appendChild(check);
+
+            item.appendChild(button);
+        }
+
+        function removeFilterEnabledToggle(item) {
+            item.querySelector(".filter-enabled-toggle")?.remove();
+        }
+
         function getDropTarget(list, y) {
             const items = [...list.querySelectorAll(".membership-list-item:not(.dragging)")];
 
@@ -446,6 +711,14 @@ function initializeMembershipSelectors(root = document) {
             }
 
             ensureHiddenInput(draggedItem, targetList === selectedList);
+
+            if (isFilterSelector) {
+                if (targetList === selectedList) {
+                    ensureFilterEnabledToggle(draggedItem);
+                } else {
+                    removeFilterEnabledToggle(draggedItem);
+                }
+            }
         }
 
         [availableList, selectedList].forEach((list) => {
@@ -689,6 +962,13 @@ function handleGenerateConfigButtonClick(event) {
     const button = event.target.closest(".generate-config-btn");
     if (!button) return;
 
+    if (interfaceFiltersDirty) {
+        const proceed = confirm(
+            "You have unsaved filter changes. Generate ACL anyway without saving?"
+        );
+        if (!proceed) return;
+    }
+
     const interfaceId = button.dataset.interfaceId;
     if (!interfaceId) return;
 
@@ -763,12 +1043,9 @@ function refreshRulesTableContent(rulesBody) {
     if (!rulesBody) return;
 
     const contentUrl = rulesBody.dataset.contentUrl;
-    const filterId = rulesBody.dataset.filterId;
-    if (!contentUrl || !filterId) return;
+    if (!contentUrl) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const filterName = params.get("filter_name") || "";
-    const refreshUrl = `${contentUrl}?filter_id=${encodeURIComponent(filterId)}&filter_name=${encodeURIComponent(filterName)}`;
+    const refreshUrl = contentUrl;
 
     // Rules are rendered in different content roots depending on page context.
     const refreshTarget = document.querySelector("#rules-content")
@@ -1018,6 +1295,30 @@ document.addEventListener("htmx:afterSwap", function (event) {
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
 document.addEventListener("click", handleGenerateConfigButtonClick);
+
+document.addEventListener("click", function (event) {
+    if (!interfaceFiltersDirty) return;
+
+    const link = event.target.closest("a[href]");
+    if (!link || link.target === "_blank") return;
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const proceed = confirm("You have unsaved filter changes that haven't been saved. Leave this page anyway?");
+    if (!proceed) {
+        event.preventDefault();
+        return;
+    }
+
+    // Confirmed via the custom dialog above; suppress the native beforeunload prompt for this navigation.
+    interfaceFiltersDirty = false;
+});
+
+window.addEventListener("beforeunload", function (event) {
+    if (!interfaceFiltersDirty) return;
+
+    event.preventDefault();
+});
 
 let tagOverflowResizeTimeout = null;
 window.addEventListener("resize", function () {

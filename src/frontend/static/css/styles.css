@@ -107,6 +107,13 @@ Header
     flex-wrap: wrap;
 }
 
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: var(--sds-color-layout-default);
+}
+
 .user-menu {
     position: relative;
     display: flex;

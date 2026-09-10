@@ -1,7 +1,8 @@
 {% load static %}
 
 {% for cell in row.cells %}
-<td class="{% if forloop.first %}first-column-cell{% if object_type == 'filters' %} inspect-column{% endif %}{% endif %} col-{{ forloop.counter }}">
+<td class="{% if forloop.first %}first-column-cell{% if object_type == 'filters' %} inspect-column{% endif %}{% endif %} col-{{ forloop.counter }}"
+    {% if row.direction and forloop.counter == 2 %}id="{{ row.id }}-filter-count" data-interface-filter-count="{{ row.direction }}"{% endif %}>
 
     {% if forloop.first and object_type == "filters" %}
         <a href="{{ row.inspect_url }}"
