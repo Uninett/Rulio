@@ -603,6 +603,8 @@ function initializeMembershipSelectors(root = document) {
         selector.dataset.membershipInitialized = "true";
 
         const inputName = selector.dataset.inputName;
+        const isFilterSelector = selector.dataset.selectorType === "ingoing_filter"
+            || selector.dataset.selectorType === "outgoing_filter";
         const availableList = selector.querySelector(".membership-list-available");
         const selectedList = selector.querySelector(".membership-list-selected");
 
@@ -651,6 +653,38 @@ function initializeMembershipSelectors(root = document) {
             }
         }
 
+        function ensureFilterEnabledToggle(item) {
+            if (item.querySelector(".filter-enabled-toggle")) return;
+
+            if (item.dataset.enabled === undefined) {
+                item.dataset.enabled = "true";
+            }
+
+            const enabled = item.dataset.enabled !== "false";
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "filter-enabled-toggle";
+            button.setAttribute("role", "switch");
+            button.dataset.enabled = enabled ? "true" : "false";
+            button.setAttribute("aria-checked", enabled ? "true" : "false");
+            button.setAttribute("aria-label", enabled ? "Enabled" : "Disabled");
+            button.title = enabled ? "Enabled" : "Disabled";
+            button.addEventListener("click", (event) => {
+                event.stopPropagation();
+                toggleSelectorFilterEnabled(button);
+            });
+
+            const check = document.createElement("span");
+            check.className = "filter-enabled-toggle-check";
+            button.appendChild(check);
+
+            item.appendChild(button);
+        }
+
+        function removeFilterEnabledToggle(item) {
+            item.querySelector(".filter-enabled-toggle")?.remove();
+        }
+
         function getDropTarget(list, y) {
             const items = [...list.querySelectorAll(".membership-list-item:not(.dragging)")];
 
@@ -677,6 +711,14 @@ function initializeMembershipSelectors(root = document) {
             }
 
             ensureHiddenInput(draggedItem, targetList === selectedList);
+
+            if (isFilterSelector) {
+                if (targetList === selectedList) {
+                    ensureFilterEnabledToggle(draggedItem);
+                } else {
+                    removeFilterEnabledToggle(draggedItem);
+                }
+            }
         }
 
         [availableList, selectedList].forEach((list) => {
