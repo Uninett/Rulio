@@ -170,13 +170,9 @@ def get_devices_view(request):
                     {
                         "value": interface_name,
                         "url": reverse(
-                            "interface-filters-view",
+                            "interface-view",
                             kwargs={
-                                "device_id": device.id,
                                 "interface_id": interface.id,
-                                # "interface_name": interface_name,
-                                # "device_name": device.name,
-                                # "interface_name": interface.name,
                             },
                         ),
                     },

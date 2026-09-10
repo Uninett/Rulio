@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import render
 
 from backend.objects.filters.filter import Filter
@@ -8,7 +8,6 @@ from backend.objects.tenant_objects.filter_interface import FilterInterface
 from backend.objects.tenant_objects.interface import Interface
 from backend.services.get import (
     get_all_filters_from_interface,
-    get_all_interfaces_from_device,
     get_object_by_type_and_id,
 )
 from backend.services.helper_user_tenant import can_write_tenant
@@ -38,7 +37,7 @@ def get_interface_page(request):
             "page_title": "Interfaces",
             "object_type": "interfaces",
             "add_button_label": "Add Filter",
-            "interfaces": interface_filters_view(request),
+            "interfaces": interface_view(request),
             "search_results": get_global_search_results(request),
             **get_tenant_context(request),
         },
@@ -46,7 +45,7 @@ def get_interface_page(request):
 
 
 @login_required(login_url="login")
-def interface_filters_view(request, device_id, interface_id):
+def interface_view(request, interface_id):
     tenant_id = request.session.get("current_tenant_id")
 
     if not tenant_id:
@@ -73,25 +72,16 @@ def interface_filters_view(request, device_id, interface_id):
     headers = ["Direction", "Filters", ""]
     rows = []
 
+    try:
+        selected_interface = Interface.objects.select_related("device").get(id=interface_id)
+    except Interface.DoesNotExist:
+        raise Http404(f"Interface with ID {interface_id} does not exist.")
+
     device = get_object_by_type_and_id(
         actor=request.user,
         tenant_id=tenant_id,
         object_type="device",
-        object_id=device_id,
-    )
-    print(f"Device: {device.name} ({device.id})")
-
-    device_interfaces = get_all_interfaces_from_device(
-        actor=request.user,
-        tenant_id=tenant_id,
-        device_id=device_id,
-        # interface_id=interface_id,
-    )
-    print(f"Device interfaces: {[interface.id for interface in device_interfaces]}")
-
-    selected_interface = next(
-        (interface for interface in device_interfaces if interface.id == interface_id),
-        None,
+        object_id=selected_interface.device_id,
     )
 
     for direction in ["in", "out"]:
