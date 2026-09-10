@@ -920,6 +920,13 @@ function handleGenerateConfigButtonClick(event) {
     const button = event.target.closest(".generate-config-btn");
     if (!button) return;
 
+    if (interfaceFiltersDirty) {
+        const proceed = confirm(
+            "You have unsaved filter changes. Generate ACL anyway without saving?"
+        );
+        if (!proceed) return;
+    }
+
     const interfaceId = button.dataset.interfaceId;
     if (!interfaceId) return;
 
@@ -1246,6 +1253,30 @@ document.addEventListener("htmx:afterSwap", function (event) {
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
 document.addEventListener("click", handleGenerateConfigButtonClick);
+
+document.addEventListener("click", function (event) {
+    if (!interfaceFiltersDirty) return;
+
+    const link = event.target.closest("a[href]");
+    if (!link || link.target === "_blank") return;
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const proceed = confirm("You have unsaved filter changes that haven't been saved. Leave this page anyway?");
+    if (!proceed) {
+        event.preventDefault();
+        return;
+    }
+
+    // Confirmed via the custom dialog above; suppress the native beforeunload prompt for this navigation.
+    interfaceFiltersDirty = false;
+});
+
+window.addEventListener("beforeunload", function (event) {
+    if (!interfaceFiltersDirty) return;
+
+    event.preventDefault();
+});
 
 let tagOverflowResizeTimeout = null;
 window.addEventListener("resize", function () {
