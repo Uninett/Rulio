@@ -478,13 +478,11 @@ def get_update_modal(request, row_id):
 
     if not object_data:
         return HttpResponse("Object not found.", status=404)
-    modal_refresh_url = reverse(config["refresh_url_name"])
-
     if object_type == "rule":
         filter_id = object_data.get("filter_id")
-
-        if filter_id:
-            modal_refresh_url += f"?filter_id={filter_id}"
+        modal_refresh_url = reverse(config["refresh_url_name"], kwargs={"filter_id": filter_id}) if filter_id else ""
+    else:
+        modal_refresh_url = reverse(config["refresh_url_name"])
 
     context = {
         "modal_title": config["title"],
