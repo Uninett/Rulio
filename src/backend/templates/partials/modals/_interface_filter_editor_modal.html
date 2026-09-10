@@ -1,0 +1,31 @@
+{% load static %}
+
+<div class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal draggable-modal" onclick="event.stopPropagation()">
+        <div class="modal-header draggable-modal-header" onclick="event.stopPropagation()">
+            <h2>{{ modal_title }}</h2>
+        </div>
+
+        <hr>
+
+        <div class="modal-type-content">
+            <div class="modal-form-content">
+                {% include "partials/modals/_interface_selector_modal.html" %}
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <div class="modal-actions-left"></div>
+            <div class="modal-actions-center"></div>
+            <div class="modal-actions-right">
+                <button class="btn btn-cancel" type="button" onclick="closeModal(event)">
+                    Cancel
+                </button>
+                <button class="btn btn-save" type="button"
+                    onclick="applyInterfaceRowFilterSelection('{{ selector_type }}', '{{ interface_direction }}', this)">
+                    Apply
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

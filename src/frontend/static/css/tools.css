@@ -16,6 +16,27 @@ Page Content Header
     margin: 0;
 }
 
+.breadcrumbs {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--sds-color-layout-border-strong);
+    width: 100%;
+}
+
+.breadcrumb-link {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    margin: 0 0.5rem;
+}
+
+.breadcrumb-current {
+    text-decoration: none;
+}
+
+
 
 /*
 ====================================================================

@@ -19,7 +19,7 @@ from django.contrib import admin
 from django.urls import path
 
 from backend.views.generate_config import check_interface_config_generation, download_interface_configs
-from backend.views.interfaces import get_interface_filter_selector_modal, interface_filters_view, post_interface_view
+from backend.views.interfaces import get_interface_filter_selector_modal, interface_view, post_interface_view
 from backend.views.rule_page import (
     delete_rule_view,
     get_rule_page,
@@ -119,9 +119,9 @@ urlpatterns = [
     # Device Page
     path("devices/", get_devices_page, name="devices"),
     path(
-        "management/devices/<int:device_id>/interfaces/<int:interface_id>/filters/",
-        interface_filters_view,
-        name="interface-filters-view",
+        "devices/interfaces/<int:interface_id>/",
+        interface_view,
+        name="interface-view",
     ),
     path(
         "devices/interfaces/<int:interface_id>/check-config/",
@@ -178,8 +178,8 @@ urlpatterns = [
         get_interface_filter_selector_modal,
         name="interface-selector-modal",
     ),
-    path("rules/", get_rule_page, name="rules-page"),
-    path("rules/content/", get_rules_content, name="rules-content"),
+    path("filters/<int:filter_id>/rules/", get_rule_page, name="rules-page"),
+    path("filters/<int:filter_id>/rules/content/", get_rules_content, name="rules-content"),
     path("rules/create/", post_rule_view, name="post-rule-view"),
     path("rules/reorder/", reorder_rule_view, name="reorder-rule-view"),
     path("rules/<int:rule_id>/update/", update_rule_view, name="update-rule-view"),

@@ -12,7 +12,8 @@
             {% for item in item_options %}
             {% if item.selector_id not in selected_object_ids %}
             <div class="membership-list-item" draggable="true" data-id="{{ item.selector_id }}"
-                data-name="{{ item.name }}">
+                data-name="{{ item.name }}" data-description="{{ item.description }}"
+                data-enabled="{{ item.enabled|yesno:'true,false' }}">
                 {{ item.name }}
             </div>
             {% endif %}
@@ -28,8 +29,18 @@
             {% for item in item_options %}
             {% if item.selector_id in selected_object_ids %}
             <div class="membership-list-item" draggable="true" data-id="{{ item.selector_id }}"
-                data-name="{{ item.name }}">
+                data-name="{{ item.name }}" data-description="{{ item.description }}"
+                data-enabled="{{ item.enabled|yesno:'true,false' }}">
                 {{ item.name }}
+
+                <button type="button" class="filter-enabled-toggle" role="switch"
+                    aria-checked="{{ item.enabled|yesno:'true,false' }}"
+                    aria-label="{{ item.enabled|yesno:'Enabled,Disabled' }}"
+                    title="{{ item.enabled|yesno:'Enabled,Disabled' }}"
+                    data-enabled="{{ item.enabled|yesno:'true,false' }}"
+                    onclick="event.stopPropagation(); toggleSelectorFilterEnabled(this)">
+                    <span class="filter-enabled-toggle-check"></span>
+                </button>
 
                 <input type="hidden" name="selected_ids" value="{{ item.selector_id }}">
             </div>
