@@ -279,30 +279,45 @@ function ensureInterfaceFilterDraft(direction) {
 function computeInterfaceFilterDiff(direction) {
     const baseline = interfaceFilterBaseline[direction] || [];
     const current = interfaceFilterDraft[direction] || [];
-    const currentIndexById = new Map(current.map((item, index) => [item.id, index]));
-    const baselineIds = new Set(baseline.map((item) => item.id));
+    const currentIds = new Set(current.map((item) => item.id));
+    const baselineIndexById = new Map(baseline.map((item, index) => [item.id, index]));
 
-    const combined = baseline.map((item, baselineIndex) => {
-        const currentIndex = currentIndexById.get(item.id);
-        if (currentIndex === undefined) {
-            return { ...item, diffStatus: "removed" };
-        }
-        const currentItem = current[currentIndex];
-        return {
-            ...currentItem,
-            diffStatus: "unchanged",
-            enabledChanged: currentItem.enabled !== item.enabled,
-            previousEnabled: item.enabled,
-            sequenceChanged: currentIndex !== baselineIndex,
-            previousSequence: baselineIndex + 1,
-        };
-    });
 
-    current.forEach((item) => {
-        if (!baselineIds.has(item.id)) {
-            combined.push({ ...item, diffStatus: "added" });
+    const removedBeforeId = new Map();
+    let pendingRemoved = [];
+    baseline.forEach((item, baselineIndex) => {
+        if (currentIds.has(item.id)) {
+            if (pendingRemoved.length) {
+                removedBeforeId.set(item.id, pendingRemoved);
+                pendingRemoved = [];
+            }
+        } else {
+            pendingRemoved.push({ ...item, diffStatus: "removed", previousSequence: baselineIndex + 1 });
         }
     });
+    const trailingRemoved = pendingRemoved;
+
+    const combined = [];
+    current.forEach((item, index) => {
+        const anchoredRemovals = removedBeforeId.get(item.id);
+        if (anchoredRemovals) combined.push(...anchoredRemovals);
+
+        const baselineIndex = baselineIndexById.get(item.id);
+        if (baselineIndex === undefined) {
+            combined.push({ ...item, diffStatus: "added", displaySequence: index + 1 });
+        } else {
+            combined.push({
+                ...item,
+                diffStatus: "unchanged",
+                enabledChanged: item.enabled !== baseline[baselineIndex].enabled,
+                previousEnabled: baseline[baselineIndex].enabled,
+                sequenceChanged: index !== baselineIndex,
+                previousSequence: baselineIndex + 1,
+                displaySequence: index + 1,
+            });
+        }
+    });
+    combined.push(...trailingRemoved);
 
     return combined;
 }
@@ -492,14 +507,14 @@ function renderInterfaceFilterRow(direction) {
             </div>
         `;
 
-        rowEl.children[0].textContent = index + 1;
+        rowEl.children[0].textContent = entry.diffStatus === "removed" ? entry.previousSequence : (entry.displaySequence ?? index + 1);
         rowEl.children[1].textContent = entry.name;
         rowEl.children[2].textContent = entry.description;
 
-        if (entry.sequenceChanged && entry.previousSequence !== index + 1) {
-            rowEl.children[0].textContent = `${entry.previousSequence}->${index + 1}`;
+        if (entry.sequenceChanged && entry.previousSequence !== entry.displaySequence) {
+            rowEl.children[0].textContent = `${entry.previousSequence}->${entry.displaySequence}`;
             rowEl.children[0].classList.add("cell-diff-sequence");
-            rowEl.children[0].title = `Moved from position ${entry.previousSequence} to ${index + 1}`;
+            rowEl.children[0].title = `Moved from position ${entry.previousSequence} to ${entry.displaySequence}`;
         }
 
         if (entry.enabledChanged) {
