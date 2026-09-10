@@ -176,10 +176,9 @@ def get_devices_view(request):
                             },
                         ),
                     },
-                    # getattr(interface, "name", "") or "",
+                    getattr(interface, "description", "") or "",
                     getattr(interface, "type", "") or "",
                     getattr(interface, "VRF", "") or "",
-                    getattr(interface, "description", "") or "",
                 ]
             )
 
@@ -204,7 +203,7 @@ def get_devices_view(request):
                     },
                     {
                         "label": "Interfaces",
-                        "headers": ["Interface Name", "Type", "VRF", "Description"],
+                        "headers": ["Interface Name", "Description", "Type", "VRF"],
                         "value": interfaces_for_device,
                         # "value": get_all_interfaces_from_device(request, tenant_id, device),
                     },
@@ -288,7 +287,7 @@ def post_device_view(request):
             },
             {
                 "label": "Interfaces",
-                "headers": ["Interface Name", "Type", "VRF", "Description"],
+                "headers": ["Interface Name", "Description", "Type", "VRF"],
                 "value": [],
             },
         ],

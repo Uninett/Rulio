@@ -99,12 +99,13 @@ def interface_view(request, interface_id):
 
         for filter_object in filter_objects:
             filters_for_direction.append(
-                [
-                    getattr(filter_object, "name", "") or "",
-                    getattr(filter_object, "description", "") or "",
-                    "Enabled" if getattr(filter_object, "interface_enable", False) else "Disabled",
-                    getattr(filter_object, "policy_sequence", "") or "",
-                ]
+                {
+                    "id": filter_object.id,
+                    "name": getattr(filter_object, "name", "") or "",
+                    "description": getattr(filter_object, "description", "") or "",
+                    "enabled": bool(getattr(filter_object, "interface_enable", False)),
+                    "sequence": getattr(filter_object, "policy_sequence", "") or "",
+                }
             )
 
         direction_label = "Ingoing" if direction == "in" else "Outgoing"
@@ -113,13 +114,15 @@ def interface_view(request, interface_id):
         else:
             outgoing_filter_ids = [filter_object.id for filter_object in filter_objects]
 
+        selector_type = "ingoing_filter" if direction == "in" else "outgoing_filter"
+
         rows.append(
             {
                 "id": f"interface-{selected_interface.id}-{direction}",
                 "direction": direction,
                 "edit_url": (
-                    f"{reverse('modal-add', kwargs={'object_type': 'interfaces'})}"
-                    f"?interface_id={selected_interface.id}&device_id={device.id}&direction={direction}"
+                    f"{reverse('interface-selector-modal', kwargs={'selector_type': selector_type})}"
+                    f"?standalone=1&interface_id={selected_interface.id}"
                 ),
                 "is_global": device.tenant_id == GLOBAL_TENANT_ID,
                 "can_write": can_write_tenant(request.user, device.tenant_id),
@@ -131,11 +134,10 @@ def interface_view(request, interface_id):
                     {
                         "label": "Filters",
                         "headers": [
+                            "",
                             "Filter Name",
                             "Description",
                             "Enabled",
-                            "Sequence",
-                            "",
                         ],
                         "value": filters_for_direction,
                         "modal_on_dblclick": True,
@@ -177,6 +179,35 @@ def interface_view(request, interface_id):
     return render(request, "interface_filters.html", context)
 
 
+def parse_filter_selection(raw: str, default_enabled: bool) -> list[tuple[int, bool]]:
+    parsed = []
+    for token in raw.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        if ":" in token:
+            id_part, enabled_part = token.split(":", 1)
+            parsed.append((int(id_part), enabled_part.strip().lower() == "true"))
+        else:
+            parsed.append((int(token), default_enabled))
+    return parsed
+
+
+def render_interface_form_error(request, object_data: dict, error_message: str, status: int = 400):
+    return render(
+        request,
+        "partials/modals/_modal_form.html",
+        {
+            "modal_object_type": "interfaces",
+            "modal_content_partial": "partials/modals/_interface_form.html",
+            "modal_supports_types": False,
+            "object_data": object_data,
+            "error_message": error_message,
+        },
+        status=status,
+    )
+
+
 @login_required(login_url="login")
 @transaction.atomic
 def post_interface_view(request):
@@ -186,7 +217,6 @@ def post_interface_view(request):
 
     ingoing_filter_ids_raw = request.POST.get("ingoing_filter_ids", "")
     outgoing_filter_ids_raw = request.POST.get("outgoing_filter_ids", "")
-
     object_data = {
         "interface_id": interface_id_raw,
         "enable": enable,
@@ -196,90 +226,81 @@ def post_interface_view(request):
         "outgoing_filter_names": [],
     }
 
-    def render_form_error(error_message: str, status: int = 400):
-        return render(
-            request,
-            "partials/modals/_modal_form.html",
-            {
-                "modal_object_type": "interfaces",
-                "modal_content_partial": "partials/modals/_interface_form.html",
-                "modal_supports_types": False,
-                "object_data": object_data,
-                "error_message": error_message,
-            },
-            status=status,
-        )
-
     if not tenant_id_raw:
-        return render_form_error("Tenant not set.")
+        return render_interface_form_error(request, object_data, "Tenant not set.")
 
     try:
         tenant_id = int(tenant_id_raw)
         interface_id = int(interface_id_raw)
     except (TypeError, ValueError):
-        return render_form_error("Invalid tenant or interface id.")
+        return render_interface_form_error(request, object_data, "Invalid tenant or interface id.")
 
     interface = Interface.objects.filter(id=interface_id, device__tenant_id=tenant_id).first()
     if interface is None:
-        return render_form_error("Interface not found.")
+        return render_interface_form_error(request, object_data, "Interface not found.")
 
     try:
-        ingoing_filter_ids = [int(value) for value in ingoing_filter_ids_raw.split(",") if value.strip()]
-        outgoing_filter_ids = [int(value) for value in outgoing_filter_ids_raw.split(",") if value.strip()]
+        ingoing_filter_selection = parse_filter_selection(ingoing_filter_ids_raw, enable)
+        outgoing_filter_selection = parse_filter_selection(outgoing_filter_ids_raw, enable)
     except ValueError:
-        return render_form_error("Invalid filter ids.")
+        return render_interface_form_error(request, object_data, "Invalid filter ids.")
+
+    ingoing_ids = [filter_id for filter_id, _ in ingoing_filter_selection]
+    outgoing_ids = [filter_id for filter_id, _ in outgoing_filter_selection]
+    all_selected_ids = set(ingoing_ids) | set(outgoing_ids)
 
     valid_filter_ids = set(
         Filter.objects.filter(
-            id__in=set(ingoing_filter_ids + outgoing_filter_ids), tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]
+            id__in=all_selected_ids, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]
         ).values_list("id", flat=True)
     )
 
-    invalid_ids = [
-        filter_id for filter_id in ingoing_filter_ids + outgoing_filter_ids if filter_id not in valid_filter_ids
-    ]
+    invalid_ids = [filter_id for filter_id in all_selected_ids if filter_id not in valid_filter_ids]
     if invalid_ids:
-        return render_form_error(
-            f"Invalid filter selection: {', '.join(str(value) for value in sorted(set(invalid_ids)))}"
+        return render_interface_form_error(
+            request,
+            object_data,
+            f"Invalid filter selection: {', '.join(str(value) for value in sorted(set(invalid_ids)))}",
         )
 
     try:
-        for sequence, filter_id in enumerate(ingoing_filter_ids, start=1):
+        for sequence, (filter_id, filter_enabled) in enumerate(ingoing_filter_selection, start=1):
             add_filter_to_interface(
                 actor=request.user,
                 tenant_id=tenant_id,
                 filter_id=filter_id,
                 interface_id=interface_id,
                 policy_sequence=sequence,
-                enable=enable,
+                enable=filter_enabled,
                 direction="in",
             )
 
-        for sequence, filter_id in enumerate(outgoing_filter_ids, start=1):
+        for sequence, (filter_id, filter_enabled) in enumerate(outgoing_filter_selection, start=1):
             add_filter_to_interface(
                 actor=request.user,
                 tenant_id=tenant_id,
                 filter_id=filter_id,
                 interface_id=interface_id,
                 policy_sequence=sequence,
-                enable=enable,
+                enable=filter_enabled,
                 direction="out",
             )
 
         FilterInterface.objects.filter(
             interface_id=interface_id,
             direction="in",
-        ).exclude(filter_id__in=ingoing_filter_ids).delete()
+        ).exclude(filter_id__in=ingoing_ids).delete()
 
         FilterInterface.objects.filter(
             interface_id=interface_id,
             direction="out",
-        ).exclude(filter_id__in=outgoing_filter_ids).delete()
+        ).exclude(filter_id__in=outgoing_ids).delete()
 
     except Exception as exc:
-        return render_form_error(f"Unable to update interface filters: {exc}")
+        return render_interface_form_error(request, object_data, f"Unable to update interface filters: {exc}")
 
     return HttpResponse(status=204)
+
 
 
 @login_required(login_url="login")
@@ -316,6 +337,21 @@ def get_interface_filter_selector_modal(request, selector_type: str):
     ]
 
     direction_label = "Ingoing" if selector_type == "ingoing_filter" else "Outgoing"
+    interface_direction = "in" if selector_type == "ingoing_filter" else "out"
+
+    if request.GET.get("standalone") == "1":
+        return render(
+            request,
+            "partials/modals/_interface_filter_editor_modal.html",
+            {
+                "modal_title": f"Edit {direction_label} Filters",
+                "selector_type": selector_type,
+                "interface_direction": interface_direction,
+                "object_kind": "filters",
+                "selected_object_ids": selected_object_ids,
+                "item_options": item_options,
+            },
+        )
 
     context = {
         "modal_title": f"Edit {direction_label} Filters",

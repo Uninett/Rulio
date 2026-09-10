@@ -25,8 +25,8 @@
     {% if row.can_write %}
     <td class="actions-column">
         {% if row.edit_url %}
-        <button type="button" class="actions-btn" hx-get="{{ row.edit_url }}" hx-target="#modal-container"
-            hx-swap="innerHTML" onclick="event.stopPropagation()">
+        <button type="button" class="actions-btn" data-selector-url="{{ row.edit_url }}" data-direction="{{ row.direction }}"
+            onclick="event.stopPropagation(); openInterfaceRowFilterEditor(this.dataset.direction, this.dataset.selectorUrl)">
             <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
         </button>
         {% else %}
