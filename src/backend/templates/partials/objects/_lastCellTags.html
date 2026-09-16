@@ -68,8 +68,7 @@
                     {% if item %}
                         <div class="rule-object-item"
                              title="{{ item.hover_text }}"
-                             onclick="event.stopPropagation();"
-                             ondblclick="event.stopPropagation(); window.location.href='{{ item.navigate_url }}';">
+                             onclick="event.stopPropagation(); window.location.href='{{ item.navigate_url }}';">
                             {{ item.name }}
                         </div>
                     {% endif %}
