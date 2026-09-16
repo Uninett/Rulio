@@ -101,8 +101,10 @@ from .views.tags_page import (
     update_tag_view,
 )
 
+
 def health_check(request):
     return HttpResponse("ok", content_type="text/plain")
+
 
 urlpatterns = [
     path("health/", health_check, name="health-check"),
