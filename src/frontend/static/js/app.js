@@ -708,14 +708,16 @@ function prepareAddressForm(event) {
     const ipv4Input = ipv4InputField?.value.trim() || "";
     const ipv6Input = ipv6InputField?.value.trim() || "";
 
-    ipv4InputField?.setCustomValidity("");
-    ipv6InputField?.setCustomValidity("");
-
     if (!ipv4Input && !ipv6Input) {
         event.preventDefault();
         ipv4InputField?.setCustomValidity("Please enter at least one IPv4 or IPv6 value.");
         ipv4InputField?.reportValidity();
     }
+
+    ipv4InputField?.setCustomValidity("");
+    ipv6InputField?.setCustomValidity("");
+
+
 }
 
 
