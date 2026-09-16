@@ -1488,9 +1488,10 @@ def add_filter_to_interface_endpoint(
 @require_write_tenantd
 def add_test_data(request):
     tenants = [
-        Tenant.objects.get_or_create(tenant_name="NTNU")[0],
-        Tenant.objects.get_or_create(tenant_name="Sikt")[0],
-        Tenant.objects.get_or_create(tenant_name="UiO")[0],
+        Tenant.objects.get_or_create(tenant_name="Gløshaugen 1")[0],
+        Tenant.objects.get_or_create(tenant_name="Gløshaugen 2")[0],
+        Tenant.objects.get_or_create(tenant_name="Dragvoll")[0],
+        Tenant.objects.get_or_create(tenant_name="Kalvskinnet")[0],
     ]
     create_interfaces_devices_devicegroups_tags(
         actor=request.user, tenant_id=request.session["current_tenant_id"], tenants=tenants

@@ -32,7 +32,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
 
     current_tenant = next((tenant for tenant in tenants if getattr(tenant, "id", None) == tenant_id), None)
 
-    target_tenants = [tenant for tenant in tenants if getattr(tenant, "tenant_name", "").lower() in {"ntnu", "sikt"}]
+    target_tenants = [tenant for tenant in tenants if getattr(tenant, "tenant_name", "").lower() in {"gløshaugen 1", "gløshaugen 2", "dragvoll", "kalvskinnet"}]
     if not target_tenants and current_tenant is not None:
         target_tenants = [current_tenant]
 
@@ -43,12 +43,12 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
     for target_tenant in target_tenants:
         target_tenant_name = getattr(target_tenant, "tenant_name", "") or ""
         normalized_tenant_name = target_tenant_name.lower()
-        is_ntnu_or_sikt_tenant = any(marker in normalized_tenant_name for marker in ["ntnu", "sikt"])
+        is_ntnu_tenant = any(marker in normalized_tenant_name for marker in ["gløshaugen 1", "gløshaugen 2", "dragvoll", "kalvskinnet"])
 
         tenant_prefix = (
-            "ntnu" if "ntnu" in normalized_tenant_name else "sikt" if "sikt" in normalized_tenant_name else "shared"
+            "gløshaugen-1" if "gløshaugen 1" in normalized_tenant_name else "gløshaugen-2" if "gløshaugen 2" in normalized_tenant_name else "dragvoll" if "dragvoll" in normalized_tenant_name else "kalvskinnet" if "kalvskinnet" in normalized_tenant_name else "shared"
         )
-        tenant_label = f"{tenant_prefix.upper()}" if tenant_prefix != "shared" else "SHARED"
+        tenant_label = f"{tenant_prefix.capitalize()}" if tenant_prefix != "shared" else "Shared"
 
         device_specs = [
             (
@@ -75,7 +75,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             (f"{tenant_prefix}-router-08", "Juniper", f"LAN router for {tenant_label} office.", "router"),
         ]
 
-        if is_ntnu_or_sikt_tenant:
+        if is_ntnu_tenant:
             device_specs.extend(
                 [
                     (
@@ -326,7 +326,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             created_devices.append(device_obj)
             logger.info(f"Created {device_obj} for tenant={device_obj.tenant_id}")
 
-        device, device2, device3, device4 = created_devices[:4]
+        device, device2, device3, _device4 = created_devices[:4]
 
         created_interfaces = []
         for index, device_obj in enumerate(created_devices):
@@ -385,7 +385,7 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             (f"{tenant_prefix}-routers", f"Router devices for {tenant_label} office."),
         ]
 
-        if is_ntnu_or_sikt_tenant:
+        if is_ntnu_tenant:
             device_group_specs.extend(
                 [
                     (
@@ -465,22 +465,24 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
             ipv4Network="192.168.1.0/24",
         )
 
-        tag1, tag1_id, tag1_created = get_or_create_tag(
+        tag1, _tag1_id, _tag1_created = get_or_create_tag(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-web-servers",
             description="Tag for web servers.",
+            color="#cca3f5",
         )
 
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=device3)
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=interface2)
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag1, obj=address)
 
-        tag2, tag2_id, tag2_created = get_or_create_tag(
+        tag2, _tag2_id, _tag2_created = get_or_create_tag(
             actor=actor,
             tenant_id=target_tenant.id,
             name=f"{tenant_prefix}-firewalls",
             description="Tag for firewall devices.",
+            color="#e6f0ff",
         )
 
         add_tag_to_object(actor=actor, tenant_id=target_tenant.id, tag=tag2, obj=device)
@@ -527,8 +529,8 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
 
         if normalized_tenant_name == "ntnu":
             cross_tenant_user, created_cross_tenant_user = User.objects.get_or_create(
-                username="NTNU_Admin_Sikt_Member",
-                defaults={"email": "ntnuadmin@sikt.no"},
+                username="NTNU_Admin_Dragvoll_Member",
+                defaults={"email": "ntnuadmin@dragvoll.no"},
             )
             if created_cross_tenant_user:
                 cross_tenant_user.set_password("change-me")
@@ -539,10 +541,10 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
                 defaults={"role": TenantUserMember.TenantRole.ADMIN},
             )
 
-        if normalized_tenant_name == "sikt":
+        if normalized_tenant_name == "dragvoll":
             cross_tenant_user, created_cross_tenant_user = User.objects.get_or_create(
-                username="NTNU_Admin_Sikt_Member",
-                defaults={"email": "ntnuadmin@sikt.no"},
+                username="NTNU_Admin_Dragvoll_Member",
+                defaults={"email": "ntnuadmin@dragvoll.no"},
             )
             if created_cross_tenant_user:
                 cross_tenant_user.set_password("change-me")
