@@ -111,9 +111,7 @@ class TestGenerateConfig:
         assert "Test_Address_Rule_2" in juniper_config
         assert "192.168.1.0/24" in juniper_config
 
-    def test_build_address_with_spaces_uses_normalized_network_name(
-        self, request_with_session, create_testing_tenant
-    ):
+    def test_build_address_with_spaces_uses_normalized_network_name(self, request_with_session, create_testing_tenant):
         address = get_or_create_address(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,

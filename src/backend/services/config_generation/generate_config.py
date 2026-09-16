@@ -632,7 +632,9 @@ class PolicyRule:
             term["reverse-source-address"] = [_normalize_network_name(name) for name in reverse_source_addresses]
 
         if reverse_destination_addresses:
-            term["reverse-destination-address"] = [_normalize_network_name(name) for name in reverse_destination_addresses]
+            term["reverse-destination-address"] = [
+                _normalize_network_name(name) for name in reverse_destination_addresses
+            ]
 
         return term
 
