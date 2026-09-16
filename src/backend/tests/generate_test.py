@@ -2,7 +2,10 @@ import copy
 
 import pytest
 
+from backend.services.attribute_objects.create_attribute_objects import get_or_create_address
 from backend.services.config_generation.generate_config import (
+    PolicyRule,
+    PolicyRuleMember,
     generate_config,
     generate_multi_policy_config,
     merge_policies,
@@ -107,6 +110,27 @@ class TestGenerateConfig:
         assert "Test_Address_Rule_1" in juniper_config
         assert "Test_Address_Rule_2" in juniper_config
         assert "192.168.1.0/24" in juniper_config
+
+    def test_build_address_with_spaces_uses_normalized_network_name(self, request_with_session, create_testing_tenant):
+        address = get_or_create_address(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Browser ACL Address",
+            description="Frontend-created address",
+            ipv4_auto="198.51.100.0/24",
+        )[0]
+
+        result = PolicyRule(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Browser ACL Rule",
+            action="accept",
+            rule_sequence=1,
+            members=[PolicyRuleMember("address", "source", address)],
+        ).build(vendor="juniper")
+
+        assert "Browser_ACL_Address" in result.networks
+        assert result.terms[0]["source-address"] == ["Browser_ACL_Address"]
 
     def test_generate_address_group_config(self, built_address_group_policy):
         configs = self._generate_for_all_vendors(

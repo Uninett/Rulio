@@ -1089,6 +1089,13 @@ function showConfigResultModal({ title, errors = [], warnings = [], allowCancel 
     modal.hidden = false;
 }
 
+function closeConfigResultModal() {
+    const modal = document.getElementById("config-result-modal");
+    if (!modal) return;
+
+    modal.hidden = true;
+}
+
 function handleGenerateConfigButtonClick(event) {
     const button = event.target.closest(".generate-config-btn");
     if (!button) return;
