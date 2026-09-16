@@ -40,7 +40,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+import os
+
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS"
+).split(",")
 
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"  # We should probably use .db for this when the database is set up, but for now this is fine since we aren't actually running multiple processes or anything that would cause issues with cookie-based sessions.
 # Application definition

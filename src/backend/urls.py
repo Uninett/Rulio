@@ -16,6 +16,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import path
 
 from backend.views.generate_config import check_interface_config_generation, download_interface_configs
@@ -100,7 +101,11 @@ from .views.tags_page import (
     update_tag_view,
 )
 
+def health_check(request):
+    return HttpResponse("ok", content_type="text/plain")
+
 urlpatterns = [
+    path("health/", health_check, name="health-check"),
     path("admin/", admin.site.urls),
     path("api/", api.urls),
     path("login/", get_login_page, name="login"),
