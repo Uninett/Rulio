@@ -27,6 +27,7 @@ jobs:
           echo "DJANGO_SUPERUSER_USERNAME=admin" >> src/.env
           echo "DJANGO_SUPERUSER_PASSWORD=adminpassword" >> src/.env
           echo "DJANGO_SUPERUSER_EMAIL=admin@example.com" >> src/.env
+          echo "DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,rulio-demo.uninett.no" >> src/.env
 
       - name: Build and start containers
         run: docker compose -f src/docker-compose.yml up -d --build
