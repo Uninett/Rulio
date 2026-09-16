@@ -512,8 +512,7 @@ function renderInterfaceFilterRow(direction) {
         rowEl.children[2].textContent = entry.description;
 
         if (entry.sequenceChanged && entry.previousSequence !== entry.displaySequence) {
-            rowEl.children[0].textContent = `${entry.previousSequence}->${entry.displaySequence}`;
-            rowEl.children[0].classList.add("cell-diff-sequence");
+            rowEl.children[0].textContent = `${entry.previousSequence} → ${entry.displaySequence}`;
             rowEl.children[0].title = `Moved from position ${entry.previousSequence} to ${entry.displaySequence}`;
         }
 
