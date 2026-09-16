@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.middleware.csrf import get_token
 from ninja import NinjaAPI, Status
 from ninja.security import django_auth
 
@@ -114,6 +115,11 @@ Tests
 @api.get("/hello", tags=["Debugging"])
 def hello(request):
     return "Hello world"
+
+
+@api.get("/csrf_token", auth=None, tags=["Authentication - User"])
+def csrf_token(request):
+    return {"csrfToken": get_token(request)}
 
 
 # This is a temporary endpoint to set the tenant ID in the session for testing purposes. In a real implementation, this would be handled by an authentication system and middleware.
