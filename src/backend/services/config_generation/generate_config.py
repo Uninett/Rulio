@@ -28,6 +28,10 @@ logger = set_up_logger(__name__)
 SHADING_WARNING_PATTERN = re.compile(r"^(?P<term>.+?) is shaded by (?P<shaded_by>.+)$")
 
 
+def _normalize_network_name(name: str) -> str:
+    return re.sub(r"\s+", "_", name.strip())
+
+
 @dataclass(frozen=True)
 class GenerationDiagnostic:
     source: str
@@ -251,7 +255,7 @@ class PolicyRule:
                         destination_list=destination_addresses,
                         reverse_source_list=reverse_source_addresses,
                         reverse_destination_list=reverse_destination_addresses,
-                        value=member.object.name,
+                        value=_normalize_network_name(member.object.name),
                     )
 
                 case "addressgroup":
@@ -262,7 +266,7 @@ class PolicyRule:
                         destination_list=destination_addresses,
                         reverse_source_list=reverse_source_addresses,
                         reverse_destination_list=reverse_destination_addresses,
-                        value=member.object.name,
+                        value=_normalize_network_name(member.object.name),
                     )
 
                 case "service":
@@ -619,16 +623,16 @@ class PolicyRule:
         }
 
         if source_addresses:
-            term["source-address"] = source_addresses
+            term["source-address"] = [_normalize_network_name(name) for name in source_addresses]
 
         if destination_addresses:
-            term["destination-address"] = destination_addresses
+            term["destination-address"] = [_normalize_network_name(name) for name in destination_addresses]
 
         if reverse_source_addresses:
-            term["reverse-source-address"] = reverse_source_addresses
+            term["reverse-source-address"] = [_normalize_network_name(name) for name in reverse_source_addresses]
 
         if reverse_destination_addresses:
-            term["reverse-destination-address"] = reverse_destination_addresses
+            term["reverse-destination-address"] = [_normalize_network_name(name) for name in reverse_destination_addresses]
 
         return term
 
@@ -814,7 +818,7 @@ class PolicyRule:
         for addr in ipv6_addrs:
             values.append(str(addr))
 
-        networks[address.name] = {"values": values}
+        networks[_normalize_network_name(address.name)] = {"values": values}
 
     def _add_address_group_definition(self, networks: dict[str, dict], address_group: AddressGroup) -> None:
         values = []
@@ -831,7 +835,7 @@ class PolicyRule:
             for addr in ipv6_addrs:
                 values.append(str(addr))
 
-        networks[address_group.name] = {"values": values}
+        networks[_normalize_network_name(address_group.name)] = {"values": values}
 
     def _add_service_definition(
         self,

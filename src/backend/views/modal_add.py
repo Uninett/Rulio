@@ -183,6 +183,7 @@ def get_add_modal(request, object_type):
         filter_id = request.GET.get("filter_id", "")
 
         object_data["filter_id"] = filter_id
+        object_data["enable"] = True
 
         # get_rules_view() needs filter_id to load the correct rules.
         if filter_id:
