@@ -1,6 +1,6 @@
 <div class="detail-block">
 
-    <div class="objects-interface-table">
+    <div class="objects-interface-table objects-filters-table" data-interface-filter-list="{{ row.direction }}">
         <div class="objects-interface-table-header-row">
             {% for header in field.headers %}
             <div class="interfaces-grid__header">
@@ -10,18 +10,22 @@
         </div>
 
         {% for interface_row in field.value %}
-        <div class="objects-interface-table-row">
-            {% for interface_value in interface_row %}
+        <div class="objects-interface-table-row" data-filter-id="{{ interface_row.id }}"
+            data-filter-name="{{ interface_row.name }}" data-filter-description="{{ interface_row.description }}"
+            data-filter-enabled="{{ interface_row.enabled|yesno:'true,false' }}">
+            <div class="objects-interface-table-cell">{{ interface_row.sequence }}</div>
+            <div class="objects-interface-table-cell">{{ interface_row.name }}</div>
+            <div class="objects-interface-table-cell">{{ interface_row.description }}</div>
             <div class="objects-interface-table-cell">
-                {% if interface_value.url %}
-                <a href="{{ interface_value.url }}" class="interface-filter-link">
-                    {{ interface_value.value }}
-                </a>
-                {% else %}
-                {{ interface_value }}
-                {% endif %}
+                <button type="button" class="filter-enabled-toggle" role="switch"
+                    aria-checked="{{ interface_row.enabled|yesno:'true,false' }}"
+                    aria-label="{{ interface_row.enabled|yesno:'Enabled,Disabled' }}"
+                    title="{{ interface_row.enabled|yesno:'Enabled,Disabled' }}"
+                    data-enabled="{{ interface_row.enabled|yesno:'true,false' }}"
+                    onclick="event.stopPropagation(); toggleInterfaceFilterEnabled('{{ row.direction }}', '{{ interface_row.id }}', this)">
+                    <span class="filter-enabled-toggle-check"></span>
+                </button>
             </div>
-            {% endfor %}
         </div>
         {% empty %}
         <div class="objects-interface-empty">

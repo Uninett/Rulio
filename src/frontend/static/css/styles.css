@@ -49,9 +49,9 @@ Typography
     --sds-color-interaction-neutral-subtle: #E0E0E0;
     --sds-color-interaction-neutral-subtle-hover: #D6D6D6;
 
-    --sds-color-support-critical-strong: #B60203;
+    --sds-color-support-critical-strong: #C10103;
     --sds-color-support-critical-strong-hover: #970002;
-    --sds-color-support-critical-subtle: #FFEAE9;
+    --sds-color-support-critical-subtle: #FFDCDA;
     --sds-color-support-success-strong: #096638;
     --sds-color-support-success-subtle: #CFF7E2;
 
@@ -87,6 +87,14 @@ button:hover {
     border: 2px solid var(--sds-color-brand-primary-strong-hover);
 }
 
+button:disabled,
+button:disabled:hover {
+    background-color: var(--sds-color-interaction-neutral-subtle);
+    border-color: var(--sds-color-interaction-neutral-subtle);
+    color: var(--sds-color-text-secondary);
+    cursor: not-allowed;
+}
+
 
 /*
 ====================================================================
@@ -105,6 +113,13 @@ Header
     align-items: flex-end;
     gap: 1.5rem;
     flex-wrap: wrap;
+}
+
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: var(--sds-color-layout-default);
 }
 
 .user-menu {

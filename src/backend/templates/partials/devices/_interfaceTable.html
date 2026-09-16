@@ -1,4 +1,11 @@
 <section class="objects-table-container table-container">
+    <input type="hidden" id="interface-page-ingoing-filter-ids" name="ingoing_filter_ids"
+        data-interface-filter-input="in"
+        value="{% for id in ingoing_filter_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+    <input type="hidden" id="interface-page-outgoing-filter-ids" name="outgoing_filter_ids"
+        data-interface-filter-input="out"
+        value="{% for id in outgoing_filter_ids %}{{ id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
     <table class="objects-table objects-table--interfaces">
         <thead>
             <tr>

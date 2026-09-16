@@ -1,10 +1,43 @@
 {% load static %}
-<button
-    class="btn-generate generate-config-btn"
-    type="button"
-    data-interface-id="{{ interface.id }}"
-    aria-label="Generate ACL for {{ interface.name }}"
->
-    Generate ACL
-    <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
-</button>
+<div class="interface-actions">
+    <button
+        class="btn-generate generate-config-btn"
+        type="button"
+        data-interface-id="{{ interface.id }}"
+        aria-label="Generate ACL for {{ interface.name }}"
+    >
+        Generate ACL
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+    </button>
+
+    {% if can_write_current_tenant or request.user.is_superuser %}
+    <button
+        type="button"
+        class="btn btn-diff interface-diff-btn"
+        onclick="toggleInterfaceFilterDifferences(this)"
+        aria-label="Show filter differences for {{ interface.name }}"
+    >
+        Show Differences
+    </button>
+    <button
+        type="button"
+        class="btn btn-discard interface-discard-btn"
+        disabled
+        onclick="discardInterfaceFilterChanges(this)"
+        aria-label="Discard filter changes for {{ interface.name }}"
+    >
+        Discard Changes
+    </button>
+    <button
+        type="button"
+        class="btn btn-save interface-save-btn"
+        disabled
+        data-interface-id="{{ interface.id }}"
+        data-save-url="{% url 'post-interface-view' %}"
+        onclick="saveInterfaceFilterChanges(this)"
+        aria-label="Save filter changes for {{ interface.name }}"
+    >
+        Save Changes
+    </button>
+    {% endif %}
+</div>

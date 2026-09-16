@@ -81,7 +81,7 @@ def get_add_modal_config(object_type):
             "post_url": reverse("post-rule-view"),
             "target": "#modal-container",
             "swap": "innerHTML",
-            "refresh_url": reverse("rules-content"),
+            "refresh_url": None,
             "modal_refresh_target": "#rules-content",
         },
         "addresses": {
@@ -181,30 +181,23 @@ def get_add_modal(request, object_type):
 
     if object_type == "rules":
         filter_id = request.GET.get("filter_id", "")
-        filter_name = request.GET.get("filter_name", "")
 
         object_data["filter_id"] = filter_id
 
         # get_rules_view() needs filter_id to load the correct rules.
         if filter_id:
-            modal_refresh_url = f"{reverse('rules-content')}?filter_id={filter_id}"
-
-            # Optional: preserve the title shown by get_rules_content().
-            if filter_name:
-                modal_refresh_url += f"&filter_name={filter_name}"
+            modal_refresh_url = reverse("rules-content", kwargs={"filter_id": filter_id})
 
     if object_type == "interfaces":
         interface_id_raw = request.GET.get("interface_id", "")
-        device_id_raw = request.GET.get("device_id", "")
 
         if not tenant_id:
             raise Http404("No tenant selected for interface modal.")
 
         try:
             interface_id = int(interface_id_raw)
-            device_id = int(device_id_raw)
         except (TypeError, ValueError):
-            raise Http404("Missing or invalid interface/device id.")
+            raise Http404("Missing or invalid interface id.")
 
         ingoing_filters = get_all_filters_from_interface(
             actor=request.user,
@@ -220,9 +213,8 @@ def get_add_modal(request, object_type):
         )
 
         modal_refresh_url = reverse(
-            "interface-filters-view",
+            "interface-view",
             kwargs={
-                "device_id": device_id,
                 "interface_id": interface_id,
             },
         )

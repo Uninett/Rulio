@@ -10,7 +10,7 @@
         </thead>
          <tbody id="rules-table"
              data-reorder-url="{% url 'reorder-rule-view' %}"
-             data-content-url="{% url 'rules-content' %}"
+             {% if current_filter_id %}data-content-url="{% url 'rules-content' filter_id=current_filter_id %}"{% endif %}
              data-filter-id="{{ current_filter_id|default:'' }}">
             {% for row in rules.rows %}
             {% include "partials/objects/_tableRow.html" with row=row headers=rules.headers %}

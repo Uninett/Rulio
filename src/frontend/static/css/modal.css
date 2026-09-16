@@ -334,6 +334,10 @@ Membership Selection
     opacity: 0.5;
 }
 
+.membership-list-item .filter-enabled-toggle {
+    float: right;
+}
+
 /*
 ====================================================================
 Modal Actions

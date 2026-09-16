@@ -130,7 +130,7 @@ def get_filters_view(request):
             {
                 "id": f"filter-{filter_obj.id}",
                 "is_group": False,
-                "inspect_url": reverse("rules-page") + f"?filter_id={filter_obj.id}&filter_name={filter_obj.name}",
+                "inspect_url": reverse("rules-page", kwargs={"filter_id": filter_obj.id}),
                 "is_global": filter_obj.tenant_id == GLOBAL_TENANT_ID,
                 "can_write": can_write_tenant(request.user, filter_obj.tenant_id),
                 "cells": [
