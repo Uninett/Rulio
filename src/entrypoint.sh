@@ -34,6 +34,8 @@ EOF
 echo "Running migrations..."
 python manage.py migrate --noinput
 
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
 
 echo "Creating superuser if needed..."
 python manage.py shell << EOF
@@ -93,5 +95,8 @@ tenant = Tenant.objects.get(tenant_name="Global Tenant")
 populate_db(actor=user, tenant_id=tenant.id)
 print(f"Database seeded with actor={user.username}, tenant_id={tenant.id}, tenant_name={tenant.tenant_name}")
 EOF
-echo "Starting Django..."
-exec python manage.py runserver 0.0.0.0:8000
+
+echo "Starting Gunicorn..."
+exec gunicorn backend.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --workers "${GUNICORN_WORKERS:-3}"

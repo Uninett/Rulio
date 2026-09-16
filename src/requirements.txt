@@ -6,3 +6,5 @@ aerleon>=0.1.0
 pytest-django>=4.0.0
 pytest-cov>=7.0.0
 ruff>=0.16
+gunicorn>=26.2.0
+whitenoise>=6.12.0
