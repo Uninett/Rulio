@@ -9,7 +9,6 @@ def test_create_interfaces_devices_devicegroups_tags_creates_data_for_ntnu(super
     gløshaugen_2_tenant, _ = Tenant.objects.get_or_create(tenant_name="Gløshaugen 2")
     dragvoll_tenant, _ = Tenant.objects.get_or_create(tenant_name="Dragvoll")
     kalvskinnet_tenant, _ = Tenant.objects.get_or_create(tenant_name="Kalvskinnet")
-   
 
     create_interfaces_devices_devicegroups_tags(
         actor=superuser,

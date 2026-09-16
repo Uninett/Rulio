@@ -32,7 +32,11 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
 
     current_tenant = next((tenant for tenant in tenants if getattr(tenant, "id", None) == tenant_id), None)
 
-    target_tenants = [tenant for tenant in tenants if getattr(tenant, "tenant_name", "").lower() in {"gløshaugen 1", "gløshaugen 2", "dragvoll", "kalvskinnet"}]
+    target_tenants = [
+        tenant
+        for tenant in tenants
+        if getattr(tenant, "tenant_name", "").lower() in {"gløshaugen 1", "gløshaugen 2", "dragvoll", "kalvskinnet"}
+    ]
     if not target_tenants and current_tenant is not None:
         target_tenants = [current_tenant]
 
@@ -43,10 +47,20 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
     for target_tenant in target_tenants:
         target_tenant_name = getattr(target_tenant, "tenant_name", "") or ""
         normalized_tenant_name = target_tenant_name.lower()
-        is_ntnu_tenant = any(marker in normalized_tenant_name for marker in ["gløshaugen 1", "gløshaugen 2", "dragvoll", "kalvskinnet"])
+        is_ntnu_tenant = any(
+            marker in normalized_tenant_name for marker in ["gløshaugen 1", "gløshaugen 2", "dragvoll", "kalvskinnet"]
+        )
 
         tenant_prefix = (
-            "gløshaugen-1" if "gløshaugen 1" in normalized_tenant_name else "gløshaugen-2" if "gløshaugen 2" in normalized_tenant_name else "dragvoll" if "dragvoll" in normalized_tenant_name else "kalvskinnet" if "kalvskinnet" in normalized_tenant_name else "shared"
+            "gløshaugen-1"
+            if "gløshaugen 1" in normalized_tenant_name
+            else "gløshaugen-2"
+            if "gløshaugen 2" in normalized_tenant_name
+            else "dragvoll"
+            if "dragvoll" in normalized_tenant_name
+            else "kalvskinnet"
+            if "kalvskinnet" in normalized_tenant_name
+            else "shared"
         )
         tenant_label = f"{tenant_prefix.capitalize()}" if tenant_prefix != "shared" else "Shared"
 
