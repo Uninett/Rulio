@@ -38,12 +38,18 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG =False
 
 import os
 
 ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS"
+    "DJANGO_ALLOWED_HOSTS",
+    "localhost,127.0.0.1,rulio-demo.uninett.no",
+).split(",")
+
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "https://rulio-demo.uninett.no",
 ).split(",")
 
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"  # We should probably use .db for this when the database is set up, but for now this is fine since we aren't actually running multiple processes or anything that would cause issues with cookie-based sessions.
