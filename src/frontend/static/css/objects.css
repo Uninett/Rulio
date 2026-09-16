@@ -521,11 +521,6 @@ Objects Interface Table
     border-radius: 0.25rem;
 }
 
-.objects-interface-table-cell.cell-diff-sequence {
-    outline: 2px solid var(--sds-color-brand-primary-strong);
-    outline-offset: -2px;
-    border-radius: 0.25rem;
-}
 
 .interface-actions {
     display: flex;
