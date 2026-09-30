@@ -14,7 +14,7 @@
 
         <tbody>
             {% for interface in interfaces %}
-            <tr>
+            <tr data-interface-id="{{ interface.id }}">
                 <td title="{{ interface.name }}">
                     {{ interface.name|default:"" }}
                 </td>
@@ -31,7 +31,7 @@
                     <button type="button"
                         class="actions-btn device-interface-icon-button device-interface-delete-button"
                         id="delete-interface-draft-{{ interface.id }}" aria-label="Delete interface"
-                        title="Delete interface">
+                        title="Delete interface" onclick="removeDeviceInterfaceRow(this)">
                         <img class="btn-icon actions-icon" src="{% static 'images/delete.svg' %}" alt=""
                             aria-hidden="true">
                     </button>
@@ -57,7 +57,8 @@
                 </td>
                 <td class="device-interface-actions-column">
                     <button type="button" class="actions-btn device-interface-icon-button device-interface-add-button"
-                        id="add-interface-draft" aria-label="Add interface" title="Add interface">
+                        id="add-interface-draft" aria-label="Add interface" title="Add interface"
+                        onclick="addDeviceInterfaceRow(this)">
                         <img class="btn-icon actions-icon" src="{% static 'images/add.svg' %}" alt=""
                             aria-hidden="true">
                     </button>

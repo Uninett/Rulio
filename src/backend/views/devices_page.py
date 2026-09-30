@@ -1,10 +1,13 @@
+import json
+from dataclasses import dataclass
+
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 
 from backend.objects.attributes.tag import Tag
-from backend.services.delete import delete_device, remove_tag_from_object
+from backend.services.delete import delete_device, delete_interface, remove_tag_from_object
 from backend.services.get import (
     get_all_device_groups_and_devices_with_tags_from_tenant,
     get_all_interfaces_from_device,
@@ -16,8 +19,9 @@ from backend.services.helper_user_tenant import can_write_tenant
 from backend.services.membership import add_tag_to_object
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
+    create_interface,
 )
-from backend.services.update import update_device
+from backend.services.update import update_device, update_interface
 from backend.utils.logger import set_up_logger
 from backend.views.modal import get_group_options_view
 from backend.views.search import get_global_search_results
@@ -25,6 +29,121 @@ from backend.views.session import get_tenant_context
 from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
+
+
+@dataclass
+class InterfaceFields:
+    name: str
+    description: str | None = None
+    type: str | None = None
+    vrf: str | None = None
+    id: int | None = None
+
+
+def parse_interface_fields(raw_value: str | None) -> list[InterfaceFields]:
+    if not raw_value:
+        return []
+
+    try:
+        payload = json.loads(raw_value)
+    except (TypeError, ValueError):
+        return []
+
+    if isinstance(payload, dict):
+        payload = [payload]
+    if not isinstance(payload, list):
+        return []
+
+    interfaces: list[InterfaceFields] = []
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            continue
+
+        raw_id = entry.get("id")
+        interface_id = None
+        if raw_id not in (None, ""):
+            try:
+                interface_id = int(raw_id)
+            except (TypeError, ValueError):
+                interface_id = None
+
+        interfaces.append(
+            InterfaceFields(
+                name=name,
+                description=(entry.get("description") if entry.get("description") not in (None, "") else None),
+                type=(entry.get("type") if entry.get("type") not in (None, "") else None),
+                vrf=(entry.get("vrf") if entry.get("vrf") not in (None, "") else entry.get("VRF")),
+                id=interface_id,
+            )
+        )
+
+    return interfaces
+
+
+def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: list[InterfaceFields]) -> None:
+    if device is None:
+        return
+
+    current_interfaces = list(get_all_interfaces_from_device(actor=actor, tenant_id=tenant_id, device_id=device.id))
+    matched_interface_ids: set[int] = set()
+
+    for interface_field in interface_fields:
+        interface_name = (interface_field.name or "").strip()
+        if not interface_name:
+            continue
+
+        existing_interface = None
+        if interface_field.id is not None:
+            existing_interface = next(
+                (existing for existing in current_interfaces if existing.id == interface_field.id),
+                None,
+            )
+
+        if existing_interface is None:
+            existing_interface = next(
+                (
+                    existing
+                    for existing in current_interfaces
+                    if existing.name == interface_name and existing.id not in matched_interface_ids
+                ),
+                None,
+            )
+
+        if existing_interface is not None:
+            update_interface(
+                actor=actor,
+                tenant_id=tenant_id,
+                interface_id=existing_interface.id,
+                name=interface_name,
+                description=interface_field.description or "",
+                type=interface_field.type or "",
+                VRF=interface_field.vrf or None,
+            )
+            matched_interface_ids.add(existing_interface.id)
+            continue
+
+        create_interface(
+            actor=actor,
+            tenant_id=tenant_id,
+            device_id=device.id,
+            name=interface_name,
+            description=interface_field.description or "",
+            type=interface_field.type or "",
+            VRF=interface_field.vrf or None,
+        )
+
+    for existing_interface in current_interfaces:
+        if existing_interface.id not in matched_interface_ids:
+            delete_interface(
+                actor=actor,
+                tenant_id=tenant_id,
+                interface_id=existing_interface.id,
+            )
+
 
 """
 ====================================================================
@@ -226,6 +345,7 @@ def post_device_view(request):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     platform = request.POST.get("platform", "")
     type = request.POST.get("type", "")
+    draft_interface_fields = parse_interface_fields(request.POST.get("interface_fields"))
 
     try:
         created_device = create_device(
@@ -247,6 +367,13 @@ def post_device_view(request):
                 tag=tag,
                 obj=created_device,
             )
+
+        sync_device_interfaces(
+            actor=request.user,
+            tenant_id=tenant_id,
+            device=created_device,
+            interface_fields=draft_interface_fields,
+        )
 
     except Exception as e:
         return render(
@@ -312,6 +439,7 @@ def update_device_view(request, object_id):
     description = request.POST.get("description", "")
     platform = request.POST.get("platform", "")
     device_type = request.POST.get("type", "")
+    draft_interface_fields = parse_interface_fields(request.POST.get("interface_fields"))
 
     object_data = {
         "name": name,
@@ -398,6 +526,19 @@ def update_device_view(request, object_id):
                 tag_id=tag_id,
             )
 
+        device = get_object_by_type_and_id(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_type="device",
+            object_id=object_id,
+        )
+        sync_device_interfaces(
+            actor=request.user,
+            tenant_id=tenant_id,
+            device=device,
+            interface_fields=draft_interface_fields,
+        )
+
     except Exception as e:
         return render(
             request,
@@ -469,11 +610,34 @@ def get_device_interfaces_modal(request, device_id):
     if device is None:
         return HttpResponse("Device not found.", status=404)
 
-    interfaces = get_all_interfaces_from_device(
-        actor=request.user,
-        tenant_id=tenant_id,
-        device_id=device.id,
-    )
+    draft_interface_fields = parse_interface_fields(request.GET.get("interface_fields"))
+
+    if draft_interface_fields:
+        interfaces = [
+            {
+                "id": interface_field.id,
+                "name": interface_field.name,
+                "description": interface_field.description or "",
+                "type": interface_field.type or "",
+                "VRF": interface_field.vrf or "",
+            }
+            for interface_field in draft_interface_fields
+        ]
+    else:
+        interfaces = [
+            {
+                "id": interface.id,
+                "name": interface.name or "",
+                "description": interface.description or "",
+                "type": interface.type or "",
+                "VRF": interface.VRF or "",
+            }
+            for interface in get_all_interfaces_from_device(
+                actor=request.user,
+                tenant_id=tenant_id,
+                device_id=device.id,
+            )
+        ]
 
     return render(
         request,
@@ -498,6 +662,18 @@ def get_device_interfaces_modal(request, device_id):
 # Create new device, no device id yet nor initial interfaces
 @login_required(login_url="login")
 def get_new_device_interfaces_modal(request):
+    draft_interface_fields = parse_interface_fields(request.GET.get("interface_fields"))
+    interfaces = [
+        {
+            "id": interface_field.id,
+            "name": interface_field.name,
+            "description": interface_field.description or "",
+            "type": interface_field.type or "",
+            "VRF": interface_field.vrf or "",
+        }
+        for interface_field in draft_interface_fields
+    ] if draft_interface_fields else []
+
     return render(
         request,
         "partials/_modal.html",
@@ -510,7 +686,7 @@ def get_new_device_interfaces_modal(request):
             "modal_instance_id": "new-device-interfaces-submodal",
             "device": None,
             "device_id": None,
-            "interfaces": [],
+            "interfaces": interfaces,
             "modal_post_url": None,
             "modal_target": "#submodal-container",
             "modal_swap": "innerHTML",

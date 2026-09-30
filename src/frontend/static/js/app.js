@@ -225,6 +225,224 @@ function applyRuleSelectorSelection(selectorType, button) {
     closeThisModal(button);
 }
 
+function getDeviceInterfaceDraftFromTable(table) {
+    if (!table) return [];
+
+    return Array.from(table.querySelectorAll("tbody tr")).map((row) => {
+        const cells = row.querySelectorAll("td");
+        const name = cells[0]?.textContent?.trim() || "";
+        if (!name) return null;
+
+        return {
+            id: row.dataset.interfaceId ? Number(row.dataset.interfaceId) : null,
+            name,
+            description: cells[1]?.textContent?.trim() || "",
+            type: cells[2]?.textContent?.trim() || "",
+            vrf: cells[3]?.textContent?.trim() || "",
+        };
+    }).filter(Boolean);
+}
+
+function getDeviceInterfaceDraftState(form) {
+    if (!form) return "";
+
+    if (form.dataset.interfaceDraft) {
+        return form.dataset.interfaceDraft;
+    }
+
+    const hiddenInput = form.querySelector('input[name="interface_fields"]');
+    if (hiddenInput && hiddenInput.value) {
+        form.dataset.interfaceDraft = hiddenInput.value;
+        return hiddenInput.value;
+    }
+
+    return "";
+}
+
+function openDeviceInterfaceModal(button) {
+    const form = button.closest("form");
+    const url = button.dataset.deviceInterfaceUrl;
+    if (!url) return;
+
+    const draftState = getDeviceInterfaceDraftState(form);
+    const params = new URLSearchParams();
+    if (draftState) {
+        params.set("interface_fields", draftState);
+    }
+
+    const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
+    htmx.ajax("GET", fullUrl, {
+        target: "#submodal-container",
+        swap: "innerHTML",
+    });
+}
+
+function getDeviceInterfaceParentForm() {
+    const hiddenInput = document.getElementById("device-interface-field-input");
+    return hiddenInput ? hiddenInput.closest("form") : null;
+}
+
+function updateDeviceInterfaceSummaryInParentForm(draftList) {
+    const parentForm = getDeviceInterfaceParentForm();
+    if (!parentForm) return;
+
+    const namesEl = parentForm.querySelector(".device-interface-names");
+    const countEl = parentForm.querySelector(".device-interface-count");
+    const emptyState = parentForm.querySelector(".empty-state");
+
+    if (!namesEl || !countEl) {
+        const formContainer = parentForm.querySelector(".device-interfaces-group");
+        if (!formContainer) return;
+
+        const names = document.createElement("span");
+        names.className = "device-interface-names";
+        const count = document.createElement("span");
+        count.className = "device-interface-count";
+        const wrapper = document.createElement("p");
+        wrapper.className = "device-interfaces";
+        wrapper.appendChild(names);
+        wrapper.appendChild(document.createTextNode(" "));
+        wrapper.appendChild(count);
+        formContainer.insertBefore(wrapper, formContainer.querySelector("button"));
+
+        if (formContainer.querySelector(".empty-state")) {
+            formContainer.querySelector(".empty-state").style.display = "none";
+        }
+    }
+
+    const visibleNames = parentForm.querySelector(".device-interface-names");
+    const visibleCount = parentForm.querySelector(".device-interface-count");
+    const visibleEmpty = parentForm.querySelector(".empty-state");
+
+    if (!visibleNames || !visibleCount) return;
+
+    if (draftList.length === 0) {
+        visibleNames.textContent = "";
+        visibleCount.textContent = "(0)";
+        if (visibleEmpty) visibleEmpty.style.display = "";
+        return;
+    }
+
+    visibleNames.textContent = draftList.map((entry) => entry.name).join(", ");
+    visibleCount.textContent = `(${draftList.length})`;
+    if (visibleEmpty) visibleEmpty.style.display = "none";
+}
+
+function applyDeviceInterfaceSelection(button) {
+    const modal = button.closest(".draggable-modal");
+    if (!modal) return;
+
+    const table = modal.querySelector(".device-interface-table");
+    const draftList = getDeviceInterfaceDraftFromTable(table);
+    const parentForm = getDeviceInterfaceParentForm();
+
+    if (!parentForm) {
+        closeThisModal(button);
+        return;
+    }
+
+    let hiddenInput = parentForm.querySelector('input[name="interface_fields"]');
+    if (!hiddenInput) {
+        hiddenInput = document.createElement("input");
+        hiddenInput.type = "hidden";
+        hiddenInput.name = "interface_fields";
+        parentForm.appendChild(hiddenInput);
+    }
+
+    const draftValue = JSON.stringify(draftList);
+    hiddenInput.value = draftValue;
+    parentForm.dataset.interfaceDraft = draftValue;
+    updateDeviceInterfaceSummaryInParentForm(draftList);
+    closeThisModal(button);
+}
+
+function addDeviceInterfaceRow(button) {
+    const table = button.closest(".device-interface-table");
+    const tbody = table?.querySelector("tbody");
+    if (!tbody) return;
+
+    const nameInput = table.querySelector("#new-interface-name");
+    const descriptionInput = table.querySelector("#new-interface-description");
+    const typeInput = table.querySelector("#new-interface-type");
+    const vrfInput = table.querySelector("#new-interface-vrf");
+
+    const name = nameInput?.value.trim() || "";
+    if (!name) {
+        alert("Interface name is required.");
+        return;
+    }
+
+    const row = document.createElement("tr");
+    const fields = [
+        name,
+        descriptionInput?.value.trim() || "",
+        typeInput?.value.trim() || "",
+        vrfInput?.value.trim() || "",
+    ];
+
+    fields.forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        cell.title = value;
+        row.appendChild(cell);
+    });
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "device-interface-actions-column";
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "actions-btn device-interface-icon-button device-interface-delete-button";
+    deleteButton.setAttribute("aria-label", "Delete interface");
+    deleteButton.setAttribute("title", "Delete interface");
+    deleteButton.innerHTML = '<img class="btn-icon actions-icon" src="/static/images/delete.svg" alt="" aria-hidden="true">';
+    deleteButton.setAttribute("onclick", "removeDeviceInterfaceRow(this)");
+    actionCell.appendChild(deleteButton);
+    row.appendChild(actionCell);
+    tbody.appendChild(row);
+
+    if (nameInput) nameInput.value = "";
+    if (descriptionInput) descriptionInput.value = "";
+    if (typeInput) typeInput.value = "";
+    if (vrfInput) vrfInput.value = "";
+}
+
+function removeDeviceInterfaceRow(button) {
+    const row = button.closest("tr");
+    if (row) row.remove();
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    const addButtons = document.querySelectorAll(".device-interface-add-button");
+    addButtons.forEach((button) => {
+        if (button.dataset.bound === "true") return;
+        button.dataset.bound = "true";
+        button.setAttribute("onclick", "addDeviceInterfaceRow(this)");
+    });
+
+    const deleteButtons = document.querySelectorAll(".device-interface-delete-button");
+    deleteButtons.forEach((button) => {
+        if (button.dataset.bound === "true") return;
+        button.dataset.bound = "true";
+        button.setAttribute("onclick", "removeDeviceInterfaceRow(this)");
+    });
+});
+
+document.body.addEventListener("htmx:afterSwap", () => {
+    const addButtons = document.querySelectorAll(".device-interface-add-button");
+    addButtons.forEach((button) => {
+        if (button.dataset.bound === "true") return;
+        button.dataset.bound = "true";
+        button.setAttribute("onclick", "addDeviceInterfaceRow(this)");
+    });
+
+    const deleteButtons = document.querySelectorAll(".device-interface-delete-button");
+    deleteButtons.forEach((button) => {
+        if (button.dataset.bound === "true") return;
+        button.dataset.bound = "true";
+        button.setAttribute("onclick", "removeDeviceInterfaceRow(this)");
+    });
+});
 
 /*
 ====================================================================

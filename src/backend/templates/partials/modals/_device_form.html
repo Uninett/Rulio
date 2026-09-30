@@ -8,6 +8,22 @@
     <input id="type" name="type" value="{{ object_data.type|default:''  }}" type="text" required>
 </div>
 
+{{ object_data.interfaces|json_script:"device-interface-field-data" }}
+<input type="hidden" name="interface_fields" id="device-interface-field-input" value="">
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const hiddenInput = document.getElementById("device-interface-field-input");
+        const interfaceData = document.getElementById("device-interface-field-data");
+        if (hiddenInput && interfaceData) {
+            hiddenInput.value = interfaceData.textContent;
+            const form = hiddenInput.closest("form");
+            if (form) {
+                form.dataset.interfaceDraft = hiddenInput.value;
+            }
+        }
+    });
+</script>
+
 <div class="form-group device-interfaces-group">
     <label>Interfaces</label>
 
@@ -27,13 +43,14 @@
     {% endif %}
 
     {% if object_data.id %}
-    <button type="button" class="btn-secondary" hx-get="{% url 'device-interfaces-modal' object_data.id %}"
-        hx-target="#submodal-container" hx-swap="innerHTML">
+    <button type="button" class="btn-secondary"
+        data-device-interface-url="{% url 'device-interfaces-modal' object_data.id %}"
+        onclick="openDeviceInterfaceModal(this)">
         Manage interfaces
     </button>
     {% else %}
-    <button type="button" class="btn-secondary" hx-get="{% url 'new-device-interfaces-modal' %}"
-        hx-target="#submodal-container" hx-swap="innerHTML">
+    <button type="button" class="btn-secondary" data-device-interface-url="{% url 'new-device-interfaces-modal' %}"
+        onclick="openDeviceInterfaceModal(this)">
         Manage interfaces
     </button>
     {% endif %}
