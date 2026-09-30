@@ -6,7 +6,7 @@
 
     {% if forloop.first and object_type == "filters" %}
         <a href="{{ row.inspect_url }}"
-           class="row-visibility-control inspect-link"
+           class="btn-reset center-box row-visibility-control inspect-link"
            onclick="event.stopPropagation();"
            aria-label="Open rules for this filter">
             <img class="row-visibility-icon"
@@ -19,7 +19,7 @@
     {% elif forloop.first and object_type == "rules" %}
         <div class="rule-name-cell">
             <button type="button"
-                    class="row-visibility-control"
+                    class="btn-reset center-box row-visibility-control"
                     onclick="event.stopPropagation(); expandRow('{{ row.id }}');"
                     aria-label="Toggle rule details">
                 <img class="row-visibility-icon"
@@ -28,7 +28,7 @@
                      data-eye-closed="{% static 'images/EyeSlash.svg' %}"
                      alt="">
             </button>
-            <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
+            <span class="cell-text truncate" title="{{ cell }}">{{ cell }}</span>
         </div>
 
     {% elif forloop.last %}
@@ -36,7 +36,7 @@
             <div class="tag-list-container">
                 {% for item in cell %}
                     {% if item %}
-                        <span class="cell-text tag-item"
+                        <span class="cell-text truncate tag-item tag-pill"
                               style="--tag-color: {{ item.color }};"
                               title="{{ item.name }}">
                             {{ item.name }}
@@ -49,7 +49,7 @@
             <div class="tag-list-container">
                 {% for item in cell %}
                     {% if item %}
-                        <span class="cell-text tag-item tag-item-default"
+                        <span class="cell-text truncate tag-item tag-pill tag-pill--muted"
                               title="{{ item }}">
                             {{ item }}
                         </span>
@@ -58,7 +58,7 @@
             </div>
 
         {% else %}
-            <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
+            <span class="cell-text truncate" title="{{ cell }}">{{ cell }}</span>
         {% endif %}
 
     {% elif object_type == "rules" %}
@@ -66,7 +66,7 @@
             <div class="rule-object-list">
                 {% for item in cell %}
                     {% if item %}
-                        <div class="rule-object-item"
+                        <div class="rule-object-item truncate"
                              title="{{ item.hover_text }}"
                              onclick="event.stopPropagation(); window.location.href='{{ item.navigate_url }}';">
                             {{ item.name }}
@@ -75,11 +75,11 @@
                 {% endfor %}
             </div>
         {% else %}
-            <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
+            <span class="cell-text truncate" title="{{ cell }}">{{ cell }}</span>
         {% endif %}
 
     {% else %}
-        <span class="cell-text" title="{{ cell }}">{{ cell }}</span>
+        <span class="cell-text truncate" title="{{ cell }}">{{ cell }}</span>
     {% endif %}
 </td>
 {% endfor %}

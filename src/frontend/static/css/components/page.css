@@ -1,0 +1,56 @@
+/*
+====================================================================
+Page Content Header
+====================================================================
+*/
+
+.page-content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+.page-content-header h1 {
+    margin: 0;
+}
+
+
+/*
+====================================================================
+Breadcrumbs
+====================================================================
+Size and colour are shared with h1 (base/base.css).
+*/
+
+.breadcrumbs {
+    width: 100%;
+}
+
+.breadcrumb-link {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    margin: 0 0.5rem;
+}
+
+.breadcrumb-current {
+    text-decoration: none;
+}
+
+
+/*
+====================================================================
+Toolbar
+====================================================================
+*/
+
+.tools-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: auto;
+}

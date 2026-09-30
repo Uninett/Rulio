@@ -1,0 +1,96 @@
+/*
+====================================================================
+Tag Pill
+====================================================================
+Markup: <span class="tag-pill" style="--tag-color: #hex">
+*/
+
+.tag-pill {
+    display: inline-block;
+    vertical-align: middle;
+    max-width: 100%;
+    width: auto;
+    margin-right: 0.25rem;
+    padding: 0 0.4rem;
+    border: 1px solid var(--tag-color);
+    border-radius: var(--radius-pill);
+    background-color: var(--tag-color);
+    color: var(--sds-color-text-primary);
+    font-size: 0.65rem;
+    line-height: 1rem;
+}
+
+/* Neutral pill for untagged values and the "+N" overflow indicator */
+.tag-pill--muted {
+    --tag-color: var(--sds-color-interaction-neutral-subtle);
+}
+
+/* Table tags also carry .cell-text; keep them inline instead of full width. */
+.objects-table .tag-pill {
+    display: inline-block;
+    width: auto;
+}
+
+
+/*
+====================================================================
+Table Tag List
+====================================================================
+*/
+
+.objects-table .tag-list-container {
+    overflow: hidden;
+    max-height: 1.5rem;
+    line-height: 1.5rem;
+    white-space: nowrap;
+}
+
+.objects-table .tag-overflow-indicator {
+    cursor: default;
+}
+
+/* Markup: <div class="tagsElipse truncate"> */
+.objects-table .tagsElipse {
+    display: inline-block;
+    max-width: 150px;
+    font-size: inherit;
+}
+
+@media (min-width: 2000px) {
+    .objects-table .tagsElipse {
+        font-size: small;
+        max-width: 1500px;
+    }
+}
+
+
+/*
+====================================================================
+Modal Tag List
+====================================================================
+*/
+
+.modal-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/* Markup: <span class="tag-pill modal-tag-item"> */
+.modal-tag-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.modal-tag-item:hover {
+    opacity: 0.75;
+}
+
+/* Markup: <button class="btn-reset center-box modal-tag-remove"> */
+.modal-tag-remove {
+    color: inherit;
+    font-size: 0.9rem;
+    line-height: 1;
+}

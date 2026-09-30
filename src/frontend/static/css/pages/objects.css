@@ -1,0 +1,261 @@
+/*
+====================================================================
+Objects, Devices, Filters, Rules and Tags pages
+====================================================================
+Shared table styling lives in components/tables.css; this file only
+holds per-page column layouts and page-specific widgets.
+*/
+
+
+/*
+====================================================================
+Column Widths
+====================================================================
+*/
+
+/* Addresses / Services / Devices: Type, Name, Description */
+.objects-table--addresses .col-1,
+.objects-table--services .col-1,
+.objects-table--devices .col-1 {
+    width: 5%;
+}
+
+.objects-table--addresses .col-2,
+.objects-table--services .col-2,
+.objects-table--devices .col-2 {
+    width: 10%;
+}
+
+.objects-table--addresses .col-3,
+.objects-table--services .col-3,
+.objects-table--devices .col-3 {
+    width: 35%;
+}
+
+/* Addresses: IP values */
+.objects-table--addresses .col-4,
+.objects-table--addresses .col-5 {
+    width: 10%;
+}
+
+/* Services: Protocol */
+.objects-table--services .col-4 {
+    width: 4%;
+}
+
+/* Services: Port start/end */
+.objects-table--services .col-5,
+.objects-table--services .col-6 {
+    width: 8%;
+}
+
+/* Addresses / Services: Tags */
+.objects-table--addresses .col-6,
+.objects-table--services .col-7 {
+    width: 25%;
+}
+
+/* Devices: Platform, Tags */
+.objects-table--devices .col-4 {
+    width: 25%;
+}
+
+.objects-table--devices .col-5 {
+    width: 20%;
+}
+
+/* Tags page: Name, Description */
+.objects-table--tags .col-1 {
+    width: 30%;
+}
+
+.objects-table--tags .col-2 {
+    width: 65%;
+}
+
+/* Interfaces */
+.objects-table--interfaces .col-1,
+.objects-table--interfaces .col-2 {
+    width: 50%;
+}
+
+/* Filters: Inspect icon, Name, Description, Rules, Tags */
+.objects-table--filters .col-1 {
+    width: 4%;
+}
+
+.objects-table--filters .col-2 {
+    width: 16%;
+}
+
+.objects-table--filters .col-3 {
+    width: 30%;
+}
+
+.objects-table--filters .col-4 {
+    width: 24%;
+}
+
+.objects-table--filters .col-5 {
+    width: 21%;
+}
+
+.filters-table td:nth-child(2) {
+    text-align: left;
+    padding-left: 4px;
+}
+
+/* Rules */
+.objects-table--rules .col-1 {
+    width: 14%;
+}
+
+.objects-table--rules .col-2,
+.objects-table--rules .col-3,
+.objects-table--rules .col-4,
+.objects-table--rules .col-5 {
+    width: 15%;
+}
+
+.objects-table--rules .col-6,
+.objects-table--rules .col-7 {
+    width: 4%;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.objects-table--rules .col-8 {
+    width: 4%;
+    min-width: 3rem;
+}
+
+.objects-table--rules .col-9 {
+    width: 18%;
+    min-width: 12rem;
+    white-space: nowrap;
+}
+
+
+/*
+====================================================================
+Rule Object Links
+====================================================================
+*/
+
+.rule-object-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Markup: <div class="rule-object-item truncate"> */
+.rule-object-item {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    cursor: pointer;
+    font-weight: 400;
+}
+
+.rule-object-item:hover {
+    color: var(--sds-color-brand-primary-strong);
+    text-decoration: underline;
+}
+
+
+/*
+====================================================================
+Interface Table (inside device / interface detail rows)
+====================================================================
+*/
+
+.objects-interface-table-header-row,
+.objects-interface-table-row {
+    display: grid;
+    grid-template-columns: 1.5fr 2fr 1fr 1fr;
+    column-gap: 1rem;
+}
+
+.objects-filters-table .objects-interface-table-header-row,
+.objects-filters-table .objects-interface-table-row {
+    grid-template-columns: 3.5rem 1fr 2fr 3rem;
+}
+
+.objects-interface-table-header-row {
+    font-weight: 600;
+    padding-top: 0.5rem;
+}
+
+.objects-interface-table-row {
+    padding-top: 0.2rem;
+}
+
+/* Markup: <div class="objects-interface-table-cell truncate"> */
+.objects-interface-table-cell {
+    min-width: 0;
+}
+
+.objects-filters-table .objects-interface-table-header-row .interfaces-grid__header:last-child,
+.objects-filters-table .objects-interface-table-row .objects-interface-table-cell:last-child {
+    display: flex;
+    justify-content: center;
+}
+
+.objects-interface-empty {
+    padding: 0.5rem 0.6rem;
+}
+
+.interface-filter-link {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Pending-change highlighting (classes set from app.js) */
+.objects-interface-table-row.row-diff-added,
+.objects-interface-table-cell.cell-diff-enabled-on {
+    background-color: var(--sds-color-support-success-subtle);
+    color: var(--sds-color-support-success-strong);
+}
+
+.objects-interface-table-row.row-diff-removed,
+.objects-interface-table-cell.cell-diff-enabled-off {
+    background-color: var(--sds-color-support-critical-subtle);
+    color: var(--sds-color-support-critical-strong);
+}
+
+.objects-interface-table-row.row-diff-removed {
+    text-decoration: line-through;
+}
+
+.objects-interface-table-cell.cell-diff-enabled-on,
+.objects-interface-table-cell.cell-diff-enabled-off {
+    border-radius: var(--radius-sm);
+}
+
+
+/*
+====================================================================
+Interface Actions Bar
+====================================================================
+*/
+
+.interface-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    position: sticky;
+    bottom: 0;
+    padding: 0.75rem 0;
+    background-color: var(--sds-color-layout-default);
+    box-shadow: 0 -1px 0 var(--sds-color-layout-border-subtle);
+    z-index: 50;
+}
+
+.page-content:has(.interface-actions) {
+    padding-bottom: 4.5rem;
+}

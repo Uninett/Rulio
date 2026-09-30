@@ -4,7 +4,7 @@
 
         {% for tag in field.value %}
         {% if tag %}
-        <span class="tags-styling" style="--tag-color: {{ tag.color }};">
+        <span class="tag-pill" style="--tag-color: {{ tag.color }};">
             {{ tag.name }}
         </span>
         {% endif %}

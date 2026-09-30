@@ -1,0 +1,282 @@
+/*
+====================================================================
+Data Table (shared base)
+====================================================================
+Markup:
+<section class="data-table-container ...">
+    <table class="data-table ...">
+*/
+
+.data-table-container {
+    width: 100%;
+    height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--sds-color-layout-surface-1);
+    border-radius: var(--radius-md);
+}
+
+.data-table tbody tr {
+    position: relative;
+}
+
+.data-table th,
+.data-table td {
+    text-align: left;
+    vertical-align: middle;
+    font-family: inherit;
+}
+
+.data-table thead th {
+    padding-top: 1rem;
+}
+
+.data-table tbody tr:last-child td {
+    padding-bottom: 1rem;
+}
+
+/* Row divider, inset from the table edges */
+.objects-table tbody tr.main-row::after,
+.management-table-container tbody tr:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: 0;
+    height: 1px;
+    background-color: var(--sds-color-layout-border-subtle);
+}
+
+.actions-column {
+    width: 5%;
+    white-space: nowrap;
+    text-align: right;
+}
+
+
+/*
+====================================================================
+Objects Table
+====================================================================
+*/
+
+.objects-table-container {
+    margin: 2vh auto;
+    background-color: var(--sds-color-layout-surface-1);
+    position: relative;
+    border-radius: var(--radius-md);
+}
+
+.objects-table {
+    table-layout: fixed;
+}
+
+.objects-table th,
+.objects-table td {
+    padding: 0.2rem 1rem;
+    font-size: smaller;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.objects-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--sds-color-layout-surface-1);
+    z-index: 2;
+    text-overflow: ellipsis;
+}
+
+.objects-table thead th:last-child,
+.objects-table tbody tr.main-row td.actions-column {
+    width: 3rem;
+    min-width: 3rem;
+    max-width: 3rem;
+    white-space: nowrap;
+    text-align: right;
+}
+
+
+/*
+====================================================================
+Objects Main Rows
+====================================================================
+*/
+
+.objects-table .main-row {
+    cursor: pointer;
+}
+
+.objects-table .main-row:hover,
+.objects-table .main-row:focus,
+.objects-table .main-row.expanded-row {
+    background-color: var(--sds-color-brand-primary-subtler-hover);
+}
+
+
+/*
+====================================================================
+Objects Cells
+====================================================================
+*/
+
+.objects-table .first-column-cell {
+    position: relative;
+}
+
+.objects-table .first-column-cell::before {
+    content: "";
+    position: absolute;
+    left: 0.4rem;
+    top: 0.2rem;
+    bottom: 0.2rem;
+    width: 3px;
+    background-color: var(--sds-color-brand-primary-subtle);
+}
+
+.objects-table .group-row .first-column-cell::before {
+    background-color: var(--sds-color-brand-primary-strong);
+}
+
+.objects-table .tag-row .first-column-cell::before {
+    background-color: var(--tag-color);
+}
+
+/* Markup: <span class="cell-text truncate"> */
+.objects-table .cell-text {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.inspect-column {
+    width: 1%;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.rule-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.rule-name-cell .cell-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Markup: <a|button class="btn-reset center-box row-visibility-control"> */
+.row-visibility-control {
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0.15rem;
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    flex: 0 0 auto;
+}
+
+.row-visibility-control:hover,
+.row-visibility-control:focus {
+    background: var(--sds-color-brand-primary-subtle);
+}
+
+
+/*
+====================================================================
+Objects Details Row
+====================================================================
+*/
+
+.objects-table .details-row {
+    display: none;
+}
+
+.objects-table .details-row td {
+    padding: 0;
+    vertical-align: top;
+}
+
+.objects-table .details-content {
+    text-align: left;
+    padding: 0.5rem 1rem;
+    line-height: 1.2;
+    background-color: var(--sds-color-brand-primary-subtle);
+    font-size: small;
+}
+
+.objects-table .details-content p {
+    display: inline-block;
+    margin: 0.1rem 0;
+}
+
+.objects-table .details-content span {
+    padding-left: 0.5rem;
+}
+
+/* .objects-table .details-content span adds unwanted padding-left; override it here. */
+.objects-table .details-content .filter-enabled-toggle-check {
+    padding-left: 0;
+}
+
+.objects-table .group-detail-columns {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.objects-table .detail-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.objects-group-member-name {
+    color: inherit;
+    text-decoration: none;
+    cursor: default;
+}
+
+
+/*
+====================================================================
+Read-only Rows
+====================================================================
+*/
+
+.objects-table .main-row.readonly-row .cell-text {
+    color: var(--sds-color-text-secondary);
+}
+
+.objects-table .details-row.readonly-row .details-content {
+    background-color: var(--sds-color-layout-surface-2);
+    color: var(--sds-color-text-muted);
+}
+
+
+/*
+====================================================================
+Management Table
+====================================================================
+*/
+
+.management-table-container {
+    padding-top: 2vh;
+    margin: 0 auto;
+}
+
+.management-table-container th,
+.management-table-container td {
+    padding: 0.5rem 1rem;
+    font-size: small;
+}

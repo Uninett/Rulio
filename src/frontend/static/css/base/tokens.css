@@ -1,0 +1,54 @@
+/*
+====================================================================
+Design Tokens
+====================================================================
+*/
+
+:root {
+    /* Layout */
+    --sds-color-layout-default: #F1F1F1;
+    --sds-color-layout-surface-1: #FFFFFF;
+    --sds-color-layout-surface-2: #F1F1F1;
+    --sds-color-layout-border-strong: #656565;
+    --sds-color-layout-border-subtle: #E0E0E0;
+
+    /* Brand */
+    --sds-color-brand-primary-strong: #7351FB;
+    --sds-color-brand-primary-strong-hover: #643FFA;
+    --sds-color-brand-primary-subtle: #EBE6FE;
+    --sds-color-brand-primary-subtle-hover: #C2BCFF;
+    --sds-color-brand-primary-subtler-hover: #CAC6FD;
+
+    /* Interaction */
+    --sds-color-interaction-neutral-subtle: #E0E0E0;
+    --sds-color-interaction-neutral-subtle-hover: #D6D6D6;
+
+    /* Support */
+    --sds-color-support-critical-strong: #C10103;
+    --sds-color-support-critical-strong-hover: #970002;
+    --sds-color-support-critical-subtle: #FFDCDA;
+    --sds-color-support-success-strong: #096638;
+    --sds-color-support-success-subtle: #CFF7E2;
+
+    /* Text */
+    --sds-color-text-primary: #0A0132;
+    --sds-color-text-on-strong: #FFFFFF;
+    --sds-color-text-secondary: #595959;
+    --sds-color-text-muted: #7A7A7A;
+    --sds-color-text-critical: #B60203;
+
+    /* Radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 1rem;
+    --radius-control: 10px;
+    --radius-popover: 8px;
+    --radius-button: 2rem;
+    --radius-pill: 999px;
+
+    /* Elevation */
+    --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --color-backdrop: rgba(0, 0, 0, 0.35);
+    --z-header: 100;
+    --z-modal: 1000;
+}

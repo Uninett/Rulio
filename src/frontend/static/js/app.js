@@ -495,11 +495,11 @@ function renderInterfaceFilterRow(direction) {
         rowEl.dataset.filterEnabled = entry.enabled ? "true" : "false";
 
         rowEl.innerHTML = `
-            <div class="objects-interface-table-cell"></div>
-            <div class="objects-interface-table-cell"></div>
-            <div class="objects-interface-table-cell"></div>
-            <div class="objects-interface-table-cell">
-                <button type="button" class="filter-enabled-toggle" role="switch"
+            <div class="objects-interface-table-cell truncate"></div>
+            <div class="objects-interface-table-cell truncate"></div>
+            <div class="objects-interface-table-cell truncate"></div>
+            <div class="objects-interface-table-cell truncate">
+                <button type="button" class="btn-reset center-box filter-enabled-toggle" role="switch"
                     aria-checked="${entry.enabled ? "true" : "false"}" data-enabled="${entry.enabled ? "true" : "false"}"
                     aria-label="${entry.enabled ? "Enabled" : "Disabled"}" title="${entry.enabled ? "Enabled" : "Disabled"}">
                     <span class="filter-enabled-toggle-check"></span>
@@ -794,7 +794,7 @@ function initializeMembershipSelectors(root = document) {
             const enabled = item.dataset.enabled !== "false";
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "filter-enabled-toggle";
+            button.className = "btn-reset center-box filter-enabled-toggle";
             button.setAttribute("role", "switch");
             button.dataset.enabled = enabled ? "true" : "false";
             button.setAttribute("aria-checked", enabled ? "true" : "false");
@@ -1357,7 +1357,7 @@ function initTagOverflow(root = document) {
 
         const containerWidth = container.clientWidth;
         const indicator = document.createElement("span");
-        indicator.className = "cell-text tag-item tag-overflow-indicator";
+        indicator.className = "cell-text truncate tag-item tag-pill tag-pill--muted tag-overflow-indicator";
         const indicatorWidth = measureIndicatorWidth(container, indicator);
 
         let usedWidth = 0;

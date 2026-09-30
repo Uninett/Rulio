@@ -1,0 +1,14 @@
+{% load static %}
+{# Order matters: rules with equal specificity are resolved by load order. base/ first, then buttons (so component rules win over .btn-reset), then the other components. Page CSS is added per template via {% block extra_css %}. #}
+<link rel="stylesheet" href="{% static 'css/base/tokens.css' %}" />
+<link rel="stylesheet" href="{% static 'css/base/base.css' %}" />
+<link rel="stylesheet" href="{% static 'css/base/utilities.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/buttons.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/header.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/forms.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/tables.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/tags.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/page.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/tabs.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/modal.css' %}" />
+<link rel="stylesheet" href="{% static 'css/components/search.css' %}" />

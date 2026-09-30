@@ -1,7 +1,7 @@
 <hr>
 
 <!-- List all services  as a dual list selection with drag and drop -->
-<div class="modal-header">
+<div class="modal-subheader">
     <h2 class="membership-header">Services</h2>
 </div>
 
@@ -12,7 +12,7 @@
         <div class="membership-list membership-list-available" data-list-type="available">
             {% for service in item_options %}
             {% if service.id not in selected_service_ids %}
-            <div class="membership-list-item" draggable="true" data-id="{{ service.id }}">
+            <div class="membership-list-item truncate" draggable="true" data-id="{{ service.id }}">
                 {{ service.name }}
             </div>
             {% endif %}
@@ -24,7 +24,7 @@
         <div class="membership-list membership-list-selected" data-list-type="selected">
             {% for service in item_options %}
             {% if service.id in selected_service_ids %}
-            <div class="membership-list-item" draggable="true" data-id="{{ service.id }}">
+            <div class="membership-list-item truncate" draggable="true" data-id="{{ service.id }}">
                 {{ service.name }}
                 <input type="hidden" name="service_ids" value="{{ service.id }}">
             </div>
