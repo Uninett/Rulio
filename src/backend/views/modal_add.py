@@ -249,7 +249,7 @@ def get_add_modal(request, object_type):
         "selected_device_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
-        "search_results": get_tags_search_results(request, ""),
+        "search_results": get_tags_search_results(request),
         "object_tags": [],
     }
 
@@ -307,7 +307,7 @@ def get_add_modal_form_content(request, object_type, type):
         "selected_device_ids": [],
         "selected_address_ids": [],
         "selected_service_ids": [],
-        "search_results": get_tags_search_results(request, ""),
+        "search_results": get_tags_search_results(request),
         "object_tags": [],
     }
 

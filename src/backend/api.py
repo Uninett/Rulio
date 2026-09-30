@@ -40,10 +40,10 @@ from backend.services.attribute_objects.create_attribute_objects import (
 )
 from backend.services.attribute_objects.get_address_objects import (
     get_address_groups_and_addresses_from_tenant,
-    get_all_addresses_and_groups_with_tags_from_tenant,
+    get_all_addresses_and_groups_with_tags_from_tenant_as_json,
 )
 from backend.services.attribute_objects.get_service_objects import (
-    get_all_services_and_groups_with_tags_from_tenant,
+    get_all_services_and_groups_with_tags_from_tenant_as_json,
     get_service_groups_and_services_from_tenant,
 )
 from backend.services.authentication import require_read_tenantd, require_superadmind, require_write_tenantd
@@ -168,7 +168,9 @@ def get_address_group_and_addresses_endpoint(request):
 )
 @require_read_tenantd
 def get_addresses_and_groups_with_tags_endpoint(request):
-    response = get_all_addresses_and_groups_with_tags_from_tenant(request.user, request.session["current_tenant_id"])
+    response = get_all_addresses_and_groups_with_tags_from_tenant_as_json(
+        request.user, request.session["current_tenant_id"]
+    )
     return Status(200, response)
 
 
@@ -491,7 +493,9 @@ def get_service_group_and_services_endpoint(request):
 )
 @require_read_tenantd
 def get_services_and_groups_with_tags_endpoint(request):
-    response = get_all_services_and_groups_with_tags_from_tenant(request.user, request.session["current_tenant_id"])
+    response = get_all_services_and_groups_with_tags_from_tenant_as_json(
+        request.user, request.session["current_tenant_id"]
+    )
     return Status(200, response)
 
 
@@ -1005,7 +1009,9 @@ def delete_tenant_endpoint(request, tenant_id: int):
 @api.get("/list_devices", tags=["Management - Device"], response={200: list[dict], 403: MessageSchema})
 @require_read_tenantd
 def list_devices(request):
-    devices = get_all_devices_from_tenant(request.user, request.session["current_tenant_id"])
+    devices = get_all_devices_from_tenant(
+        request.user, request.session["current_tenant_id"], include_global_tenant=False
+    )
     return Status(200, list(devices.values()))
 
 
@@ -1279,7 +1285,7 @@ Filter Objects
 @api.get("/list_rules", tags=["Filter - Rule"], response={200: list[dict], 403: MessageSchema})
 @require_read_tenantd
 def list_rules(request):
-    rules = get_all_rules_from_tenant(request.user, request.session["current_tenant_id"])
+    rules = get_all_rules_from_tenant(request.user, request.session["current_tenant_id"], include_global_tenant=False)
     return Status(200, list(rules.values()))
 
 
@@ -1440,7 +1446,9 @@ def get_filters_from_interface_endpoint(request, interface_id: int):
 @api.get("/get_all_filters_from_tenant", tags=["Filter - Filter"], response={200: list[dict], 403: MessageSchema})
 @require_read_tenantd
 def get_all_filters_from_tenant_endpoint(request):
-    filters = get_all_filters_from_tenant(actor=request.user, tenant_id=request.session["current_tenant_id"])
+    filters = get_all_filters_from_tenant(
+        actor=request.user, tenant_id=request.session["current_tenant_id"], include_global_tenant=False
+    )
     return Status(200, list(filters.values()))
 
 

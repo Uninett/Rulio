@@ -9,10 +9,10 @@ from backend.objects.attributes.tag import Tag
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.services.attribute_objects.get_address_objects import (
-    get_all_addresses_and_groups_with_tags_from_tenant,
+    get_all_addresses_and_groups_with_tags_from_tenant_as_json,
 )
 from backend.services.attribute_objects.get_service_objects import (
-    get_all_services_and_groups_with_tags_from_tenant,
+    get_all_services_and_groups_with_tags_from_tenant_as_json,
 )
 from backend.services.get import (
     get_all_device_groups_and_devices_with_tags_from_tenant,
@@ -298,7 +298,7 @@ def get_update_modal(request, row_id):
 
         tenant_id = int(tenant_id)
 
-        objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
+        objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant_as_json(
             actor=request.user,
             tenant_id=tenant_id,
             include_global_tenant=True,
@@ -344,7 +344,7 @@ def get_update_modal(request, row_id):
 
         tenant_id = int(tenant_id)
 
-        objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
+        objects, _, _ = get_all_services_and_groups_with_tags_from_tenant_as_json(
             actor=request.user,
             tenant_id=tenant_id,
             include_global_tenant=True,
@@ -504,7 +504,7 @@ def get_update_modal(request, row_id):
         "modal_refresh_url": modal_refresh_url,
         "modal_refresh_target": config["modal_refresh_target"],
         "object_data": object_data,
-        "search_results": get_tags_search_results(request, ""),
+        "search_results": get_tags_search_results(request),
         "object_tags": object_tags,
         **options_context,
     }

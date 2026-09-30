@@ -13,10 +13,14 @@ from constants import GLOBAL_TENANT_ID
 logger = set_up_logger(__name__)
 
 
-def get_all_service_groups_from_tenant(actor: User, tenant_id: int) -> QuerySet[ServiceGroup]:
+def get_all_service_groups_from_tenant(
+    actor: User, tenant_id: int, include_global_tenant=True
+) -> QuerySet[ServiceGroup]:
     require_read_tenant(actor, tenant_id)
-    requested_service_groups = ServiceGroup.objects.filter(tenant_id=tenant_id)
-    return requested_service_groups
+    if include_global_tenant:
+        return ServiceGroup.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+    else:
+        return ServiceGroup.objects.filter(tenant_id=tenant_id)
 
 
 def get_service_groups_and_services_from_tenant(
@@ -66,7 +70,7 @@ def get_service_groups_and_services_from_tenant(
     return result, service_groups, services
 
 
-def get_all_services_and_groups_with_tags_from_tenant(
+def get_all_services_and_groups_with_tags_from_tenant_as_json(
     actor: User, tenant_id: int, include_global_tenant=True
 ) -> tuple[list[dict], QuerySet[Service], QuerySet[ServiceGroup]]:
     require_read_tenant(actor, tenant_id)
@@ -153,10 +157,12 @@ def get_all_services_and_groups_with_tags_from_tenant(
     return result, services, service_groups
 
 
-def get_all_services_from_tenant(actor: User, tenant_id: int) -> list[Service]:
+def get_all_services_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> QuerySet[Service]:
     require_read_tenant(actor, tenant_id)
-    requested_services = Service.objects.filter(tenant_id=tenant_id)
-    return requested_services
+    if include_global_tenant:
+        return Service.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+    else:
+        return Service.objects.filter(tenant_id=tenant_id)
 
 
 def get_all_services_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> QuerySet[Service]:
