@@ -175,58 +175,64 @@ def get_filters_view(request):
 
     # A user who can't read the tenant sees an empty table.
     try:
-        baseline = load_baseline_filters(request.user, tenant_id)
-    except PermissionDenied as e:
-        print(f"Error fetching filters: {e}")
-        return {"headers": [], "rows": [], "has_changes": False, "has_any_changes": False}
+        _, filters, rules, _ = get_filters_with_rules_with_tags_from_tenant(
+            request.user,
+            tenant_id,
+            include_global_tenant=True,
+        )
+    except (ValueError, TimeoutError, OSError) as e:
+        print(f"Error fetching filters, rules, and tags: {e}")
+        return {
+            "headers": [],
+            "rows": [],
+        }
 
-    # The rows show the saved filters with this user's unsaved changes applied.
-    changes = get_filter_changes(request.user, tenant_id)
-    changeset = build_filter_changeset(baseline, changes)
-    baseline_by_key = {row["key"]: row for row in baseline}
+    filters = sorted(filters, key=lambda f: (getattr(f, "name", "") or "").lower())
+    rules = sorted(rules, key=lambda r: (getattr(r, "name", "") or "").lower())
 
-    # Loads the tags of every filter at once, including the previous tags of changed filters.
-    tag_ids = {
-        tag_id
-        for entry in changeset
-        for fields in (entry["fields"], entry["previous_fields"] or {})
-        for tag_id in fields.get("tag_ids", [])
-    }
-    tags_by_id = {tag.id: tag for tag in Tag.objects.filter(id__in=tag_ids)}
+    headers = ["Name", "Description", "Rules", "Tags"]
+    rows = []
 
-    # Every row, also new and removed ones, is placed by its current name, as it will be after saving.
-    changeset = sorted(changeset, key=lambda entry: entry["fields"]["name"].lower())
-    rows = [
-        _filter_row(entry, baseline_by_key.get(entry["key"]), request.user, tenant_id, tags_by_id)
-        for entry in changeset
-    ]
-    pending_rule_drafts = {
-        f"filter-{draft.scope_id}": {**empty_rule_changes(), **draft.changes}
-        for draft in Draft.objects.filter(
-            user=request.user,
-            tenant_id=tenant_id,
-            scope=RULE_DRAFT_SCOPE,
-            scope_id__in=[row["filter_id"] for row in baseline],
-        ).only("scope_id", "changes")
-        if rule_changes_pending({**empty_rule_changes(), **draft.changes})
-    }
-    rule_names_by_key = {
-        f"rule-{rule.id}": rule.name
-        for rule in Rule.objects.filter(filter_id__in=[int(key.split("-", 1)[1]) for key in pending_rule_drafts])
-    }
-    for row in rows:
-        rule_changes = pending_rule_drafts.get(row["id"])
-        if rule_changes is None:
-            continue
-        if not row["diff_classes"]:
-            row["diff_classes"] = "row-diff-changed"
-        changed_keys = dict.fromkeys(
-            [
-                *rule_changes["updated"],
-                *rule_changes["created"],
-                *rule_changes["deleted"],
-                *(rule_changes["moved"] or (rule_changes["order"] or [])),
-            ]
+    for filter_obj in filters:
+        try:
+            filter_tags = get_all_tags_from_object(
+                actor=request.user,
+                tenant_id=int(tenant_id),
+                object_type="filter",
+                object_id=filter_obj.id,
+            )
+        except (ValueError, TimeoutError, OSError):
+            filter_tags = []
+
+        try:
+            filter_rule_names = [rule.name for rule in rules if rule.filter_id == filter_obj.id]
+        except (ValueError, TimeoutError, OSError):
+            filter_rule_names = []
+
+        rows.append(
+            {
+                "id": f"filter-{filter_obj.id}",
+                "is_group": False,
+                "inspect_url": reverse("rules-page", kwargs={"filter_id": filter_obj.id}),
+                "is_global": filter_obj.tenant_id == GLOBAL_TENANT_ID,
+                "can_write": can_write_tenant(request.user, filter_obj.tenant_id),
+                "cells": [
+                    getattr(filter_obj, "name", "") or "",
+                    getattr(filter_obj, "description", "") or "",
+                    ", ".join(filter_rule_names),
+                    filter_tags,
+                ],
+                "expand": [
+                    {
+                        "label": "Rules",
+                        "value": ", ".join(filter_rule_names),
+                    },
+                    {
+                        "label": "Tags",
+                        "value": filter_tags,
+                    },
+                ],
+            }
         )
         names_by_status = {"added": [], "removed": [], "changed": []}
         for key in changed_keys:
@@ -287,9 +293,50 @@ def post_filter_view(request):
         fields = parse_filter_form(request.POST)
         object_data.update(fields)
 
-        stage_filter_create(actor=request.user, tenant_id=int(tenant_id_raw), fields=fields)
-    except (FilterDraftError, PermissionDenied) as exc:
-        return _render_filter_form_error(request, object_data, str(exc))
+        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
+
+        current_tags = get_all_tags_from_object(
+            actor=request.user,
+            tenant_id=tenant_id,
+            object_id=object_id,
+            object_type="filter",
+        )
+        current_tag_ids = {tag.id for tag in current_tags}
+
+        tag_ids_to_add = submitted_tag_ids - current_tag_ids
+        tag_ids_to_remove = current_tag_ids - submitted_tag_ids
+
+        for tag_id in tag_ids_to_add:
+            tag = Tag.objects.get(id=tag_id)
+
+            add_tag_to_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                tag=tag,
+                obj=updated_filter,
+            )
+
+        for tag_id in tag_ids_to_remove:
+            remove_tag_from_object(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_id=object_id,
+                object_type="filter",
+                tag_id=tag_id,
+            )
+
+    except (ValueError, TimeoutError, OSError) as e:
+        return render(
+            request,
+            "partials/modals/_modal_form.html",
+            {
+                "modal_object_type": "filters",
+                "modal_content_partial": "partials/modals/_filter_form.html",
+                "modal_supports_types": False,
+                "error_message": f"Could not update filter: {e}",
+            },
+            status=400,
+        )
 
     return HttpResponse(status=204)
 

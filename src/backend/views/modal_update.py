@@ -275,7 +275,7 @@ def build_update_modal_context(request, row_id):
                 object_id=object_id,
                 object_type=object_type,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             object_tags = []
 
     if object_type == "user":

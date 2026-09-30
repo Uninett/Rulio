@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.db import models
 
 
@@ -9,4 +11,6 @@ class AddressGroupMember(models.Model):
         return f"AddressGroupMember(group_id={self.group_id}, address_id={self.address_id})"
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["group", "address"], name="unique_group_address")]
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
+            models.UniqueConstraint(fields=["group", "address"], name="unique_group_address")
+        ]

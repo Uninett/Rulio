@@ -295,7 +295,7 @@ def post_interface_view(request):
             direction="out",
         ).exclude(filter_id__in=outgoing_ids).delete()
 
-    except Exception as exc:
+    except (ValueError, TimeoutError, OSError) as exc:
         return render_interface_form_error(request, object_data, f"Unable to update interface filters: {exc}")
 
     return HttpResponse(status=204)

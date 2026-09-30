@@ -27,14 +27,12 @@ class CreateAddressSchema(Schema):
         if self.ipv4_type is None and self.ipv6_type is None:
             raise ValueError("At least one of ipv4_type or ipv6_type must be set.")
 
-        if self.ipv4_type is None:
-            if self.ipv4Network is not None or self.ipv4Address_start is not None or self.ipv4Address_end is not None:
+        if self.ipv4_type is None and self.ipv4Network is not None or self.ipv4Address_start is not None or self.ipv4Address_end is not None:
                 raise ValueError(
                     "ipv4Network, ipv4Address_start, and ipv4Address_end must be null if ipv4_type is not set."
                 )
 
-        if self.ipv6_type is None:
-            if self.ipv6Network is not None or self.ipv6Address_start is not None or self.ipv6Address_end is not None:
+        if self.ipv6_type is None and self.ipv6Network is not None or self.ipv6Address_start is not None or self.ipv6Address_end is not None:
                 raise ValueError(
                     "ipv6Network, ipv6Address_start, and ipv6Address_end must be null if ipv6_type is not set."
                 )

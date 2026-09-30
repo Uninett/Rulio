@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -5,7 +7,7 @@ from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
 
 
 class Service(TaggableMixin, models.Model):
-    PROTOCOL_CHOICES = [
+    PROTOCOL_CHOICES: ClassVar[list[tuple[str, str]]] = [
         ("TCP", "TCP"),
         ("UDP", "UDP"),
         ("ICMP", "ICMP"),
@@ -16,8 +18,8 @@ class Service(TaggableMixin, models.Model):
         ("IP", "IP"),
     ]
 
-    ICMP_PROTOCOLS = {"ICMP", "ICMPV6"}
-    PORT_PROTOCOLS = {"TCP", "UDP"}
+    ICMP_PROTOCOLS: ClassVar[set[str]] = {"ICMP", "ICMPV6"}
+    PORT_PROTOCOLS: ClassVar[set[str]] = {"TCP", "UDP"}
 
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)

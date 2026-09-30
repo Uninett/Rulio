@@ -113,7 +113,7 @@ def get_tenant_context(request):
     if selected_tenant:
         try:
             can_write_current_tenant = can_write_tenant(request.user, int(selected_tenant))
-        except Exception:
+        except (ValueError, TypeError, OSError):
             can_write_current_tenant = False
 
     return {

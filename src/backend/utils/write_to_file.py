@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 def write_configuration_to_file(
@@ -44,7 +45,7 @@ def write_configuration_to_file(
             )
 
         with open(indexed_filename, "w") as f:
-            f.write(f"# Generated on {datetime.now()}\n")
+            f.write(f"# Generated on {datetime.now(ZoneInfo('Europe/Oslo')).isoformat()}\n")
             f.write(f"# Test for generating from {generated_by}\n\n")
             f.write(content)
 
