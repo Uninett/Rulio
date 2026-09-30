@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class VersionControl(models.Model):
+class version_control(models.Model):
     filter = models.ForeignKey("Filter", on_delete=models.CASCADE)
     datetime = models.DateTimeField()
     tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE)

@@ -66,12 +66,16 @@ def get_services_view(request):
         }
 
     try:
+<<<<<<< HEAD
         service_dict, services, service_groups = get_all_services_and_groups_with_tags_from_tenant_as_json(
+=======
+        _, services, service_groups = get_all_services_and_groups_with_tags_from_tenant(
+>>>>>>> 25a85ef (Fix all linting errors)
             actor=request.user,
             tenant_id=int(tenant_id),
             include_global_tenant=True,
         )
-    except Exception:
+    except (ValueError, TimeoutError, OSError):
         return {
             "headers": [],
             "rows": [],
@@ -105,7 +109,7 @@ def get_services_view(request):
                 object_type="servicegroup",
                 object_id=group.id,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             service_group_tags = []
 
         try:
@@ -114,7 +118,7 @@ def get_services_view(request):
                 tenant_id=int(tenant_id),
                 service_group_id=group.id,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             service_group_members = []
 
         rows.append(
@@ -161,7 +165,7 @@ def get_services_view(request):
                 object_type="service",
                 object_id=service.id,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             service_tags = []
 
         rows.append(
@@ -232,7 +236,7 @@ def post_service_view(request):
                 obj=created_service,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -372,7 +376,7 @@ def update_service_view(request, object_id):
                 tag_id=tag_id,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/_modal.html",
@@ -414,7 +418,7 @@ def delete_service_view(request, object_id):
             tenant_id=tenant_id,
             service_id=object_id,
         )
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete service: {e}", status=400)
 
     return HttpResponse(status=204)

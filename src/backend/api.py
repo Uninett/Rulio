@@ -1038,7 +1038,7 @@ def get_interfaces_for_device_endpoint(request, device_id: int):
                 for interface in interfaces
             ],
         )
-    except Exception as e:
+    except (TimeoutError, OSError) as e:
         logger.error(f"Error retrieving interfaces for device with id {device_id}: {e!s}")
         return Status(
             403,
@@ -1072,7 +1072,7 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
                 "device_type": device.type,
             },
         )
-    except Exception as e:
+    except (TimeoutError, OSError) as e:
         logger.error(f"create_device endpoint failed: {e!s}")
         return Status(
             403,
@@ -1210,7 +1210,7 @@ def create_interface_endpoint(request, payload: CreateInterfaceSchema):
                 "interface_description": interface.description,
             },
         )
-    except Exception as e:
+    except (TimeoutError, OSError) as e:
         logger.error(f"create_interface endpoint failed: {e!s}")
         return Status(
             403,
@@ -1230,7 +1230,7 @@ def create_interface_endpoint(request, payload: CreateInterfaceSchema):
 def delete_device_endpoint(request, device_id: int):
     try:
         response = delete_device(request.user, request.session["current_tenant_id"], device_id)
-    except Exception as e:
+    except (TimeoutError, OSError) as e:
         logger.error(f"Error deleting device with id {device_id}: {e!s}")
         return Status(
             403,
@@ -1264,7 +1264,7 @@ def delete_interface_endpoint(request, interface_id: int):
                 "deleted_interface_id": interface_id,
             },
         )
-    except Exception as e:
+    except (TimeoutError, OSError) as e:
         logger.error(f"Error deleting interface with id {interface_id}: {e!s}")
         return Status(
             403,
@@ -1368,7 +1368,7 @@ def delete_rule_endpoint(request, rule_id: int):
                 "rule_id": rule_id,
             },
         )
-    except ValueError as e:
+    except (ValueError, TimeoutError, OSError) as e:
         logger.warning(str(e))
         return Status(
             404,
@@ -1409,7 +1409,7 @@ def delete_filter_endpoint(request, filter_id: int):
                 "filter_id": filter_id,
             },
         )
-    except ValueError as e:
+    except (ValueError, TimeoutError, OSError) as e:
         logger.warning(str(e))
         return Status(
             404,
@@ -1432,7 +1432,7 @@ def get_filters_from_interface_endpoint(request, interface_id: int):
             actor=request.user, tenant_id=request.session["current_tenant_id"], interface_id=interface_id
         )
         return Status(200, list(filters.values()))
-    except ValueError as e:
+    except (ValueError, TimeoutError, OSError) as e:
         logger.warning(str(e))
         return Status(
             404,
@@ -1627,9 +1627,8 @@ def login_endpoint(request, payload: LoginSchema):
     login(request, user)
     logger.info(f"User logged in: {user.username}")
 
-    if not user.is_superuser:
-        if TenantUserMember.objects.filter(user_id=user.id).exists():
-            request.session["current_tenant_id"] = TenantUserMember.objects.get(user_id=user.id).tenant_id
+    if not user.is_superuser and TenantUserMember.objects.filter(user_id=user.id).exists():
+        request.session["current_tenant_id"] = TenantUserMember.objects.get(user_id=user.id).tenant_id
 
     return Status(
         200,

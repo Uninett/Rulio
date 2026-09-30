@@ -75,7 +75,7 @@ def delete_filter_view(request, object_id):
             tenant_id=tenant_id,
             filter_id=object_id,
         )
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete filter: {e}", status=400)
 
     return HttpResponse(status=204)
@@ -92,12 +92,12 @@ def get_filters_view(request):
     tenant_id = int(tenant_id)
 
     try:
-        _, filters, rules, tags = get_filters_with_rules_with_tags_from_tenant(
+        _, filters, rules, _ = get_filters_with_rules_with_tags_from_tenant(
             request.user,
             tenant_id,
             include_global_tenant=True,
         )
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         print(f"Error fetching filters, rules, and tags: {e}")
         return {
             "headers": [],
@@ -118,12 +118,12 @@ def get_filters_view(request):
                 object_type="filter",
                 object_id=filter_obj.id,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             filter_tags = []
 
         try:
             filter_rule_names = [rule.name for rule in rules if rule.filter_id == filter_obj.id]
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             filter_rule_names = []
 
         rows.append(
@@ -209,7 +209,7 @@ def update_filter_view(request, object_id):
                 tag_id=tag_id,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -251,7 +251,7 @@ def post_filter_view(request):
                 obj=created_filter,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",

@@ -69,7 +69,7 @@ def get_devices_view(request):
             actor=request.user,
             tenant_id=int(tenant_id),
         )
-    except Exception:
+    except (ValueError, TimeoutError, OSError):
         return {
             "headers": [],
             "rows": [],
@@ -89,7 +89,7 @@ def get_devices_view(request):
                 object_type="devicegroup",
                 object_id=group.id,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             device_group_tags = []
 
         try:
@@ -99,7 +99,7 @@ def get_devices_view(request):
                 device_group_id=group.id,
             )
             logger.info(device_group_members)
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             device_group_members = []
 
         devices_in_group = []
@@ -152,7 +152,7 @@ def get_devices_view(request):
                 object_type="device",
                 object_id=device.id,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             devices_tags = []
 
         interfaces_from_device = get_all_interfaces_from_device(
@@ -248,7 +248,7 @@ def post_device_view(request):
                 obj=created_device,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -398,7 +398,7 @@ def update_device_view(request, object_id):
                 tag_id=tag_id,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/_modal.html",
@@ -442,7 +442,7 @@ def delete_device_view(request, object_id):
             tenant_id=tenant_id,
             device_id=object_id,
         )
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete device: {e}", status=400)
 
     return HttpResponse(status=204)

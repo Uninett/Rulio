@@ -102,7 +102,7 @@ def get_or_create_device_group(*, actor: User, tenant_id: int, name: str, descri
 
 @transaction.atomic
 def create_interface(
-    *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
+    *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str | None = None
 ) -> Interface:
     require_write_tenant(actor, tenant_id)
     # Check if the device exists and belongs to the tenant
@@ -142,7 +142,7 @@ def create_interface(
 
 @transaction.atomic
 def get_or_create_interface(
-    *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str = None
+    *, actor: User, tenant_id: int, name: str, description: str, device_id: int, type: str, VRF: str | None = None
 ) -> tuple[Interface, bool, InterfaceDirection, bool, InterfaceDirection, bool]:
     require_write_tenant(actor, tenant_id)
     # Check if the device exists and belongs to the tenant

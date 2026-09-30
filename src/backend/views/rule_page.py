@@ -122,7 +122,7 @@ def get_rules_view(request, filter_id):
             tenant_id,
             int(filter_id),
         )
-    except Exception as exc:
+    except (ValueError, TimeoutError, OSError) as exc:
         print(f"Error fetching rules with objects for filter {filter_id}: {exc}")
         return {"headers": headers, "rows": []}
 
@@ -132,7 +132,7 @@ def get_rules_view(request, filter_id):
         try:
             rule_obj = Rule.objects.get(id=rule["rule_id"])
             rule_tags = list(rule_obj.get_tags())
-        except Exception as exc:
+        except (ValueError, TimeoutError, OSError) as exc:
             print(f"Error fetching tags for rule {rule['rule_id']}: {exc}")
             rule_tags = []
 
@@ -388,7 +388,7 @@ def post_rule_view(request):
                 obj=new_rule,
             )
 
-    except Exception as exc:
+    except (ValueError, TimeoutError, OSError) as exc:
         print(f"Error creating rule: {exc}")
         return render_form_error("Unable to create the rule. Please verify the selected objects and tags.")
 
@@ -574,7 +574,7 @@ def update_rule_view(request, rule_id):
                 tag_id=tag_id,
             )
 
-    except Exception as exc:
+    except (ValueError, TimeoutError, OSError) as exc:
         print(f"Error updating rule {rule_id}: {exc}")
         return render_form_error("Unable to update the rule. Please verify the selected objects and tags.")
 
@@ -597,7 +597,7 @@ def delete_rule_view(request, rule_id):
             rule_id=rule_id,
         )
 
-    except Exception as exc:
+    except (ValueError, TimeoutError, OSError) as exc:
         return HttpResponse(
             f"Could not delete rule: {exc}",
             status=400,
@@ -644,7 +644,7 @@ def reorder_rule_view(request):
             rule=rule,
             new_sequence=new_sequence,
         )
-    except Exception as exc:
+    except (ValueError, TimeoutError, OSError) as exc:
         return HttpResponse(f"Could not reorder rule: {exc}", status=400)
 
     return HttpResponse(status=204)

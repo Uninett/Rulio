@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -16,7 +18,7 @@ class RuleMatch(models.Model):
         return f"RuleMatch(id={self.id}, rule_id={self.rule_id}, match={self.match}, object_type='{self.object_type}', object_id={self.object_id})"
 
     class Meta:
-        constraints = [
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(
                 fields=["rule", "match", "object_type", "object_id"],
                 name="unique_rule_match_object",

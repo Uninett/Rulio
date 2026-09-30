@@ -58,7 +58,7 @@ def post_address_group_view(request):
                 obj=created_address_group,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -222,7 +222,7 @@ def update_address_group_view(request, object_id):
                 tag_id=tag_id,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/_modal.html",
@@ -266,7 +266,7 @@ def delete_address_group_view(request, object_id):
             tenant_id=tenant_id,
             address_group_id=object_id,
         )
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete address group: {e}", status=400)
 
     return HttpResponse(status=204)

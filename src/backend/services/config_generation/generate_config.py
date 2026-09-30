@@ -1181,7 +1181,7 @@ def _generate_from_policy(policy: Policy) -> ConfigGenerationResult:
     try:
         definitions.ParseDefinitionsObject(definitions_obj, policy.name)
         config = aerleon_api.Generate([policy.YAMLConfig], definitions, shade_check=True)
-    except Exception as exc:
+    except (ValueError, TimeoutError, OSError) as exc:
         logged_warnings, logged_errors = _log_records_to_diagnostics(capture_handler.records)
         warnings.extend(logged_warnings)
         errors.extend(logged_errors)

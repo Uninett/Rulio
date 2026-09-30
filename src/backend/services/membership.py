@@ -469,7 +469,7 @@ def add_objects_to_rule(
                     logger.info("RuleMatch already exists: %s", rule_match)
                 already_exists.append(payload)
 
-        except Exception as exc:
+        except (ValueError, TimeoutError, OSError) as exc:
             errors.append(
                 {
                     "object_id": getattr(obj, "id", None),

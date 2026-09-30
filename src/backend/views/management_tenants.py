@@ -134,7 +134,7 @@ def post_tenant_view(request):
 
         logger.info(f"Tenant created: {tenant.tenant_name}")
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/_modal.html",
@@ -187,7 +187,7 @@ def update_tenant_view(request, object_id):
                 defaults={"role": TenantUserMember.TenantRole.MEMBER},
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not update tenant: {e}", status=400)
 
     return HttpResponse(status=204)
@@ -209,7 +209,7 @@ def delete_tenant_view(request, object_id):
     try:
         TenantUserMember.objects.filter(tenant=tenant).delete()
         tenant.delete()
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete tenant: {e}", status=400)
 
     return HttpResponse(status=204)

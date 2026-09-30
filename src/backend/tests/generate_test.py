@@ -1,4 +1,5 @@
 import copy
+from typing import ClassVar
 
 import pytest
 
@@ -21,7 +22,7 @@ clear_logs(__name__)
 
 @pytest.mark.django_db
 class TestGenerateConfig:
-    vendor_target_spec_pairs = [
+    vendor_target_spec_pairs: ClassVar[list[tuple]] = [
         ("juniper", None),
         ("arista", None),
         ("aruba", None),
@@ -29,7 +30,7 @@ class TestGenerateConfig:
         ("brocade", None),
         ("paloalto", ["from-zone", "internal", "to-zone", "external", "mixed"]),
     ]
-    log_for_vendors = ["juniper"]
+    log_for_vendors: ClassVar[list[str]] = ["juniper"]
 
     def _extract_generated_text(self, config) -> str:
         assert config

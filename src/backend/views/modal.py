@@ -71,7 +71,7 @@ def get_group_options_view(request, object_type):
                 if item.get("type") == "ServiceGroup"
             ]
 
-    except Exception:
+    except (ValueError, TimeoutError, OSError):
         return []
 
     return []
@@ -130,7 +130,7 @@ def get_item_options_view(request, object_type):
                 if item.get("type") != "ServiceGroup"
             ]
 
-    except Exception:
+    except (ValueError, TimeoutError, OSError):
         return []
 
     return []
