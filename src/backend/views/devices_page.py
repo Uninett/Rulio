@@ -30,6 +30,7 @@ from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 
+
 # A container for one interface’s data
 @dataclass
 class InterfaceFields:
@@ -38,6 +39,7 @@ class InterfaceFields:
     type: str | None = None
     vrf: str | None = None
     id: int | None = None
+
 
 # The browser submits interface_fields as a JSON string. This function turns that string into a list of InterfaceFields objects.
 def parse_interface_fields(raw_value: str | None) -> list[InterfaceFields]:
@@ -87,6 +89,7 @@ def parse_interface_fields(raw_value: str | None) -> list[InterfaceFields]:
         )
 
     return interfaces
+
 
 # Takes the submitted interface list and synchronizes it with the device’s saved interfaces.
 def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: list[InterfaceFields]) -> None:
@@ -354,7 +357,9 @@ def post_device_view(request):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     platform = request.POST.get("platform", "")
     type = request.POST.get("type", "")
-    draft_interface_fields = parse_interface_fields(request.POST.get("interface_fields")) # Reads the submitted interface_fields and parses it
+    draft_interface_fields = parse_interface_fields(
+        request.POST.get("interface_fields")
+    )  # Reads the submitted interface_fields and parses it
 
     try:
         created_device = create_device(
@@ -593,14 +598,11 @@ def delete_device_view(request, object_id):
 
     return HttpResponse(status=204)
 
+
 # Update existing device, loads interface from database
 @login_required(login_url="login")
 def get_device_interfaces_modal(request, device_id):
-    tenant_id = (
-        int(request.session.get("current_tenant_id"))
-        if request.session.get("current_tenant_id")
-        else None
-    )
+    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
 
     if not tenant_id:
         return HttpResponse("No tenant selected.", status=400)
@@ -664,20 +666,25 @@ def get_device_interfaces_modal(request, device_id):
         },
     )
 
+
 # Create new device, no device id yet nor initial interfaces
 @login_required(login_url="login")
 def get_new_device_interfaces_modal(request):
     draft_interface_fields = parse_interface_fields(request.GET.get("interface_fields"))
-    interfaces = [
-        {
-            "id": interface_field.id,
-            "name": interface_field.name,
-            "description": interface_field.description or "",
-            "type": interface_field.type or "",
-            "VRF": interface_field.vrf or "",
-        }
-        for interface_field in draft_interface_fields
-    ] if draft_interface_fields else []
+    interfaces = (
+        [
+            {
+                "id": interface_field.id,
+                "name": interface_field.name,
+                "description": interface_field.description or "",
+                "type": interface_field.type or "",
+                "VRF": interface_field.vrf or "",
+            }
+            for interface_field in draft_interface_fields
+        ]
+        if draft_interface_fields
+        else []
+    )
 
     return render(
         request,
