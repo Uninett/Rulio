@@ -302,52 +302,62 @@ function updateDeviceInterfaceSummaryInParentForm(draftList) {
     const parentForm = getDeviceInterfaceParentForm();
     if (!parentForm) return;
 
-    // Looks for the elements that display the interface names and count.
-    const namesEl = parentForm.querySelector(".device-interface-names");
-    const countEl = parentForm.querySelector(".device-interface-count");
-    const emptyState = parentForm.querySelector(".empty-state");
+    const formContainer = parentForm.querySelector(".device-interfaces-group");
+    if (!formContainer) return;
 
-    // If either is missing, the function creates those display elements.
-    if (!namesEl || !countEl) {
-        // Inserts that paragraph before the Manage button and hides the “No interfaces” message if it exists.
-        const formContainer = parentForm.querySelector(".device-interfaces-group");
-        if (!formContainer) return;
+    const summary = formContainer.querySelector(".device-interfaces");
+    const emptyState = formContainer.querySelector(".empty-state");
 
-        const names = document.createElement("span");
-        names.className = "device-interface-names";
-        const count = document.createElement("span");
-        count.className = "device-interface-count";
-        const wrapper = document.createElement("p");
-        wrapper.className = "device-interfaces";
-        wrapper.appendChild(names);
-        wrapper.appendChild(document.createTextNode(" "));
-        wrapper.appendChild(count);
-        formContainer.insertBefore(wrapper, formContainer.querySelector("button"));
-
-        if (formContainer.querySelector(".empty-state")) {
-            formContainer.querySelector(".empty-state").style.display = "none";
-        }
-    }
-
-    // Finds the display elements again, including the empty-state message.
-    const visibleNames = parentForm.querySelector(".device-interface-names");
-    const visibleCount = parentForm.querySelector(".device-interface-count");
-    const visibleEmpty = parentForm.querySelector(".empty-state");
-
-    if (!visibleNames || !visibleCount) return; // Stops if the required display elements could not be found.
-
-    // If the draft has no interfaces, clear the names, show (0), and show the empty-state message.
+    // If there are no interfaces, show the empty-state message without a (0) counter.
     if (draftList.length === 0) {
-        visibleNames.textContent = "";
-        visibleCount.textContent = "(0)";
-        if (visibleEmpty) visibleEmpty.style.display = "";
+        if (summary) {
+            summary.remove();
+        }
+
+        if (emptyState) {
+            emptyState.style.display = "";
+        } else {
+            const message = document.createElement("p");
+            message.className = "empty-state";
+            message.textContent = "No interfaces are connected to this device.";
+            formContainer.insertBefore(message, formContainer.querySelector("button"));
+        }
+
         return;
     }
 
-    // Displays the interface names separated by commas and shows the total count.
-    visibleNames.textContent = draftList.map((entry) => entry.name).join(", ");
-    visibleCount.textContent = `(${draftList.length})`;
-    if (visibleEmpty) visibleEmpty.style.display = "none";
+    // There are interfaces, so hide the empty-state message.
+    if (emptyState) {
+        emptyState.style.display = "none";
+    }
+
+    // Create the names/count paragraph if it doesn't already exist.
+    const wrapper = summary || document.createElement("p");
+    wrapper.className = "device-interfaces";
+
+    let namesEl = wrapper.querySelector(".device-interface-names");
+    if (!namesEl) {
+        namesEl = document.createElement("span");
+        namesEl.className = "device-interface-names";
+        wrapper.appendChild(namesEl);
+    }
+
+    let countEl = wrapper.querySelector(".device-interface-count");
+    if (!countEl) {
+        countEl = document.createElement("span");
+        countEl.className = "device-interface-count";
+        wrapper.appendChild(document.createTextNode(" "));
+        wrapper.appendChild(countEl);
+    }
+
+    // Display the interface names and their count.
+    namesEl.textContent = draftList.map((entry) => entry.name).join(", ");
+    countEl.textContent = `(${draftList.length})`;
+
+    // Add the paragraph before the Manage button if it was just created.
+    if (!summary) {
+        formContainer.insertBefore(wrapper, formContainer.querySelector("button"));
+    }
 }
 
 // Applying the modal changes to the parent form
