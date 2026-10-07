@@ -20,7 +20,7 @@ from django.http import HttpResponse
 from django.urls import path
 
 from backend.views.generate_config import check_interface_config_generation, download_interface_configs
-from backend.views.interfaces import get_interface_filter_selector_modal, interface_view, post_interface_view
+from backend.views.interfaces_page import get_interface_filter_selector_modal, interface_view, post_interface_view
 from backend.views.rule_page import (
     delete_rule_view,
     get_rule_page,
