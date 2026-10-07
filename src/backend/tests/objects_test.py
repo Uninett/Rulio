@@ -9,7 +9,7 @@ from backend.objects.attributes.tag_connection import TagConnection
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_match import RuleMatch
-from backend.objects.filters.versionControl import VersionControl
+from backend.objects.filters.version_control import version_control
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.device_group import DeviceGroup
 from backend.objects.tenant_objects.device_group_member import DeviceGroupMember

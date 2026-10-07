@@ -67,7 +67,7 @@ def get_services_view(request):
         }
 
     try:
-        _, services, service_groups = get_all_services_and_groups_with_tags_from_tenant(
+        _, services, service_groups = get_all_services_and_groups_with_tags_from_tenant_as_json(
             actor=request.user,
             tenant_id=int(tenant_id),
             include_global_tenant=True,

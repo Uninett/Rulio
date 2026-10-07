@@ -162,3 +162,21 @@ def get_unused_filters(actor: User, tenant_id: int) -> QuerySet[Filter]:
         .filter(is_used=False)
     )
     return unused_filters
+
+def get_unused_rules(actor: User, tenant_id: int) -> QuerySet[RuleMatch]:
+    """
+    Return rule objects owned by the given tenant that are not applied to any interfaces
+    """
+    require_read_tenant(actor, tenant_id)
+    unused_rules = (
+        RuleMatch.objects.filter(tenant_id=tenant_id)
+        .annotate(
+            is_used=Exists(
+                FilterInterface.objects.filter(
+                    filter__rules__id=OuterRef("pk"),
+                )
+            )
+        )
+        .filter(is_used=False)
+    )
+    return unused_rules

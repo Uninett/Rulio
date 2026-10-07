@@ -9,6 +9,7 @@ from backend.services.filter_objects.create_filter_objects import (
     create_rule,
 )
 from backend.services.membership import copy_rule_to_filter
+from Rulio.src.backend.objects.filters.version_control import VersionControl
 
 
 class TestFilters:
