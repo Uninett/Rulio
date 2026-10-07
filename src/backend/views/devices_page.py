@@ -292,6 +292,11 @@ def get_devices_view(request):
             device_id=device.id,
         )
 
+        interfaces_from_device = sorted(
+            interfaces_from_device,
+            key=lambda interface: (getattr(interface, "name", "") or "").casefold(),
+        )
+
         interfaces_for_device = []
 
         for interface in interfaces_from_device:

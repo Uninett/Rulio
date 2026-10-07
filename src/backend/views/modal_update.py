@@ -260,6 +260,11 @@ def get_update_modal(request, row_id):
                     device_id=device.id,
                 )
 
+                interfaces = sorted(
+                    interfaces,
+                    key=lambda interface: (interface.name or "").casefold(),
+                )
+
                 object_data = {
                     "id": device.id,
                     "name": device.name or "",
