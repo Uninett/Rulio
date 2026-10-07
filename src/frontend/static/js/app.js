@@ -372,8 +372,39 @@ function updateDeviceInterfaceSummaryInParentForm(draftList) {
     }
 }
 
+// Checks for unsaved interfaces
+function hasUnaddedInterfaceInput(button) {
+    const modal = button.closest(".draggable-modal"); // Find the interface modal containing the clicked button.
+    const table = modal?.querySelector(".device-interface-table"); // Find the interface table inside that modal.
+    if (!table) return false;
+
+    // Check the Name, Description, Type, and VRF inputs. Return true if at least one contains non-whitespace text.
+    return [
+        "#new-interface-name",
+        "#new-interface-description",
+        "#new-interface-type",
+        "#new-interface-vrf",
+    ].some((selector) => Boolean(table.querySelector(selector)?.value.trim()));
+}
+
+// Shows a warning if the user has typed interface values but has not added them to the table.
+function warnAboutUnaddedInterfaceInput(button) {
+    if (!hasUnaddedInterfaceInput(button)) return false; // No unadded values means there is nothing to warn about.
+
+    alert("You have unsaved interface changes. Press the + button to add them before continuing.");
+    return true;
+}
+
+// Handles clicking Cancel in the interface modal.
+function cancelDeviceInterfaceModal(button) {
+    if (warnAboutUnaddedInterfaceInput(button)) return; // If there are unadded values, show the warning and stop.
+    closeThisModal(button);
+}
+
 // Applying the modal changes to the parent form
 function applyDeviceInterfaceSelection(button) {
+    if (warnAboutUnaddedInterfaceInput(button)) return; // If there are unadded values, show the warning and stop.
+
     // Finds the modal containing the clicked button. If there isn’t one, stop.
     const modal = button.closest(".draggable-modal");
     if (!modal) return;
