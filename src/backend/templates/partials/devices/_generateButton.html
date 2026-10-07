@@ -13,11 +13,11 @@
     {% if can_write_current_tenant or request.user.is_superuser %}
     <button
         type="button"
-        class="btn btn-outline btn--primary interface-diff-btn"
+        class="btn btn-outline btn--primary interface-diff-btn active"
         onclick="toggleInterfaceFilterDifferences(this)"
-        aria-label="Show filter differences for {{ interface.name }}"
+        aria-label="Toggle filter differences for {{ interface.name }}"
     >
-        Show Differences
+        Hide Differences
     </button>
     <button
         type="button"
