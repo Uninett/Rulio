@@ -401,9 +401,13 @@ function addDeviceInterfaceRow(button) {
     // If no name was entered, show an alert and don’t add a row.
     const name = nameInput?.value.trim() || "";
     if (!name) {
-        alert("Interface name is required.");
+        nameInput?.setCustomValidity("Interface name is required.");
+        nameInput?.reportValidity();
+        nameInput?.focus();
         return;
     }
+
+    nameInput?.setCustomValidity("");
 
     const row = document.createElement("tr");
     const fields = [
