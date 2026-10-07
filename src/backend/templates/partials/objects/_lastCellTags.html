@@ -45,18 +45,6 @@
                 {% endfor %}
             </div>
 
-        {% elif object_type == "rules" %}
-            <div class="tag-list-container">
-                {% for item in cell %}
-                    {% if item %}
-                        <span class="cell-text truncate tag-item tag-pill tag-pill--muted"
-                              title="{{ item }}">
-                            {{ item }}
-                        </span>
-                    {% endif %}
-                {% endfor %}
-            </div>
-
         {% else %}
             <span class="cell-text truncate" title="{{ cell }}">{{ cell }}</span>
         {% endif %}
