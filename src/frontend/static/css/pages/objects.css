@@ -149,7 +149,6 @@ Rule Object Links
 /* Markup: <div class="rule-object-item truncate"> */
 .rule-object-item {
     display: block;
-    width: 100%;
     max-width: 100%;
     min-width: 0;
     cursor: pointer;
