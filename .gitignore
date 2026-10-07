@@ -17,6 +17,7 @@ src/logs/
 *.diff
 notes.md
 staticfiles/
+.claude/
 
 .*
 
@@ -28,10 +29,6 @@ staticfiles/
 !.pre-commit-config.yaml
 !.readthedocs.yaml
 !.sonarcloud.properties
-!.claude/
-.claude/*
-!.claude/settings.json
-!.claude/hooks/
 !.mailmap
 
 # local config files
