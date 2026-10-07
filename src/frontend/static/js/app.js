@@ -397,7 +397,6 @@ function warnAboutUnaddedInterfaceInput(button) {
 
 // Handles clicking Cancel in the interface modal.
 function cancelDeviceInterfaceModal(button) {
-    if (warnAboutUnaddedInterfaceInput(button)) return; // If there are unadded values, show the warning and stop.
     closeThisModal(button);
 }
 
