@@ -225,13 +225,15 @@ function applyRuleSelectorSelection(selectorType, button) {
     closeThisModal(button);
 }
 
+// Turns the interface table into a JavaScript list of interface objects.
 function getDeviceInterfaceDraftFromTable(table) {
-    if (!table) return [];
+    if (!table) return []; // If there is no table, return an empty list.
 
+    // Finds every row in the table body and processes each one. Array.from converts the browser’s list of rows into a normal JavaScript array.
     return Array.from(table.querySelectorAll("tbody tr")).map((row) => {
         const cells = row.querySelectorAll("td");
         const name = cells[0]?.textContent?.trim() || "";
-        if (!name) return null;
+        if (!name) return null; // A row without a name is ignored.
 
         return {
             id: row.dataset.interfaceId ? Number(row.dataset.interfaceId) : null,
@@ -240,57 +242,74 @@ function getDeviceInterfaceDraftFromTable(table) {
             type: cells[2]?.textContent?.trim() || "",
             vrf: cells[3]?.textContent?.trim() || "",
         };
-    }).filter(Boolean);
+    }).filter(Boolean); // Removes any null results, such as rows with no name.
 }
 
+// Getting the current draft on the parent device form.
 function getDeviceInterfaceDraftState(form) {
-    if (!form) return "";
+    if (!form) return ""; // If there’s no form, return an empty string.
 
+    // Checks the form’s data-interface-draft value.
     if (form.dataset.interfaceDraft) {
         return form.dataset.interfaceDraft;
     }
 
+    // If the form doesn’t have a draft saved there, it looks for the hidden input named interface_fields.
     const hiddenInput = form.querySelector('input[name="interface_fields"]');
+
+    // // If the hidden input has a value, the function copies it onto the form’s dataset and returns it.
     if (hiddenInput && hiddenInput.value) {
         form.dataset.interfaceDraft = hiddenInput.value;
         return hiddenInput.value;
     }
 
-    return "";
+    return ""; // If neither place contains a draft, return an empty string.
 }
 
+// Opening the interface modal
 function openDeviceInterfaceModal(button) {
-    const form = button.closest("form");
+    const form = button.closest("form"); // Finds the device form containing the button.
+
+    // Gets the modal URL from the button’s data-device-interface-url attribute. If there is no URL, stop.
     const url = button.dataset.deviceInterfaceUrl;
     if (!url) return;
 
-    const draftState = getDeviceInterfaceDraftState(form);
+    const draftState = getDeviceInterfaceDraftState(form); // Gets the current draft from the parent form, if one exists.
+
+    // Creates URL query parameters and includes the draft under the name interface_fields when there is draft data.
     const params = new URLSearchParams();
     if (draftState) {
         params.set("interface_fields", draftState);
     }
 
-    const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
+    const fullUrl = params.toString() ? `${url}?${params.toString()}` : url; // If there are query parameters, adds them to the URL. Otherwise, uses the URL as-is.
     htmx.ajax("GET", fullUrl, {
         target: "#submodal-container",
         swap: "innerHTML",
     });
 }
 
+// A helper function for finding the device form that contains the hidden interface field.
 function getDeviceInterfaceParentForm() {
+    // It finds the hidden input, then returns its closest form. If there is no hidden input, it returns null.
     const hiddenInput = document.getElementById("device-interface-field-input");
     return hiddenInput ? hiddenInput.closest("form") : null;
 }
 
+// Updates the interface names and count shown in the main device form.
 function updateDeviceInterfaceSummaryInParentForm(draftList) {
+    // Finds the form; if it isn’t present, there’s nothing to update.
     const parentForm = getDeviceInterfaceParentForm();
     if (!parentForm) return;
 
+    // Looks for the elements that display the interface names and count.
     const namesEl = parentForm.querySelector(".device-interface-names");
     const countEl = parentForm.querySelector(".device-interface-count");
     const emptyState = parentForm.querySelector(".empty-state");
 
+    // If either is missing, the function creates those display elements.
     if (!namesEl || !countEl) {
+        // Inserts that paragraph before the Manage button and hides the “No interfaces” message if it exists.
         const formContainer = parentForm.querySelector(".device-interfaces-group");
         if (!formContainer) return;
 
@@ -310,12 +329,14 @@ function updateDeviceInterfaceSummaryInParentForm(draftList) {
         }
     }
 
+    // Finds the display elements again, including the empty-state message.
     const visibleNames = parentForm.querySelector(".device-interface-names");
     const visibleCount = parentForm.querySelector(".device-interface-count");
     const visibleEmpty = parentForm.querySelector(".empty-state");
 
-    if (!visibleNames || !visibleCount) return;
+    if (!visibleNames || !visibleCount) return; // Stops if the required display elements could not be found.
 
+    // If the draft has no interfaces, clear the names, show (0), and show the empty-state message.
     if (draftList.length === 0) {
         visibleNames.textContent = "";
         visibleCount.textContent = "(0)";
@@ -323,17 +344,23 @@ function updateDeviceInterfaceSummaryInParentForm(draftList) {
         return;
     }
 
+    // Displays the interface names separated by commas and shows the total count.
     visibleNames.textContent = draftList.map((entry) => entry.name).join(", ");
     visibleCount.textContent = `(${draftList.length})`;
     if (visibleEmpty) visibleEmpty.style.display = "none";
 }
 
+// Applying the modal changes to the parent form
 function applyDeviceInterfaceSelection(button) {
+    // Finds the modal containing the clicked button. If there isn’t one, stop.
     const modal = button.closest(".draggable-modal");
     if (!modal) return;
 
+    // Finds the modal’s interface table and converts its rows into a list of interface objects.
     const table = modal.querySelector(".device-interface-table");
     const draftList = getDeviceInterfaceDraftFromTable(table);
+
+    // Finds the main device form. If there’s no parent form, close the modal and stop.
     const parentForm = getDeviceInterfaceParentForm();
 
     if (!parentForm) {
@@ -341,6 +368,7 @@ function applyDeviceInterfaceSelection(button) {
         return;
     }
 
+    // Finds the hidden field that will hold the interface list. If the field doesn’t exist, the code creates one and adds it to the form.
     let hiddenInput = parentForm.querySelector('input[name="interface_fields"]');
     if (!hiddenInput) {
         hiddenInput = document.createElement("input");
@@ -349,14 +377,18 @@ function applyDeviceInterfaceSelection(button) {
         parentForm.appendChild(hiddenInput);
     }
 
-    const draftValue = JSON.stringify(draftList);
-    hiddenInput.value = draftValue;
-    parentForm.dataset.interfaceDraft = draftValue;
+    const draftValue = JSON.stringify(draftList); // Converts the JavaScript list into a JSON string.
+    hiddenInput.value = draftValue; // Stores the draft in the hidden input, so it is included when the device form is submitted.
+    parentForm.dataset.interfaceDraft = draftValue; // Stores the draft in the form’s dataset, so the modal-opening code can access it next time.
+
+    // Updates the names and count on the parent form, then closes the modal.
     updateDeviceInterfaceSummaryInParentForm(draftList);
     closeThisModal(button);
 }
 
+// Adding an interface row
 function addDeviceInterfaceRow(button) {
+    // Finds the table and its body. If the table body isn’t available, stop.
     const table = button.closest(".device-interface-table");
     const tbody = table?.querySelector("tbody");
     if (!tbody) return;
@@ -366,6 +398,7 @@ function addDeviceInterfaceRow(button) {
     const typeInput = table.querySelector("#new-interface-type");
     const vrfInput = table.querySelector("#new-interface-vrf");
 
+    // If no name was entered, show an alert and don’t add a row.
     const name = nameInput?.value.trim() || "";
     if (!name) {
         alert("Interface name is required.");
@@ -390,6 +423,7 @@ function addDeviceInterfaceRow(button) {
     const actionCell = document.createElement("td");
     actionCell.className = "device-interface-actions-column";
 
+    // Adds a delete button and appends the row to the table
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "actions-btn device-interface-icon-button device-interface-delete-button";
@@ -401,18 +435,23 @@ function addDeviceInterfaceRow(button) {
     row.appendChild(actionCell);
     tbody.appendChild(row);
 
+    // Clears the four inputs so the user can enter another interface.
     if (nameInput) nameInput.value = "";
     if (descriptionInput) descriptionInput.value = "";
     if (typeInput) typeInput.value = "";
     if (vrfInput) vrfInput.value = "";
 }
 
+// Remove an interface row
 function removeDeviceInterfaceRow(button) {
+    // Finds the table row containing the clicked delete button and removes it from the page.
     const row = button.closest("tr");
     if (row) row.remove();
 }
 
+// Buttons in the initial page
 window.addEventListener("DOMContentLoaded", () => {
+    // Finds all Add buttons on the page, and set up.
     const addButtons = document.querySelectorAll(".device-interface-add-button");
     addButtons.forEach((button) => {
         if (button.dataset.bound === "true") return;
@@ -420,6 +459,7 @@ window.addEventListener("DOMContentLoaded", () => {
         button.setAttribute("onclick", "addDeviceInterfaceRow(this)");
     });
 
+    // Finds all Delete buttons on the page, and set up.
     const deleteButtons = document.querySelectorAll(".device-interface-delete-button");
     deleteButtons.forEach((button) => {
         if (button.dataset.bound === "true") return;
@@ -428,6 +468,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+// Buttons added by HTMX after update
 document.body.addEventListener("htmx:afterSwap", () => {
     const addButtons = document.querySelectorAll(".device-interface-add-button");
     addButtons.forEach((button) => {

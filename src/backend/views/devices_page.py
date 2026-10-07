@@ -30,7 +30,7 @@ from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 
-
+# A container for one interface’s data
 @dataclass
 class InterfaceFields:
     name: str
@@ -39,16 +39,19 @@ class InterfaceFields:
     vrf: str | None = None
     id: int | None = None
 
-
+# The browser submits interface_fields as a JSON string. This function turns that string into a list of InterfaceFields objects.
 def parse_interface_fields(raw_value: str | None) -> list[InterfaceFields]:
+    # If nothing was submitted, it returns an empty list.
     if not raw_value:
         return []
 
+    # If the JSON is invalid, it returns an empty list instead of raising an error.
     try:
         payload = json.loads(raw_value)
     except (TypeError, ValueError):
         return []
 
+    # If the JSON contains one interface object instead of a list, it wraps it in a list.
     if isinstance(payload, dict):
         payload = [payload]
     if not isinstance(payload, list):
@@ -59,10 +62,12 @@ def parse_interface_fields(raw_value: str | None) -> list[InterfaceFields]:
         if not isinstance(entry, dict):
             continue
 
+        # It ignores entries that aren’t objects or don’t have a name.
         name = str(entry.get("name") or "").strip()
         if not name:
             continue
 
+        # It converts an interface ID to an integer where possible. If it can’t, the ID becomes None.
         raw_id = entry.get("id")
         interface_id = None
         if raw_id not in (None, ""):
@@ -83,7 +88,7 @@ def parse_interface_fields(raw_value: str | None) -> list[InterfaceFields]:
 
     return interfaces
 
-
+# Takes the submitted interface list and synchronizes it with the device’s saved interfaces.
 def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: list[InterfaceFields]) -> None:
     if device is None:
         return
@@ -91,6 +96,7 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
     current_interfaces = list(get_all_interfaces_from_device(actor=actor, tenant_id=tenant_id, device_id=device.id))
     matched_interface_ids: set[int] = set()
 
+    # For each submitted interface, tries to match it to an existing one:
     for interface_field in interface_fields:
         interface_name = (interface_field.name or "").strip()
         if not interface_name:
@@ -113,6 +119,7 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
                 None,
             )
 
+        # If it finds a match, it updates that saved interface’s fields.
         if existing_interface is not None:
             update_interface(
                 actor=actor,
@@ -126,6 +133,7 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
             matched_interface_ids.add(existing_interface.id)
             continue
 
+        # If it finds no match, it creates a new interface.
         create_interface(
             actor=actor,
             tenant_id=tenant_id,
@@ -136,6 +144,7 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
             VRF=interface_field.vrf or None,
         )
 
+    # Deletes existing interfaces that weren’t matched.
     for existing_interface in current_interfaces:
         if existing_interface.id not in matched_interface_ids:
             delete_interface(
@@ -345,7 +354,7 @@ def post_device_view(request):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     platform = request.POST.get("platform", "")
     type = request.POST.get("type", "")
-    draft_interface_fields = parse_interface_fields(request.POST.get("interface_fields"))
+    draft_interface_fields = parse_interface_fields(request.POST.get("interface_fields")) # Reads the submitted interface_fields and parses it
 
     try:
         created_device = create_device(
@@ -368,6 +377,7 @@ def post_device_view(request):
                 obj=created_device,
             )
 
+        # Once the device exists, it calls sync_device_interfaces()) to create its submitted interfaces
         sync_device_interfaces(
             actor=request.user,
             tenant_id=tenant_id,
@@ -526,12 +536,7 @@ def update_device_view(request, object_id):
                 tag_id=tag_id,
             )
 
-        device = get_object_by_type_and_id(
-            actor=request.user,
-            tenant_id=tenant_id,
-            object_type="device",
-            object_id=object_id,
-        )
+        # The submitted interface list is synchronized with the database
         sync_device_interfaces(
             actor=request.user,
             tenant_id=tenant_id,
