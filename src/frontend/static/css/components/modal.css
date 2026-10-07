@@ -237,8 +237,12 @@ Membership Selection
     margin-bottom: 0;
 }
 
-.membership-list-item.dragging {
-    opacity: 0.5;
+/* Drop-position preview while dragging, kept on the last moved item (classes set from app.js) */
+.membership-list-item.dragging,
+.membership-list-item.recently-dropped {
+    background-color: var(--sds-color-brand-primary-subtle);
+    outline: 2px dashed var(--sds-color-brand-primary-strong);
+    outline-offset: -2px;
 }
 
 .membership-list-item .filter-enabled-toggle {

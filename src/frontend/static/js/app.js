@@ -235,14 +235,17 @@ Interface Filter Draft (Ingoing/Outgoing)
 const interfaceFilterDraft = { in: null, out: null };
 const interfaceFilterBaseline = { in: null, out: null };
 let interfaceFiltersDirty = false;
-let showingInterfaceDifferences = false;
+let showingInterfaceDifferences = true;
+
 
 function markInterfaceFiltersDirty() {
+    // Marks the interface filters as dirty, indicating unsaved changes.
     interfaceFiltersDirty = true;
     updateInterfaceActionButtonsState();
 }
 
 function updateInterfaceActionButtonsState() {
+    // Updates the state of interface action buttons based on whether there are unsaved changes.
     document.querySelectorAll(".interface-save-btn").forEach((btn) => {
         btn.disabled = !interfaceFiltersDirty;
     });
@@ -252,6 +255,7 @@ function updateInterfaceActionButtonsState() {
 }
 
 function readInterfaceFilterListFromDom(direction) {
+    // Reads the list of interface filters from the DOM for the given direction (in/out).
     const container = document.querySelector(
         `.objects-interface-table[data-interface-filter-list="${direction}"]`
     );
@@ -268,6 +272,7 @@ function readInterfaceFilterListFromDom(direction) {
 }
 
 function ensureInterfaceFilterDraft(direction) {
+    // Ensures that the interface filter draft for the given direction exists, initializing it from the DOM if necessary.
     if (!interfaceFilterDraft[direction]) {
         const initial = readInterfaceFilterListFromDom(direction);
         interfaceFilterDraft[direction] = initial;
@@ -277,6 +282,7 @@ function ensureInterfaceFilterDraft(direction) {
 }
 
 function computeInterfaceFilterDiff(direction) {
+    // Computes the differences between the current interface filter draft and the baseline for the given direction (in/out).
     const baseline = interfaceFilterBaseline[direction] || [];
     const current = interfaceFilterDraft[direction] || [];
     const currentIds = new Set(current.map((item) => item.id));
@@ -311,7 +317,7 @@ function computeInterfaceFilterDiff(direction) {
                 diffStatus: "unchanged",
                 enabledChanged: item.enabled !== baseline[baselineIndex].enabled,
                 previousEnabled: baseline[baselineIndex].enabled,
-                sequenceChanged: index !== baselineIndex,
+                sequenceChanged: Boolean(item.moved) && index !== baselineIndex,
                 previousSequence: baselineIndex + 1,
                 displaySequence: index + 1,
             });
@@ -334,11 +340,6 @@ function discardInterfaceFilterChanges(button) {
     });
 
     interfaceFiltersDirty = false;
-    showingInterfaceDifferences = false;
-    document.querySelectorAll(".interface-diff-btn").forEach((btn) => {
-        btn.classList.remove("active");
-        btn.textContent = "Show Differences";
-    });
 
     renderInterfaceFilterRow("in");
     renderInterfaceFilterRow("out");
@@ -421,6 +422,7 @@ function reconcileInterfaceSelectorWithDraft(direction) {
         if (!item) return;
 
         item.dataset.enabled = entry.enabled ? "true" : "false";
+        if (entry.moved) item.dataset.moved = "true";
 
         const toggle = item.querySelector(".filter-enabled-toggle");
         if (toggle) {
@@ -448,6 +450,7 @@ function applyInterfaceRowFilterSelection(selectorType, direction, button) {
         name: item.dataset.name || "",
         description: item.dataset.description || "",
         enabled: item.dataset.enabled !== "false",
+        moved: item.dataset.moved === "true",
     }));
 
     renderInterfaceFilterRow(direction);
@@ -517,9 +520,8 @@ function renderInterfaceFilterRow(direction) {
         }
 
         if (entry.enabledChanged) {
-            const enabledCell = rowEl.children[3];
-            enabledCell.classList.add(entry.enabled ? "cell-diff-enabled-on" : "cell-diff-enabled-off");
-            enabledCell.title = `Changed from ${entry.previousEnabled ? "Enabled" : "Disabled"} to ${entry.enabled ? "Enabled" : "Disabled"}`;
+            rowEl.classList.add(entry.enabled ? "row-diff-enabled-on" : "row-diff-enabled-off");
+            rowEl.children[3].title = `Changed from ${entry.previousEnabled ? "Enabled" : "Disabled"} to ${entry.enabled ? "Enabled" : "Disabled"}`;
         }
 
         const toggleButton = rowEl.querySelector(".filter-enabled-toggle");
@@ -570,6 +572,7 @@ async function saveInterfaceFilterChanges(button) {
 
         interfaceFiltersDirty = false;
         ["in", "out"].forEach((direction) => {
+            (interfaceFilterDraft[direction] || []).forEach((item) => { item.moved = false; });
             interfaceFilterBaseline[direction] = (interfaceFilterDraft[direction] || []).map((item) => ({ ...item }));
         });
         updateInterfaceActionButtonsState();
@@ -740,18 +743,38 @@ function initializeMembershipSelectors(root = document) {
         const selectedList = selector.querySelector(".membership-list-selected");
 
         let draggedItem = null;
+        // Where the dragged item started, to tell whether the live preview moved it.
+        let dragOrigin = null;
+        let dropCompleted = false;
 
         selector.querySelectorAll(".membership-list-item").forEach(setupDraggableItem);
 
+        // The last moved filter stays highlighted until another filter is selected.
+        function clearRecentlyDropped() {
+            selector.querySelectorAll(".membership-list-item.recently-dropped")
+                .forEach((el) => el.classList.remove("recently-dropped"));
+        }
+
         function setupDraggableItem(item) {
+            item.addEventListener("mousedown", clearRecentlyDropped);
+
             item.addEventListener("dragstart", () => {
                 draggedItem = item;
+                dragOrigin = { list: item.parentElement, nextSibling: item.nextElementSibling };
+                dropCompleted = false;
                 item.classList.add("dragging");
             });
 
             item.addEventListener("dragend", () => {
+                // Released outside a list: keep the item where the preview last placed it.
+                const movedByPreview = dragOrigin
+                    && (item.parentElement !== dragOrigin.list || item.nextElementSibling !== dragOrigin.nextSibling);
+                if (!dropCompleted && movedByPreview) {
+                    finalizeItem(item.parentElement);
+                }
                 item.classList.remove("dragging");
                 draggedItem = null;
+                dragOrigin = null;
             });
 
             item.addEventListener("dblclick", () => {
@@ -825,13 +848,30 @@ function initializeMembershipSelectors(root = document) {
             }) || null;
         }
 
+        function existsInList(targetList) {
+            return Array.from(targetList.querySelectorAll(".membership-list-item"))
+                .some(item => item !== draggedItem && item.dataset.id === draggedItem.dataset.id);
+        }
+
+        // Moves the dragged item to where it would land, so the user sees the drop position while dragging.
+        function previewItem(targetList, y) {
+            if (!draggedItem || existsInList(targetList)) return;
+
+            const dropTarget = getDropTarget(targetList, y);
+            const alreadyInPlace = draggedItem.parentElement === targetList
+                && (dropTarget
+                    ? draggedItem.nextElementSibling === dropTarget
+                    : !draggedItem.nextElementSibling);
+
+            if (alreadyInPlace) return;
+
+            targetList.insertBefore(draggedItem, dropTarget);
+        }
+
         function moveItem(targetList, y = null) {
             if (!draggedItem) return;
 
-            const alreadyExists = Array.from(targetList.querySelectorAll(".membership-list-item"))
-                .some(item => item !== draggedItem && item.dataset.id === draggedItem.dataset.id);
-
-            if (alreadyExists) return;
+            if (existsInList(targetList)) return;
 
             const dropTarget = y !== null ? getDropTarget(targetList, y) : null;
 
@@ -841,24 +881,44 @@ function initializeMembershipSelectors(root = document) {
                 targetList.appendChild(draggedItem);
             }
 
+            finalizeItem(targetList);
+        }
+
+        // Applies list-specific state to the dragged item once it has its final position.
+        function finalizeItem(targetList) {
             ensureHiddenInput(draggedItem, targetList === selectedList);
 
             if (isFilterSelector) {
                 if (targetList === selectedList) {
                     ensureFilterEnabledToggle(draggedItem);
+                    // Only the filter the user placed is marked; filters that shift because of it are not.
+                    draggedItem.dataset.moved = "true";
                 } else {
                     removeFilterEnabledToggle(draggedItem);
+                    delete draggedItem.dataset.moved;
                 }
             }
+
+            clearRecentlyDropped();
+            draggedItem.classList.add("recently-dropped");
         }
 
         [availableList, selectedList].forEach((list) => {
             list.addEventListener("dragover", (event) => {
                 event.preventDefault();
+                previewItem(list, event.clientY);
             });
 
             list.addEventListener("drop", (event) => {
                 event.preventDefault();
+                dropCompleted = true;
+
+                // Released at its original spot: nothing to mark or highlight.
+                const atOrigin = dragOrigin
+                    && draggedItem?.parentElement === dragOrigin.list
+                    && draggedItem.nextElementSibling === dragOrigin.nextSibling;
+                if (atOrigin) return;
+
                 moveItem(list, event.clientY);
             });
         });
@@ -1223,6 +1283,16 @@ function refreshRulesTableContent(rulesBody) {
     });
 }
 
+// The last moved rule stays highlighted until another rule is selected.
+// Stored by row id because the table is re-rendered after each reorder.
+let recentlyDroppedRuleRowId = null;
+
+// Runs on htmx:afterSettle, since settling resets the class of rows that keep their id.
+function restoreRecentlyDroppedRuleRow() {
+    if (!recentlyDroppedRuleRowId) return;
+    document.getElementById(recentlyDroppedRuleRowId)?.classList.add("recently-dropped");
+}
+
 function initializeRuleRowDragAndDrop(root = document) {
     const rulesBody = root.querySelector("#rules-table");
 
@@ -1240,6 +1310,9 @@ function initializeRuleRowDragAndDrop(root = document) {
     rulesBody.dataset.dragInitialized = "true";
 
     let draggedMainRow = null;
+    // Where the dragged row started, to tell whether the live preview moved it.
+    let dragOriginPreviousSibling = null;
+    let dropCompleted = false;
 
     // Only include actual draggable rule rows.
     // Do not include any expanded/detail/child rows in the sequence calculation.
@@ -1251,10 +1324,28 @@ function initializeRuleRowDragAndDrop(root = document) {
         );
     };
 
+    const clearRecentlyDropped = () => {
+        recentlyDroppedRuleRowId = null;
+        rulesBody.querySelectorAll("tr.recently-dropped")
+            .forEach((row) => row.classList.remove("recently-dropped"));
+    };
+
     getMainRows().forEach((row) => {
+        row.addEventListener("mousedown", clearRecentlyDropped);
+
         row.addEventListener("dragstart", (event) => {
             draggedMainRow = row;
+            // Previous sibling, since the next one is the row's own details row that moves with it.
+            dragOriginPreviousSibling = row.previousElementSibling;
+            dropCompleted = false;
             row.classList.add("dragging");
+
+            // Collapse an expanded row so only the compact row is dragged around.
+            const detailsRow = getDetailsRowForMainRow(row);
+            if (detailsRow && detailsRow.style.display === "table-row") {
+                detailsRow.style.display = "none";
+                row.classList.remove("expanded-row");
+            }
 
             if (event.dataTransfer) {
                 event.dataTransfer.effectAllowed = "move";
@@ -1263,8 +1354,14 @@ function initializeRuleRowDragAndDrop(root = document) {
         });
 
         row.addEventListener("dragend", () => {
+            // Released outside the table: keep the row where the preview last placed it.
+            const movedByPreview = row.previousElementSibling !== dragOriginPreviousSibling;
+            if (!dropCompleted && movedByPreview) {
+                saveRuleOrder(row);
+            }
             row.classList.remove("dragging");
             draggedMainRow = null;
+            dragOriginPreviousSibling = null;
         });
     });
 
@@ -1289,14 +1386,24 @@ function initializeRuleRowDragAndDrop(root = document) {
         moveRuleRowPair(draggedMainRow, targetMainRow, placeBefore);
     });
 
-    rulesBody.addEventListener("drop", async (event) => {
+    rulesBody.addEventListener("drop", (event) => {
         if (!draggedMainRow) {
             return;
         }
 
         event.preventDefault();
+        dropCompleted = true;
 
-        const ruleId = getRuleIdFromMainRow(draggedMainRow);
+        // Released at its original spot: nothing to save or highlight.
+        if (draggedMainRow.previousElementSibling === dragOriginPreviousSibling) {
+            return;
+        }
+
+        saveRuleOrder(draggedMainRow);
+    });
+
+    async function saveRuleOrder(movedRow) {
+        const ruleId = getRuleIdFromMainRow(movedRow);
 
         if (!ruleId) {
             return;
@@ -1304,7 +1411,7 @@ function initializeRuleRowDragAndDrop(root = document) {
 
         // Get the rows after moveRuleRowPair() has updated the DOM.
         const mainRows = getMainRows();
-        const rowIndex = mainRows.indexOf(draggedMainRow);
+        const rowIndex = mainRows.indexOf(movedRow);
 
         if (rowIndex === -1) {
             return;
@@ -1313,6 +1420,10 @@ function initializeRuleRowDragAndDrop(root = document) {
         // The backend expects a 1-indexed sequence:
         // first row = 1, second row = 2, etc.
         const newSequence = rowIndex + 1;
+
+        clearRecentlyDropped();
+        recentlyDroppedRuleRowId = movedRow.id;
+        movedRow.classList.add("recently-dropped");
 
         const csrfToken = getCsrfToken();
 
@@ -1341,7 +1452,7 @@ function initializeRuleRowDragAndDrop(root = document) {
             console.error("Error while reordering rules.", error);
             refreshRulesTableContent(rulesBody);
         }
-    });
+    }
 }
 
 
@@ -1442,6 +1553,7 @@ document.addEventListener("htmx:afterSwap", function (event) {
 });
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
+document.addEventListener("htmx:afterSettle", restoreRecentlyDroppedRuleRow);
 document.addEventListener("click", handleGenerateConfigButtonClick);
 
 document.addEventListener("click", function (event) {
