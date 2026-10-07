@@ -79,30 +79,25 @@ Column Widths
     width: 50%;
 }
 
-/* Filters: Inspect icon, Name, Description, Rules, Tags */
+/* Filters: Name, Description, Rules, Tags */
 .objects-table--filters .col-1 {
-    width: 4%;
+    width: 20%;
 }
 
 .objects-table--filters .col-2 {
-    width: 16%;
-}
-
-.objects-table--filters .col-3 {
     width: 30%;
 }
 
-.objects-table--filters .col-4 {
+.objects-table--filters .col-3 {
     width: 24%;
 }
 
-.objects-table--filters .col-5 {
+.objects-table--filters .col-4 {
     width: 21%;
 }
 
-.filters-table td:nth-child(2) {
-    text-align: left;
-    padding-left: 4px;
+.objects-table--filters .main-row {
+    cursor: pointer;
 }
 
 /* Rules */
@@ -154,7 +149,6 @@ Rule Object Links
 /* Markup: <div class="rule-object-item truncate"> */
 .rule-object-item {
     display: block;
-    width: 100%;
     max-width: 100%;
     min-width: 0;
     cursor: pointer;
