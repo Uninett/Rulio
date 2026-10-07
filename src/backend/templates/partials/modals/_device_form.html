@@ -7,3 +7,52 @@
     <label for="type">Type<span class="required"> *</span></label>
     <input id="type" name="type" value="{{ object_data.type|default:''  }}" type="text" required>
 </div>
+
+{{ object_data.interfaces|json_script:"device-interface-field-data" }}
+<input type="hidden" name="interface_fields" id="device-interface-field-input" value="">
+
+<div class="form-group device-interfaces-group">
+    <label>Interfaces</label>
+
+    {% if object_data.interfaces %}
+    <p class="device-interfaces">
+        <span class="device-interface-names">
+            {% for interface in object_data.interfaces %}
+            {{ interface.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </span>
+        <span class="device-interface-count">
+            ({{ object_data.interfaces|length }})
+        </span>
+    </p>
+    {% else %}
+    <p class="empty-state">No interfaces are connected to this device.</p>
+    {% endif %}
+
+    {% if object_data.id %}
+    <button type="button" class="btn-secondary"
+        data-device-interface-url="{% url 'device-interfaces-modal' object_data.id %}"
+        onclick="openDeviceInterfaceModal(this)">
+        Manage interfaces
+    </button>
+    {% else %}
+    <button type="button" class="btn-secondary" data-device-interface-url="{% url 'new-device-interfaces-modal' %}"
+        onclick="openDeviceInterfaceModal(this)">
+        Manage interfaces
+    </button>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const hiddenInput = document.getElementById("device-interface-field-input");
+        const interfaceData = document.getElementById("device-interface-field-data");
+        if (hiddenInput && interfaceData) {
+            hiddenInput.value = interfaceData.textContent;
+            const form = hiddenInput.closest("form");
+            if (form) {
+                form.dataset.interfaceDraft = hiddenInput.value;
+            }
+        }
+    });
+</script>
