@@ -266,6 +266,17 @@ function getDeviceInterfaceDraftState(form) {
     return ""; // If neither place contains a draft, return an empty string.
 }
 
+function setDeviceFormSubmitDisabled(disabled) {
+    const form = getDeviceInterfaceParentForm();
+    if (!form) return;
+
+    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+        button.disabled = disabled
+            ? "Unsaved interface changes will be lost. Close the interface window before submitting."
+            : "";
+    });
+}
+
 // Opening the interface modal
 function openDeviceInterfaceModal(button) {
     const form = button.closest("form"); // Finds the device form containing the button.
@@ -283,6 +294,7 @@ function openDeviceInterfaceModal(button) {
     }
 
     const fullUrl = params.toString() ? `${url}?${params.toString()}` : url; // If there are query parameters, adds them to the URL. Otherwise, uses the URL as-is.
+    setDeviceFormSubmitDisabled(true); // Disable the device form submit button while the interface modal is open.
     htmx.ajax("GET", fullUrl, {
         target: "#submodal-container",
         swap: "innerHTML",
@@ -874,9 +886,13 @@ function closeThisModal(button) {
     const modal = button.closest(".draggable-modal");
     if (!modal) return;
 
+    const isDeviceInterfaceModal = modal.querySelector(".device-interface-manager");
     modal.remove();
-}
 
+    if (isDeviceInterfaceModal) {
+        setDeviceFormSubmitDisabled(false);
+    }
+}
 
 
 function makeModalDraggable(modal, header) {
