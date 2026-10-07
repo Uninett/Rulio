@@ -9,7 +9,7 @@ from backend.services.attribute_objects.create_attribute_objects import (
 )
 from backend.services.attribute_objects.get_address_objects import (
     get_address_group_members,
-    get_all_addresses_and_groups_with_tags_from_tenant,
+    get_all_addresses_and_groups_with_tags_from_tenant_as_json,
 )
 from backend.services.delete import delete_address, remove_tag_from_object
 from backend.services.get import get_all_tags_from_object, get_object_by_type_and_id
@@ -119,7 +119,7 @@ def get_addresses_view(request):
     tenant_id = int(tenant_id)
 
     try:
-        _, addresses, address_groups = get_all_addresses_and_groups_with_tags_from_tenant(
+        _, addresses, address_groups = get_all_addresses_and_groups_with_tags_from_tenant_as_json(
             actor=request.user,
             tenant_id=int(tenant_id),
             include_global_tenant=True,

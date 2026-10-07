@@ -8,7 +8,7 @@ from backend.services.attribute_objects.create_attribute_objects import (
     create_service,
 )
 from backend.services.attribute_objects.get_service_objects import (
-    get_all_services_and_groups_with_tags_from_tenant,
+    get_all_services_and_groups_with_tags_from_tenant_as_json,
     get_service_group_members,
 )
 from backend.services.delete import (
@@ -66,7 +66,7 @@ def get_services_view(request):
         }
 
     try:
-        service_dict, services, service_groups = get_all_services_and_groups_with_tags_from_tenant(
+        service_dict, services, service_groups = get_all_services_and_groups_with_tags_from_tenant_as_json(
             actor=request.user,
             tenant_id=int(tenant_id),
             include_global_tenant=True,

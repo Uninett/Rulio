@@ -10,7 +10,7 @@
         </a>
         {% endfor %}
     </section>
-</section>
+</section> 
 
 <script>
     document.addEventListener("click", function (event) {
@@ -40,12 +40,14 @@
         //To make match on name be the most valueble
         for (let i = 0; i < a.length; i++) { //goes through each element in a
             const nameElement = a[i].querySelector(".search-result-name"); //looks inside the current element for a child with this class name
-            const nameText = (nameElement ? nameElement.textContent : a[i].textContent || "").toUpperCase(); //if the child exists, use its text ior else use the full text. Uppercase for case-insensitive matching
+            const nameText = (nameElement ? nameElement.textContent : a[i].textContent || "").trim().toUpperCase(); //if the child exists, use its text ior else use the full text. Uppercase for case-insensitive matching
             const searchText = (a[i].dataset.search || a[i].textContent || "").toUpperCase(); //use a[i].dataset.search if it exists, else use element text's content. 
 
             let score = -1;
 
-            if (nameText.startsWith(filter)) {
+            if (nameText === filter) {
+                score = 4;
+            } else if (nameText.startsWith(filter)) {
                 score = 3;
             } else if (nameText.indexOf(filter) > -1) {
                 score = 2;
@@ -54,14 +56,14 @@
             }
 
             if (score > 0) {
-                matches.push({ element: a[i], score: score }); //add to matches
+                matches.push({ element: a[i], score: score, nameLength: nameText.length }); //add to matches
                 a[i].style.display = "";
             } else {
                 a[i].style.display = "none";
             }
         }
 
-        matches.sort((a, b) => b.score - a.score); //sort by best score
+        matches.sort((a, b) => b.score - a.score || a.nameLength - b.nameLength); //sort by best score, then shortest name
 
         matches.forEach(match => {
             section.appendChild(match.element);

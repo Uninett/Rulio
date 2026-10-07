@@ -392,16 +392,37 @@ def get_object_by_type_and_id(actor: User, tenant_id: int, object_type: str, obj
     return obj
 
 
-def get_all_rules_from_tenant(actor: User, tenant_id: int) -> QuerySet[Rule]:
+def get_all_rules_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> QuerySet[Rule]:
     require_read_tenant(actor, tenant_id)
-    requested_rules = Rule.objects.filter(tenant_id=tenant_id)
-    return requested_rules
+    if include_global_tenant:
+        return Rule.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+    else:
+        return Rule.objects.filter(tenant_id=tenant_id)
 
 
-def get_all_devices_from_tenant(actor: User, tenant_id: int) -> QuerySet[Device]:
+def get_all_devices_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> QuerySet[Device]:
     require_read_tenant(actor, tenant_id)
-    requested_devices = Device.objects.filter(tenant_id=tenant_id)
-    return requested_devices
+    if include_global_tenant:
+        return Device.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+    else:
+        return Device.objects.filter(tenant_id=tenant_id)
+
+
+def get_all_device_groups_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> QuerySet[DeviceGroup]:
+    require_read_tenant(actor, tenant_id)
+    if include_global_tenant:
+        return DeviceGroup.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+    else:
+        return DeviceGroup.objects.filter(tenant_id=tenant_id)
+
+
+def get_all_interfaces_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> QuerySet[Interface]:
+    require_read_tenant(actor, tenant_id)
+    if include_global_tenant:
+        interfaces = Interface.objects.filter(device__tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+    else:
+        interfaces = Interface.objects.filter(device__tenant_id=tenant_id)
+    return interfaces.select_related("device")
 
 
 def get_all_devices_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):
@@ -505,10 +526,12 @@ def get_all_filters_from_interface(
     return requested_filters
 
 
-def get_all_filters_from_tenant(actor: User, tenant_id: int) -> QuerySet[Filter]:
+def get_all_filters_from_tenant(actor: User, tenant_id: int, include_global_tenant=True) -> QuerySet[Filter]:
     require_read_tenant(actor, tenant_id)
-    requested_filters = Filter.objects.filter(tenant_id=tenant_id)
-    return requested_filters
+    if include_global_tenant:
+        return Filter.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+    else:
+        return Filter.objects.filter(tenant_id=tenant_id)
 
 
 def get_all_filters_with_tags_from_tenant(actor: User, tenant_id: int, include_global_tenant=True):

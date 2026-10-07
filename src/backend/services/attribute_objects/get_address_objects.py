@@ -65,7 +65,35 @@ def get_address_groups_and_addresses_from_tenant(
     return result, addresses, address_groups
 
 
-def get_all_addresss_groups_with_tags_from_tenant(
+def get_all_addresses_from_tenant(actor: User, tenant_id: int, include_global=True) -> list[Address]:
+    require_read_tenant(actor, tenant_id)
+    if include_global:
+        allowed_tenants = [GLOBAL_TENANT_ID, tenant_id]
+    else:
+        allowed_tenants = [tenant_id]
+    return Address.objects.filter(tenant_id__in=allowed_tenants)
+
+
+def get_all_address_groups_from_tenant(
+    actor: User, tenant_id: int, include_global_tenant=True
+) -> QuerySet[AddressGroup]:
+    require_read_tenant(actor, tenant_id)
+    if include_global_tenant:
+        return AddressGroup.objects.filter(tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+    else:
+        return AddressGroup.objects.filter(tenant_id=tenant_id)
+
+
+def get_all_addresses_and_groups_from_tenant(
+    actor: User, tenant_id: int, include_global_tenant=True
+) -> tuple[QuerySet[Address], QuerySet[AddressGroup]]:
+    require_read_tenant(actor, tenant_id)
+    return get_all_addresses_from_tenant(actor, tenant_id, include_global_tenant), get_all_address_groups_from_tenant(
+        actor, tenant_id, include_global_tenant
+    )
+
+
+def get_all_addresss_groups_with_tags_from_tenant_as_json(
     actor: User, tenant_id: int, include_global_tenant=True
 ) -> tuple[list[dict], QuerySet[AddressGroup]]:
     require_read_tenant(actor, tenant_id)
@@ -97,7 +125,7 @@ def get_all_addresss_groups_with_tags_from_tenant(
     return result, address_groups
 
 
-def get_all_addresses_and_groups_with_tags_from_tenant(
+def get_all_addresses_and_groups_with_tags_from_tenant_as_json(
     actor: User, tenant_id: int, include_global_tenant=True
 ) -> tuple[list[dict], QuerySet[Address], QuerySet[AddressGroup]]:
     require_read_tenant(actor, tenant_id)
@@ -188,18 +216,6 @@ def get_all_addresses_and_groups_with_tags_from_tenant(
         )
 
     return result, addresses, address_groups
-
-
-def get_all_address_groups_from_tenant(actor: User, tenant_id: int) -> QuerySet[AddressGroup]:
-    require_read_tenant(actor, tenant_id)
-    requested_address_groups = AddressGroup.objects.filter(tenant_id=tenant_id)
-    return requested_address_groups
-
-
-def get_all_addresses_from_tenant(actor: User, tenant_id: int) -> list[dict] | QuerySet[Address]:
-    require_read_tenant(actor, tenant_id)
-    requested_addresses = Address.objects.filter(tenant_id=tenant_id)
-    return requested_addresses
 
 
 def get_all_addresses_from_tenant_by_names(actor: User, tenant_id: int, names: list[str]) -> QuerySet[Address]:

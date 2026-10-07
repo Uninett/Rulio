@@ -1,8 +1,8 @@
 from backend.services.attribute_objects.get_address_objects import (
-    get_all_addresses_and_groups_with_tags_from_tenant,
+    get_all_addresses_and_groups_with_tags_from_tenant_as_json,
 )
 from backend.services.attribute_objects.get_service_objects import (
-    get_all_services_and_groups_with_tags_from_tenant,
+    get_all_services_and_groups_with_tags_from_tenant_as_json,
 )
 from backend.services.get import (
     get_all_device_groups_and_devices_with_tags_from_tenant,
@@ -42,7 +42,7 @@ def get_group_options_view(request, object_type):
             ]
 
         if object_type == "addresses":
-            objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant_as_json(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -57,7 +57,7 @@ def get_group_options_view(request, object_type):
             ]
 
         if object_type == "services":
-            objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_services_and_groups_with_tags_from_tenant_as_json(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -101,7 +101,7 @@ def get_item_options_view(request, object_type):
             ]
 
         if object_type == "addresses":
-            objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_addresses_and_groups_with_tags_from_tenant_as_json(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
@@ -116,7 +116,7 @@ def get_item_options_view(request, object_type):
             ]
 
         if object_type == "services":
-            objects, _, _ = get_all_services_and_groups_with_tags_from_tenant(
+            objects, _, _ = get_all_services_and_groups_with_tags_from_tenant_as_json(
                 actor=request.user,
                 tenant_id=tenant_id,
             )
