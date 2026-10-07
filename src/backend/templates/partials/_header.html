@@ -56,7 +56,7 @@
             <input type="hidden" id="current-tenant-id" name="tenant_id" value="{{ selected_tenant }}">
 
             <div class="user-menu">
-                <button type="button" class="user-menu-trigger" onclick="toggleUserMenu(event)">
+                <button type="button" class="btn-reset center-box user-menu-trigger" onclick="toggleUserMenu(event)">
                     {% if request.user.first_name and request.user.last_name %}
                     {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
                     {% elif request.user.first_name %}
@@ -78,7 +78,7 @@
                     </div>
 
                     {% if request.user.is_superuser %}
-                    <a href="{% url 'management-page' %}" class="user-menu-btn management-menu-settings">
+                    <a href="{% url 'management-page' %}" class="btn-reset user-menu-btn management-menu-settings">
                         <img class="btn-icon" src="{% static 'images/user.svg' %}" alt="" aria-hidden="true">
                         Management
                     </a>
@@ -86,7 +86,7 @@
 
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}
-                        <button type="submit" class="user-menu-btn user-menu-logout">
+                        <button type="submit" class="btn-reset user-menu-btn user-menu-logout">
                             <img class="btn-icon" src="{% static 'images/signout.svg' %}" alt="" aria-hidden="true">
                             Log out
                         </button>

@@ -10,8 +10,8 @@
 
     <!-- Loads the local htmx library from the frontend static/js folder -->
     <script src="{% static 'js/htmx.min.js' %}"></script>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/login.css' %}" />
+    {% include "partials/_styles.html" %}
+    <link rel="stylesheet" href="{% static 'css/pages/login.css' %}" />
     {% block extra_css %}{% endblock %}
 
 </head>

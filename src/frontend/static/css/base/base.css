@@ -1,0 +1,86 @@
+/*
+====================================================================
+Page / Document
+====================================================================
+*/
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    background-color: var(--sds-color-layout-default);
+}
+
+body {
+    padding: 1rem;
+    font-family: "Haffer", sans-serif;
+}
+
+hr {
+    opacity: 0.5;
+}
+
+.hidden {
+    display: none;
+}
+
+
+/*
+====================================================================
+Typography
+====================================================================
+*/
+
+h1,
+.breadcrumbs {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--sds-color-layout-border-strong);
+}
+
+
+/*
+====================================================================
+Buttons
+====================================================================
+*/
+
+button {
+    font-size: 1rem;
+    background-color: var(--sds-color-brand-primary-strong);
+    border: 2px solid var(--sds-color-brand-primary-strong);
+    border-radius: var(--radius-button);
+    color: var(--sds-color-text-on-strong);
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+/* .btn-reset buttons opt out of the default hover (see components/buttons.css). */
+button:where(:not(.btn-reset)):hover {
+    background-color: var(--sds-color-brand-primary-strong-hover);
+    border: 2px solid var(--sds-color-brand-primary-strong-hover);
+}
+
+
+/*
+====================================================================
+Inputs
+====================================================================
+*/
+
+input,
+textarea {
+    padding: 0 0.75rem;
+    border: 1px solid var(--sds-color-layout-border-strong);
+    border-radius: var(--radius-control);
+}
+
+input {
+    min-height: 2rem;
+}
+
+textarea {
+    padding: 0.75rem;
+    min-height: 4rem;
+}

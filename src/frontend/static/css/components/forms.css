@@ -1,0 +1,109 @@
+/*
+====================================================================
+Form Groups
+====================================================================
+*/
+
+.form-group,
+.membership-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+.form-group select {
+    min-height: 2.5rem;
+    min-width: 14rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--sds-color-layout-border-strong);
+    border-radius: var(--radius-control);
+}
+
+select[name="tenant_id"],
+select[name="protocol"] {
+    background-color: var(--sds-color-layout-surface-1);
+}
+
+.required {
+    color: var(--sds-color-brand-primary-strong);
+}
+
+
+/*
+====================================================================
+Checkboxes
+====================================================================
+*/
+
+.form-group-username {
+    flex: 2;
+}
+
+.form-group-checkbox {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.checkbox-text {
+    margin: 0;
+    font-family: inherit;
+    font-size: smaller;
+}
+
+.checkbox-control input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--sds-color-brand-primary-strong);
+}
+
+
+/*
+====================================================================
+Filter Enabled Toggle
+====================================================================
+Markup: <button class="btn-reset center-box filter-enabled-toggle">
+*/
+
+.filter-enabled-toggle {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 2px;
+    border: 1px solid var(--sds-color-layout-border-subtle);
+    background-color: var(--sds-color-layout-surface-1);
+    line-height: 1;
+}
+
+.filter-enabled-toggle-check {
+    flex-shrink: 0;
+    width: 4px;
+    height: 7px;
+    margin-top: -1px;
+    padding-left: 0;
+    border-right: 1.5px solid var(--sds-color-brand-primary-strong);
+    border-bottom: 1.5px solid var(--sds-color-brand-primary-strong);
+    transform: rotate(45deg);
+    visibility: hidden;
+}
+
+.filter-enabled-toggle[data-enabled="true"] .filter-enabled-toggle-check {
+    visibility: visible;
+}
+
+.filter-enabled-toggle[data-enabled="true"] {
+    border-color: var(--sds-color-brand-primary-strong);
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+}

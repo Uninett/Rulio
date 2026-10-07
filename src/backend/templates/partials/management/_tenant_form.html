@@ -3,7 +3,7 @@
     <input type="text" id="id_tenant_name" name="tenant_name" value="{{ object_data.tenant_name|default:'' }}" required>
 </div>
 
-<div class="modal-header">
+<div class="modal-subheader">
     <h2 class="membership-header">Users</h2>
 </div>
 
@@ -14,7 +14,7 @@
         <div class="membership-list membership-list-available" data-list-type="available">
             {% for user in user_options %}
             {% if user.id not in selected_user_ids %}
-            <div class="membership-list-item" draggable="true" data-id="{{ user.id }}">
+            <div class="membership-list-item truncate" draggable="true" data-id="{{ user.id }}">
                 {{ user.name }}
             </div>
             {% endif %}
@@ -26,7 +26,7 @@
         <div class="membership-list membership-list-selected" data-list-type="selected">
             {% for user in user_options %}
             {% if user.id in selected_user_ids %}
-            <div class="membership-list-item" draggable="true" data-id="{{ user.id }}">
+            <div class="membership-list-item truncate" draggable="true" data-id="{{ user.id }}">
                 {{ user.name }}
                 <input type="hidden" name="user_ids" value="{{ user.id }}">
             </div>

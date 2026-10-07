@@ -1,0 +1,63 @@
+/*
+====================================================================
+Tabs
+====================================================================
+Markup:
+<div class="tools-toggle [tools-toggle--plain]">
+    <button class="btn-toggle [active]">
+
+.tools-toggle / .btn-toggle are also the hooks for the click handler
+in app.js.
+*/
+
+.tools-toggle {
+    display: flex;
+    border-bottom: 1px solid var(--sds-color-layout-border-subtle);
+}
+
+.btn-toggle {
+    background-color: transparent;
+    border: none;
+    border-bottom: 4px solid transparent;
+    color: inherit;
+    border-radius: 0;
+}
+
+.btn-toggle:hover {
+    background-color: var(--sds-color-interaction-neutral-subtle);
+    border: none;
+    border-bottom: 4px solid transparent;
+}
+
+.btn-toggle.active,
+.btn-toggle.active:hover {
+    border-bottom-color: var(--sds-color-brand-primary-strong);
+}
+
+
+/*
+====================================================================
+Plain Tabs (text only, used in modals)
+====================================================================
+*/
+
+.tools-toggle--plain {
+    gap: 2rem;
+    align-items: flex-start;
+    border-bottom: none;
+}
+
+.tools-toggle--plain .btn-toggle,
+.tools-toggle--plain .btn-toggle:hover {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: smaller;
+    color: var(--sds-color-text-secondary);
+}
+
+.tools-toggle--plain .btn-toggle.active {
+    font-weight: 600;
+    color: var(--sds-color-text-primary);
+}

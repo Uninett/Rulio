@@ -43,7 +43,7 @@
                 {% if field.value %}
                 {% if field.special_style %}
                 {% for value in field.value %}
-                <div class="tagsElipse" title="{{ value }}">{{ value }}</div>
+                <div class="tagsElipse truncate" title="{{ value }}">{{ value }}</div>
                 {% endfor %}
                 {% else %}
                 {{ value }}

@@ -1,0 +1,19 @@
+/*
+====================================================================
+Utilities
+====================================================================
+*/
+
+/* Single-line text that ends in an ellipsis when it overflows. */
+.truncate {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Inline box that centres its content on both axes (icon buttons, badges). */
+.center-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

@@ -17,8 +17,8 @@
     flex-direction: column;
     gap: 16px;
     padding: 32px;
-    background: var(--sds-color-text-on-strong);
-    border-radius: 1rem;
+    background: var(--sds-color-layout-surface-1);
+    border-radius: var(--radius-lg);
 }
 
 .login-logo {

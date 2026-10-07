@@ -1,0 +1,149 @@
+/*
+====================================================================
+Button Reset
+====================================================================
+Strips the default pill look from a <button> (or link) so it can be
+styled as an icon button, menu item, etc. The default button hover is
+also skipped for these (see base/base.css).
+*/
+
+.btn-reset {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+}
+
+
+/*
+====================================================================
+Button Tones
+====================================================================
+Set --btn-tone* with a tone modifier, then pick a style below.
+*/
+
+.btn--primary {
+    --btn-tone: var(--sds-color-brand-primary-strong);
+    --btn-tone-hover: var(--sds-color-brand-primary-strong-hover);
+    --btn-tone-subtle: var(--sds-color-brand-primary-subtle);
+}
+
+.btn--danger {
+    --btn-tone: var(--sds-color-support-critical-strong);
+    --btn-tone-hover: var(--sds-color-support-critical-strong-hover);
+    --btn-tone-subtle: var(--sds-color-support-critical-subtle);
+}
+
+/* Solid: filled with the tone colour */
+.btn-solid {
+    background-color: var(--btn-tone);
+    border-color: var(--btn-tone);
+    color: var(--sds-color-text-on-strong);
+}
+
+.btn-solid:hover:not(:disabled) {
+    background-color: var(--btn-tone-hover);
+    border-color: var(--btn-tone-hover);
+}
+
+/* Outline: tone-coloured border and text */
+.btn-outline {
+    background-color: transparent;
+    border-color: var(--btn-tone);
+    color: var(--btn-tone);
+}
+
+.btn-outline:hover:not(:disabled) {
+    background-color: var(--btn-tone-subtle);
+    border-color: var(--btn-tone-hover);
+    color: var(--btn-tone-hover);
+}
+
+.btn-outline.active,
+.btn-outline.active:hover:not(:disabled) {
+    background-color: var(--btn-tone);
+    border-color: var(--btn-tone);
+    color: var(--sds-color-text-on-strong);
+}
+
+/* Ghost: tone-coloured text, no border until hovered */
+.btn-ghost {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--btn-tone);
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background-color: var(--btn-tone-subtle);
+    border-color: var(--btn-tone-subtle);
+}
+
+
+/*
+====================================================================
+Disabled
+====================================================================
+*/
+
+button:disabled,
+button:disabled:hover,
+.btn-add-disabled {
+    background-color: var(--sds-color-interaction-neutral-subtle);
+    border-color: var(--sds-color-interaction-neutral-subtle);
+    color: var(--sds-color-text-secondary);
+    cursor: not-allowed;
+}
+
+.btn-add-disabled:hover {
+    background-color: var(--sds-color-interaction-neutral-subtle-hover);
+    border-color: var(--sds-color-interaction-neutral-subtle-hover);
+}
+
+.btn-add-disabled .btn-icon {
+    filter: brightness(0) saturate(100%) invert(56%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(90%) contrast(90%);
+}
+
+
+/*
+====================================================================
+Button Icons
+====================================================================
+*/
+
+.btn-icon,
+.row-visibility-icon {
+    width: 1rem;
+    height: 1rem;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.actions-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.cancel-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+
+/*
+====================================================================
+Specific Buttons
+====================================================================
+*/
+
+.btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.actions-btn:disabled,
+.actions-btn-disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}

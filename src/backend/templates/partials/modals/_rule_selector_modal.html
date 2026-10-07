@@ -13,7 +13,7 @@
 
             {% for group in group_options %}
                 {% if group.selector_id not in selected_object_ids %}
-                    <div class="membership-list-item"
+                    <div class="membership-list-item truncate"
                          draggable="true"
                          data-id="{{ group.selector_id }}"
                          data-name="{{ group.name }}">
@@ -24,7 +24,7 @@
 
             {% for item in item_options %}
                 {% if item.selector_id not in selected_object_ids %}
-                    <div class="membership-list-item"
+                    <div class="membership-list-item truncate"
                          draggable="true"
                          data-id="{{ item.selector_id }}"
                          data-name="{{ item.name }}">
@@ -43,7 +43,7 @@
 
             {% for group in group_options %}
                 {% if group.selector_id in selected_object_ids %}
-                    <div class="membership-list-item"
+                    <div class="membership-list-item truncate"
                          draggable="true"
                          data-id="{{ group.selector_id }}"
                          data-name="{{ group.name }}">
@@ -58,7 +58,7 @@
 
             {% for item in item_options %}
                 {% if item.selector_id in selected_object_ids %}
-                    <div class="membership-list-item"
+                    <div class="membership-list-item truncate"
                          draggable="true"
                          data-id="{{ item.selector_id }}"
                          data-name="{{ item.name }}">

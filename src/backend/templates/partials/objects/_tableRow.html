@@ -25,12 +25,12 @@
     {% if row.can_write %}
     <td class="actions-column">
         {% if row.edit_url %}
-        <button type="button" class="actions-btn" data-selector-url="{{ row.edit_url }}" data-direction="{{ row.direction }}"
+        <button type="button" class="btn-reset actions-btn" data-selector-url="{{ row.edit_url }}" data-direction="{{ row.direction }}"
             onclick="event.stopPropagation(); openInterfaceRowFilterEditor(this.dataset.direction, this.dataset.selectorUrl)">
             <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
         </button>
         {% else %}
-        <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.id %}" hx-target="#modal-container"
+        <button type="button" class="btn-reset actions-btn" hx-get="{% url 'modal-update' row.id %}" hx-target="#modal-container"
             hx-swap="innerHTML" onclick="event.stopPropagation()">
             <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
         </button>
@@ -38,7 +38,7 @@
     </td>
     {% else %}
     <td class="actions-column">
-        <button type="button" class="actions-btn actions-btn-disabled"
+        <button type="button" class="btn-reset actions-btn actions-btn-disabled"
             title="{% if row.is_global %}Need superuser permission to update global {{ object_type }}.{% else %}Need tenant admin permission to update {{ object_type }}.{% endif %}">
             <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
         </button>

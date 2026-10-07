@@ -10,10 +10,7 @@
 
     <!-- Loads the local htmx library from the frontend static/js folder -->
     <script src="{% static 'js/htmx.min.js' %}"></script>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/tools.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/modal.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/search.css' %}" />
+    {% include "partials/_styles.html" %}
     {% block extra_css %}{% endblock %}
 
 </head>

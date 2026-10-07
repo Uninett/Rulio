@@ -1,0 +1,88 @@
+/*
+====================================================================
+User table
+====================================================================
+*/
+
+.user-column {
+    width: auto;
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-cell p,
+.user-cell span {
+    margin: 0;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.user-info-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.user-full-name {
+    font-weight: 600;
+    color: var(--sds-color-text-primary);
+}
+
+.user-username {
+    font-style: italic;
+    color: var(--sds-color-text-secondary);
+}
+
+.user-role {
+    padding-left: 5rem;
+}
+
+.user-admin {
+    margin: 0;
+    border-radius: 2rem;
+    padding: 0.3rem;
+    display: inline-block;
+}
+
+.user-superuser {
+    background-color: var(--sds-color-brand-primary-strong);
+    border: 2px solid var(--sds-color-brand-primary-strong);
+    color: var(--sds-color-text-on-strong);
+}
+
+.user-tenant-admin {
+    background-color: var(--sds-color-brand-primary-subtle);
+    border: 2px solid var(--sds-color-brand-primary-subtle);
+}
+
+.last-login-column {
+    width: 10%;
+}
+
+.date-joined-column {
+    width: 10%;
+}
+
+
+/*
+====================================================================
+Tenant Table
+====================================================================
+*/
+
+.tenant-name-column {
+    width: 25%;
+}
+
+.tenant-members-column {
+    width: auto;
+}

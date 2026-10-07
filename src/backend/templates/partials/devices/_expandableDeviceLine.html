@@ -12,7 +12,7 @@
         {% for interface_row in field.value %}
         <div class="objects-interface-table-row">
             {% for interface_value in interface_row %}
-            <div class="objects-interface-table-cell">
+            <div class="objects-interface-table-cell truncate">
                 {% if interface_value.url %}
                 <a href="{{ interface_value.url }}" class="interface-filter-link">
                     {{ interface_value.value }}

@@ -1,8 +1,8 @@
 {% load static %}
 
 
-<section class="management-table-container table-container">
-    <table>
+<section class="data-table-container management-table-container table-container">
+    <table class="data-table">
         <thead>
             <tr class="management-header users-header">
                 {% for header in table_data.headers %}
@@ -15,7 +15,7 @@
             <tr>
                 <td class="user-column">
                     <div class="user-cell">
-                        <button type="button" class="user-icon">
+                        <button type="button" class="btn-reset center-box user-icon">
                             {% if row.first_name and row.last_name %}
                             {{ row.first_name|slice:":1"|upper }}{{ row.last_name|slice:":1"|upper }}
                             {% elif row.first_name %}
@@ -60,7 +60,7 @@
                 </td>
                 <td class="date-joined-column">{{ row.date_joined|date:"Y-m-d" }}</td>
                 <td class="actions-column">
-                    <button type="button" class="actions-btn" hx-get="{% url 'modal-update' row.row_id %}"
+                    <button type="button" class="btn-reset actions-btn" hx-get="{% url 'modal-update' row.row_id %}"
                         hx-target="#modal-container" hx-swap="innerHTML">
                         <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt=""
                             aria-hidden="true">
