@@ -156,40 +156,6 @@ Objects Cells
     min-width: 0;
 }
 
-.inspect-column {
-    width: 1%;
-    white-space: nowrap;
-    text-align: center;
-}
-
-.rule-name-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    min-width: 0;
-    width: 100%;
-}
-
-.rule-name-cell .cell-text {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-/* Markup: <a|button class="btn-reset center-box row-visibility-control"> */
-.row-visibility-control {
-    width: 1.6rem;
-    height: 1.6rem;
-    padding: 0.15rem;
-    border-radius: var(--radius-pill);
-    text-decoration: none;
-    flex: 0 0 auto;
-}
-
-.row-visibility-control:hover,
-.row-visibility-control:focus {
-    background: var(--sds-color-brand-primary-subtle);
-}
-
 
 /*
 ====================================================================

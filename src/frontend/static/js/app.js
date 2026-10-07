@@ -906,26 +906,36 @@ function expandRow(rowId) {
 
     if (!detailsRow || !openedRow) return;
 
-    const toggleVisibilityIcon = (isExpanded) => {
-        const icon = openedRow.querySelector(".row-visibility-icon");
-        if (!icon) return;
-
-        const openIcon = icon.dataset.eyeOpen;
-        const closedIcon = icon.dataset.eyeClosed;
-        if (!openIcon || !closedIcon) return;
-
-        icon.src = isExpanded ? closedIcon : openIcon;
-    };
-
     if (detailsRow.style.display === "table-row") {
         detailsRow.style.display = "none";
         openedRow.classList.remove("expanded-row");
-        toggleVisibilityIcon(false);
     } else {
         detailsRow.style.display = "table-row";
         openedRow.classList.add("expanded-row");
-        toggleVisibilityIcon(true);
     }
+}
+
+// Rows that also navigate on double-click wait before expanding,
+// so a double-click doesn't open and close the row before redirecting.
+const ROW_DBLCLICK_DELAY_MS = 180;
+const pendingRowExpands = {};
+
+function expandRowDelayed(event, rowId) {
+    if (event.detail > 1) return;
+
+    clearTimeout(pendingRowExpands[rowId]);
+    pendingRowExpands[rowId] = setTimeout(() => {
+        delete pendingRowExpands[rowId];
+        expandRow(rowId);
+    }, ROW_DBLCLICK_DELAY_MS);
+}
+
+function navigateFromRow(event, rowId, url) {
+    if (event.target.closest("button, a")) return;
+
+    clearTimeout(pendingRowExpands[rowId]);
+    delete pendingRowExpands[rowId];
+    window.location.href = url;
 }
 
 function focusAndExpandFromUrl() {

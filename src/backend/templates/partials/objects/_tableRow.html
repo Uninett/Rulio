@@ -8,16 +8,23 @@
     {% elif object_type == "rules" and row.can_write %}
 <tr id="row-{{ row.id }}"
     class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %}"
-    draggable="true" data-rules-draggable="true">
+    draggable="true" data-rules-draggable="true" onclick="expandRow('{{ row.id }}')">
 
     {% elif object_type == "rules" %}
 <tr id="row-{{ row.id }}"
-    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} readonly-row">
+    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} readonly-row"
+    onclick="expandRow('{{ row.id }}')">
 
     {% else %}
 <tr id="row-{{ row.id }}"
     class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
-    onclick="expandRow('{{ row.id }}')">
+    {% if object_type == "filters" and row.inspect_url %}
+    onclick="expandRowDelayed(event, '{{ row.id }}')"
+    ondblclick="navigateFromRow(event, '{{ row.id }}', '{{ row.inspect_url }}')"
+    title="Double-click to open rules"
+    {% else %}
+    onclick="expandRow('{{ row.id }}')"
+    {% endif %}>
     {% endif %}
 
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}

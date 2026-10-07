@@ -107,7 +107,7 @@ def get_filters_view(request):
     filters = sorted(filters, key=lambda f: (getattr(f, "name", "") or "").lower())
     rules = sorted(rules, key=lambda r: (getattr(r, "name", "") or "").lower())
 
-    headers = ["", "Name", "Description", "Rules", "Tags"]
+    headers = ["Name", "Description", "Rules", "Tags"]
     rows = []
 
     for filter_obj in filters:
@@ -134,7 +134,6 @@ def get_filters_view(request):
                 "is_global": filter_obj.tenant_id == GLOBAL_TENANT_ID,
                 "can_write": can_write_tenant(request.user, filter_obj.tenant_id),
                 "cells": [
-                    "▶",
                     getattr(filter_obj, "name", "") or "",
                     getattr(filter_obj, "description", "") or "",
                     ", ".join(filter_rule_names),
@@ -266,8 +265,8 @@ def post_filter_view(request):
 
     row = {
         "id": f"filter-{created_filter.id}",
+        "inspect_url": reverse("rules-page", kwargs={"filter_id": created_filter.id}),
         "cells": [
-            "▶",
             getattr(created_filter, "name", "") or "",
             getattr(created_filter, "description", "") or "",
             "",
@@ -281,5 +280,6 @@ def post_filter_view(request):
         "partials/objects/_tableRow.html",
         {
             "row": row,
+            "object_type": "filters",
         },
     )
