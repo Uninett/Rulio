@@ -33,6 +33,11 @@
 
         <div class="header-actions">
 
+            {% if unused_objects_count > 0 %}
+                <div> 
+                    <button type="button">⚠️ Unused objects</button>
+                </div>
+
             {% include "partials/search/_search.html" with search_results=search_results %}
 
             <div class="form-group tenant-form-group">

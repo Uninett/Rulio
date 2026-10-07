@@ -6,7 +6,7 @@ from django.db import IntegrityError, transaction
 
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
-from backend.objects.filters.versionControl import VersionControl
+from backend.objects.filters.version_control import version_control
 from backend.services.helper_user_tenant import get_tenant_by_id, require_write_tenant
 from backend.services.update import update_rule_sequence
 from backend.utils.logger import set_up_logger
@@ -168,10 +168,10 @@ def create_version_control(
     actor: User,
     tenant_id: int,
     filter: Filter,
-) -> VersionControl:
+) -> version_control:
     require_write_tenant(actor, tenant_id)
     tenant = get_tenant_by_id(tenant_id)
-    version_control = VersionControl(
+    version_control = version_control(
         filter=filter,
         tenant=tenant,
         datetime=datetime.now(timezone.utc),

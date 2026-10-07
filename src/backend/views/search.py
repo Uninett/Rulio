@@ -151,7 +151,7 @@ def get_filter_search_results(request):
 
     try:
         filters = get_all_filters_from_tenant(actor=request.user, tenant_id=tenant_id).prefetch_related(TAG_PREFETCH)
-    except Exception:
+    except (TimeoutError, OSError):
         logger.exception("Failed to fetch filters for search")
         return {"results": []}
 

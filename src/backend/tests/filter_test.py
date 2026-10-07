@@ -1,7 +1,7 @@
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_match import RuleMatch
-from backend.objects.filters.versionControl import VersionControl
+from Rulio.src.backend.objects.filters.version_control import VersionControl
 
 
 class TestFilters:
