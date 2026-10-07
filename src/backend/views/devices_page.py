@@ -650,7 +650,7 @@ def get_device_interfaces_modal(request, device_id):
         request,
         "partials/_modal.html",
         {
-            "modal_title": f"Manage interfaces",
+            "modal_title": "Manage interfaces",
             "modal_mode": "submodal",
             "modal_object_type": "interfaces",
             "modal_content_partial": "partials/modals/_device_interface_form.html",
