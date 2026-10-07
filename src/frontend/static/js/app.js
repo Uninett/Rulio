@@ -743,18 +743,38 @@ function initializeMembershipSelectors(root = document) {
         const selectedList = selector.querySelector(".membership-list-selected");
 
         let draggedItem = null;
+        // Where the dragged item started, to tell whether the live preview moved it.
+        let dragOrigin = null;
+        let dropCompleted = false;
 
         selector.querySelectorAll(".membership-list-item").forEach(setupDraggableItem);
 
+        // The last moved filter stays highlighted until another filter is selected.
+        function clearRecentlyDropped() {
+            selector.querySelectorAll(".membership-list-item.recently-dropped")
+                .forEach((el) => el.classList.remove("recently-dropped"));
+        }
+
         function setupDraggableItem(item) {
+            item.addEventListener("mousedown", clearRecentlyDropped);
+
             item.addEventListener("dragstart", () => {
                 draggedItem = item;
+                dragOrigin = { list: item.parentElement, nextSibling: item.nextElementSibling };
+                dropCompleted = false;
                 item.classList.add("dragging");
             });
 
             item.addEventListener("dragend", () => {
+                // Released outside a list: keep the item where the preview last placed it.
+                const movedByPreview = dragOrigin
+                    && (item.parentElement !== dragOrigin.list || item.nextElementSibling !== dragOrigin.nextSibling);
+                if (!dropCompleted && movedByPreview) {
+                    finalizeItem(item.parentElement);
+                }
                 item.classList.remove("dragging");
                 draggedItem = null;
+                dragOrigin = null;
             });
 
             item.addEventListener("dblclick", () => {
@@ -828,13 +848,30 @@ function initializeMembershipSelectors(root = document) {
             }) || null;
         }
 
+        function existsInList(targetList) {
+            return Array.from(targetList.querySelectorAll(".membership-list-item"))
+                .some(item => item !== draggedItem && item.dataset.id === draggedItem.dataset.id);
+        }
+
+        // Moves the dragged item to where it would land, so the user sees the drop position while dragging.
+        function previewItem(targetList, y) {
+            if (!draggedItem || existsInList(targetList)) return;
+
+            const dropTarget = getDropTarget(targetList, y);
+            const alreadyInPlace = draggedItem.parentElement === targetList
+                && (dropTarget
+                    ? draggedItem.nextElementSibling === dropTarget
+                    : !draggedItem.nextElementSibling);
+
+            if (alreadyInPlace) return;
+
+            targetList.insertBefore(draggedItem, dropTarget);
+        }
+
         function moveItem(targetList, y = null) {
             if (!draggedItem) return;
 
-            const alreadyExists = Array.from(targetList.querySelectorAll(".membership-list-item"))
-                .some(item => item !== draggedItem && item.dataset.id === draggedItem.dataset.id);
-
-            if (alreadyExists) return;
+            if (existsInList(targetList)) return;
 
             const dropTarget = y !== null ? getDropTarget(targetList, y) : null;
 
@@ -844,6 +881,11 @@ function initializeMembershipSelectors(root = document) {
                 targetList.appendChild(draggedItem);
             }
 
+            finalizeItem(targetList);
+        }
+
+        // Applies list-specific state to the dragged item once it has its final position.
+        function finalizeItem(targetList) {
             ensureHiddenInput(draggedItem, targetList === selectedList);
 
             if (isFilterSelector) {
@@ -856,16 +898,21 @@ function initializeMembershipSelectors(root = document) {
                     delete draggedItem.dataset.moved;
                 }
             }
+
+            clearRecentlyDropped();
+            draggedItem.classList.add("recently-dropped");
         }
 
         [availableList, selectedList].forEach((list) => {
             list.addEventListener("dragover", (event) => {
                 event.preventDefault();
+                previewItem(list, event.clientY);
             });
 
             list.addEventListener("drop", (event) => {
                 event.preventDefault();
                 moveItem(list, event.clientY);
+                dropCompleted = true;
             });
         });
     });
