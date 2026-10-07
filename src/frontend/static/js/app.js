@@ -911,8 +911,15 @@ function initializeMembershipSelectors(root = document) {
 
             list.addEventListener("drop", (event) => {
                 event.preventDefault();
-                moveItem(list, event.clientY);
                 dropCompleted = true;
+
+                // Released at its original spot: nothing to mark or highlight.
+                const atOrigin = dragOrigin
+                    && draggedItem?.parentElement === dragOrigin.list
+                    && draggedItem.nextElementSibling === dragOrigin.nextSibling;
+                if (atOrigin) return;
+
+                moveItem(list, event.clientY);
             });
         });
     });
@@ -1276,6 +1283,16 @@ function refreshRulesTableContent(rulesBody) {
     });
 }
 
+// The last moved rule stays highlighted until another rule is selected.
+// Stored by row id because the table is re-rendered after each reorder.
+let recentlyDroppedRuleRowId = null;
+
+// Runs on htmx:afterSettle, since settling resets the class of rows that keep their id.
+function restoreRecentlyDroppedRuleRow() {
+    if (!recentlyDroppedRuleRowId) return;
+    document.getElementById(recentlyDroppedRuleRowId)?.classList.add("recently-dropped");
+}
+
 function initializeRuleRowDragAndDrop(root = document) {
     const rulesBody = root.querySelector("#rules-table");
 
@@ -1293,6 +1310,9 @@ function initializeRuleRowDragAndDrop(root = document) {
     rulesBody.dataset.dragInitialized = "true";
 
     let draggedMainRow = null;
+    // Where the dragged row started, to tell whether the live preview moved it.
+    let dragOriginPreviousSibling = null;
+    let dropCompleted = false;
 
     // Only include actual draggable rule rows.
     // Do not include any expanded/detail/child rows in the sequence calculation.
@@ -1304,10 +1324,28 @@ function initializeRuleRowDragAndDrop(root = document) {
         );
     };
 
+    const clearRecentlyDropped = () => {
+        recentlyDroppedRuleRowId = null;
+        rulesBody.querySelectorAll("tr.recently-dropped")
+            .forEach((row) => row.classList.remove("recently-dropped"));
+    };
+
     getMainRows().forEach((row) => {
+        row.addEventListener("mousedown", clearRecentlyDropped);
+
         row.addEventListener("dragstart", (event) => {
             draggedMainRow = row;
+            // Previous sibling, since the next one is the row's own details row that moves with it.
+            dragOriginPreviousSibling = row.previousElementSibling;
+            dropCompleted = false;
             row.classList.add("dragging");
+
+            // Collapse an expanded row so only the compact row is dragged around.
+            const detailsRow = getDetailsRowForMainRow(row);
+            if (detailsRow && detailsRow.style.display === "table-row") {
+                detailsRow.style.display = "none";
+                row.classList.remove("expanded-row");
+            }
 
             if (event.dataTransfer) {
                 event.dataTransfer.effectAllowed = "move";
@@ -1316,8 +1354,14 @@ function initializeRuleRowDragAndDrop(root = document) {
         });
 
         row.addEventListener("dragend", () => {
+            // Released outside the table: keep the row where the preview last placed it.
+            const movedByPreview = row.previousElementSibling !== dragOriginPreviousSibling;
+            if (!dropCompleted && movedByPreview) {
+                saveRuleOrder(row);
+            }
             row.classList.remove("dragging");
             draggedMainRow = null;
+            dragOriginPreviousSibling = null;
         });
     });
 
@@ -1342,14 +1386,24 @@ function initializeRuleRowDragAndDrop(root = document) {
         moveRuleRowPair(draggedMainRow, targetMainRow, placeBefore);
     });
 
-    rulesBody.addEventListener("drop", async (event) => {
+    rulesBody.addEventListener("drop", (event) => {
         if (!draggedMainRow) {
             return;
         }
 
         event.preventDefault();
+        dropCompleted = true;
 
-        const ruleId = getRuleIdFromMainRow(draggedMainRow);
+        // Released at its original spot: nothing to save or highlight.
+        if (draggedMainRow.previousElementSibling === dragOriginPreviousSibling) {
+            return;
+        }
+
+        saveRuleOrder(draggedMainRow);
+    });
+
+    async function saveRuleOrder(movedRow) {
+        const ruleId = getRuleIdFromMainRow(movedRow);
 
         if (!ruleId) {
             return;
@@ -1357,7 +1411,7 @@ function initializeRuleRowDragAndDrop(root = document) {
 
         // Get the rows after moveRuleRowPair() has updated the DOM.
         const mainRows = getMainRows();
-        const rowIndex = mainRows.indexOf(draggedMainRow);
+        const rowIndex = mainRows.indexOf(movedRow);
 
         if (rowIndex === -1) {
             return;
@@ -1366,6 +1420,10 @@ function initializeRuleRowDragAndDrop(root = document) {
         // The backend expects a 1-indexed sequence:
         // first row = 1, second row = 2, etc.
         const newSequence = rowIndex + 1;
+
+        clearRecentlyDropped();
+        recentlyDroppedRuleRowId = movedRow.id;
+        movedRow.classList.add("recently-dropped");
 
         const csrfToken = getCsrfToken();
 
@@ -1394,7 +1452,7 @@ function initializeRuleRowDragAndDrop(root = document) {
             console.error("Error while reordering rules.", error);
             refreshRulesTableContent(rulesBody);
         }
-    });
+    }
 }
 
 
@@ -1495,6 +1553,7 @@ document.addEventListener("htmx:afterSwap", function (event) {
 });
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
+document.addEventListener("htmx:afterSettle", restoreRecentlyDroppedRuleRow);
 document.addEventListener("click", handleGenerateConfigButtonClick);
 
 document.addEventListener("click", function (event) {
