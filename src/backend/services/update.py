@@ -1,4 +1,5 @@
 from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 
 from backend.objects.attributes.address import Address
@@ -225,6 +226,13 @@ def update_device(*, actor, tenant_id, device_id, name=None, description=None, p
         device.platform = platform
     if type is not None:
         device.type = type
+
+    # Validates like create_device does, so a taken name gives a readable error instead of a database IntegrityError.
+    try:
+        device.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Device validation failed: {e.message_dict}")
+        raise ValueError(e.message_dict) from e
 
     device.save()
     return device

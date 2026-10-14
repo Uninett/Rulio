@@ -1,11 +1,13 @@
 import json
 
 import pytest
-from django.db import transaction
+from django.db import connection, transaction
+from django.db.migrations.executor import MigrationExecutor
 from django.urls import reverse
 
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.attribute_objects.create_attribute_objects import create_tag
 from backend.services.tenant_objects.create_tenant_objects import create_device, create_interface
 from backend.views.devices_page import InterfaceFields, parse_interface_fields, sync_device_interfaces
@@ -479,3 +481,98 @@ def test_update_device_with_duplicate_interface_names_gives_clear_error(authenti
     assert response.status_code == 400
     assert b"Interface names must be unique. Used more than once: eth0." in response.content
     assert interface_ids(device_with_interfaces) == before
+
+
+# Unique device names
+
+
+def post_device_create(client, name):
+    return client.post(
+        reverse("post-device-view"),
+        {"name": name, "description": "", "platform": "test-platform", "type": "test-type"},
+    )
+
+
+@pytest.mark.django_db
+def test_create_device_with_name_taken_in_same_tenant_is_refused(
+    authenticated_client, device_with_interfaces, create_testing_tenant
+):
+    response = post_device_create(authenticated_client, device_with_interfaces.name)
+
+    assert response.status_code == 400
+    assert b"A device with this name already exists." in response.content
+    assert Device.objects.filter(tenant=create_testing_tenant, name=device_with_interfaces.name).count() == 1
+
+
+@pytest.mark.django_db
+def test_device_name_can_be_reused_in_another_tenant(authenticated_user_and_tenant_id, device_with_interfaces):
+    user, _ = authenticated_user_and_tenant_id
+    other_tenant = Tenant.objects.create(tenant_name="Other Test Tenant")
+
+    device = create_device(
+        actor=user,
+        tenant_id=other_tenant.id,
+        name=device_with_interfaces.name,
+        platform="test-platform",
+        description="",
+        type="test-type",
+    )
+
+    assert device.name == device_with_interfaces.name
+
+
+@pytest.mark.django_db
+def test_rename_device_to_name_taken_in_same_tenant_is_refused(
+    authenticated_client, authenticated_user_and_tenant_id, device_with_interfaces
+):
+    user, tenant_id = authenticated_user_and_tenant_id
+    other_device = create_device(
+        actor=user, tenant_id=tenant_id, name="Test_Other_Device", platform="p", description="", type="t"
+    )
+
+    response = post_device_update(authenticated_client, other_device, name=device_with_interfaces.name)
+
+    assert response.status_code == 400
+    assert b"A device with this name already exists." in response.content
+    other_device.refresh_from_db()
+    assert other_device.name == "Test_Other_Device"
+
+
+# Migrates back to before the unique device name constraint, creates duplicates, and migrates forward again.
+# Runs inside the test transaction, so PostgreSQL rolls the schema changes back afterwards.
+@pytest.mark.django_db
+def test_migration_renames_existing_duplicate_device_names():
+    before_constraint = [("objects", "0007_defer_unique_interface_name")]
+    executor = MigrationExecutor(connection)
+    executor.migrate(before_constraint)
+    old_apps = executor.loader.project_state(before_constraint).apps
+    OldTenant = old_apps.get_model("objects", "Tenant")
+    OldDevice = old_apps.get_model("objects", "Device")
+
+    tenant = OldTenant.objects.create(tenant_name="Migration Test Tenant")
+    other_tenant = OldTenant.objects.create(tenant_name="Migration Test Tenant 2")
+    devices = [
+        OldDevice.objects.create(tenant=tenant, name="testing", platform="p", type="t"),
+        OldDevice.objects.create(tenant=tenant, name="testing", platform="p", type="t"),
+        OldDevice.objects.create(tenant=tenant, name="testing (2)", platform="p", type="t"),
+        OldDevice.objects.create(tenant=tenant, name="testing", platform="p", type="t"),
+        OldDevice.objects.create(tenant=other_tenant, name="testing", platform="p", type="t"),
+    ]
+
+    # The inserts above leave deferred foreign key checks pending in the test transaction, and PostgreSQL refuses
+    # to ALTER a table with pending checks. Running them now lets the migration add the constraint.
+    with connection.cursor() as cursor:
+        cursor.execute("SET CONSTRAINTS ALL IMMEDIATE")
+
+    executor = MigrationExecutor(connection)
+    executor.migrate(executor.loader.graph.leaf_nodes())
+
+    names = dict(Device.objects.filter(id__in=[device.id for device in devices]).values_list("id", "name"))
+    # The oldest keeps its name, and "testing (2)" was already taken, so the next duplicate gets "testing (3)".
+    assert [names[device.id] for device in devices] == [
+        "testing",
+        "testing (3)",
+        "testing (2)",
+        "testing (4)",
+        "testing",
+    ]
