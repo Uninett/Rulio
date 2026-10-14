@@ -8,6 +8,7 @@ from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.interface_direction import InterfaceDirection
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.helper_user_tenant import require_superadmin, require_write_tenant
+from backend.services.validation import validation_error_message
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
@@ -37,7 +38,7 @@ def create_device(*, actor: User, tenant_id: int, name: str, platform: str, desc
         device.full_clean()
     except DjangoValidationError as e:
         logger.warning(f"Device validation failed: {e.message_dict}")
-        raise ValueError(e.message_dict) from e
+        raise ValueError(validation_error_message(e)) from e
 
     device.save()
     logger.info(f"Created {device} for tenant={device.tenant_id}")
@@ -50,12 +51,11 @@ def get_or_create_device(
 ) -> Device:
     require_write_tenant(actor, tenant_id)
 
+    # Device names are unique per tenant, so an existing device is looked up by name only
     device, created = Device.objects.get_or_create(
         name=name,
-        platform=platform,
-        type=type,
-        description=description,
         tenant_id=tenant_id,
+        defaults={"platform": platform, "type": type, "description": description},
     )
     if created:
         logger.info(f"Created {device} for tenant={device.tenant_id}")
@@ -122,7 +122,7 @@ def create_interface(
         interface.full_clean()
     except DjangoValidationError as e:
         logger.warning(f"Interface validation failed: {e.message_dict}")
-        raise ValueError(e.message_dict) from e
+        raise ValueError(validation_error_message(e, object_label="Interface")) from e
 
     interface.save()
     logger.info(f"Created {interface} for device={interface.device_id}")
@@ -151,15 +151,11 @@ def get_or_create_interface(
     except Device.DoesNotExist:
         raise ValueError(f"Device with id={device_id} does not exist in tenant={tenant_id}.")
 
-    # Check that no other interface with the same name exists for the device
-    if Interface.objects.filter(name=name, device_id=device_id).exists():
-        raise ValueError(f"An interface with name='{name}' already exists for device={device_id}.")
+    # Interface names are unique per device, so an existing interface is looked up by name only
     interface, created = Interface.objects.get_or_create(
         name=name,
-        description=description,
         device_id=device_id,
-        type=type,
-        VRF=VRF,
+        defaults={"description": description, "type": type, "VRF": VRF},
     )
     if created:
         logger.info(f"Created {interface} for device={interface.device_id}")
