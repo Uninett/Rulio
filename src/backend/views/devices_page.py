@@ -2,6 +2,8 @@ import json
 from dataclasses import dataclass
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.db import IntegrityError
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
@@ -200,7 +202,8 @@ def get_devices_view(request):
             actor=request.user,
             tenant_id=int(tenant_id),
         )
-    except Exception:
+    except PermissionDenied as exc:
+        logger.warning("Could not load devices for tenant %s: %s", tenant_id, exc)
         return {
             "headers": [],
             "rows": [],
@@ -220,7 +223,8 @@ def get_devices_view(request):
                 object_type="devicegroup",
                 object_id=group.id,
             )
-        except Exception:
+        except (ObjectDoesNotExist, PermissionDenied) as exc:
+            logger.warning("Could not load tags for device group %s: %s", group.id, exc)
             device_group_tags = []
 
         try:
@@ -230,7 +234,8 @@ def get_devices_view(request):
                 device_group_id=group.id,
             )
             logger.info(device_group_members)
-        except Exception:
+        except PermissionDenied as exc:
+            logger.warning("Could not load members for device group %s: %s", group.id, exc)
             device_group_members = []
 
         devices_in_group = []
@@ -283,7 +288,8 @@ def get_devices_view(request):
                 object_type="device",
                 object_id=device.id,
             )
-        except Exception:
+        except (ObjectDoesNotExist, PermissionDenied) as exc:
+            logger.warning("Could not load tags for device %s: %s", device.id, exc)
             devices_tags = []
 
         interfaces_from_device = get_all_interfaces_from_device(
@@ -395,7 +401,7 @@ def post_device_view(request):
             interface_fields=draft_interface_fields,
         )
 
-    except Exception as e:
+    except (PermissionDenied, ObjectDoesNotExist, ValueError, IntegrityError) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -554,7 +560,7 @@ def update_device_view(request, object_id):
             interface_fields=draft_interface_fields,
         )
 
-    except Exception as e:
+    except (PermissionDenied, ObjectDoesNotExist, ValueError, IntegrityError) as e:
         return render(
             request,
             "partials/_modal.html",
@@ -598,7 +604,7 @@ def delete_device_view(request, object_id):
             tenant_id=tenant_id,
             device_id=object_id,
         )
-    except Exception as e:
+    except (PermissionDenied, ValueError) as e:
         return HttpResponse(f"Could not delete device: {e}", status=400)
 
     return HttpResponse(status=204)
