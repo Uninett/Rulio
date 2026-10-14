@@ -53,6 +53,40 @@ function closeModal(event = null) {
     document.getElementById("modal-container").innerHTML = "";
 }
 
+// htmx doesn't swap 4xx/5xx responses by default, so a failed save in a modal looked like the Save button did nothing.
+// The error is shown in the open form instead. The response isn't swapped in, because create forms target the table
+// (e.g. beforeend on #devices-table), and keeping the open form also keeps everything the user entered.
+document.body.addEventListener("htmx:beforeSwap", (event) => {
+    // beforeSwap fires on the swap target, so the form that sent the request is read from requestConfig.
+    const form = event.detail.requestConfig?.elt;
+    if (event.detail.xhr.status < 400 || !form?.matches?.("form.modal-form")) return;
+
+    // Uses the error message from the server's error modal, a plain-text error, or a general message.
+    const response = event.detail.serverResponse || "";
+    const responseError = new DOMParser().parseFromString(response, "text/html").querySelector(".form-error");
+    const isPlainText = response && !response.trimStart().startsWith("<");
+    const message = responseError?.textContent.trim() || (isPlainText ? response : "Could not save changes. Please try again.");
+
+    showModalFormError(form, message);
+});
+
+// Shows an error message next to the modal's buttons, where the server renders it, replacing any earlier error.
+function showModalFormError(form, message) {
+    const container = form.querySelector(".modal-actions-center");
+    if (!container) {
+        alert(message);
+        return;
+    }
+
+    let error = container.querySelector(".form-error");
+    if (!error) {
+        error = document.createElement("p");
+        error.className = "form-error";
+        container.appendChild(error);
+    }
+    error.textContent = message;
+}
+
 function closeModalAndRefresh(url, target) {
     const modalContainer = document.getElementById("modal-container");
     if (modalContainer) {
