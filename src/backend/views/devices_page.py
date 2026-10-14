@@ -610,27 +610,33 @@ def delete_device_view(request, object_id):
     return HttpResponse(status=204)
 
 
-# Update existing device, loads interface from database
+# Opens the interface submodal for both new and existing devices.
+# Rows come from the draft if one was submitted, otherwise from the database (existing device) or empty (new device).
 @login_required(login_url="login")
-def get_device_interfaces_modal(request, device_id):
-    tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+def get_device_interfaces_modal(request, device_id=None):
+    device = None
 
-    if not tenant_id:
-        return HttpResponse("No tenant selected.", status=400)
+    if device_id is not None:
+        tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
+        if not tenant_id:
+            return HttpResponse("No tenant selected.", status=400)
 
-    device = get_object_by_type_and_id(
-        actor=request.user,
-        tenant_id=tenant_id,
-        object_type="device",
-        object_id=device_id,
-    )
+        try:
+            device = get_object_by_type_and_id(
+                actor=request.user,
+                tenant_id=tenant_id,
+                object_type="device",
+                object_id=device_id,
+            )
+        except ObjectDoesNotExist:
+            return HttpResponse("Device not found.", status=404)
+        except PermissionDenied as exc:
+            return HttpResponse(str(exc), status=403)
 
-    if device is None:
-        return HttpResponse("Device not found.", status=404)
+    # Checks whether a draft was sent, not whether it is empty, so a deliberately emptied list isn't reloaded from the database.
+    raw_draft = request.GET.get("interface_fields")
 
-    draft_interface_fields = parse_interface_fields(request.GET.get("interface_fields"))
-
-    if draft_interface_fields:
+    if raw_draft is not None:
         interfaces = [
             {
                 "id": interface_field.id,
@@ -639,9 +645,9 @@ def get_device_interfaces_modal(request, device_id):
                 "type": interface_field.type or "",
                 "VRF": interface_field.vrf or "",
             }
-            for interface_field in draft_interface_fields
+            for interface_field in parse_interface_fields(raw_draft)
         ]
-    else:
+    elif device is not None:
         interfaces = [
             {
                 "id": interface.id,
@@ -656,6 +662,8 @@ def get_device_interfaces_modal(request, device_id):
                 device_id=device.id,
             )
         ]
+    else:
+        interfaces = []
 
     return render(
         request,
@@ -666,49 +674,9 @@ def get_device_interfaces_modal(request, device_id):
             "modal_object_type": "interfaces",
             "modal_content_partial": "partials/modals/_device_interface_form.html",
             "modal_is_submodal": True,
-            "modal_instance_id": "device-interfaces-submodal",
+            "modal_instance_id": "device-interfaces-submodal" if device else "new-device-interfaces-submodal",
             "device": device,
-            "device_id": device.id,
-            "interfaces": interfaces,
-            "modal_post_url": None,
-            "modal_target": "#submodal-container",
-            "modal_swap": "innerHTML",
-            "modal_submit_handler": None,
-        },
-    )
-
-
-# Create new device, no device id yet nor initial interfaces
-@login_required(login_url="login")
-def get_new_device_interfaces_modal(request):
-    draft_interface_fields = parse_interface_fields(request.GET.get("interface_fields"))
-    interfaces = (
-        [
-            {
-                "id": interface_field.id,
-                "name": interface_field.name,
-                "description": interface_field.description or "",
-                "type": interface_field.type or "",
-                "VRF": interface_field.vrf or "",
-            }
-            for interface_field in draft_interface_fields
-        ]
-        if draft_interface_fields
-        else []
-    )
-
-    return render(
-        request,
-        "partials/_modal.html",
-        {
-            "modal_title": "Manage interfaces",
-            "modal_mode": "submodal",
-            "modal_object_type": "interfaces",
-            "modal_content_partial": "partials/modals/_device_interface_form.html",
-            "modal_is_submodal": True,
-            "modal_instance_id": "new-device-interfaces-submodal",
-            "device": None,
-            "device_id": None,
+            "device_id": device.id if device else None,
             "interfaces": interfaces,
             "modal_post_url": None,
             "modal_target": "#submodal-container",

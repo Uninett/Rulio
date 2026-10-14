@@ -43,7 +43,6 @@ from .views.devices_page import (
     delete_device_view,
     get_device_interfaces_modal,
     get_devices_page,
-    get_new_device_interfaces_modal,
     post_device_view,
     update_device_view,
 )
@@ -136,7 +135,7 @@ urlpatterns = [
     path("device-groups/<int:object_id>/delete/", delete_device_group_view, name="delete-device-group-view"),
     # Device Interface Page
     path("modal/devices/<int:device_id>/interfaces/", get_device_interfaces_modal, name="device-interfaces-modal"),
-    path("modal/devices/interfaces/draft/", get_new_device_interfaces_modal, name="new-device-interfaces-modal"),
+    path("modal/devices/interfaces/draft/", get_device_interfaces_modal, name="new-device-interfaces-modal"),
     # Interface
     path(
         "devices/interfaces/<int:interface_id>/",
