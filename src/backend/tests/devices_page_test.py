@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from django.db import transaction
 from django.urls import reverse
 
 from backend.objects.tenant_objects.device import Device
@@ -381,3 +382,43 @@ def test_failed_create_leaves_no_device(authenticated_client_with_tenant):
 
     assert response.status_code == 400
     assert not Device.objects.filter(name="Test_Half_Created_Device").exists()
+
+
+@pytest.mark.django_db
+def test_sync_device_interfaces_reuses_name_of_deleted_interface(
+    authenticated_user_and_tenant_id, device_with_interfaces
+):
+    user, tenant_id = authenticated_user_and_tenant_id
+    eth1 = Interface.objects.get(device=device_with_interfaces, name="eth1")
+
+    # eth0 is removed and eth1 is renamed to eth0 in the same save.
+    with transaction.atomic():
+        sync_device_interfaces(
+            actor=user,
+            tenant_id=tenant_id,
+            device=device_with_interfaces,
+            interface_fields=[InterfaceFields(name="eth0", id=eth1.id)],
+        )
+
+    assert list(Interface.objects.filter(device=device_with_interfaces).values_list("id", "name")) == [
+        (eth1.id, "eth0")
+    ]
+
+
+@pytest.mark.django_db
+def test_sync_device_interfaces_swaps_interface_names(authenticated_user_and_tenant_id, device_with_interfaces):
+    user, tenant_id = authenticated_user_and_tenant_id
+    eth0 = Interface.objects.get(device=device_with_interfaces, name="eth0")
+    eth1 = Interface.objects.get(device=device_with_interfaces, name="eth1")
+
+    with transaction.atomic():
+        sync_device_interfaces(
+            actor=user,
+            tenant_id=tenant_id,
+            device=device_with_interfaces,
+            interface_fields=[InterfaceFields(name="eth1", id=eth0.id), InterfaceFields(name="eth0", id=eth1.id)],
+        )
+
+    eth0.refresh_from_db()
+    eth1.refresh_from_db()
+    assert (eth0.name, eth1.name) == ("eth1", "eth0")

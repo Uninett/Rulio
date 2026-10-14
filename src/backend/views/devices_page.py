@@ -101,8 +101,10 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
 
     current_interfaces = list(get_all_interfaces_from_device(actor=actor, tenant_id=tenant_id, device_id=device.id))
     matched_interface_ids: set[int] = set()
+    interfaces_to_update = []  # (saved interface id, submitted interface) pairs.
+    interfaces_to_create = []
 
-    # For each submitted interface, tries to match it to an existing one:
+    # Matches every submitted interface before changing anything, so the deletes can run first.
     for interface_field in interface_fields:
         interface_name = (interface_field.name or "").strip()
         if not interface_name:
@@ -125,39 +127,46 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
                 None,
             )
 
-        # If it finds a match, it updates that saved interface’s fields.
-        # An empty VRF is saved as "", since update_interface skips the VRF when it is None.
         if existing_interface is not None:
+            interfaces_to_update.append((existing_interface.id, interface_field))
+            matched_interface_ids.add(existing_interface.id)
+        else:
+            interfaces_to_create.append(interface_field)
+
+    with transaction.atomic():
+        # Deletes existing interfaces that weren’t matched first, so their names can be reused by renamed or new ones.
+        for existing_interface in current_interfaces:
+            if existing_interface.id not in matched_interface_ids:
+                delete_interface(
+                    actor=actor,
+                    tenant_id=tenant_id,
+                    interface_id=existing_interface.id,
+                )
+
+        # Updates the matched interfaces. Swapping names between interfaces works because the unique name constraint
+        # is deferred to the end of the transaction.
+        # An empty VRF is saved as "", since update_interface skips the VRF when it is None.
+        for interface_id, interface_field in interfaces_to_update:
             update_interface(
                 actor=actor,
                 tenant_id=tenant_id,
-                interface_id=existing_interface.id,
-                name=interface_name,
+                interface_id=interface_id,
+                name=interface_field.name.strip(),
                 description=interface_field.description or "",
                 type=interface_field.type or "",
                 VRF=interface_field.vrf or "",
             )
-            matched_interface_ids.add(existing_interface.id)
-            continue
 
-        # If it finds no match, it creates a new interface.
-        create_interface(
-            actor=actor,
-            tenant_id=tenant_id,
-            device_id=device.id,
-            name=interface_name,
-            description=interface_field.description or "",
-            type=interface_field.type or "",
-            VRF=interface_field.vrf or None,
-        )
-
-    # Deletes existing interfaces that weren’t matched.
-    for existing_interface in current_interfaces:
-        if existing_interface.id not in matched_interface_ids:
-            delete_interface(
+        # Creates the interfaces that matched no saved interface.
+        for interface_field in interfaces_to_create:
+            create_interface(
                 actor=actor,
                 tenant_id=tenant_id,
-                interface_id=existing_interface.id,
+                device_id=device.id,
+                name=interface_field.name.strip(),
+                description=interface_field.description or "",
+                type=interface_field.type or "",
+                VRF=interface_field.vrf or None,
             )
 
 
