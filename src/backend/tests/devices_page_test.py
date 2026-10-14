@@ -341,3 +341,43 @@ def test_sync_device_interfaces_clears_vrf(authenticated_user_and_tenant_id, dev
 
     eth0.refresh_from_db()
     assert not eth0.VRF
+
+
+# The duplicate interface name makes the save fail after the device fields and tags were already changed.
+@pytest.mark.django_db
+def test_failed_update_leaves_device_unchanged(
+    authenticated_client, authenticated_user_and_tenant_id, device_with_interfaces
+):
+    user, tenant_id = authenticated_user_and_tenant_id
+    tag = create_tag(actor=user, tenant_id=tenant_id, name="Test_Tag_Not_Added", description="")
+    interfaces_before = interface_ids(device_with_interfaces)
+    eth0 = Interface.objects.get(device=device_with_interfaces, name="eth0")
+    draft = json.dumps([{"id": eth0.id, "name": "eth0"}, {"id": None, "name": "eth0"}])
+
+    response = post_device_update(
+        authenticated_client, device_with_interfaces, name="Renamed device", tag_ids=[tag.id], interface_fields=draft
+    )
+
+    assert response.status_code == 400
+    device = Device.objects.get(id=device_with_interfaces.id)
+    assert device.name == "Test_Device_Interfaces"
+    assert device.description == "Device used to test interface syncing"
+    assert list(device.get_tags()) == []
+    assert interface_ids(device_with_interfaces) == interfaces_before
+
+
+@pytest.mark.django_db
+def test_failed_create_leaves_no_device(authenticated_client_with_tenant):
+    response = authenticated_client_with_tenant.post(
+        reverse("post-device-view"),
+        {
+            "name": "Test_Half_Created_Device",
+            "description": "",
+            "platform": "test-platform",
+            "type": "test-type",
+            "interface_fields": json.dumps([{"name": "eth0"}, {"name": "eth0"}]),
+        },
+    )
+
+    assert response.status_code == 400
+    assert not Device.objects.filter(name="Test_Half_Created_Device").exists()

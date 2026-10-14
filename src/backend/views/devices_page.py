@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
@@ -375,33 +375,35 @@ def post_device_view(request):
     )  # Reads the submitted interface_fields and parses it
 
     try:
-        created_device = create_device(
-            actor=request.user,
-            tenant_id=tenant_id,
-            name=name,
-            description=description,
-            platform=platform,
-            type=type,
-        )
-
-        submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
-
-        for tag_id in submitted_tag_ids:
-            tag = Tag.objects.get(id=tag_id)
-            add_tag_to_object(
+        # Everything is saved in one transaction, so a failure part-way through leaves nothing half-saved.
+        with transaction.atomic():
+            created_device = create_device(
                 actor=request.user,
                 tenant_id=tenant_id,
-                tag=tag,
-                obj=created_device,
+                name=name,
+                description=description,
+                platform=platform,
+                type=type,
             )
 
-        # Once the device exists, it calls sync_device_interfaces()) to create its submitted interfaces
-        sync_device_interfaces(
-            actor=request.user,
-            tenant_id=tenant_id,
-            device=created_device,
-            interface_fields=draft_interface_fields,
-        )
+            submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
+
+            for tag_id in submitted_tag_ids:
+                tag = Tag.objects.get(id=tag_id)
+                add_tag_to_object(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    tag=tag,
+                    obj=created_device,
+                )
+
+            # Once the device exists, it calls sync_device_interfaces()) to create its submitted interfaces
+            sync_device_interfaces(
+                actor=request.user,
+                tenant_id=tenant_id,
+                device=created_device,
+                interface_fields=draft_interface_fields,
+            )
 
     except (PermissionDenied, ObjectDoesNotExist, ValueError, IntegrityError) as e:
         return render(
@@ -506,65 +508,67 @@ def update_device_view(request, object_id):
         )
 
     try:
-        update_device(
-            actor=request.user,
-            tenant_id=tenant_id,
-            device_id=object_id,
-            name=name,
-            description=description,
-            platform=platform,
-            type=device_type,
-        )
-
-        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
-
-        current_tags = get_all_tags_from_object(
-            actor=request.user,
-            tenant_id=tenant_id,
-            object_id=object_id,
-            object_type="device",
-        )
-        current_tag_ids = {tag.id for tag in current_tags}
-
-        tag_ids_to_add = submitted_tag_ids - current_tag_ids
-        tag_ids_to_remove = current_tag_ids - submitted_tag_ids
-
-        device = get_object_by_type_and_id(
-            actor=request.user,
-            tenant_id=tenant_id,
-            object_type="device",
-            object_id=object_id,
-        )
-
-        for tag_id in tag_ids_to_add:
-            tag = Tag.objects.get(id=tag_id)
-
-            add_tag_to_object(
+        # Everything is saved in one transaction, so a failure part-way through leaves nothing half-saved.
+        with transaction.atomic():
+            update_device(
                 actor=request.user,
                 tenant_id=tenant_id,
-                tag=tag,
-                obj=device,
+                device_id=object_id,
+                name=name,
+                description=description,
+                platform=platform,
+                type=device_type,
             )
 
-        for tag_id in tag_ids_to_remove:
-            remove_tag_from_object(
+            submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
+
+            current_tags = get_all_tags_from_object(
                 actor=request.user,
                 tenant_id=tenant_id,
                 object_id=object_id,
                 object_type="device",
-                tag_id=tag_id,
             )
+            current_tag_ids = {tag.id for tag in current_tags}
 
-        # The submitted interface list is synchronized with the database.
-        # An empty value means the interface modal was never applied, so the saved interfaces are left as they are.
-        # A deliberately emptied list is sent as "[]" and still deletes them.
-        if raw_interface_fields:
-            sync_device_interfaces(
+            tag_ids_to_add = submitted_tag_ids - current_tag_ids
+            tag_ids_to_remove = current_tag_ids - submitted_tag_ids
+
+            device = get_object_by_type_and_id(
                 actor=request.user,
                 tenant_id=tenant_id,
-                device=device,
-                interface_fields=draft_interface_fields,
+                object_type="device",
+                object_id=object_id,
             )
+
+            for tag_id in tag_ids_to_add:
+                tag = Tag.objects.get(id=tag_id)
+
+                add_tag_to_object(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    tag=tag,
+                    obj=device,
+                )
+
+            for tag_id in tag_ids_to_remove:
+                remove_tag_from_object(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    object_id=object_id,
+                    object_type="device",
+                    tag_id=tag_id,
+                )
+
+            # The submitted interface list is synchronized with the database.
+            # An empty value means the interface modal was never applied, so the saved interfaces are left as they are.
+            # A deliberately emptied list is sent as "[]" and still deletes them.
+            if raw_interface_fields:
+                sync_device_interfaces(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    device=device,
+                    interface_fields=draft_interface_fields,
+                )
 
     except (PermissionDenied, ObjectDoesNotExist, ValueError, IntegrityError) as e:
         return render_update_device_error(request, object_id, f"Could not update device: {e}")
