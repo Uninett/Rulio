@@ -422,3 +422,21 @@ def test_sync_device_interfaces_swaps_interface_names(authenticated_user_and_ten
     eth0.refresh_from_db()
     eth1.refresh_from_db()
     assert (eth0.name, eth1.name) == ("eth1", "eth0")
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("raw_value", ["garbage", '"a string"', "42"])
+def test_update_device_with_invalid_interface_draft_keeps_interfaces(
+    authenticated_client, device_with_interfaces, raw_value
+):
+    before = interface_ids(device_with_interfaces)
+
+    response = post_device_update(
+        authenticated_client, device_with_interfaces, name="Renamed device", interface_fields=raw_value
+    )
+
+    assert response.status_code == 400
+    assert b"the interface list is invalid" in response.content
+    assert interface_ids(device_with_interfaces) == before
+    assert Device.objects.get(id=device_with_interfaces.id).name == "Test_Device_Interfaces"
+    assert response.context["interface_fields_draft"] == ""

@@ -44,6 +44,15 @@ class InterfaceFields:
     id: int | None = None
 
 
+# Checks that a submitted interface_fields value is JSON for a list of interfaces, or a single interface object.
+# parse_interface_fields returns [] for anything else, which a sync would treat as "delete every interface".
+def is_valid_interface_draft(raw_value: str) -> bool:
+    try:
+        return isinstance(json.loads(raw_value), (list, dict))
+    except (TypeError, ValueError):
+        return False
+
+
 # The browser submits interface_fields as a JSON string. This function turns that string into a list of InterfaceFields objects.
 def parse_interface_fields(raw_value: str | None) -> list[InterfaceFields]:
     # If nothing was submitted, it returns an empty list.
@@ -516,6 +525,10 @@ def update_device_view(request, object_id):
             status=400,
         )
 
+    # Rejects malformed interface data before saving anything, instead of reading it as an empty interface list.
+    if raw_interface_fields and not is_valid_interface_draft(raw_interface_fields):
+        return render_update_device_error(request, object_id, "Could not update device: the interface list is invalid.")
+
     try:
         # Everything is saved in one transaction, so a failure part-way through leaves nothing half-saved.
         with transaction.atomic():
@@ -595,6 +608,8 @@ def render_update_device_error(request, object_id, error_message):
 
     tenant_id = int(request.session.get("current_tenant_id"))
     raw_interface_fields = request.POST.get("interface_fields")
+    if raw_interface_fields and not is_valid_interface_draft(raw_interface_fields):
+        raw_interface_fields = ""  # An invalid draft is dropped, so the form falls back to the saved interfaces.
     submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id.isdigit()]
 
     object_data = {
