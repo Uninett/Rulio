@@ -496,6 +496,8 @@ function addDeviceInterfaceRow(button) {
     if (descriptionInput) descriptionInput.value = "";
     if (typeInput) typeInput.value = "";
     if (vrfInput) vrfInput.value = "";
+
+    nameInput?.focus(); // Moves focus back to the name field so the next interface can be typed right away.
 }
 
 // Remove an interface row
