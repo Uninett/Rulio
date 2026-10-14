@@ -465,7 +465,8 @@ def update_device_view(request, object_id):
     description = request.POST.get("description", "")
     platform = request.POST.get("platform", "")
     device_type = request.POST.get("type", "")
-    draft_interface_fields = parse_interface_fields(request.POST.get("interface_fields"))
+    raw_interface_fields = request.POST.get("interface_fields")
+    draft_interface_fields = parse_interface_fields(raw_interface_fields)
 
     object_data = {
         "name": name,
@@ -552,13 +553,16 @@ def update_device_view(request, object_id):
                 tag_id=tag_id,
             )
 
-        # The submitted interface list is synchronized with the database
-        sync_device_interfaces(
-            actor=request.user,
-            tenant_id=tenant_id,
-            device=device,
-            interface_fields=draft_interface_fields,
-        )
+        # The submitted interface list is synchronized with the database.
+        # An empty value means the interface modal was never applied, so the saved interfaces are left as they are.
+        # A deliberately emptied list is sent as "[]" and still deletes them.
+        if raw_interface_fields:
+            sync_device_interfaces(
+                actor=request.user,
+                tenant_id=tenant_id,
+                device=device,
+                interface_fields=draft_interface_fields,
+            )
 
     except (PermissionDenied, ObjectDoesNotExist, ValueError, IntegrityError) as e:
         return render(
