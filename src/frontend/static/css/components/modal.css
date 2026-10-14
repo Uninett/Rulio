@@ -363,7 +363,6 @@ Membership Selection
 .membership-list-item {
     padding: 0.6rem;
     cursor: grab;
-    margin-bottom: 0.4rem;
     font-size: smaller;
     min-width: 0;
 }
@@ -388,6 +387,9 @@ Membership Selection
     float: right;
 }
 
+.membership-list-fixed {
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+}
 
 /*
 ====================================================================
