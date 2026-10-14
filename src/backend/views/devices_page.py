@@ -113,6 +113,13 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
     submitted_interfaces = [
         interface_field for interface_field in interface_fields if (interface_field.name or "").strip()
     ]
+
+    # Interface names are unique per device. Rejecting duplicates here gives a clear message before anything is saved.
+    submitted_names = [interface_field.name.strip() for interface_field in submitted_interfaces]
+    duplicate_names = sorted({name for name in submitted_names if submitted_names.count(name) > 1})
+    if duplicate_names:
+        raise ValueError(f"Interface names must be unique. Used more than once: {', '.join(duplicate_names)}.")
+
     matched_interface_ids: set[int] = set()
     interfaces_to_update = []  # (saved interface id, submitted interface) pairs.
     unmatched_interfaces = []

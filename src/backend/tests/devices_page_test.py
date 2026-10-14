@@ -467,3 +467,15 @@ def test_sync_device_interfaces_id_match_wins_over_earlier_name_match(
     assert names_by_id[eth0.id] == "eth9"
     assert names_by_id[eth1.id] == "eth1"
     assert sorted(names_by_id.values()) == ["eth0", "eth1", "eth9"]
+
+
+@pytest.mark.django_db
+def test_update_device_with_duplicate_interface_names_gives_clear_error(authenticated_client, device_with_interfaces):
+    before = interface_ids(device_with_interfaces)
+    draft = json.dumps([{"name": "eth0"}, {"name": "eth1"}, {"name": "eth0"}])
+
+    response = post_device_update(authenticated_client, device_with_interfaces, interface_fields=draft)
+
+    assert response.status_code == 400
+    assert b"Interface names must be unique. Used more than once: eth0." in response.content
+    assert interface_ids(device_with_interfaces) == before

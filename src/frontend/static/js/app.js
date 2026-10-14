@@ -511,12 +511,22 @@ function addDeviceInterfaceRow(button) {
     const typeInput = table.querySelector("#new-interface-type");
     const vrfInput = table.querySelector("#new-interface-vrf");
 
-    // If no name was entered, show an alert and don’t add a row.
+    // If no name was entered, or an interface in the table already has the name, show a message and don’t add a row.
+    // Interface names must be unique per device, so a duplicate would only fail later, when the device is saved.
     const name = nameInput?.value.trim() || "";
-    if (!name) {
-        nameInput?.setCustomValidity("Interface name is required.");
+    const existingNames = Array.from(tbody.querySelectorAll("tr")).map((row) => row.cells[0]?.textContent.trim());
+    const nameError = !name
+        ? "Interface name is required."
+        : existingNames.includes(name)
+            ? "An interface with this name already exists."
+            : "";
+
+    if (nameError) {
+        nameInput?.setCustomValidity(nameError);
         nameInput?.reportValidity();
         nameInput?.focus();
+        // Clears the message once the name is changed, so the input isn't left marked as invalid.
+        nameInput?.addEventListener("input", () => nameInput.setCustomValidity(""), { once: true });
         return;
     }
 
