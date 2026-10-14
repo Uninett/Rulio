@@ -578,42 +578,6 @@ function removeDeviceInterfaceRow(button) {
     if (row) row.remove();
 }
 
-// Buttons in the initial page
-window.addEventListener("DOMContentLoaded", () => {
-    // Finds all Add buttons on the page, and set up.
-    const addButtons = document.querySelectorAll(".device-interface-add-button");
-    addButtons.forEach((button) => {
-        if (button.dataset.bound === "true") return;
-        button.dataset.bound = "true";
-        button.setAttribute("onclick", "addDeviceInterfaceRow(this)");
-    });
-
-    // Finds all Delete buttons on the page, and set up.
-    const deleteButtons = document.querySelectorAll(".device-interface-delete-button");
-    deleteButtons.forEach((button) => {
-        if (button.dataset.bound === "true") return;
-        button.dataset.bound = "true";
-        button.setAttribute("onclick", "removeDeviceInterfaceRow(this)");
-    });
-});
-
-// Buttons added by HTMX after update
-document.body.addEventListener("htmx:afterSwap", () => {
-    const addButtons = document.querySelectorAll(".device-interface-add-button");
-    addButtons.forEach((button) => {
-        if (button.dataset.bound === "true") return;
-        button.dataset.bound = "true";
-        button.setAttribute("onclick", "addDeviceInterfaceRow(this)");
-    });
-
-    const deleteButtons = document.querySelectorAll(".device-interface-delete-button");
-    deleteButtons.forEach((button) => {
-        if (button.dataset.bound === "true") return;
-        button.dataset.bound = "true";
-        button.setAttribute("onclick", "removeDeviceInterfaceRow(this)");
-    });
-});
-
 /*
 ====================================================================
 Interface Filter Draft (Ingoing/Outgoing)

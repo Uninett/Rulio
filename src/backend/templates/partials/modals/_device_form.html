@@ -8,7 +8,6 @@
     <input id="type" name="type" value="{{ object_data.type|default:''  }}" type="text" required>
 </div>
 
-{{ object_data.interfaces|json_script:"device-interface-field-data" }}
 <input type="hidden" name="interface_fields" id="device-interface-field-input" value="{{ interface_fields_draft|default:'' }}">
 
 <div class="form-group device-interfaces-group">
@@ -42,17 +41,3 @@
     </button>
     {% endif %}
 </div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const hiddenInput = document.getElementById("device-interface-field-input");
-        const interfaceData = document.getElementById("device-interface-field-data");
-        if (hiddenInput && interfaceData) {
-            hiddenInput.value = interfaceData.textContent;
-            const form = hiddenInput.closest("form");
-            if (form) {
-                form.dataset.interfaceDraft = hiddenInput.value;
-            }
-        }
-    });
-</script>
