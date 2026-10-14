@@ -389,6 +389,7 @@ Membership Selection
 
 .membership-list-fixed {
     background-color: var(--sds-color-brand-primary-subtle-hover);
+    cursor: pointer;
 }
 
 /*
