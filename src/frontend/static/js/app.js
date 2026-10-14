@@ -63,25 +63,44 @@ function closeModalAndRefresh(url, target) {
 
     const refreshTarget = document.querySelector(target);
     let savedScrollTop = 0;
+    let expandedRowIds = [];
 
     if (refreshTarget) {
         const scrollContainer = refreshTarget.querySelector(".table-container");
         if (scrollContainer) {
             savedScrollTop = scrollContainer.scrollTop;
         }
+
+        // Remembers which rows were expanded, so they can be expanded again after the refresh.
+        expandedRowIds = Array.from(refreshTarget.querySelectorAll("tr.expanded-row[id^='row-']"))
+            .map((row) => row.id.slice("row-".length));
     }
 
-    htmx.ajax("GET", url, {
-        target: target,
-        swap: "innerHTML"
-    }).then(() => {
+    // Waits for htmx to finish settling. Before that, htmx temporarily gives new elements the attributes of old
+    // elements with the same id, and then restores the new ones, which would collapse rows expanded any earlier.
+    const restoreTableState = (event) => {
         const updatedTarget = document.querySelector(target);
-        if (!updatedTarget) return;
+        if (!updatedTarget || event.detail.target !== updatedTarget) return;
+        document.body.removeEventListener("htmx:afterSettle", restoreTableState);
+
+        // Re-expands the rows that were open before the refresh. Rows that no longer exist are skipped by expandRow.
+        expandedRowIds.forEach((rowId) => {
+            const detailsRow = document.getElementById(`details-${rowId}`);
+            if (detailsRow && detailsRow.style.display !== "table-row") {
+                expandRow(rowId);
+            }
+        });
 
         const updatedScrollContainer = updatedTarget.querySelector(".table-container");
         if (updatedScrollContainer) {
             updatedScrollContainer.scrollTop = savedScrollTop;
         }
+    };
+    document.body.addEventListener("htmx:afterSettle", restoreTableState);
+
+    htmx.ajax("GET", url, {
+        target: target,
+        swap: "innerHTML"
     });
 }
 
