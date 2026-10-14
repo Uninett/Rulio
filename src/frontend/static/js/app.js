@@ -310,7 +310,7 @@ function getDeviceInterfaceDraftState(form) {
     // If the form doesn’t have a draft saved there, it looks for the hidden input named interface_fields.
     const hiddenInput = form.querySelector('input[name="interface_fields"]');
 
-    // // If the hidden input has a value, the function copies it onto the form’s dataset and returns it.
+    // If the hidden input has a value, the function copies it onto the form’s dataset and returns it.
     if (hiddenInput && hiddenInput.value) {
         form.dataset.interfaceDraft = hiddenInput.value;
         return hiddenInput.value;
