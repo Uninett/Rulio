@@ -440,3 +440,30 @@ def test_update_device_with_invalid_interface_draft_keeps_interfaces(
     assert interface_ids(device_with_interfaces) == before
     assert Device.objects.get(id=device_with_interfaces.id).name == "Test_Device_Interfaces"
     assert response.context["interface_fields_draft"] == ""
+
+
+# The new row named eth0 comes first, and the renamed eth0 row claims the saved eth0 by id later on.
+@pytest.mark.django_db
+def test_sync_device_interfaces_id_match_wins_over_earlier_name_match(
+    authenticated_user_and_tenant_id, device_with_interfaces
+):
+    user, tenant_id = authenticated_user_and_tenant_id
+    eth0 = Interface.objects.get(device=device_with_interfaces, name="eth0")
+    eth1 = Interface.objects.get(device=device_with_interfaces, name="eth1")
+
+    with transaction.atomic():
+        sync_device_interfaces(
+            actor=user,
+            tenant_id=tenant_id,
+            device=device_with_interfaces,
+            interface_fields=[
+                InterfaceFields(name="eth0"),
+                InterfaceFields(name="eth9", id=eth0.id),
+                InterfaceFields(name="eth1", id=eth1.id),
+            ],
+        )
+
+    names_by_id = dict(Interface.objects.filter(device=device_with_interfaces).values_list("id", "name"))
+    assert names_by_id[eth0.id] == "eth9"
+    assert names_by_id[eth1.id] == "eth1"
+    assert sorted(names_by_id.values()) == ["eth0", "eth1", "eth9"]

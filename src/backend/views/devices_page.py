@@ -109,32 +109,36 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
         return
 
     current_interfaces = list(get_all_interfaces_from_device(actor=actor, tenant_id=tenant_id, device_id=device.id))
+    current_interface_ids = {existing.id for existing in current_interfaces}
+    submitted_interfaces = [
+        interface_field for interface_field in interface_fields if (interface_field.name or "").strip()
+    ]
     matched_interface_ids: set[int] = set()
     interfaces_to_update = []  # (saved interface id, submitted interface) pairs.
-    interfaces_to_create = []
+    unmatched_interfaces = []
 
     # Matches every submitted interface before changing anything, so the deletes can run first.
-    for interface_field in interface_fields:
-        interface_name = (interface_field.name or "").strip()
-        if not interface_name:
-            continue
+    # Rows with an id claim their interface first. Otherwise a row matched by name could take an interface
+    # that a later row claims by id, and one of the two rows would be lost.
+    for interface_field in submitted_interfaces:
+        if interface_field.id in current_interface_ids and interface_field.id not in matched_interface_ids:
+            interfaces_to_update.append((interface_field.id, interface_field))
+            matched_interface_ids.add(interface_field.id)
+        else:
+            unmatched_interfaces.append(interface_field)
 
-        existing_interface = None
-        if interface_field.id is not None:
-            existing_interface = next(
-                (existing for existing in current_interfaces if existing.id == interface_field.id),
-                None,
-            )
-
-        if existing_interface is None:
-            existing_interface = next(
-                (
-                    existing
-                    for existing in current_interfaces
-                    if existing.name == interface_name and existing.id not in matched_interface_ids
-                ),
-                None,
-            )
+    # The remaining rows are matched by name, or created when no saved interface has that name.
+    interfaces_to_create = []
+    for interface_field in unmatched_interfaces:
+        interface_name = interface_field.name.strip()
+        existing_interface = next(
+            (
+                existing
+                for existing in current_interfaces
+                if existing.name == interface_name and existing.id not in matched_interface_ids
+            ),
+            None,
+        )
 
         if existing_interface is not None:
             interfaces_to_update.append((existing_interface.id, interface_field))
