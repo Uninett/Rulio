@@ -16,6 +16,7 @@ from backend.services.attribute_objects.get_service_objects import (
 )
 from backend.services.get import (
     get_all_device_groups_and_devices_with_tags_from_tenant,
+    get_all_interfaces_from_device,
     get_all_objects_from_rule,
     get_all_tags_from_object,
     get_filter_with_rules_and_tags,
@@ -167,6 +168,16 @@ def get_update_modal_config(object_type):
 
 @login_required(login_url="login")
 def get_update_modal(request, row_id):
+    context = build_update_modal_context(request, row_id)
+    if isinstance(context, HttpResponse):
+        return context
+
+    return render(request, "partials/_modal.html", context)
+
+
+# Builds the context for an update modal. Returns an HttpResponse instead when the modal can't be built.
+# Also used by update views to re-render the modal with an error message when saving fails.
+def build_update_modal_context(request, row_id):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
 
     # Validate row_id format and extract object_type and object_id
@@ -253,12 +264,33 @@ def get_update_modal(request, row_id):
             )
 
             if device:
+                interfaces = get_all_interfaces_from_device(
+                    actor=request.user,
+                    tenant_id=tenant_id,
+                    device_id=device.id,
+                )
+
+                interfaces = sorted(
+                    interfaces,
+                    key=lambda interface: (interface.name or "").casefold(),
+                )
+
                 object_data = {
                     "id": device.id,
                     "name": device.name or "",
                     "description": device.description or "",
                     "platform": device.platform or "",
                     "type": device.type or "",
+                    "interfaces": [
+                        {
+                            "id": interface.id,
+                            "name": interface.name or "",
+                            "description": interface.description or "",
+                            "type": interface.type or "",
+                            "vrf": interface.VRF or "",
+                        }
+                        for interface in interfaces
+                    ],
                 }
 
                 options_context["group_options"] = get_group_options_view(
@@ -509,4 +541,4 @@ def get_update_modal(request, row_id):
         **options_context,
     }
 
-    return render(request, "partials/_modal.html", context)
+    return context

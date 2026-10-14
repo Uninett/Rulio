@@ -33,6 +33,7 @@ Modal
     flex-direction: column;
     overflow: hidden;
     box-sizing: border-box;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
 
@@ -131,6 +132,11 @@ Form Layout
     padding-top: 0.55rem;
 }
 
+.modal .form-group p {
+    padding-top: 0.55rem;
+}
+
+
 .modal input,
 .modal select,
 .modal textarea {
@@ -167,6 +173,139 @@ Form Layout
     cursor: pointer;
 }
 
+/*
+====================================================================
+Device Form Layout
+====================================================================
+*/
+
+.device-interfaces {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.device-interface-names {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.device-interface-count {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+/*
+====================================================================
+Device Interface Manager
+====================================================================
+*/
+
+.device-interface-manager {
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.device-interface-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: smaller;
+    background-color: var(--sds-color-layout-surface-1);
+    border-radius: 0.5rem;
+}
+
+.device-interface-table th,
+.device-interface-table td {
+    padding: 0.55rem 0.65rem;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--sds-color-layout-border-subtle);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+.device-interface-table th:nth-child(1),
+.device-interface-table td:nth-child(1) {
+    width: 23%;
+}
+
+.device-interface-table th:nth-child(2),
+.device-interface-table td:nth-child(2) {
+    width: 38%;
+}
+
+.device-interface-table th:nth-child(3),
+.device-interface-table td:nth-child(3) {
+    width: 16%;
+}
+
+.device-interface-table th:nth-child(4),
+.device-interface-table td:nth-child(4) {
+    width: 16%;
+}
+
+.device-interface-actions-column {
+    width: 5%;
+    text-align: right !important;
+}
+
+.device-interface-table tfoot td {
+    border-bottom: none;
+    background-color: var(--sds-color-layout-surface-2);
+}
+
+.device-interface-table tfoot input {
+    width: 100%;
+    min-width: 0;
+    height: 2rem;
+    box-sizing: border-box;
+    padding: 0 0.5rem;
+}
+
+.device-interface-actions-column {
+    width: 7%;
+    text-align: center !important;
+}
+
+.device-interface-table .device-interface-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    padding: 0;
+
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 50%;
+}
+
+.device-interface-table .device-interface-icon-button:hover {
+    border-color: transparent;
+}
+
+.device-interface-table .device-interface-add-button:hover {
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+}
+
+.device-interface-table .device-interface-delete-button:hover {
+    background-color: var(--sds-color-support-critical-subtle);
+}
+
+.device-interface-table .device-interface-icon-button .actions-icon {
+    display: block;
+    width: 1.2rem;
+    height: 1.2rem;
+}
 
 /*
 ====================================================================
@@ -289,4 +428,44 @@ Modal Actions
     margin: 0;
     color: var(--sds-color-text-critical);
     font-size: smaller;
+}
+
+.btn-cancel {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--sds-color-support-critical-strong);
+}
+
+.btn-cancel:hover {
+    background-color: var(--sds-color-support-critical-subtle);
+    border-color: var(--sds-color-support-critical-subtle);
+}
+
+/*
+====================================================================
+Modal Secondary Button
+====================================================================
+*/
+
+.modal .btn-secondary {
+    justify-self: start;
+    grid-column: 2;
+    width: fit-content;
+    margin-top: 0.25rem;
+    padding: 0.35rem 0.75rem;
+
+    font-size: smaller;
+    line-height: 1.2;
+
+    background-color: transparent;
+    border: 1px solid var(--sds-color-brand-primary-strong);
+    border-radius: 2rem;
+    color: var(--sds-color-brand-primary-strong);
+    cursor: pointer;
+}
+
+.modal .btn-secondary:hover {
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+    border-color: var(--sds-color-brand-primary-strong-hover);
+    color: var(--sds-color-brand-primary-strong-hover);
 }

@@ -53,6 +53,40 @@ function closeModal(event = null) {
     document.getElementById("modal-container").innerHTML = "";
 }
 
+// htmx doesn't swap 4xx/5xx responses by default, so a failed save in a modal looked like the Save button did nothing.
+// The error is shown in the open form instead. The response isn't swapped in, because create forms target the table
+// (e.g. beforeend on #devices-table), and keeping the open form also keeps everything the user entered.
+document.body.addEventListener("htmx:beforeSwap", (event) => {
+    // beforeSwap fires on the swap target, so the form that sent the request is read from requestConfig.
+    const form = event.detail.requestConfig?.elt;
+    if (event.detail.xhr.status < 400 || !form?.matches?.("form.modal-form")) return;
+
+    // Uses the error message from the server's error modal, a plain-text error, or a general message.
+    const response = event.detail.serverResponse || "";
+    const responseError = new DOMParser().parseFromString(response, "text/html").querySelector(".form-error");
+    const isPlainText = response && !response.trimStart().startsWith("<");
+    const message = responseError?.textContent.trim() || (isPlainText ? response : "Could not save changes. Please try again.");
+
+    showModalFormError(form, message);
+});
+
+// Shows an error message next to the modal's buttons, where the server renders it, replacing any earlier error.
+function showModalFormError(form, message) {
+    const container = form.querySelector(".modal-actions-center");
+    if (!container) {
+        alert(message);
+        return;
+    }
+
+    let error = container.querySelector(".form-error");
+    if (!error) {
+        error = document.createElement("p");
+        error.className = "form-error";
+        container.appendChild(error);
+    }
+    error.textContent = message;
+}
+
 function closeModalAndRefresh(url, target) {
     const modalContainer = document.getElementById("modal-container");
     if (modalContainer) {
@@ -63,25 +97,44 @@ function closeModalAndRefresh(url, target) {
 
     const refreshTarget = document.querySelector(target);
     let savedScrollTop = 0;
+    let expandedRowIds = [];
 
     if (refreshTarget) {
         const scrollContainer = refreshTarget.querySelector(".table-container");
         if (scrollContainer) {
             savedScrollTop = scrollContainer.scrollTop;
         }
+
+        // Remembers which rows were expanded, so they can be expanded again after the refresh.
+        expandedRowIds = Array.from(refreshTarget.querySelectorAll("tr.expanded-row[id^='row-']"))
+            .map((row) => row.id.slice("row-".length));
     }
 
-    htmx.ajax("GET", url, {
-        target: target,
-        swap: "innerHTML"
-    }).then(() => {
+    // Waits for htmx to finish settling. Before that, htmx temporarily gives new elements the attributes of old
+    // elements with the same id, and then restores the new ones, which would collapse rows expanded any earlier.
+    const restoreTableState = (event) => {
         const updatedTarget = document.querySelector(target);
-        if (!updatedTarget) return;
+        if (!updatedTarget || event.detail.target !== updatedTarget) return;
+        document.body.removeEventListener("htmx:afterSettle", restoreTableState);
+
+        // Re-expands the rows that were open before the refresh. Rows that no longer exist are skipped by expandRow.
+        expandedRowIds.forEach((rowId) => {
+            const detailsRow = document.getElementById(`details-${rowId}`);
+            if (detailsRow && detailsRow.style.display !== "table-row") {
+                expandRow(rowId);
+            }
+        });
 
         const updatedScrollContainer = updatedTarget.querySelector(".table-container");
         if (updatedScrollContainer) {
             updatedScrollContainer.scrollTop = savedScrollTop;
         }
+    };
+    document.body.addEventListener("htmx:afterSettle", restoreTableState);
+
+    htmx.ajax("GET", url, {
+        target: target,
+        swap: "innerHTML"
     });
 }
 
@@ -225,6 +278,305 @@ function applyRuleSelectorSelection(selectorType, button) {
     closeThisModal(button);
 }
 
+// Turns the interface table into a JavaScript list of interface objects.
+function getDeviceInterfaceDraftFromTable(table) {
+    if (!table) return []; // If there is no table, return an empty list.
+
+    // Finds every row in the table body and processes each one. Array.from converts the browser’s list of rows into a normal JavaScript array.
+    return Array.from(table.querySelectorAll("tbody tr")).map((row) => {
+        const cells = row.querySelectorAll("td");
+        const name = cells[0]?.textContent?.trim() || "";
+        if (!name) return null; // A row without a name is ignored.
+
+        return {
+            id: row.dataset.interfaceId ? Number(row.dataset.interfaceId) : null,
+            name,
+            description: cells[1]?.textContent?.trim() || "",
+            type: cells[2]?.textContent?.trim() || "",
+            vrf: cells[3]?.textContent?.trim() || "",
+        };
+    }).filter(Boolean); // Removes any null results, such as rows with no name.
+}
+
+// Getting the current draft on the parent device form.
+function getDeviceInterfaceDraftState(form) {
+    if (!form) return ""; // If there’s no form, return an empty string.
+
+    // Checks the form’s data-interface-draft value.
+    if (form.dataset.interfaceDraft) {
+        return form.dataset.interfaceDraft;
+    }
+
+    // If the form doesn’t have a draft saved there, it looks for the hidden input named interface_fields.
+    const hiddenInput = form.querySelector('input[name="interface_fields"]');
+
+    // If the hidden input has a value, the function copies it onto the form’s dataset and returns it.
+    if (hiddenInput && hiddenInput.value) {
+        form.dataset.interfaceDraft = hiddenInput.value;
+        return hiddenInput.value;
+    }
+
+    return ""; // If neither place contains a draft, return an empty string.
+}
+
+function setDeviceFormSubmitDisabled(disabled) {
+    const form = getDeviceInterfaceParentForm();
+    if (!form) return;
+
+    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+        button.disabled = disabled;
+        button.title = disabled ? "Close the interface window before saving the device." : "";
+    });
+}
+
+// Opening the interface modal
+function openDeviceInterfaceModal(button) {
+    const form = button.closest("form"); // Finds the device form containing the button.
+
+    // Gets the modal URL from the button’s data-device-interface-url attribute. If there is no URL, stop.
+    const url = button.dataset.deviceInterfaceUrl;
+    if (!url) return;
+
+    const draftState = getDeviceInterfaceDraftState(form); // Gets the current draft from the parent form, if one exists.
+
+    // Creates URL query parameters and includes the draft under the name interface_fields when there is draft data.
+    const params = new URLSearchParams();
+    if (draftState) {
+        params.set("interface_fields", draftState);
+    }
+
+    const fullUrl = params.toString() ? `${url}?${params.toString()}` : url; // If there are query parameters, adds them to the URL. Otherwise, uses the URL as-is.
+    setDeviceFormSubmitDisabled(true); // Disable the device form submit button while the interface modal is open.
+
+    // If the interface window didn't open (the request failed), Save is enabled again and the error is shown.
+    // Otherwise Save would stay disabled, since it is only re-enabled when the interface window is closed.
+    const handleOpenFailure = () => {
+        if (document.getElementById("submodal-container")?.childElementCount) return;
+        setDeviceFormSubmitDisabled(false);
+        showModalFormError(form, "Could not open the interface window. Please try again.");
+    };
+
+    htmx.ajax("GET", fullUrl, {
+        target: "#submodal-container",
+        swap: "innerHTML",
+    }).then(handleOpenFailure, handleOpenFailure);
+}
+
+// A helper function for finding the device form that contains the hidden interface field.
+function getDeviceInterfaceParentForm() {
+    // It finds the hidden input, then returns its closest form. If there is no hidden input, it returns null.
+    const hiddenInput = document.getElementById("device-interface-field-input");
+    return hiddenInput ? hiddenInput.closest("form") : null;
+}
+
+// Updates the interface names and count shown in the main device form.
+function updateDeviceInterfaceSummaryInParentForm(draftList) {
+    // Finds the form; if it isn’t present, there’s nothing to update.
+    const parentForm = getDeviceInterfaceParentForm();
+    if (!parentForm) return;
+
+    const formContainer = parentForm.querySelector(".device-interfaces-group");
+    if (!formContainer) return;
+
+    const summary = formContainer.querySelector(".device-interfaces");
+    const emptyState = formContainer.querySelector(".empty-state");
+
+    // If there are no interfaces, show the empty-state message without a (0) counter.
+    if (draftList.length === 0) {
+        if (summary) {
+            summary.remove();
+        }
+
+        if (emptyState) {
+            emptyState.style.display = "";
+        } else {
+            const message = document.createElement("p");
+            message.className = "empty-state";
+            message.textContent = "No interfaces are connected to this device.";
+            formContainer.insertBefore(message, formContainer.querySelector("button"));
+        }
+
+        return;
+    }
+
+    // There are interfaces, so hide the empty-state message.
+    if (emptyState) {
+        emptyState.style.display = "none";
+    }
+
+    // Create the names/count paragraph if it doesn't already exist.
+    const wrapper = summary || document.createElement("p");
+    wrapper.className = "device-interfaces";
+
+    let namesEl = wrapper.querySelector(".device-interface-names");
+    if (!namesEl) {
+        namesEl = document.createElement("span");
+        namesEl.className = "device-interface-names";
+        wrapper.appendChild(namesEl);
+    }
+
+    let countEl = wrapper.querySelector(".device-interface-count");
+    if (!countEl) {
+        countEl = document.createElement("span");
+        countEl.className = "device-interface-count";
+        wrapper.appendChild(document.createTextNode(" "));
+        wrapper.appendChild(countEl);
+    }
+
+    // Display the interface names and their count.
+    namesEl.textContent = draftList.map((entry) => entry.name).join(", ");
+    countEl.textContent = `(${draftList.length})`;
+
+    // Add the paragraph before the Manage button if it was just created.
+    if (!summary) {
+        formContainer.insertBefore(wrapper, formContainer.querySelector("button"));
+    }
+}
+
+// Checks for unsaved interfaces
+function hasUnaddedInterfaceInput(button) {
+    const modal = button.closest(".draggable-modal"); // Find the interface modal containing the clicked button.
+    const table = modal?.querySelector(".device-interface-table"); // Find the interface table inside that modal.
+    if (!table) return false;
+
+    // Check the Name, Description, Type, and VRF inputs. Return true if at least one contains non-whitespace text.
+    return [
+        "#new-interface-name",
+        "#new-interface-description",
+        "#new-interface-type",
+        "#new-interface-vrf",
+    ].some((selector) => Boolean(table.querySelector(selector)?.value.trim()));
+}
+
+// Shows a warning if the user has typed interface values but has not added them to the table.
+function warnAboutUnaddedInterfaceInput(button) {
+    if (!hasUnaddedInterfaceInput(button)) return false; // No unadded values means there is nothing to warn about.
+
+    alert("You have unsaved interface changes. Press the + button to add them before continuing.");
+    return true;
+}
+
+// Handles clicking Cancel in the interface modal.
+function cancelDeviceInterfaceModal(button) {
+    closeThisModal(button);
+}
+
+// Applying the modal changes to the parent form
+function applyDeviceInterfaceSelection(button) {
+    if (warnAboutUnaddedInterfaceInput(button)) return; // If there are unadded values, show the warning and stop.
+
+    // Finds the modal containing the clicked button. If there isn’t one, stop.
+    const modal = button.closest(".draggable-modal");
+    if (!modal) return;
+
+    // Finds the modal’s interface table and converts its rows into a list of interface objects.
+    const table = modal.querySelector(".device-interface-table");
+    const draftList = getDeviceInterfaceDraftFromTable(table);
+
+    // Finds the main device form. If there’s no parent form, close the modal and stop.
+    const parentForm = getDeviceInterfaceParentForm();
+
+    if (!parentForm) {
+        closeThisModal(button);
+        return;
+    }
+
+    // Finds the hidden field that will hold the interface list. If the field doesn’t exist, the code creates one and adds it to the form.
+    let hiddenInput = parentForm.querySelector('input[name="interface_fields"]');
+    if (!hiddenInput) {
+        hiddenInput = document.createElement("input");
+        hiddenInput.type = "hidden";
+        hiddenInput.name = "interface_fields";
+        parentForm.appendChild(hiddenInput);
+    }
+
+    const draftValue = JSON.stringify(draftList); // Converts the JavaScript list into a JSON string.
+    hiddenInput.value = draftValue; // Stores the draft in the hidden input, so it is included when the device form is submitted.
+    parentForm.dataset.interfaceDraft = draftValue; // Stores the draft in the form’s dataset, so the modal-opening code can access it next time.
+
+    // Updates the names and count on the parent form, then closes the modal.
+    updateDeviceInterfaceSummaryInParentForm(draftList);
+    closeThisModal(button);
+}
+
+// Adding an interface row
+function addDeviceInterfaceRow(button) {
+    // Finds the table and its body. If the table body isn’t available, stop.
+    const table = button.closest(".device-interface-table");
+    const tbody = table?.querySelector("tbody");
+    if (!tbody) return;
+
+    const nameInput = table.querySelector("#new-interface-name");
+    const descriptionInput = table.querySelector("#new-interface-description");
+    const typeInput = table.querySelector("#new-interface-type");
+    const vrfInput = table.querySelector("#new-interface-vrf");
+
+    // If no name was entered, or an interface in the table already has the name, show a message and don’t add a row.
+    // Interface names must be unique per device, so a duplicate would only fail later, when the device is saved.
+    const name = nameInput?.value.trim() || "";
+    const existingNames = Array.from(tbody.querySelectorAll("tr")).map((row) => row.cells[0]?.textContent.trim());
+    const nameError = !name
+        ? "Interface name is required."
+        : existingNames.includes(name)
+            ? "An interface with this name already exists."
+            : "";
+
+    if (nameError) {
+        nameInput?.setCustomValidity(nameError);
+        nameInput?.reportValidity();
+        nameInput?.focus();
+        // Clears the message once the name is changed, so the input isn't left marked as invalid.
+        nameInput?.addEventListener("input", () => nameInput.setCustomValidity(""), { once: true });
+        return;
+    }
+
+    nameInput?.setCustomValidity("");
+
+    const row = document.createElement("tr");
+    const fields = [
+        name,
+        descriptionInput?.value.trim() || "",
+        typeInput?.value.trim() || "",
+        vrfInput?.value.trim() || "",
+    ];
+
+    fields.forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        cell.title = value;
+        row.appendChild(cell);
+    });
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "device-interface-actions-column";
+
+    // Adds a delete button and appends the row to the table
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "actions-btn device-interface-icon-button device-interface-delete-button";
+    deleteButton.setAttribute("aria-label", "Delete interface");
+    deleteButton.setAttribute("title", "Delete interface");
+    deleteButton.innerHTML = '<img class="btn-icon actions-icon" src="/static/images/delete.svg" alt="" aria-hidden="true">';
+    deleteButton.setAttribute("onclick", "removeDeviceInterfaceRow(this)");
+    actionCell.appendChild(deleteButton);
+    row.appendChild(actionCell);
+    tbody.appendChild(row);
+
+    // Clears the four inputs so the user can enter another interface.
+    if (nameInput) nameInput.value = "";
+    if (descriptionInput) descriptionInput.value = "";
+    if (typeInput) typeInput.value = "";
+    if (vrfInput) vrfInput.value = "";
+
+    nameInput?.focus(); // Moves focus back to the name field so the next interface can be typed right away.
+}
+
+// Remove an interface row
+function removeDeviceInterfaceRow(button) {
+    // Finds the table row containing the clicked delete button and removes it from the page.
+    const row = button.closest("tr");
+    if (row) row.remove();
+}
 
 /*
 ====================================================================
@@ -601,9 +953,13 @@ function closeThisModal(button) {
     const modal = button.closest(".draggable-modal");
     if (!modal) return;
 
+    const isDeviceInterfaceModal = modal.querySelector(".device-interface-manager");
     modal.remove();
-}
 
+    if (isDeviceInterfaceModal) {
+        setDeviceFormSubmitDisabled(false);
+    }
+}
 
 
 function makeModalDraggable(modal, header) {
