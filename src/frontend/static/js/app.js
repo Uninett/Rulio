@@ -1204,6 +1204,10 @@ function initializeMembershipSelectors(root = document) {
 
         function setupDraggableItem(item) {
             item.addEventListener("mousedown", clearRecentlyDropped);
+            // Keep fixed rows in place; don't give them drag or double-click handlers.
+            if (item.classList.contains("membership-list-fixed")) {
+                return;
+            }
 
             item.addEventListener("dragstart", () => {
                 draggedItem = item;
@@ -1287,7 +1291,11 @@ function initializeMembershipSelectors(root = document) {
         }
 
         function getDropTarget(list, y) {
-            const items = [...list.querySelectorAll(".membership-list-item:not(.dragging)")];
+            const items = [
+                ...list.querySelectorAll(
+                    ".membership-list-item:not(.dragging):not(.membership-list-fixed)"
+                )
+            ];
 
             return items.find((item) => {
                 const rect = item.getBoundingClientRect();
