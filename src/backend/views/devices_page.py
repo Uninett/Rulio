@@ -126,6 +126,7 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
             )
 
         # If it finds a match, it updates that saved interface’s fields.
+        # An empty VRF is saved as "", since update_interface skips the VRF when it is None.
         if existing_interface is not None:
             update_interface(
                 actor=actor,
@@ -134,7 +135,7 @@ def sync_device_interfaces(*, actor, tenant_id: int, device, interface_fields: l
                 name=interface_name,
                 description=interface_field.description or "",
                 type=interface_field.type or "",
-                VRF=interface_field.vrf or None,
+                VRF=interface_field.vrf or "",
             )
             matched_interface_ids.add(existing_interface.id)
             continue

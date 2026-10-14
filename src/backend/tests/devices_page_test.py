@@ -322,3 +322,22 @@ def test_failed_update_rerenders_modal_with_submitted_data(
     assert [object_tag.id for object_tag in response.context["object_tags"]] == [tag.id]
     # Manage interfaces must keep pointing at this device, not at the new-device draft modal.
     assert reverse("device-interfaces-modal", args=[device_with_interfaces.id]).encode() in response.content
+
+
+@pytest.mark.django_db
+def test_sync_device_interfaces_clears_vrf(authenticated_user_and_tenant_id, device_with_interfaces):
+    user, tenant_id = authenticated_user_and_tenant_id
+    eth0 = Interface.objects.get(device=device_with_interfaces, name="eth0")
+    eth0.VRF = "mgmt"
+    eth0.save()
+    eth1 = Interface.objects.get(device=device_with_interfaces, name="eth1")
+
+    sync_device_interfaces(
+        actor=user,
+        tenant_id=tenant_id,
+        device=device_with_interfaces,
+        interface_fields=[InterfaceFields(name="eth0", id=eth0.id, vrf=None), InterfaceFields(name="eth1", id=eth1.id)],
+    )
+
+    eth0.refresh_from_db()
+    assert not eth0.VRF
