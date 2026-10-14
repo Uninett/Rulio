@@ -9,7 +9,7 @@
 </div>
 
 {{ object_data.interfaces|json_script:"device-interface-field-data" }}
-<input type="hidden" name="interface_fields" id="device-interface-field-input" value="">
+<input type="hidden" name="interface_fields" id="device-interface-field-input" value="{{ interface_fields_draft|default:'' }}">
 
 <div class="form-group device-interfaces-group">
     <label>Interfaces</label>

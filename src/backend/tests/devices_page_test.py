@@ -5,6 +5,7 @@ from django.urls import reverse
 
 from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
+from backend.services.attribute_objects.create_attribute_objects import create_tag
 from backend.services.tenant_objects.create_tenant_objects import create_device, create_interface
 from backend.views.devices_page import InterfaceFields, parse_interface_fields, sync_device_interfaces
 
@@ -292,3 +293,32 @@ def test_delete_missing_device_returns_error(authenticated_client_with_tenant):
 
     assert response.status_code == 400
     assert b"Could not delete device" in response.content
+
+
+# Failed saves
+
+
+# Two rows with the same name make the interface sync fail, which triggers the error re-render.
+@pytest.mark.django_db
+def test_failed_update_rerenders_modal_with_submitted_data(
+    authenticated_client, authenticated_user_and_tenant_id, device_with_interfaces
+):
+    user, tenant_id = authenticated_user_and_tenant_id
+    tag = create_tag(actor=user, tenant_id=tenant_id, name="Test_Tag_Kept", description="")
+    eth0 = Interface.objects.get(device=device_with_interfaces, name="eth0")
+    draft = json.dumps([{"id": eth0.id, "name": "eth0"}, {"id": None, "name": "eth0"}])
+
+    response = post_device_update(
+        authenticated_client, device_with_interfaces, name="Renamed device", tag_ids=[tag.id], interface_fields=draft
+    )
+
+    assert response.status_code == 400
+    assert b"Could not update device" in response.content
+    object_data = response.context["object_data"]
+    assert object_data["id"] == device_with_interfaces.id
+    assert object_data["name"] == "Renamed device"
+    assert [interface["name"] for interface in object_data["interfaces"]] == ["eth0", "eth0"]
+    assert response.context["interface_fields_draft"] == draft
+    assert [object_tag.id for object_tag in response.context["object_tags"]] == [tag.id]
+    # Manage interfaces must keep pointing at this device, not at the new-device draft modal.
+    assert reverse("device-interfaces-modal", args=[device_with_interfaces.id]).encode() in response.content

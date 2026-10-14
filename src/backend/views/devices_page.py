@@ -26,6 +26,7 @@ from backend.services.tenant_objects.create_tenant_objects import (
 from backend.services.update import update_device, update_interface
 from backend.utils.logger import set_up_logger
 from backend.views.modal import get_group_options_view
+from backend.views.modal_update import build_update_modal_context
 from backend.views.search import get_global_search_results
 from backend.views.session import get_tenant_context
 from constants import GLOBAL_TENANT_ID
@@ -565,34 +566,56 @@ def update_device_view(request, object_id):
             )
 
     except (PermissionDenied, ObjectDoesNotExist, ValueError, IntegrityError) as e:
-        return render(
-            request,
-            "partials/_modal.html",
-            {
-                "modal_title": "Update Device",
-                "modal_mode": "update",
-                "modal_row_id": f"device-{object_id}",
-                "modal_object_type": "devices",
-                "modal_type": "item",
-                "modal_supports_types": False,
-                "item_type_editable": False,
-                "modal_type_labels": {},
-                "modal_content_partial": "partials/modals/_device_form.html",
-                "modal_post_url": reverse("update-device-view", args=[object_id]),
-                "modal_delete_url": reverse("delete-device-view", args=[object_id]),
-                "modal_target": "#modal-container",
-                "modal_swap": "innerHTML",
-                "modal_submit_handler": None,
-                "modal_refresh_url": reverse("devices"),
-                "modal_refresh_target": "#devices-content",
-                "object_data": object_data,
-                "group_options": get_group_options_view(request, "devices"),
-                "error_message": f"Could not update device: {e}",
-            },
-            status=400,
-        )
+        return render_update_device_error(request, object_id, f"Could not update device: {e}")
 
     return HttpResponse(status=204)
+
+
+# Re-renders the full update modal with an error message, keeping what the user submitted.
+# The modal is built the same way as when it is first opened, so the device id, groups and delete button are kept.
+# The submitted fields, tags and interface draft are then put back, so resubmitting doesn't drop tags or interfaces.
+def render_update_device_error(request, object_id, error_message):
+    context = build_update_modal_context(request, f"device-{object_id}")
+    if isinstance(context, HttpResponse):
+        return HttpResponse(error_message, status=400)
+
+    tenant_id = int(request.session.get("current_tenant_id"))
+    raw_interface_fields = request.POST.get("interface_fields")
+    submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id.isdigit()]
+
+    object_data = {
+        **context["object_data"],
+        "name": request.POST.get("name", ""),
+        "description": request.POST.get("description", ""),
+        "platform": request.POST.get("platform", ""),
+        "type": request.POST.get("type", ""),
+    }
+
+    # Shows the submitted interface draft instead of the saved interfaces, and keeps it in the hidden input.
+    if raw_interface_fields:
+        object_data["interfaces"] = [
+            {
+                "id": interface_field.id,
+                "name": interface_field.name,
+                "description": interface_field.description or "",
+                "type": interface_field.type or "",
+                "vrf": interface_field.vrf or "",
+            }
+            for interface_field in parse_interface_fields(raw_interface_fields)
+        ]
+
+    context.update(
+        {
+            "object_data": object_data,
+            "object_tags": list(
+                Tag.objects.filter(id__in=submitted_tag_ids, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
+            ),
+            "interface_fields_draft": raw_interface_fields or "",
+            "error_message": error_message,
+        }
+    )
+
+    return render(request, "partials/_modal.html", context, status=400)
 
 
 @login_required(login_url="login")

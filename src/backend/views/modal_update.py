@@ -168,6 +168,16 @@ def get_update_modal_config(object_type):
 
 @login_required(login_url="login")
 def get_update_modal(request, row_id):
+    context = build_update_modal_context(request, row_id)
+    if isinstance(context, HttpResponse):
+        return context
+
+    return render(request, "partials/_modal.html", context)
+
+
+# Builds the context for an update modal. Returns an HttpResponse instead when the modal can't be built.
+# Also used by update views to re-render the modal with an error message when saving fails.
+def build_update_modal_context(request, row_id):
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
 
     # Validate row_id format and extract object_type and object_id
@@ -531,4 +541,4 @@ def get_update_modal(request, row_id):
         **options_context,
     }
 
-    return render(request, "partials/_modal.html", context)
+    return context
