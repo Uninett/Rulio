@@ -51,12 +51,11 @@ def get_or_create_device(
 ) -> Device:
     require_write_tenant(actor, tenant_id)
 
+    # Device names are unique per tenant, so an existing device is looked up by name only
     device, created = Device.objects.get_or_create(
         name=name,
-        platform=platform,
-        type=type,
-        description=description,
         tenant_id=tenant_id,
+        defaults={"platform": platform, "type": type, "description": description},
     )
     if created:
         logger.info(f"Created {device} for tenant={device.tenant_id}")
@@ -152,15 +151,11 @@ def get_or_create_interface(
     except Device.DoesNotExist:
         raise ValueError(f"Device with id={device_id} does not exist in tenant={tenant_id}.")
 
-    # Check that no other interface with the same name exists for the device
-    if Interface.objects.filter(name=name, device_id=device_id).exists():
-        raise ValueError(f"An interface with name='{name}' already exists for device={device_id}.")
+    # Interface names are unique per device, so an existing interface is looked up by name only
     interface, created = Interface.objects.get_or_create(
         name=name,
-        description=description,
         device_id=device_id,
-        type=type,
-        VRF=VRF,
+        defaults={"description": description, "type": type, "VRF": VRF},
     )
     if created:
         logger.info(f"Created {interface} for device={interface.device_id}")
