@@ -22,6 +22,10 @@
 
     <div class="membership-column">
         <div class="membership-list membership-list-selected" data-list-type="selected">
+            <div class="membership-list-fixed" draggable="false">
+                Add new address
+            </div>
+
             {% for address in item_options %}
             {% if address.id in selected_address_ids %}
             <div class="membership-list-item truncate" draggable="true" data-id="{{ address.id }}">
