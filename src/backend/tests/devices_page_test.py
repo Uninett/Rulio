@@ -500,7 +500,8 @@ def test_create_device_with_name_taken_in_same_tenant_is_refused(
     response = post_device_create(authenticated_client, device_with_interfaces.name)
 
     assert response.status_code == 400
-    assert b"A device with this name already exists." in response.content
+    assert b"Could not create device: A device with this name already exists." in response.content
+    assert b"__all__" not in response.content
     assert Device.objects.filter(tenant=create_testing_tenant, name=device_with_interfaces.name).count() == 1
 
 
@@ -533,9 +534,34 @@ def test_rename_device_to_name_taken_in_same_tenant_is_refused(
     response = post_device_update(authenticated_client, other_device, name=device_with_interfaces.name)
 
     assert response.status_code == 400
-    assert b"A device with this name already exists." in response.content
+    assert b"Could not update device: A device with this name already exists." in response.content
+    assert b"__all__" not in response.content
     other_device.refresh_from_db()
     assert other_device.name == "Test_Other_Device"
+
+
+# Validation errors are shown as "Field: message" instead of the raw {'field': [...]} dict.
+@pytest.mark.django_db
+def test_create_device_with_blank_fields_names_each_field(authenticated_client_with_tenant):
+    response = authenticated_client_with_tenant.post(reverse("post-device-view"), {"name": ""})
+
+    assert response.status_code == 400
+    assert b"Name: This field cannot be blank." in response.content
+    assert b"Platform: This field cannot be blank." in response.content
+    assert b"&#x27;name&#x27;" not in response.content
+
+
+@pytest.mark.django_db
+def test_too_long_interface_name_says_it_is_the_interface_name(authenticated_client, device_with_interfaces):
+    response = post_device_update(
+        authenticated_client,
+        device_with_interfaces,
+        interface_fields=json.dumps([{"name": "x" * 256}]),
+    )
+
+    assert response.status_code == 400
+    assert b"Interface name: Ensure this value has at most 255 characters (it has 256)." in response.content
+    assert b"&#x27;name&#x27;" not in response.content
 
 
 # Migrates back to before the unique device name constraint, creates duplicates, and migrates forward again.

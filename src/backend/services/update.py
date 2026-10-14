@@ -20,6 +20,7 @@ from backend.services.attribute_objects.ip_parsing import (
     parse_ipv6_auto,
 )
 from backend.services.helper_user_tenant import require_write_tenant
+from backend.services.validation import validation_error_message
 from backend.utils.logger import set_log_level, set_up_logger
 from constants import GLOBAL_TENANT_ID
 
@@ -232,7 +233,7 @@ def update_device(*, actor, tenant_id, device_id, name=None, description=None, p
         device.full_clean()
     except DjangoValidationError as e:
         logger.warning(f"Device validation failed: {e.message_dict}")
-        raise ValueError(e.message_dict) from e
+        raise ValueError(validation_error_message(e)) from e
 
     device.save()
     return device
