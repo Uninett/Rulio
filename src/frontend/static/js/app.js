@@ -324,9 +324,8 @@ function setDeviceFormSubmitDisabled(disabled) {
     if (!form) return;
 
     form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
-        button.disabled = disabled
-            ? "Unsaved interface changes will be lost. Close the interface window before submitting."
-            : "";
+        button.disabled = disabled;
+        button.title = disabled ? "Close the interface window before saving the device." : "";
     });
 }
 
@@ -348,10 +347,19 @@ function openDeviceInterfaceModal(button) {
 
     const fullUrl = params.toString() ? `${url}?${params.toString()}` : url; // If there are query parameters, adds them to the URL. Otherwise, uses the URL as-is.
     setDeviceFormSubmitDisabled(true); // Disable the device form submit button while the interface modal is open.
+
+    // If the interface window didn't open (the request failed), Save is enabled again and the error is shown.
+    // Otherwise Save would stay disabled, since it is only re-enabled when the interface window is closed.
+    const handleOpenFailure = () => {
+        if (document.getElementById("submodal-container")?.childElementCount) return;
+        setDeviceFormSubmitDisabled(false);
+        showModalFormError(form, "Could not open the interface window. Please try again.");
+    };
+
     htmx.ajax("GET", fullUrl, {
         target: "#submodal-container",
         swap: "innerHTML",
-    });
+    }).then(handleOpenFailure, handleOpenFailure);
 }
 
 // A helper function for finding the device form that contains the hidden interface field.
