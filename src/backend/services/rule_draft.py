@@ -483,3 +483,43 @@ def stage_rule_enable_toggle(*, actor, tenant_id: int, filter_id: int, key: str)
 
     _set_row_fields(key, fields, baseline_by_key, changes)
     _store_rule_changes(actor, tenant_id, filter_id, changes)
+ 
+
+def stage_rule_delete(*, actor, tenant_id: int, filter_id: int, key: str) -> None:
+    require_write_tenant(actor, tenant_id)
+    _baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
+    _require_editable_row(actor, key, baseline_by_key, changes)
+
+    if key in changes["created"]:
+        # A rule that only exists in the draft is dropped completely.
+        changes["created"].pop(key)
+    else:
+        changes["updated"].pop(key, None)
+        changes["deleted"].append(key)
+
+    if changes["order"] is not None:
+        changes["order"] = [order_key for order_key in changes["order"] if order_key != key]
+    changes["moved"] = [moved_key for moved_key in changes["moved"] if moved_key != key]
+
+    _store_rule_changes(actor, tenant_id, filter_id, changes)
+
+
+# order is every row key in the order shown after the drop, and moved_key is the row that was dragged.
+def stage_rule_order(*, actor, tenant_id: int, filter_id: int, order: list[str], moved_key: str) -> None:
+    require_write_tenant(actor, tenant_id)
+    baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
+    _require_editable_row(actor, moved_key, baseline_by_key, changes)
+
+    if sorted(order) != sorted(current_rule_order(baseline, changes)):
+        raise RuleDraftError("The rule list has changed. Refresh the page and try again.")
+
+    if order == _default_order(baseline, changes):
+        # Dragged back to the saved order, so nothing is moved any more.
+        changes["order"] = None
+        changes["moved"] = []
+    else:
+        changes["order"] = order
+        if moved_key not in changes["moved"]:
+            changes["moved"].append(moved_key)
+
+    _store_rule_changes(actor, tenant_id, filter_id, changes)
