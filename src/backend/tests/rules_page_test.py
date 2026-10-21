@@ -9,6 +9,7 @@ from backend.services.rule_draft import (
     stage_rule_delete,
     stage_rule_enable_toggle,
     stage_rule_order,
+    stage_rule_update,
 )
 
 
@@ -112,3 +113,62 @@ def test_adding_a_rule_with_a_taken_name_shows_an_error(authenticated_client, ru
 
     assert response.status_code == 400
     assert b"A rule with this name already exists in this filter." in response.content
+
+
+def test_editing_a_rule_stages_the_change(authenticated_client, rules_page_filter, rules_page_url):
+    _user, _tenant_id, filter_obj, (rule_a, _rule_b) = rules_page_filter
+    update_url = reverse("update-rule-view", kwargs={"filter_id": filter_obj.id, "row_key": saved_rule_key(rule_a.id)})
+
+    response = authenticated_client.post(
+        update_url, {"name": "page-rule-a", "description": "", "action": "deny", "log_type": "None", "enable": "on"}
+    )
+
+    assert response.status_code == 204
+    rule_a.refresh_from_db()
+    assert rule_a.action == "accept"
+    assert b"row-diff-changed" in authenticated_client.get(rules_page_url).content
+
+
+def test_edit_modal_shows_draft_values(authenticated_client, rules_page_filter):
+    user, tenant_id, filter_obj, (rule_a, _rule_b) = rules_page_filter
+    key_a = saved_rule_key(rule_a.id)
+    stage_rule_update(actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, key=key_a, fields=rule_fields("page-rule-renamed"))
+
+    response = authenticated_client.get(reverse("modal-update", args=[key_a]) + f"?filter_id={filter_obj.id}")
+
+    assert response.status_code == 200
+    assert b'value="page-rule-renamed"' in response.content
+
+
+def test_edit_modal_opens_for_a_draft_only_rule(authenticated_client, rules_page_filter):
+    user, tenant_id, filter_obj, _rules = rules_page_filter
+    new_key = stage_rule_create(actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, fields=rule_fields("page-rule-new"))
+
+    response = authenticated_client.get(reverse("modal-update", args=[new_key]) + f"?filter_id={filter_obj.id}")
+
+    assert response.status_code == 200
+    assert b'value="page-rule-new"' in response.content
+    assert reverse("update-rule-view", kwargs={"filter_id": filter_obj.id, "row_key": new_key}).encode() in response.content
+
+
+def test_deleting_a_rule_stages_the_deletion(authenticated_client, rules_page_filter, rules_page_url):
+    _user, _tenant_id, filter_obj, (_rule_a, rule_b) = rules_page_filter
+    delete_url = reverse("delete-rule-view", kwargs={"filter_id": filter_obj.id, "row_key": saved_rule_key(rule_b.id)})
+
+    response = authenticated_client.post(delete_url)
+
+    assert response.status_code == 204
+    assert Rule.objects.filter(id=rule_b.id).exists()
+    assert b"row-diff-removed" in authenticated_client.get(rules_page_url).content
+
+
+def test_deleting_a_draft_only_rule_drops_it(authenticated_client, rules_page_filter, rules_page_url):
+    user, tenant_id, filter_obj, _rules = rules_page_filter
+    new_key = stage_rule_create(actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, fields=rule_fields("page-rule-new"))
+
+    response = authenticated_client.post(reverse("delete-rule-view", kwargs={"filter_id": filter_obj.id, "row_key": new_key}))
+
+    page = authenticated_client.get(rules_page_url).content
+    assert response.status_code == 204
+    assert b"page-rule-new" not in page
+    assert b"row-diff-added" not in page

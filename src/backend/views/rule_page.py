@@ -324,213 +324,44 @@ def post_rule_view(request):
     return HttpResponse(status=204)
 
 
+# row_key is "rule-<id>" for a saved rule or "ruledraft-<n>" for a rule only created in the draft.
 @login_required(login_url="login")
-@transaction.atomic
-def update_rule_view(request, rule_id):
-    rule = Rule.objects.select_related("filter").filter(id=rule_id).first()
-
-    if not rule:
-        return render(
-            request,
-            "partials/modals/_modal_form.html",
-            {
-                "modal_object_type": "rules",
-                "modal_content_partial": "partials/modals/_rule_form.html",
-                "modal_supports_types": False,
-                "error_message": f"Rule with ID {rule_id} does not exist.",
-            },
-            status=400,
-        )
-
-    name = request.POST.get("name", "").strip()
-    description = request.POST.get("description", "").strip()
-    action = request.POST.get("action", "").strip()
-    log_type = request.POST.get("log_type", "").strip()
-    enable = request.POST.get("enable") == "on"
-
-    source_address_ids_raw = request.POST.get("source_address_ids", "")
-    destination_address_ids_raw = request.POST.get("destination_address_ids", "")
-    source_service_ids_raw = request.POST.get("source_service_ids", "")
-    destination_service_ids_raw = request.POST.get("destination_service_ids", "")
-
-    object_data = {
-        "name": name,
-        "description": description,
-        "action": action,
-        "log_type": log_type,
-        "enable": enable,
-        "filter_id": rule.filter_id or "",
-        "source_address_ids": [value.strip() for value in source_address_ids_raw.split(",") if value.strip()],
-        "destination_address_ids": [value.strip() for value in destination_address_ids_raw.split(",") if value.strip()],
-        "source_service_ids": [value.strip() for value in source_service_ids_raw.split(",") if value.strip()],
-        "destination_service_ids": [value.strip() for value in destination_service_ids_raw.split(",") if value.strip()],
-    }
-
-    def render_form_error(error_message: str, status: int = 400):
-        return render(
-            request,
-            "partials/modals/_modal_form.html",
-            {
-                "modal_object_type": "rules",
-                "modal_content_partial": "partials/modals/_rule_form.html",
-                "modal_supports_types": False,
-                "object_data": object_data,
-                "error_message": error_message,
-            },
-            status=status,
-        )
-
-    if not all([name, action, log_type]):
-        return render_form_error("Missing required fields.")
+def update_rule_view(request, filter_id, row_key):
+    object_data = {"filter_id": filter_id}
 
     tenant_id_raw = request.session.get("current_tenant_id")
     if not tenant_id_raw:
-        return render_form_error("Tenant not set.")
+        return _render_rule_form_error(request, object_data, "Tenant not set.")
 
     try:
-        tenant_id = int(tenant_id_raw)
+        fields = parse_rule_form(request.POST)
+        object_data.update(fields)
 
-        # Added: selected tag IDs from the form.
-        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
-    except (TypeError, ValueError):
-        return render_form_error("Invalid tenant or tag selection.")
-
-    try:
-        source_address_ordered, source_address_grouped = parse_typed_ids(source_address_ids_raw)
-        destination_address_ordered, destination_address_grouped = parse_typed_ids(destination_address_ids_raw)
-        source_service_ordered, source_service_grouped = parse_typed_ids(source_service_ids_raw)
-        destination_service_ordered, destination_service_grouped = parse_typed_ids(destination_service_ids_raw)
-
-        validate_rule_selector_types(
-            source_address_ordered,
-            allowed_types=ADDRESS_OBJECT_TYPES,
-            field_name="source_address_ids",
-        )
-        validate_rule_selector_types(
-            destination_address_ordered,
-            allowed_types=ADDRESS_OBJECT_TYPES,
-            field_name="destination_address_ids",
-        )
-        validate_rule_selector_types(
-            source_service_ordered,
-            allowed_types=SERVICE_OBJECT_TYPES,
-            field_name="source_service_ids",
-        )
-        validate_rule_selector_types(
-            destination_service_ordered,
-            allowed_types=SERVICE_OBJECT_TYPES,
-            field_name="destination_service_ids",
-        )
-
-        source_address_objects = build_ordered_object_list(
-            source_address_ordered,
-            fetch_objects_by_type(source_address_grouped, tenant_id),
-        )
-        destination_address_objects = build_ordered_object_list(
-            destination_address_ordered,
-            fetch_objects_by_type(destination_address_grouped, tenant_id),
-        )
-        source_service_objects = build_ordered_object_list(
-            source_service_ordered,
-            fetch_objects_by_type(source_service_grouped, tenant_id),
-        )
-        destination_service_objects = build_ordered_object_list(
-            destination_service_ordered,
-            fetch_objects_by_type(destination_service_grouped, tenant_id),
-        )
-
-        source_objects = source_address_objects + source_service_objects
-        destination_objects = destination_address_objects + destination_service_objects
-
-        rule.name = name
-        rule.description = description
-        rule.action = action
-        rule.log_type = log_type
-        rule.enable = enable
-        rule.save(
-            update_fields=[
-                "name",
-                "description",
-                "action",
-                "log_type",
-                "enable",
-            ]
-        )
-
-        update_objects_in_rule(
+        stage_rule_update(
             actor=request.user,
-            tenant_id=tenant_id,
-            rule_id=rule.id,
-            match_type="source",
-            objects=source_objects,
+            tenant_id=int(tenant_id_raw),
+            filter_id=filter_id,
+            key=row_key,
+            fields=fields,
         )
-
-        update_objects_in_rule(
-            actor=request.user,
-            tenant_id=tenant_id,
-            rule_id=rule.id,
-            match_type="destination",
-            objects=destination_objects,
-        )
-
-        # Added: synchronize tag assignments.
-        current_tags = get_all_tags_from_object(
-            actor=request.user,
-            tenant_id=tenant_id,
-            object_id=rule.id,
-            object_type="rule",
-        )
-        current_tag_ids = {tag.id for tag in current_tags}
-
-        for tag_id in submitted_tag_ids - current_tag_ids:
-            tag = Tag.objects.get(
-                id=tag_id,
-                tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
-            )
-            add_tag_to_object(
-                actor=request.user,
-                tenant_id=tenant_id,
-                tag=tag,
-                obj=rule,
-            )
-
-        for tag_id in current_tag_ids - submitted_tag_ids:
-            remove_tag_from_object(
-                actor=request.user,
-                tenant_id=tenant_id,
-                object_id=rule.id,
-                object_type="rule",
-                tag_id=tag_id,
-            )
-
-    except Exception as exc:
-        print(f"Error updating rule {rule_id}: {exc}")
-        return render_form_error("Unable to update the rule. Please verify the selected objects and tags.")
+    except (RuleDraftError, PermissionDenied) as exc:
+        return _render_rule_form_error(request, object_data, str(exc))
 
     return HttpResponse(status=204)
 
 
+# Deleting only stages the deletion in the user's draft. A rule only created in the draft is dropped from it.
 @login_required(login_url="login")
-def delete_rule_view(request, rule_id):
+def delete_rule_view(request, filter_id, row_key):
     tenant_id_raw = request.session.get("current_tenant_id")
 
     if not tenant_id_raw:
         return HttpResponse("No tenant selected.", status=400)
 
     try:
-        tenant_id = int(tenant_id_raw)
-
-        delete_rule(
-            actor=request.user,
-            tenant_id=tenant_id,
-            rule_id=rule_id,
-        )
-
-    except Exception as exc:
-        return HttpResponse(
-            f"Could not delete rule: {exc}",
-            status=400,
-        )
+        stage_rule_delete(actor=request.user, tenant_id=int(tenant_id_raw), filter_id=filter_id, key=row_key)
+    except (RuleDraftError, PermissionDenied) as exc:
+        return HttpResponse(f"Could not delete rule: {exc}", status=400)
 
     return HttpResponse(status=204)
 

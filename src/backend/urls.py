@@ -194,6 +194,6 @@ urlpatterns = [
     path("filters/<int:filter_id>/rules/content/", get_rules_content, name="rules-content"),
     path("rules/create/", post_rule_view, name="post-rule-view"),
     path("rules/reorder/", reorder_rule_view, name="reorder-rule-view"),
-    path("rules/<int:rule_id>/update/", update_rule_view, name="update-rule-view"),
-    path("rules/<int:rule_id>/delete/", delete_rule_view, name="delete-rule-view"),
+    path("filters/<int:filter_id>/rules/<str:row_key>/update/", update_rule_view, name="update-rule-view"),
+    path("filters/<int:filter_id>/rules/<str:row_key>/delete/", delete_rule_view, name="delete-rule-view"),
 ]
