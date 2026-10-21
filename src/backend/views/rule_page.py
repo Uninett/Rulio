@@ -15,11 +15,10 @@ from backend.services.rule_draft import (
     apply_rule_draft,
     build_rule_changeset,
     discard_rule_draft,
-    fetch_objects_by_type,
     get_rule_changes,
     load_baseline_rules,
+    objects_by_typed_id,
     parse_rule_form,
-    parse_typed_ids,
     rule_changes_pending,
     stage_rule_create,
     stage_rule_delete,
@@ -101,21 +100,20 @@ def _load_rule_display_objects(changeset: list[dict], tenant_id: int):
                 typed_ids.update(fields.get(field, []))
             tag_ids.update(fields.get("tag_ids", []))
 
-    _ordered, grouped = parse_typed_ids(",".join(typed_ids))
-    objects_by_type = fetch_objects_by_type(grouped, tenant_id)
+    objects = objects_by_typed_id(typed_ids, tenant_id)
     tags_by_id = {tag.id: tag for tag in Tag.objects.filter(id__in=tag_ids)}
-    return objects_by_type, tags_by_id
+    return objects, tags_by_id
 
 
 # The object links shown in a rule's Src/Dst columns. Objects that no longer exist are left out.
-def _rule_object_items(typed_ids: list[str], objects_by_type: dict) -> list[dict]:
+def _rule_object_items(typed_ids: list[str], objects_by_typed_id: dict) -> list[dict]:
     items = []
     for typed_id in typed_ids:
-        object_type, object_id = typed_id.split("-", 1)
-        obj = objects_by_type.get(object_type, {}).get(int(object_id))
+        obj = objects_by_typed_id.get(typed_id)
         if obj is None:
             continue
 
+        object_type = typed_id.split("-", 1)[0]
         object_kind = "addresses" if object_type in ADDRESS_OBJECT_TYPES else "services"
         items.append(
             {
@@ -129,13 +127,13 @@ def _rule_object_items(typed_ids: list[str], objects_by_type: dict) -> list[dict
 
 
 # The saved value of a changed cell, shown as a tooltip while differences are shown. None if the field is unchanged.
-def _rule_previous_value(entry: dict, field: str, objects_by_type: dict, tags_by_id: dict) -> str | None:
+def _rule_previous_value(entry: dict, field: str, objects_by_typed_id: dict, tags_by_id: dict) -> str | None:
     if field not in entry["changed_fields"]:
         return None
 
     value = entry["previous_fields"][field]
     if field in RULE_OBJECT_FIELDS:
-        text = ", ".join(item["name"] for item in _rule_object_items(value, objects_by_type))
+        text = ", ".join(item["name"] for item in _rule_object_items(value, objects_by_typed_id))
     elif field == "tag_ids":
         text = ", ".join(tags_by_id[tag_id].name for tag_id in value if tag_id in tags_by_id)
     else:
@@ -149,13 +147,13 @@ def _rule_cell(kind: str, value, previous: str | None = None) -> dict:
 
 
 # One table row for a changeset entry. saved_rule is the baseline rule, or None for a rule only created in the draft.
-def _rule_row(entry: dict, saved_rule: dict | None, user, tenant_id: int, objects_by_type: dict, tags_by_id: dict):
+def _rule_row(entry: dict, saved_rule: dict | None, user, tenant_id: int, objects_by_typed_id: dict, tags_by_id: dict):
     fields = entry["fields"]
     rule_tenant_id = saved_rule["tenant_id"] if saved_rule else tenant_id
     is_removed = entry["status"] == "removed"
 
     def previous(field):
-        return _rule_previous_value(entry, field, objects_by_type, tags_by_id)
+        return _rule_previous_value(entry, field, objects_by_typed_id, tags_by_id)
 
     diff_classes = ""
     if entry["status"] == "added":
@@ -197,7 +195,7 @@ def _rule_row(entry: dict, saved_rule: dict | None, user, tenant_id: int, object
             ),
             _rule_cell("text", fields["name"], previous("name")),
             *(
-                _rule_cell("objects", _rule_object_items(fields[field], objects_by_type), previous(field))
+                _rule_cell("objects", _rule_object_items(fields[field], objects_by_typed_id), previous(field))
                 for field in RULE_OBJECT_FIELDS
             ),
             _rule_cell("text", fields["action"], previous("action")),
@@ -252,13 +250,13 @@ def get_rules_view(request, filter_id):
         return {"headers": headers, "rows": [], "has_changes": False}
 
     # The rows show the saved rules with this user's unsaved changes applied.
-    changes = get_rule_changes(request.user, int(filter_id))
+    changes = get_rule_changes(request.user, tenant_id, int(filter_id))
     changeset = build_rule_changeset(baseline, changes)
     baseline_by_key = {rule["key"]: rule for rule in baseline}
-    objects_by_type, tags_by_id = _load_rule_display_objects(changeset, tenant_id)
+    objects_by_typed_id, tags_by_id = _load_rule_display_objects(changeset, tenant_id)
 
     rows = [
-        _rule_row(entry, baseline_by_key.get(entry["key"]), request.user, tenant_id, objects_by_type, tags_by_id)
+        _rule_row(entry, baseline_by_key.get(entry["key"]), request.user, tenant_id, objects_by_typed_id, tags_by_id)
         for entry in changeset
     ]
 
@@ -433,7 +431,11 @@ def discard_rule_draft_view(request, filter_id):
     if request.method != "POST":
         return HttpResponse("Method not allowed.", status=405)
 
-    discard_rule_draft(request.user, filter_id)
+    tenant_id_raw = request.session.get("current_tenant_id")
+    if not tenant_id_raw:
+        return HttpResponse("No tenant selected.", status=400)
+
+    discard_rule_draft(request.user, int(tenant_id_raw), filter_id)
     return HttpResponse(status=204)
 
 

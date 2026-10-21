@@ -24,9 +24,8 @@ from backend.services.get import (
 )
 from backend.services.rule_draft import (
     RULE_OBJECT_FIELDS,
-    fetch_objects_by_type,
     get_rule_changes,
-    parse_typed_ids,
+    objects_by_typed_id,
 )
 from backend.utils.logger import set_up_logger
 from backend.views.modal import get_group_options_view, get_item_options_view
@@ -196,8 +195,7 @@ def get_update_modal(request, row_id):
 # The rule modal's data for rule fields stored in a draft, in the same format as for a saved rule.
 def _rule_modal_data_from_fields(fields: dict, filter_id: int, tenant_id: int):
     all_typed_ids = [typed_id for field in RULE_OBJECT_FIELDS for typed_id in fields[field]]
-    _ordered, grouped = parse_typed_ids(",".join(all_typed_ids))
-    objects_by_type = fetch_objects_by_type(grouped, tenant_id)
+    objects = objects_by_typed_id(all_typed_ids, tenant_id)
 
     tags = list(Tag.objects.filter(id__in=fields["tag_ids"]))
     object_data = {
@@ -211,15 +209,10 @@ def _rule_modal_data_from_fields(fields: dict, filter_id: int, tenant_id: int):
     }
 
     for field in RULE_OBJECT_FIELDS:
-        names = []
-        for typed_id in fields[field]:
-            object_type, object_id = typed_id.split("-", 1)
-            obj = objects_by_type.get(object_type, {}).get(int(object_id))
-            if obj is not None:
-                names.append(obj.name)
-
         object_data[field] = fields[field]
-        object_data[field.replace("_ids", "_names")] = names
+        object_data[field.replace("_ids", "_names")] = [
+            objects[typed_id].name for typed_id in fields[field] if typed_id in objects
+        ]
 
     return object_data, tags
 
@@ -518,7 +511,7 @@ def build_update_modal_context(request, row_id):
             }
 
             # A rule already edited in the user's draft opens with the draft values.
-            draft_fields = get_rule_changes(request.user, rule.filter_id)["updated"].get(row_id)
+            draft_fields = get_rule_changes(request.user, tenant_id, rule.filter_id)["updated"].get(row_id)
             if draft_fields:
                 object_data, object_tags = _rule_modal_data_from_fields(draft_fields, rule.filter_id, tenant_id)
                 object_data["id"] = rule.id
@@ -543,7 +536,7 @@ def build_update_modal_context(request, row_id):
         except ValueError:
             return HttpResponse("Missing filter id.", status=400)
 
-        draft_fields = get_rule_changes(request.user, filter_id)["created"].get(row_id)
+        draft_fields = get_rule_changes(request.user, tenant_id, filter_id)["created"].get(row_id)
         if draft_fields:
             object_data, object_tags = _rule_modal_data_from_fields(draft_fields, filter_id, tenant_id)
 

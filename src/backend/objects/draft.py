@@ -7,6 +7,7 @@ from django.db import models
 # Unsaved changes a user has made on a page, kept until they are saved or discarded.
 # scope names what is being edited (e.g. "filter_rules") and scope_id which one (e.g. the filter id).
 # The structure of changes is defined by the code that owns the scope.
+# A draft belongs to the tenant it was made in, since global objects can be edited from every tenant.
 class Draft(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="drafts")
     tenant = models.ForeignKey("Tenant", on_delete=models.CASCADE, related_name="drafts")
@@ -18,7 +19,9 @@ class Draft(models.Model):
 
     class Meta:
         constraints: ClassVar = [
-            models.UniqueConstraint(fields=("user", "scope", "scope_id"), name="unique_draft_per_user_scope"),
+            models.UniqueConstraint(
+                fields=("user", "tenant", "scope", "scope_id"), name="unique_draft_per_user_tenant_scope"
+            ),
         ]
 
     def __str__(self):

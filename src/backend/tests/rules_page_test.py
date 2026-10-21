@@ -2,6 +2,7 @@ import pytest
 from django.urls import reverse
 
 from backend.objects.filters.rule import Rule
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.filter_objects.create_filter_objects import (
     create_filter,
     create_rule,
@@ -116,6 +117,36 @@ def test_adding_a_rule_with_a_taken_name_shows_an_error(authenticated_client, ru
 
     assert response.status_code == 400
     assert b"A rule with this name already exists in this filter." in response.content
+
+
+def test_draft_from_one_tenant_is_not_shown_in_another(authenticated_client, rules_page_filter, rules_page_url):
+    user, tenant_id, filter_obj, (rule_a, _rule_b) = rules_page_filter
+    stage_rule_update(
+        actor=user,
+        tenant_id=tenant_id,
+        filter_id=filter_obj.id,
+        key=saved_rule_key(rule_a.id),
+        fields={**rule_fields("page-rule-a"), "action": "deny"},
+    )
+    other_tenant = Tenant.objects.create(tenant_name="Second rules page tenant")
+    assert authenticated_client.get(f"/api/set_tenant?tenant_id={other_tenant.id}").status_code == 200
+
+    page = authenticated_client.get(rules_page_url).content
+
+    # The filter belongs to the global tenant, so its rules are visible from the other tenant too.
+    assert b"page-rule-a" in page
+    assert b"row-diff-changed" not in page
+
+
+def test_adding_a_rule_to_another_tenants_filter_shows_an_error(authenticated_client, rules_page_filter):
+    user, _tenant_id, _filter_obj, _rules = rules_page_filter
+    other_tenant = Tenant.objects.create(tenant_name="Other rules page tenant")
+    other_filter = create_filter(actor=user, tenant_id=other_tenant.id, name="Other tenant filter", description="")
+
+    response = post_rule(authenticated_client, other_filter, "page-rule-new")
+
+    assert response.status_code == 400
+    assert b"Filter not found." in response.content
 
 
 def test_editing_a_rule_stages_the_change(authenticated_client, rules_page_filter, rules_page_url):

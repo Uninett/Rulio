@@ -1843,6 +1843,9 @@ async function postRuleDraftAction(url) {
 
 function toggleRuleEnabled(button) {
     if (!button.dataset.toggleUrl) return;
+
+    // Disabled until the table is refreshed, so a double-click can't send two toggles that overwrite each other.
+    button.disabled = true;
     postRuleDraftAction(button.dataset.toggleUrl);
 }
 
