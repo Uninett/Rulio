@@ -587,14 +587,17 @@ Interface Filter Draft (Ingoing/Outgoing)
 const interfaceFilterDraft = { in: null, out: null };
 const interfaceFilterBaseline = { in: null, out: null };
 let interfaceFiltersDirty = false;
-let showingInterfaceDifferences = false;
+let showingInterfaceDifferences = true;
+
 
 function markInterfaceFiltersDirty() {
+    // Marks the interface filters as dirty, indicating unsaved changes.
     interfaceFiltersDirty = true;
     updateInterfaceActionButtonsState();
 }
 
 function updateInterfaceActionButtonsState() {
+    // Updates the state of interface action buttons based on whether there are unsaved changes.
     document.querySelectorAll(".interface-save-btn").forEach((btn) => {
         btn.disabled = !interfaceFiltersDirty;
     });
@@ -604,6 +607,7 @@ function updateInterfaceActionButtonsState() {
 }
 
 function readInterfaceFilterListFromDom(direction) {
+    // Reads the list of interface filters from the DOM for the given direction (in/out).
     const container = document.querySelector(
         `.objects-interface-table[data-interface-filter-list="${direction}"]`
     );
@@ -620,6 +624,7 @@ function readInterfaceFilterListFromDom(direction) {
 }
 
 function ensureInterfaceFilterDraft(direction) {
+    // Ensures that the interface filter draft for the given direction exists, initializing it from the DOM if necessary.
     if (!interfaceFilterDraft[direction]) {
         const initial = readInterfaceFilterListFromDom(direction);
         interfaceFilterDraft[direction] = initial;
@@ -629,6 +634,7 @@ function ensureInterfaceFilterDraft(direction) {
 }
 
 function computeInterfaceFilterDiff(direction) {
+    // Computes the differences between the current interface filter draft and the baseline for the given direction (in/out).
     const baseline = interfaceFilterBaseline[direction] || [];
     const current = interfaceFilterDraft[direction] || [];
     const currentIds = new Set(current.map((item) => item.id));
@@ -663,7 +669,7 @@ function computeInterfaceFilterDiff(direction) {
                 diffStatus: "unchanged",
                 enabledChanged: item.enabled !== baseline[baselineIndex].enabled,
                 previousEnabled: baseline[baselineIndex].enabled,
-                sequenceChanged: index !== baselineIndex,
+                sequenceChanged: Boolean(item.moved) && index !== baselineIndex,
                 previousSequence: baselineIndex + 1,
                 displaySequence: index + 1,
             });
@@ -686,11 +692,6 @@ function discardInterfaceFilterChanges(button) {
     });
 
     interfaceFiltersDirty = false;
-    showingInterfaceDifferences = false;
-    document.querySelectorAll(".interface-diff-btn").forEach((btn) => {
-        btn.classList.remove("active");
-        btn.textContent = "Show Differences";
-    });
 
     renderInterfaceFilterRow("in");
     renderInterfaceFilterRow("out");
@@ -773,6 +774,7 @@ function reconcileInterfaceSelectorWithDraft(direction) {
         if (!item) return;
 
         item.dataset.enabled = entry.enabled ? "true" : "false";
+        if (entry.moved) item.dataset.moved = "true";
 
         const toggle = item.querySelector(".filter-enabled-toggle");
         if (toggle) {
@@ -800,6 +802,7 @@ function applyInterfaceRowFilterSelection(selectorType, direction, button) {
         name: item.dataset.name || "",
         description: item.dataset.description || "",
         enabled: item.dataset.enabled !== "false",
+        moved: item.dataset.moved === "true",
     }));
 
     renderInterfaceFilterRow(direction);
@@ -869,9 +872,8 @@ function renderInterfaceFilterRow(direction) {
         }
 
         if (entry.enabledChanged) {
-            const enabledCell = rowEl.children[3];
-            enabledCell.classList.add(entry.enabled ? "cell-diff-enabled-on" : "cell-diff-enabled-off");
-            enabledCell.title = `Changed from ${entry.previousEnabled ? "Enabled" : "Disabled"} to ${entry.enabled ? "Enabled" : "Disabled"}`;
+            rowEl.classList.add(entry.enabled ? "row-diff-enabled-on" : "row-diff-enabled-off");
+            rowEl.children[3].title = `Changed from ${entry.previousEnabled ? "Enabled" : "Disabled"} to ${entry.enabled ? "Enabled" : "Disabled"}`;
         }
 
         const toggleButton = rowEl.querySelector(".filter-enabled-toggle");
@@ -922,6 +924,7 @@ async function saveInterfaceFilterChanges(button) {
 
         interfaceFiltersDirty = false;
         ["in", "out"].forEach((direction) => {
+            (interfaceFilterDraft[direction] || []).forEach((item) => { item.moved = false; });
             interfaceFilterBaseline[direction] = (interfaceFilterDraft[direction] || []).map((item) => ({ ...item }));
         });
         updateInterfaceActionButtonsState();
@@ -1202,8 +1205,11 @@ function initializeMembershipSelectors(root = document) {
             if (isFilterSelector) {
                 if (targetList === selectedList) {
                     ensureFilterEnabledToggle(draggedItem);
+                    // Only the filter the user placed is marked; filters that shift because of it are not.
+                    draggedItem.dataset.moved = "true";
                 } else {
                     removeFilterEnabledToggle(draggedItem);
+                    delete draggedItem.dataset.moved;
                 }
             }
         }

@@ -211,24 +211,19 @@ Interface Table (inside device / interface detail rows)
 
 /* Pending-change highlighting (classes set from app.js) */
 .objects-interface-table-row.row-diff-added,
-.objects-interface-table-cell.cell-diff-enabled-on {
+.objects-interface-table-row.row-diff-enabled-on {
     background-color: var(--sds-color-support-success-subtle);
     color: var(--sds-color-support-success-strong);
 }
 
 .objects-interface-table-row.row-diff-removed,
-.objects-interface-table-cell.cell-diff-enabled-off {
+.objects-interface-table-row.row-diff-enabled-off {
     background-color: var(--sds-color-support-critical-subtle);
     color: var(--sds-color-support-critical-strong);
 }
 
 .objects-interface-table-row.row-diff-removed {
     text-decoration: line-through;
-}
-
-.objects-interface-table-cell.cell-diff-enabled-on,
-.objects-interface-table-cell.cell-diff-enabled-off {
-    border-radius: var(--radius-sm);
 }
 
 
