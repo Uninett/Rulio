@@ -359,3 +359,69 @@ def _store_rule_changes(actor, tenant_id: int, filter_id: int, changes: dict) ->
 
 def discard_rule_draft(actor, filter_id: int) -> None:
     Draft.objects.filter(user=actor, scope=RULE_DRAFT_SCOPE, scope_id=filter_id).delete()
+
+
+"""
+====================================================================
+Draft State
+====================================================================
+"""
+
+
+def _default_order(baseline: list[dict], changes: dict) -> list[str]:
+    deleted = set(changes["deleted"])
+    return [rule["key"] for rule in baseline if rule["key"] not in deleted] + list(changes["created"])
+
+
+# The row order with the draft applied. Rows added or removed since the order was stored are
+# placed as in the default order, so a stale order never hides or duplicates a rule.
+def current_rule_order(baseline: list[dict], changes: dict) -> list[str]:
+    default_order = _default_order(baseline, changes)
+    if changes["order"] is None:
+        return default_order
+
+    visible = set(default_order)
+    stored = [key for key in changes["order"] if key in visible]
+    stored_keys = set(stored)
+    return stored + [key for key in default_order if key not in stored_keys]
+
+
+def _effective_fields(key: str, baseline_by_key: dict, changes: dict) -> dict:
+    if key in changes["created"]:
+        return changes["created"][key]
+    if key in changes["updated"]:
+        return changes["updated"][key]
+    return baseline_by_key[key]["fields"]
+
+
+def _load_rule_state(actor, tenant_id: int, filter_id: int):
+    baseline = load_baseline_rules(actor, tenant_id, filter_id)
+    baseline_by_key = {rule["key"]: rule for rule in baseline}
+    return baseline, baseline_by_key, get_rule_changes(actor, filter_id)
+
+
+def _require_editable_row(actor, key: str, baseline_by_key: dict, changes: dict) -> None:
+    if key in changes["created"]:
+        return
+
+    rule = baseline_by_key.get(key)
+    if rule is None or key in changes["deleted"]:
+        raise RuleDraftError("Rule not found. Refresh the page and try again.")
+
+    if not can_write_tenant(actor, rule["tenant_id"]):
+        raise PermissionDenied("You do not have permission to modify this rule.")
+
+
+# Rule names are unique within a filter. The names are checked as the user sees them with the draft applied,
+# plus saved rules in the filter the user can't see (other tenants), which the database constraint also counts.
+def _require_unique_name(name: str, key: str | None, filter_id: int, baseline: list[dict], changes: dict) -> None:
+    error = RuleDraftError("A rule with this name already exists in this filter.")
+    baseline_by_key = {rule["key"]: rule for rule in baseline}
+
+    for other_key in current_rule_order(baseline, changes):
+        if other_key != key and _effective_fields(other_key, baseline_by_key, changes)["name"] == name:
+            raise error
+
+    hidden_rules = Rule.objects.filter(filter_id=filter_id).exclude(id__in=[rule["rule_id"] for rule in baseline])
+    if hidden_rules.filter(name=name).exists():
+        raise error
