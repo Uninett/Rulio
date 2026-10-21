@@ -315,3 +315,47 @@ def load_baseline_rules(actor, tenant_id: int, filter_id: int) -> list[dict]:
         )
 
     return baseline
+
+
+"""
+====================================================================
+Draft Storage
+====================================================================
+"""
+
+
+def empty_rule_changes() -> dict:
+    # created/updated map row key -> full rule fields, deleted lists saved row keys,
+    # order is the full row order (None when unchanged), and moved lists the rows the user dragged.
+    return {"created": {}, "updated": {}, "deleted": [], "order": None, "moved": [], "next_new_id": 1}
+
+
+def get_rule_draft(actor, filter_id: int) -> Draft | None:
+    return Draft.objects.filter(user=actor, scope=RULE_DRAFT_SCOPE, scope_id=filter_id).first()
+
+
+def get_rule_changes(actor, filter_id: int) -> dict:
+    draft = get_rule_draft(actor, filter_id)
+    return {**empty_rule_changes(), **draft.changes} if draft else empty_rule_changes()
+
+
+def rule_changes_pending(changes: dict) -> bool:
+    return bool(changes["created"] or changes["updated"] or changes["deleted"] or changes["order"] is not None)
+
+
+# Deletes the draft instead of storing it when nothing is pending, so undoing the last change leaves no draft.
+def _store_rule_changes(actor, tenant_id: int, filter_id: int, changes: dict) -> None:
+    if not rule_changes_pending(changes):
+        discard_rule_draft(actor, filter_id)
+        return
+
+    Draft.objects.update_or_create(
+        user=actor,
+        scope=RULE_DRAFT_SCOPE,
+        scope_id=filter_id,
+        defaults={"tenant_id": tenant_id, "changes": changes},
+    )
+
+
+def discard_rule_draft(actor, filter_id: int) -> None:
+    Draft.objects.filter(user=actor, scope=RULE_DRAFT_SCOPE, scope_id=filter_id).delete()
