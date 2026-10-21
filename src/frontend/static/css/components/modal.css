@@ -390,6 +390,9 @@ Membership Selection
 .membership-list-fixed {
     background-color: var(--sds-color-brand-primary-subtle-hover);
     cursor: pointer;
+    padding: 0.6rem;
+    font-size: smaller;
+    min-width: 0;
 }
 
 /*
@@ -475,4 +478,19 @@ Modal Secondary Button
     background-color: var(--sds-color-brand-primary-subtle-hover);
     border-color: var(--sds-color-brand-primary-strong-hover);
     color: var(--sds-color-brand-primary-strong-hover);
+}
+
+/*
+====================================================================
+Submodal template
+====================================================================
+*/
+
+#submodal-container {
+    position: relative;
+    z-index: 1100;
+}
+
+#submodal-container .submodal-panel {
+    z-index: 1101;
 }
