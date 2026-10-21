@@ -283,175 +283,43 @@ def get_rules_view(request, filter_id):
     }
 
 
+def _render_rule_form_error(request, object_data: dict, error_message: str, status: int = 400):
+    return render(
+        request,
+        "partials/modals/_modal_form.html",
+        {
+            "modal_object_type": "rules",
+            "modal_content_partial": "partials/modals/_rule_form.html",
+            "modal_supports_types": False,
+            "object_data": object_data,
+            "error_message": error_message,
+        },
+        status=status,
+    )
+
+
+# Adding a rule only stages it in the user's draft. It is written to the database when the draft is saved.
 @login_required(login_url="login")
-@transaction.atomic
 def post_rule_view(request):
-    name = request.POST.get("name", "").strip()
-    description = request.POST.get("description", "").strip()
-    action = request.POST.get("action", "").strip()
-    log_type = request.POST.get("log_type", "").strip()
     filter_id = request.POST.get("filter_id", "").strip()
-    enable = request.POST.get("enable") == "on"
-
-    source_address_ids_raw = request.POST.get("source_address_ids", "")
-    destination_address_ids_raw = request.POST.get("destination_address_ids", "")
-    source_service_ids_raw = request.POST.get("source_service_ids", "")
-    destination_service_ids_raw = request.POST.get("destination_service_ids", "")
-
-    object_data = {
-        "name": name,
-        "description": description,
-        "action": action,
-        "log_type": log_type,
-        "filter_id": filter_id,
-        "enable": enable,
-        "source_address_ids": [value.strip() for value in source_address_ids_raw.split(",") if value.strip()],
-        "destination_address_ids": [value.strip() for value in destination_address_ids_raw.split(",") if value.strip()],
-        "source_service_ids": [value.strip() for value in source_service_ids_raw.split(",") if value.strip()],
-        "destination_service_ids": [value.strip() for value in destination_service_ids_raw.split(",") if value.strip()],
-    }
-
-    def render_form_error(error_message: str, status: int = 400):
-        return render(
-            request,
-            "partials/modals/_modal_form.html",
-            {
-                "modal_object_type": "rules",
-                "modal_content_partial": "partials/modals/_rule_form.html",
-                "modal_supports_types": False,
-                "object_data": object_data,
-                "error_message": error_message,
-            },
-            status=status,
-        )
-
-    if not all([name, action, log_type, filter_id]):
-        return render_form_error("Missing required fields.")
+    object_data = {"filter_id": filter_id}
 
     tenant_id_raw = request.session.get("current_tenant_id")
     if not tenant_id_raw:
-        return render_form_error("Tenant not set.")
+        return _render_rule_form_error(request, object_data, "Tenant not set.")
 
     try:
-        tenant_id = int(tenant_id_raw)
+        fields = parse_rule_form(request.POST)
+        object_data.update(fields)
 
-        # Added: selected tag IDs from the form.
-        submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
+        if not Filter.objects.filter(id=filter_id).exists():
+            return _render_rule_form_error(request, object_data, f"Filter with ID {filter_id} does not exist.")
+
+        stage_rule_create(actor=request.user, tenant_id=int(tenant_id_raw), filter_id=int(filter_id), fields=fields)
+    except (RuleDraftError, PermissionDenied) as exc:
+        return _render_rule_form_error(request, object_data, str(exc))
     except (TypeError, ValueError):
-        return render_form_error("Invalid tenant or tag selection.")
-
-    filter_obj = Filter.objects.filter(id=filter_id).first()
-    if not filter_obj:
-        return render_form_error(f"Filter with ID {filter_id} does not exist.")
-
-    try:
-        source_address_ordered, source_address_grouped = parse_typed_ids(source_address_ids_raw)
-        destination_address_ordered, destination_address_grouped = parse_typed_ids(destination_address_ids_raw)
-        source_service_ordered, source_service_grouped = parse_typed_ids(source_service_ids_raw)
-        destination_service_ordered, destination_service_grouped = parse_typed_ids(destination_service_ids_raw)
-
-        validate_rule_selector_types(
-            source_address_ordered,
-            allowed_types=ADDRESS_OBJECT_TYPES,
-            field_name="source_address_ids",
-        )
-        validate_rule_selector_types(
-            destination_address_ordered,
-            allowed_types=ADDRESS_OBJECT_TYPES,
-            field_name="destination_address_ids",
-        )
-        validate_rule_selector_types(
-            source_service_ordered,
-            allowed_types=SERVICE_OBJECT_TYPES,
-            field_name="source_service_ids",
-        )
-        validate_rule_selector_types(
-            destination_service_ordered,
-            allowed_types=SERVICE_OBJECT_TYPES,
-            field_name="destination_service_ids",
-        )
-
-        source_address_objects = build_ordered_object_list(
-            source_address_ordered,
-            fetch_objects_by_type(source_address_grouped, tenant_id),
-        )
-        destination_address_objects = build_ordered_object_list(
-            destination_address_ordered,
-            fetch_objects_by_type(destination_address_grouped, tenant_id),
-        )
-        source_service_objects = build_ordered_object_list(
-            source_service_ordered,
-            fetch_objects_by_type(source_service_grouped, tenant_id),
-        )
-        destination_service_objects = build_ordered_object_list(
-            destination_service_ordered,
-            fetch_objects_by_type(destination_service_grouped, tenant_id),
-        )
-
-        new_rule = create_rule(
-            actor=request.user,
-            name=name,
-            description=description,
-            action=action,
-            log_type=log_type,
-            filter=filter_obj,
-            tenant_id=tenant_id,
-            hit_count=0,
-            enable=enable,
-        )
-
-        if source_address_objects:
-            add_objects_to_rule(
-                actor=request.user,
-                tenant_id=tenant_id,
-                rule_id=new_rule.id,
-                match_type="source",
-                objects=source_address_objects,
-            )
-
-        if destination_address_objects:
-            add_objects_to_rule(
-                actor=request.user,
-                tenant_id=tenant_id,
-                rule_id=new_rule.id,
-                match_type="destination",
-                objects=destination_address_objects,
-            )
-
-        if source_service_objects:
-            add_objects_to_rule(
-                actor=request.user,
-                tenant_id=tenant_id,
-                rule_id=new_rule.id,
-                match_type="source",
-                objects=source_service_objects,
-            )
-
-        if destination_service_objects:
-            add_objects_to_rule(
-                actor=request.user,
-                tenant_id=tenant_id,
-                rule_id=new_rule.id,
-                match_type="destination",
-                objects=destination_service_objects,
-            )
-
-        # Added: apply selected tags to the newly created rule.
-        for tag_id in submitted_tag_ids:
-            tag = Tag.objects.get(
-                id=tag_id,
-                tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
-            )
-            add_tag_to_object(
-                actor=request.user,
-                tenant_id=tenant_id,
-                tag=tag,
-                obj=new_rule,
-            )
-
-    except Exception as exc:
-        print(f"Error creating rule: {exc}")
-        return render_form_error("Unable to create the rule. Please verify the selected objects and tags.")
+        return _render_rule_form_error(request, object_data, "Invalid tenant or filter.")
 
     return HttpResponse(status=204)
 

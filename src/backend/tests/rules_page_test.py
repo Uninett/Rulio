@@ -1,6 +1,7 @@
 import pytest
 from django.urls import reverse
 
+from backend.objects.filters.rule import Rule
 from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
 from backend.services.rule_draft import (
     saved_rule_key,
@@ -85,3 +86,29 @@ def test_rules_page_shows_previous_sequence_for_dragged_rule(authenticated_clien
 
     assert response.status_code == 200
     assert '<span class="rule-seq-previous">2 → </span>' in response.content.decode()
+
+
+def post_rule(client, filter_obj, name):
+    return client.post(
+        reverse("post-rule-view"),
+        {"filter_id": filter_obj.id, "name": name, "description": "", "action": "accept", "log_type": "None"},
+    )
+
+
+def test_adding_a_rule_stages_it_without_saving(authenticated_client, rules_page_filter, rules_page_url):
+    _user, _tenant_id, filter_obj, _rules = rules_page_filter
+
+    response = post_rule(authenticated_client, filter_obj, "page-rule-new")
+
+    assert response.status_code == 204
+    assert not Rule.objects.filter(name="page-rule-new").exists()
+    assert b"row-diff-added" in authenticated_client.get(rules_page_url).content
+
+
+def test_adding_a_rule_with_a_taken_name_shows_an_error(authenticated_client, rules_page_filter):
+    _user, _tenant_id, filter_obj, _rules = rules_page_filter
+
+    response = post_rule(authenticated_client, filter_obj, "page-rule-a")
+
+    assert response.status_code == 400
+    assert b"A rule with this name already exists in this filter." in response.content
