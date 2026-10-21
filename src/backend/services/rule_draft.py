@@ -177,3 +177,86 @@ def validate_rule_fields(fields: dict, tenant_id: int) -> None:
     found_tags = Tag.objects.filter(id__in=fields["tag_ids"], tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).count()
     if found_tags != len(fields["tag_ids"]):
         raise RuleDraftError("Invalid tag selection.")
+
+
+"""
+====================================================================
+Writing Rules
+====================================================================
+"""
+
+
+def create_rule_from_fields(*, actor, tenant_id: int, filter_obj: Filter, fields: dict) -> Rule:
+    resolved = resolve_rule_objects(fields, tenant_id)
+
+    rule = create_rule(
+        actor=actor,
+        name=fields["name"],
+        description=fields["description"],
+        action=fields["action"],
+        log_type=fields["log_type"],
+        filter=filter_obj,
+        tenant_id=tenant_id,
+        hit_count=0,
+        enable=fields["enable"],
+    )
+
+    for field, (_allowed_types, match_type) in RULE_OBJECT_FIELDS.items():
+        if resolved[field]:
+            add_objects_to_rule(
+                actor=actor,
+                tenant_id=tenant_id,
+                rule_id=rule.id,
+                match_type=match_type,
+                objects=resolved[field],
+            )
+
+    for tag in Tag.objects.filter(id__in=fields["tag_ids"], tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]):
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag, obj=rule)
+
+    return rule
+
+
+def write_rule_fields(*, actor, tenant_id: int, rule: Rule, fields: dict) -> None:
+    resolved = resolve_rule_objects(fields, tenant_id)
+
+    rule.name = fields["name"]
+    rule.description = fields["description"]
+    rule.action = fields["action"]
+    rule.log_type = fields["log_type"]
+    rule.enable = fields["enable"]
+    rule.save(update_fields=["name", "description", "action", "log_type", "enable"])
+
+    # update_objects_in_rule replaces all matches of a match type, so addresses and services are sent together.
+    for match_type in ("source", "destination"):
+        update_objects_in_rule(
+            actor=actor,
+            tenant_id=tenant_id,
+            rule_id=rule.id,
+            match_type=match_type,
+            objects=[
+                obj
+                for field, (_allowed_types, field_match_type) in RULE_OBJECT_FIELDS.items()
+                if field_match_type == match_type
+                for obj in resolved[field]
+            ],
+        )
+
+    current_tags = get_all_tags_from_object(actor=actor, tenant_id=tenant_id, object_id=rule.id, object_type="rule")
+    current_tag_ids = {tag.id for tag in current_tags}
+    submitted_tag_ids = set(fields["tag_ids"])
+
+    for tag in Tag.objects.filter(
+        id__in=submitted_tag_ids - current_tag_ids,
+        tenant_id__in=[tenant_id, GLOBAL_TENANT_ID],
+    ):
+        add_tag_to_object(actor=actor, tenant_id=tenant_id, tag=tag, obj=rule)
+
+    for tag_id in current_tag_ids - submitted_tag_ids:
+        remove_tag_from_object(
+            actor=actor,
+            tenant_id=tenant_id,
+            object_id=rule.id,
+            object_type="rule",
+            tag_id=tag_id,
+        )
