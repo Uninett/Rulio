@@ -121,3 +121,59 @@ def validate_rule_selector_types(
         formatted_types = ", ".join(sorted(invalid_types))
 
         raise ValueError(f"Invalid object type(s) in {field_name}: {formatted_types}")
+
+
+"""
+====================================================================
+Rule Form
+====================================================================
+"""
+
+
+# Reads the rule modal form into a fields dict. Selector fields hold typed ids, such as "address-1".
+def parse_rule_form(post) -> dict:
+    def split_ids(raw_value):
+        return [value.strip() for value in (raw_value or "").split(",") if value.strip()]
+
+    try:
+        # Sorted, so the same selection always compares equal.
+        tag_ids = sorted({int(tag_id) for tag_id in post.getlist("tag_ids") if tag_id})
+    except (TypeError, ValueError):
+        raise RuleDraftError("Invalid tag selection.")
+
+    return {
+        "name": post.get("name", "").strip(),
+        "description": post.get("description", "").strip(),
+        "action": post.get("action", "").strip(),
+        "log_type": post.get("log_type", "").strip(),
+        "enable": post.get("enable") == "on",
+        **{field: split_ids(post.get(field, "")) for field in RULE_OBJECT_FIELDS},
+        "tag_ids": tag_ids,
+    }
+
+
+# Resolves the selector fields to objects, in the order they were selected.
+def resolve_rule_objects(fields: dict, tenant_id: int) -> dict[str, list]:
+    resolved = {}
+
+    for field, (allowed_types, _match_type) in RULE_OBJECT_FIELDS.items():
+        ordered, grouped = parse_typed_ids(",".join(fields[field]))
+        validate_rule_selector_types(ordered, allowed_types=allowed_types, field_name=field)
+        resolved[field] = build_ordered_object_list(ordered, fetch_objects_by_type(grouped, tenant_id))
+
+    return resolved
+
+
+# Checks a rule before it goes into the draft, so problems are shown in the modal instead of when saving.
+def validate_rule_fields(fields: dict, tenant_id: int) -> None:
+    if not all([fields["name"], fields["action"], fields["log_type"]]):
+        raise RuleDraftError("Missing required fields.")
+
+    try:
+        resolve_rule_objects(fields, tenant_id)
+    except ValueError as exc:
+        raise RuleDraftError(str(exc))
+
+    found_tags = Tag.objects.filter(id__in=fields["tag_ids"], tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).count()
+    if found_tags != len(fields["tag_ids"]):
+        raise RuleDraftError("Invalid tag selection.")
