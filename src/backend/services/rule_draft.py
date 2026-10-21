@@ -611,3 +611,63 @@ def build_rule_changeset(baseline: list[dict], changes: dict) -> list[dict]:
 
     changeset.extend(removed_entry(removed_key) for removed_key in trailing_removed)
     return changeset
+
+
+"""
+====================================================================
+Saving
+====================================================================
+"""
+
+
+# Writes the whole draft in one transaction, so either every change is saved or none are.
+@transaction.atomic
+def apply_rule_draft(*, actor, tenant_id: int, filter_id: int) -> None:
+    require_write_tenant(actor, tenant_id)
+
+    draft = get_rule_draft(actor, filter_id)
+    if draft is None:
+        return
+
+    filter_obj = Filter.objects.filter(id=filter_id, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).first()
+    if filter_obj is None:
+        raise RuleDraftError("The filter no longer exists.")
+
+    baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
+
+    # Rules deleted by someone else since the draft was made can't be updated or deleted again.
+    for key in [*changes["updated"], *changes["deleted"]]:
+        if key not in baseline_by_key:
+            name = changes["updated"].get(key, {}).get("name", key)
+            raise RuleDraftError(f"Rule '{name}' was deleted by someone else. Discard your changes and try again.")
+        if not can_write_tenant(actor, baseline_by_key[key]["tenant_id"]):
+            raise PermissionDenied("You do not have permission to modify this rule.")
+
+    for key in changes["deleted"]:
+        delete_rule(actor, tenant_id, baseline_by_key[key]["rule_id"])
+
+    for key, fields in changes["updated"].items():
+        rule = Rule.objects.get(id=baseline_by_key[key]["rule_id"])
+        write_rule_fields(actor=actor, tenant_id=tenant_id, rule=rule, fields=fields)
+
+    created_ids = {}
+    for key, fields in changes["created"].items():
+        rule = create_rule_from_fields(actor=actor, tenant_id=tenant_id, filter_obj=filter_obj, fields=fields)
+        created_ids[key] = rule.id
+
+    if changes["order"] is not None or changes["created"] or changes["deleted"]:
+        ordered_ids = [
+            created_ids[key] if key in created_ids else baseline_by_key[key]["rule_id"]
+            for key in current_rule_order(baseline, changes)
+        ]
+        # Rules this user can't see (other tenants) keep their relative order after the visible ones.
+        ordered_ids += list(
+            Rule.objects.filter(filter=filter_obj)
+            .exclude(id__in=ordered_ids)
+            .order_by("rule_sequence", "id")
+            .values_list("id", flat=True)
+        )
+        for sequence, rule_id in enumerate(ordered_ids, start=1):
+            Rule.objects.filter(id=rule_id).exclude(rule_sequence=sequence).update(rule_sequence=sequence)
+
+    draft.delete()
