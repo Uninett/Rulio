@@ -397,6 +397,60 @@ def reorder_rule_view(request, filter_id):
     return HttpResponse(status=204)
 
 
+# Flips the rule's enable flag in the user's draft, from the Enabled checkbox in the rules table.
+@login_required(login_url="login")
+def toggle_rule_enable_view(request, filter_id, row_key):
+    if request.method != "POST":
+        return HttpResponse("Method not allowed.", status=405)
+
+    tenant_id_raw = request.session.get("current_tenant_id")
+    if not tenant_id_raw:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        stage_rule_enable_toggle(actor=request.user, tenant_id=int(tenant_id_raw), filter_id=filter_id, key=row_key)
+    except (RuleDraftError, PermissionDenied) as exc:
+        return HttpResponse(f"Could not change rule: {exc}", status=400)
+
+    return HttpResponse(status=204)
+
+
+# Writes the user's draft for the filter to the database. On any error nothing is saved and the draft is kept.
+@login_required(login_url="login")
+def save_rule_draft_view(request, filter_id):
+    if request.method != "POST":
+        return HttpResponse("Method not allowed.", status=405)
+
+    tenant_id_raw = request.session.get("current_tenant_id")
+    if not tenant_id_raw:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        apply_rule_draft(actor=request.user, tenant_id=int(tenant_id_raw), filter_id=filter_id)
+    except IntegrityError:
+        # The unique rule name per filter is checked when the transaction commits, so it fails here
+        # when someone else saved a rule with the same name after the change was staged.
+        return HttpResponse(
+            "Could not save rule changes: A rule with this name already exists in this filter. "
+            "Rename it and save again.",
+            status=400,
+        )
+    except (ValueError, PermissionDenied) as exc:
+        return HttpResponse(f"Could not save rule changes: {exc}", status=400)
+
+    return HttpResponse(status=204)
+
+
+# Throws away the user's draft for the filter, so the rules page shows the saved rules again.
+@login_required(login_url="login")
+def discard_rule_draft_view(request, filter_id):
+    if request.method != "POST":
+        return HttpResponse("Method not allowed.", status=405)
+
+    discard_rule_draft(request.user, filter_id)
+    return HttpResponse(status=204)
+
+
 @login_required(login_url="login")
 def get_rule_selector_modal(request, selector_type: str):
     """

@@ -36,6 +36,7 @@
                 aria-label="{{ cell.value|yesno:'Enabled,Disabled' }}"
                 title="{% if row.enable_was %}{{ row.enable_was }}{% else %}{{ cell.value|yesno:'Enabled,Disabled' }}{% endif %}"
                 {% if not row.can_write %}disabled{% endif %}
+                data-toggle-url="{% url 'toggle-rule-enable-view' filter_id=current_filter_id row_key=row.id %}"
                 onclick="event.stopPropagation(); toggleRuleEnabled(this)">
                 <span class="filter-enabled-toggle-check"></span>
             </button>

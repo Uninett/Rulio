@@ -201,3 +201,79 @@ def test_reordering_with_an_incomplete_order_is_refused(authenticated_client, ru
 
     assert response.status_code == 400
     assert b"The rule list has changed" in response.content
+
+
+def test_toggling_enable_stages_the_change(authenticated_client, rules_page_filter, rules_page_url):
+    _user, _tenant_id, filter_obj, (rule_a, _rule_b) = rules_page_filter
+    toggle_url = reverse(
+        "toggle-rule-enable-view", kwargs={"filter_id": filter_obj.id, "row_key": saved_rule_key(rule_a.id)}
+    )
+
+    response = authenticated_client.post(toggle_url)
+
+    assert response.status_code == 204
+    rule_a.refresh_from_db()
+    assert rule_a.enable is True
+    assert b"row-diff-enabled-off" in authenticated_client.get(rules_page_url).content
+
+
+def test_saving_writes_the_draft(authenticated_client, rules_page_filter, rules_page_url):
+    user, tenant_id, filter_obj, (_rule_a, rule_b) = rules_page_filter
+    draft_args = {"actor": user, "tenant_id": tenant_id, "filter_id": filter_obj.id}
+    stage_rule_create(**draft_args, fields=rule_fields("page-rule-new"))
+    stage_rule_delete(**draft_args, key=saved_rule_key(rule_b.id))
+
+    response = authenticated_client.post(reverse("save-rule-draft-view", kwargs={"filter_id": filter_obj.id}))
+
+    page = authenticated_client.get(rules_page_url).content
+    assert response.status_code == 204
+    assert Rule.objects.filter(name="page-rule-new", filter=filter_obj).exists()
+    assert not Rule.objects.filter(id=rule_b.id).exists()
+    assert b"row-diff-" not in page
+
+
+def test_saving_reports_a_rule_deleted_by_someone_else(authenticated_client, rules_page_filter):
+    user, tenant_id, filter_obj, (rule_a, _rule_b) = rules_page_filter
+    stage_rule_update(
+        actor=user,
+        tenant_id=tenant_id,
+        filter_id=filter_obj.id,
+        key=saved_rule_key(rule_a.id),
+        fields={**rule_fields("page-rule-a"), "action": "deny"},
+    )
+    Rule.objects.filter(id=rule_a.id).delete()
+
+    response = authenticated_client.post(reverse("save-rule-draft-view", kwargs={"filter_id": filter_obj.id}))
+
+    assert response.status_code == 400
+    assert b"was deleted by someone else" in response.content
+
+
+def test_discarding_removes_the_draft(authenticated_client, rules_page_filter, rules_page_url):
+    user, tenant_id, filter_obj, (_rule_a, rule_b) = rules_page_filter
+    stage_rule_delete(actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, key=saved_rule_key(rule_b.id))
+
+    response = authenticated_client.post(reverse("discard-rule-draft-view", kwargs={"filter_id": filter_obj.id}))
+
+    assert response.status_code == 204
+    assert b"row-diff-removed" not in authenticated_client.get(rules_page_url).content
+
+
+def save_button(page_html):
+    start = page_html.index('class="btn btn-save draft-save-btn"')
+    return page_html[start : page_html.index("</button>", start)]
+
+
+def test_rules_page_save_buttons_follow_the_draft(authenticated_client, rules_page_filter, rules_page_url):
+    user, tenant_id, filter_obj, (rule_a, _rule_b) = rules_page_filter
+    save_url = reverse("save-rule-draft-view", kwargs={"filter_id": filter_obj.id})
+
+    button = save_button(authenticated_client.get(rules_page_url).content.decode())
+    assert "saveRuleChanges(this)" in button
+    assert f'data-save-url="{save_url}"' in button
+    assert "disabled" in button
+
+    stage_rule_enable_toggle(actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, key=saved_rule_key(rule_a.id))
+
+    button = save_button(authenticated_client.get(rules_page_url).content.decode())
+    assert "disabled" not in button

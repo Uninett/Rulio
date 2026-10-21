@@ -1,0 +1,39 @@
+{% comment %}
+Hide Differences / Discard / Save buttons for a page with unsaved changes (a draft).
+Include it inside the page's action bar with:
+    draft_label: what is being changed, used in the aria-labels (e.g. "rule changes")
+    draft_discard_handler, draft_save_handler: the page's JS functions, called with the button
+    draft_save_url, draft_discard_url, draft_object_id: optional, read by those functions from the button
+    draft_has_changes: true when there are unsaved changes, so Discard and Save start enabled
+{% endcomment %}
+{% if can_write_current_tenant or request.user.is_superuser %}
+<button
+    type="button"
+    class="btn btn-outline btn--primary draft-diff-btn active"
+    onclick="toggleDifferences(this)"
+    aria-label="Toggle differences for {{ draft_label }}"
+>
+    Hide Differences
+</button>
+<button
+    type="button"
+    class="btn btn-outline btn--danger draft-discard-btn"
+    {% if not draft_has_changes %}disabled{% endif %}
+    {% if draft_discard_url %}data-discard-url="{{ draft_discard_url }}"{% endif %}
+    onclick="{{ draft_discard_handler }}(this)"
+    aria-label="Discard {{ draft_label }}"
+>
+    Discard Changes
+</button>
+<button
+    type="button"
+    class="btn btn-save draft-save-btn"
+    {% if not draft_has_changes %}disabled{% endif %}
+    {% if draft_object_id %}data-object-id="{{ draft_object_id }}"{% endif %}
+    {% if draft_save_url %}data-save-url="{{ draft_save_url }}"{% endif %}
+    onclick="{{ draft_save_handler }}(this)"
+    aria-label="Save {{ draft_label }}"
+>
+    Save Changes
+</button>
+{% endif %}

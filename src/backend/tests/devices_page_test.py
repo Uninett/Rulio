@@ -602,3 +602,18 @@ def test_migration_renames_existing_duplicate_device_names():
         "testing (4)",
         "testing",
     ]
+
+
+@pytest.mark.django_db
+def test_interface_page_renders_shared_draft_buttons(authenticated_client, device_with_interfaces):
+    interface = Interface.objects.filter(device=device_with_interfaces).order_by("id").first()
+
+    response = authenticated_client.get(reverse("interface-view", kwargs={"interface_id": interface.id}))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "draft-save-btn" in content
+    assert "toggleDifferences(this)" in content
+    assert "saveInterfaceFilterChanges(this)" in content
+    assert f'data-object-id="{interface.id}"' in content
+    assert f'data-save-url="{reverse("post-interface-view")}"' in content

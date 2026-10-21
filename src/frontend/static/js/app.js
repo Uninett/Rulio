@@ -580,6 +580,45 @@ function removeDeviceInterfaceRow(button) {
 
 /*
 ====================================================================
+Draft Actions (Hide Differences / Discard / Save)
+====================================================================
+Shared by the pages that include partials/_draftActions.html.
+*/
+
+// Whether unsaved changes are highlighted. Kept across table refreshes, so the choice stays after each edit.
+let showingDifferences = true;
+
+function updateDraftActionButtons(hasChanges) {
+    document.querySelectorAll(".draft-save-btn, .draft-discard-btn").forEach((btn) => {
+        btn.disabled = !hasChanges;
+    });
+}
+
+// Updates the buttons and tables to showingDifferences. Also run after the rules table is refreshed.
+function applyDifferencesVisibility() {
+    document.querySelectorAll(".draft-diff-btn").forEach((btn) => {
+        btn.classList.toggle("active", showingDifferences);
+        btn.textContent = showingDifferences ? "Hide Differences" : "Show Differences";
+    });
+
+    document.querySelectorAll(".rules-table").forEach((table) => {
+        table.classList.toggle("diff-hidden", !showingDifferences);
+    });
+}
+
+function toggleDifferences(button) {
+    showingDifferences = !showingDifferences;
+    applyDifferencesVisibility();
+
+    // The interface filter rows are drawn in JS, so they are drawn again with or without the differences.
+    if (document.querySelector("[data-interface-filter-list]")) {
+        renderInterfaceFilterRow("in");
+        renderInterfaceFilterRow("out");
+    }
+}
+
+/*
+====================================================================
 Interface Filter Draft (Ingoing/Outgoing)
 ====================================================================
 */
@@ -587,7 +626,6 @@ Interface Filter Draft (Ingoing/Outgoing)
 const interfaceFilterDraft = { in: null, out: null };
 const interfaceFilterBaseline = { in: null, out: null };
 let interfaceFiltersDirty = false;
-let showingInterfaceDifferences = true;
 
 
 function markInterfaceFiltersDirty() {
@@ -598,12 +636,7 @@ function markInterfaceFiltersDirty() {
 
 function updateInterfaceActionButtonsState() {
     // Updates the state of interface action buttons based on whether there are unsaved changes.
-    document.querySelectorAll(".interface-save-btn").forEach((btn) => {
-        btn.disabled = !interfaceFiltersDirty;
-    });
-    document.querySelectorAll(".interface-discard-btn").forEach((btn) => {
-        btn.disabled = !interfaceFiltersDirty;
-    });
+    updateDraftActionButtons(interfaceFiltersDirty);
 }
 
 function readInterfaceFilterListFromDom(direction) {
@@ -698,18 +731,6 @@ function discardInterfaceFilterChanges(button) {
     updateInterfaceActionButtonsState();
 }
 
-function toggleInterfaceFilterDifferences(button) {
-    showingInterfaceDifferences = !showingInterfaceDifferences;
-
-    document.querySelectorAll(".interface-diff-btn").forEach((btn) => {
-        btn.classList.toggle("active", showingInterfaceDifferences);
-        btn.textContent = showingInterfaceDifferences ? "Hide Differences" : "Show Differences";
-    });
-
-    renderInterfaceFilterRow("in");
-    renderInterfaceFilterRow("out");
-}
-
 function toggleInterfaceFilterEnabled(direction, filterId, button) {
     const draft = ensureInterfaceFilterDraft(direction);
     const entry = draft.find((item) => item.id === filterId);
@@ -718,7 +739,7 @@ function toggleInterfaceFilterEnabled(direction, filterId, button) {
     entry.enabled = !entry.enabled;
     markInterfaceFiltersDirty();
 
-    if (showingInterfaceDifferences) {
+    if (showingDifferences) {
         renderInterfaceFilterRow(direction);
         return;
     }
@@ -815,7 +836,7 @@ function applyInterfaceRowFilterSelection(selectorType, direction, button) {
 function renderInterfaceFilterRow(direction) {
     ensureInterfaceFilterDraft(direction);
     const currentEntries = interfaceFilterDraft[direction] || [];
-    const entries = showingInterfaceDifferences
+    const entries = showingDifferences
         ? computeInterfaceFilterDiff(direction)
         : currentEntries;
 
@@ -898,7 +919,7 @@ function encodeInterfaceFilterSelection(direction) {
 }
 
 async function saveInterfaceFilterChanges(button) {
-    const interfaceId = button.dataset.interfaceId;
+    const interfaceId = button.dataset.objectId;
     const saveUrl = button.dataset.saveUrl;
     if (!interfaceId || !saveUrl) return;
 
@@ -930,7 +951,7 @@ async function saveInterfaceFilterChanges(button) {
             interfaceFilterBaseline[direction] = (interfaceFilterDraft[direction] || []).map((item) => ({ ...item }));
         });
         updateInterfaceActionButtonsState();
-        if (showingInterfaceDifferences) {
+        if (showingDifferences) {
             renderInterfaceFilterRow("in");
             renderInterfaceFilterRow("out");
         }
@@ -1810,6 +1831,53 @@ function initializeRuleRowDragAndDrop(root = document) {
 
 /*
 ====================================================================
+Rule Draft (Enabled, Save and Discard on the rules page)
+====================================================================
+The rule changes are kept in a draft on the server, so each action is posted and the table is refreshed.
+*/
+
+async function postRuleDraftAction(url) {
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "X-CSRFToken": getCsrfToken() },
+        });
+
+        if (!response.ok) {
+            alert(await response.text());
+        }
+    } catch (error) {
+        console.error("Error while updating rule changes.", error);
+        alert("Unable to update rule changes. Please try again.");
+    }
+
+    refreshRulesTableContent(document.getElementById("rules-table"));
+}
+
+function toggleRuleEnabled(button) {
+    if (!button.dataset.toggleUrl) return;
+    postRuleDraftAction(button.dataset.toggleUrl);
+}
+
+function saveRuleChanges(button) {
+    if (!button.dataset.saveUrl) return;
+
+    button.disabled = true;
+    postRuleDraftAction(button.dataset.saveUrl);
+}
+
+function discardRuleChanges(button) {
+    if (!button.dataset.discardUrl) return;
+
+    const shouldDiscard = confirm("Discard all unsaved rule changes?");
+    if (!shouldDiscard) return;
+
+    postRuleDraftAction(button.dataset.discardUrl);
+}
+
+
+/*
+====================================================================
 Tag List Overflow
 ====================================================================
 */
@@ -1906,6 +1974,8 @@ document.addEventListener("htmx:afterSwap", function (event) {
 
 document.addEventListener("htmx:afterSettle", focusAndExpandFromUrl);
 document.addEventListener("htmx:afterSettle", restoreRecentlyDroppedRuleRow);
+// Refreshed tables and buttons are rendered with differences shown, so the user's choice is applied again.
+document.addEventListener("htmx:afterSettle", applyDifferencesVisibility);
 document.addEventListener("click", handleGenerateConfigButtonClick);
 
 document.addEventListener("click", function (event) {

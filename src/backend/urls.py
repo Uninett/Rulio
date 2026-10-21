@@ -23,11 +23,14 @@ from backend.views.generate_config import check_interface_config_generation, dow
 from backend.views.interfaces_page import get_interface_filter_selector_modal, interface_view, post_interface_view
 from backend.views.rule_page import (
     delete_rule_view,
+    discard_rule_draft_view,
     get_rule_page,
     get_rule_selector_modal,
     get_rules_content,
     post_rule_view,
     reorder_rule_view,
+    save_rule_draft_view,
+    toggle_rule_enable_view,
     update_rule_view,
 )
 
@@ -196,4 +199,11 @@ urlpatterns = [
     path("filters/<int:filter_id>/rules/reorder/", reorder_rule_view, name="reorder-rule-view"),
     path("filters/<int:filter_id>/rules/<str:row_key>/update/", update_rule_view, name="update-rule-view"),
     path("filters/<int:filter_id>/rules/<str:row_key>/delete/", delete_rule_view, name="delete-rule-view"),
+    path(
+        "filters/<int:filter_id>/rules/<str:row_key>/toggle-enable/",
+        toggle_rule_enable_view,
+        name="toggle-rule-enable-view",
+    ),
+    path("filters/<int:filter_id>/rules/save/", save_rule_draft_view, name="save-rule-draft-view"),
+    path("filters/<int:filter_id>/rules/discard/", discard_rule_draft_view, name="discard-rule-draft-view"),
 ]

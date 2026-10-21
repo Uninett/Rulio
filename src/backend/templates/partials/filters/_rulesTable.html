@@ -22,3 +22,11 @@
         </tbody>
     </table>
 </section>
+
+{% if current_filter_id %}
+<div class="interface-actions">
+    {% url 'save-rule-draft-view' filter_id=current_filter_id as rule_save_url %}
+    {% url 'discard-rule-draft-view' filter_id=current_filter_id as rule_discard_url %}
+    {% include "partials/_draftActions.html" with draft_label="rule changes" draft_discard_handler="discardRuleChanges" draft_save_handler="saveRuleChanges" draft_save_url=rule_save_url draft_discard_url=rule_discard_url draft_has_changes=rules.has_changes %}
+</div>
+{% endif %}
