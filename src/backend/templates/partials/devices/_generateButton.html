@@ -10,34 +10,8 @@
         <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
     </button>
 
-    {% if can_write_current_tenant or request.user.is_superuser %}
-    <button
-        type="button"
-        class="btn btn-outline btn--primary interface-diff-btn active"
-        onclick="toggleInterfaceFilterDifferences(this)"
-        aria-label="Toggle filter differences for {{ interface.name }}"
-    >
-        Hide Differences
-    </button>
-    <button
-        type="button"
-        class="btn btn-outline btn--danger interface-discard-btn"
-        disabled
-        onclick="discardInterfaceFilterChanges(this)"
-        aria-label="Discard filter changes for {{ interface.name }}"
-    >
-        Discard Changes
-    </button>
-    <button
-        type="button"
-        class="btn btn-save interface-save-btn"
-        disabled
-        data-interface-id="{{ interface.id }}"
-        data-save-url="{% url 'post-interface-view' %}"
-        onclick="saveInterfaceFilterChanges(this)"
-        aria-label="Save filter changes for {{ interface.name }}"
-    >
-        Save Changes
-    </button>
-    {% endif %}
+    {% url 'post-interface-view' as interface_save_url %}
+    {% with draft_label="filter changes for "|add:interface.name %}
+    {% include "partials/_draftActions.html" with draft_discard_handler="discardInterfaceFilterChanges" draft_save_handler="saveInterfaceFilterChanges" draft_save_url=interface_save_url draft_object_id=interface.id %}
+    {% endwith %}
 </div>

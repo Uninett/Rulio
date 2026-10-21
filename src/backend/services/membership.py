@@ -565,8 +565,12 @@ def copy_rule_to_filter(*, actor: User, tenant_id: int, rule_id: int, filter_id:
     if filter_obj is None:
         raise PermissionDenied(f"Filter with ID {filter_id} does not exist in tenant {tenant_id}.")
 
+    # Rule names are unique within a filter, so the copy keeps its name unless the filter already has it.
+    if Rule.objects.filter(filter=filter_obj, name=source_rule.name).exists():
+        raise ValueError(f"A rule named '{source_rule.name}' already exists in filter {filter_obj.id}.")
+
     new_rule = Rule.objects.create(
-        name=f"{source_rule.name}_copy",
+        name=source_rule.name,
         description=source_rule.description,
         filter=filter_obj,
         tenant=source_rule.tenant,

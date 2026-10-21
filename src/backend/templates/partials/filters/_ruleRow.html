@@ -1,0 +1,82 @@
+{% load static %}
+
+<tr id="row-{{ row.id }}"
+    class="main-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %} {{ row.diff_classes }}"
+    data-rule-key="{{ row.id }}"
+    {% if row.can_write %}draggable="true" data-rules-draggable="true"{% endif %}
+    onclick="expandRow('{{ row.id }}')">
+
+    {% for cell in row.cells %}
+    <td class="{% if forloop.first %}first-column-cell{% endif %} col-{{ forloop.counter }} {% if cell.was %}cell-diff-changed{% endif %}"
+        {% if cell.was %}title="{{ cell.was }}"{% endif %}>
+
+        {% if cell.kind == "sequence" %}
+            {% if cell.value.moved %}
+            <span class="cell-text" title="Moved from position {{ cell.value.previous }} to {{ cell.value.current }}">
+                <span class="rule-seq-previous">{{ cell.value.previous }} → </span>{{ cell.value.current }}
+            </span>
+            {% else %}
+            <span class="cell-text">{% firstof cell.value.current cell.value.previous %}</span>
+            {% endif %}
+
+        {% elif cell.kind == "objects" %}
+            <div class="rule-object-list">
+                {% for item in cell.value %}
+                <div class="rule-object-item truncate"
+                     title="{{ item.hover_text }}"
+                     onclick="event.stopPropagation(); window.location.href='{{ item.navigate_url }}';">
+                    {{ item.name }}
+                </div>
+                {% endfor %}
+            </div>
+
+        {% elif cell.kind == "enable" %}
+            <button type="button" class="btn-reset center-box filter-enabled-toggle" role="switch"
+                aria-checked="{{ cell.value|yesno:'true,false' }}" data-enabled="{{ cell.value|yesno:'true,false' }}"
+                aria-label="{{ cell.value|yesno:'Enabled,Disabled' }}"
+                title="{% if row.enable_was %}{{ row.enable_was }}{% else %}{{ cell.value|yesno:'Enabled,Disabled' }}{% endif %}"
+                {% if not row.can_write %}disabled{% endif %}
+                data-toggle-url="{% url 'toggle-rule-enable-view' filter_id=current_filter_id row_key=row.id %}"
+                onclick="event.stopPropagation(); toggleRuleEnabled(this)">
+                <span class="filter-enabled-toggle-check"></span>
+            </button>
+
+        {% elif cell.kind == "tags" %}
+            <div class="tag-list-container">
+                {% for item in cell.value %}
+                <span class="cell-text truncate tag-item tag-pill" style="--tag-color: {{ item.color }};" title="{{ item.name }}">
+                    {{ item.name }}
+                </span>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <span class="cell-text truncate" title="{{ cell.value }}{% if cell.was %} ({{ cell.was }}){% endif %}">{{ cell.value }}</span>
+        {% endif %}
+    </td>
+    {% endfor %}
+
+    <td class="actions-column">
+        {% if row.can_write %}
+        <button type="button" class="btn-reset actions-btn" hx-get="{% url 'modal-update' row.id %}?filter_id={{ current_filter_id }}" hx-target="#modal-container"
+            hx-swap="innerHTML" onclick="event.stopPropagation()">
+            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
+        </button>
+        {% elif row.is_removed %}
+        <button type="button" class="btn-reset actions-btn actions-btn-disabled"
+            title="Deleted in your unsaved changes. Discard changes to restore it.">
+            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
+        </button>
+        {% else %}
+        <button type="button" class="btn-reset actions-btn actions-btn-disabled"
+            title="{% if row.is_global %}Need superuser permission to update global rules.{% else %}Need tenant admin permission to update rules.{% endif %}">
+            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
+        </button>
+        {% endif %}
+    </td>
+</tr>
+
+<tr id="details-{{ row.id }}"
+    class="details-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}">
+    {% include "partials/objects/_expandRow.html" with row=row headers=headers %}
+</tr>

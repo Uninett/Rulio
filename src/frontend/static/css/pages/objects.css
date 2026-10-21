@@ -109,31 +109,46 @@ Column Widths
     outline-offset: -2px;
 }
 
+/* Rules: Seq, Name, Src/Dst Address and Service, Action, Log, Count, Enabled, Tags */
 .objects-table--rules .col-1 {
-    width: 14%;
+    width: 4%;
+    min-width: 3rem;
+    white-space: nowrap;
 }
 
-.objects-table--rules .col-2,
+.objects-table--rules .col-2 {
+    width: 13%;
+}
+
 .objects-table--rules .col-3,
 .objects-table--rules .col-4,
-.objects-table--rules .col-5 {
-    width: 15%;
+.objects-table--rules .col-5,
+.objects-table--rules .col-6 {
+    width: 13%;
 }
 
-.objects-table--rules .col-6,
-.objects-table--rules .col-7 {
+.objects-table--rules .col-7,
+.objects-table--rules .col-8 {
     width: 4%;
     white-space: nowrap;
     text-align: center;
 }
 
-.objects-table--rules .col-8 {
+.objects-table--rules .col-9 {
     width: 4%;
     min-width: 3rem;
 }
 
-.objects-table--rules .col-9 {
-    width: 18%;
+.objects-table--rules .col-10 {
+    width: 4%;
+}
+
+.objects-table--rules .col-10 .filter-enabled-toggle {
+    margin: 0 auto;
+}
+
+.objects-table--rules .col-11 {
+    width: 15%;
     min-width: 12rem;
     white-space: nowrap;
 }
@@ -217,26 +232,53 @@ Interface Table (inside device / interface detail rows)
     cursor: pointer;
 }
 
-/* Pending-change highlighting (classes set from app.js) */
+/* Pending-change highlighting, on interface filter rows (classes set from app.js)
+   and on rules table rows (classes set by the server, hidden by .diff-hidden from app.js) */
 .objects-interface-table-row.row-diff-added,
-.objects-interface-table-row.row-diff-enabled-on {
+.objects-interface-table-row.row-diff-enabled-on,
+.rules-table:not(.diff-hidden) .main-row.row-diff-added,
+.rules-table:not(.diff-hidden) .main-row.row-diff-enabled-on {
     background-color: var(--diff-added-bg);
     color: var(--diff-added-text);
 }
 
 .objects-interface-table-row.row-diff-removed,
-.objects-interface-table-row.row-diff-enabled-off {
+.objects-interface-table-row.row-diff-enabled-off,
+.rules-table:not(.diff-hidden) .main-row.row-diff-removed,
+.rules-table:not(.diff-hidden) .main-row.row-diff-enabled-off {
     background-color: var(--diff-removed-bg);
     color: var(--diff-removed-text);
 }
 
-.objects-interface-table-row.row-diff-changed {
+.objects-interface-table-row.row-diff-changed,
+.rules-table:not(.diff-hidden) .main-row.row-diff-changed {
     background-color: var(--diff-changed-bg);
     color: var(--diff-changed-text);
 }
 
-.objects-interface-table-row.row-diff-removed {
+.objects-interface-table-row.row-diff-removed,
+.rules-table:not(.diff-hidden) .main-row.row-diff-removed {
     text-decoration: line-through;
+}
+
+/* Rules table: the diff colour replaces the grey read-only text, so rules deleted in the draft show in red */
+.rules-table:not(.diff-hidden) .main-row[class*="row-diff-"] .cell-text {
+    color: inherit;
+}
+
+/* Edited cells stand out in green, red and uncoloured rows, and are bold in yellow rows */
+.rules-table:not(.diff-hidden) td.cell-diff-changed {
+    background-color: var(--diff-changed-bg);
+    color: var(--diff-changed-text);
+    font-weight: 600;
+}
+
+/* With differences hidden, the rules table looks as it will after saving.
+   !important, because expandRow shows details rows with an inline display style. */
+.rules-table.diff-hidden .main-row.row-diff-removed,
+.rules-table.diff-hidden .main-row.row-diff-removed + .details-row,
+.rules-table.diff-hidden .rule-seq-previous {
+    display: none !important;
 }
 
 
