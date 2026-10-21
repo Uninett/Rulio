@@ -50,9 +50,10 @@ class TestGenerateConfig:
         assert hasattr(config, "keys")
         assert len(config.keys()) >= 1
 
-        generated_text = next(iter(config.values()))
+        generated_texts = list(config.values())
+        assert all(isinstance(text, str) for text in generated_texts)
+        generated_text = "\n".join(generated_texts)
         assert generated_text
-        assert isinstance(generated_text, str)
         assert len(generated_text.strip()) > 0
 
         return generated_text
@@ -113,6 +114,10 @@ class TestGenerateConfig:
 
         for vendor, output in configs.items():
             config = output["text"]
+            capabilities = get_platform_capabilities(vendor)
+
+            if capabilities.supports_ipv6:
+                assert "ff00::/120" in config
 
             if vendor == "paloalto":
                 assert config
@@ -124,6 +129,43 @@ class TestGenerateConfig:
         assert "Test_Address_Rule_1" in juniper_config
         assert "Test_Address_Rule_2" in juniper_config
         assert "192.168.1.0/24" in juniper_config
+
+    def test_generate_ipv6_addresses_and_address_groups(self, built_address_policy, built_address_group_policy):
+        for policy in (built_address_policy, built_address_group_policy):
+            policy.set_vendor("juniper")
+            network_values = [
+                value
+                for definition in policy.networks["networks"].values()
+                for value in definition["values"]
+            ]
+
+            assert "ff00::/120" in network_values
+
+            result = generate_config(policy)
+
+            assert result.success, [error.message for error in result.errors]
+            generated_text = "\n".join(result.config.values())
+            assert "family inet " in generated_text
+            assert "family inet6 " in generated_text
+            assert "ff00::/120" in generated_text
+
+    def test_generate_ipv6_only_address_config(self, sample_addresses):
+        policy = _policy(
+            [
+                _rule(
+                    "IPv6_Only_Rule",
+                    [PolicyRuleMember("address", "destination", sample_addresses[2])],
+                )
+            ],
+            name="IPv6_Only_Policy",
+        )
+
+        result = generate_config(policy)
+
+        assert result.success, [error.message for error in result.errors]
+        generated_text = "\n".join(result.config.values())
+        assert "family inet6 " in generated_text
+        assert "ff00::/120" in generated_text
 
     def test_build_address_with_spaces_uses_normalized_network_name(self, request_with_session, create_testing_tenant):
         address = get_or_create_address(
