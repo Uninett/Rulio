@@ -2,7 +2,10 @@ import pytest
 from django.urls import reverse
 
 from backend.objects.filters.rule import Rule
-from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
+from backend.services.filter_objects.create_filter_objects import (
+    create_filter,
+    create_rule,
+)
 from backend.services.rule_draft import (
     saved_rule_key,
     stage_rule_create,
@@ -132,7 +135,9 @@ def test_editing_a_rule_stages_the_change(authenticated_client, rules_page_filte
 def test_edit_modal_shows_draft_values(authenticated_client, rules_page_filter):
     user, tenant_id, filter_obj, (rule_a, _rule_b) = rules_page_filter
     key_a = saved_rule_key(rule_a.id)
-    stage_rule_update(actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, key=key_a, fields=rule_fields("page-rule-renamed"))
+    stage_rule_update(
+        actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, key=key_a, fields=rule_fields("page-rule-renamed")
+    )
 
     response = authenticated_client.get(reverse("modal-update", args=[key_a]) + f"?filter_id={filter_obj.id}")
 
@@ -142,13 +147,18 @@ def test_edit_modal_shows_draft_values(authenticated_client, rules_page_filter):
 
 def test_edit_modal_opens_for_a_draft_only_rule(authenticated_client, rules_page_filter):
     user, tenant_id, filter_obj, _rules = rules_page_filter
-    new_key = stage_rule_create(actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, fields=rule_fields("page-rule-new"))
+    new_key = stage_rule_create(
+        actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, fields=rule_fields("page-rule-new")
+    )
 
     response = authenticated_client.get(reverse("modal-update", args=[new_key]) + f"?filter_id={filter_obj.id}")
 
     assert response.status_code == 200
     assert b'value="page-rule-new"' in response.content
-    assert reverse("update-rule-view", kwargs={"filter_id": filter_obj.id, "row_key": new_key}).encode() in response.content
+    assert (
+        reverse("update-rule-view", kwargs={"filter_id": filter_obj.id, "row_key": new_key}).encode()
+        in response.content
+    )
 
 
 def test_deleting_a_rule_stages_the_deletion(authenticated_client, rules_page_filter, rules_page_url):
@@ -164,9 +174,13 @@ def test_deleting_a_rule_stages_the_deletion(authenticated_client, rules_page_fi
 
 def test_deleting_a_draft_only_rule_drops_it(authenticated_client, rules_page_filter, rules_page_url):
     user, tenant_id, filter_obj, _rules = rules_page_filter
-    new_key = stage_rule_create(actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, fields=rule_fields("page-rule-new"))
+    new_key = stage_rule_create(
+        actor=user, tenant_id=tenant_id, filter_id=filter_obj.id, fields=rule_fields("page-rule-new")
+    )
 
-    response = authenticated_client.post(reverse("delete-rule-view", kwargs={"filter_id": filter_obj.id, "row_key": new_key}))
+    response = authenticated_client.post(
+        reverse("delete-rule-view", kwargs={"filter_id": filter_obj.id, "row_key": new_key})
+    )
 
     page = authenticated_client.get(rules_page_url).content
     assert response.status_code == 204

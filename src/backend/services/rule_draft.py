@@ -11,9 +11,16 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.services.delete import delete_rule, remove_tag_from_object
 from backend.services.filter_objects.create_filter_objects import create_rule
-from backend.services.get import get_all_rules_with_objects_from_filter, get_all_tags_from_object
+from backend.services.get import (
+    get_all_rules_with_objects_from_filter,
+    get_all_tags_from_object,
+)
 from backend.services.helper_user_tenant import can_write_tenant, require_write_tenant
-from backend.services.membership import add_objects_to_rule, add_tag_to_object, update_objects_in_rule
+from backend.services.membership import (
+    add_objects_to_rule,
+    add_tag_to_object,
+    update_objects_in_rule,
+)
 from constants import GLOBAL_TENANT_ID
 
 # Pending rule changes are stored in a Draft per (user, filter), under this scope.
@@ -483,7 +490,7 @@ def stage_rule_enable_toggle(*, actor, tenant_id: int, filter_id: int, key: str)
 
     _set_row_fields(key, fields, baseline_by_key, changes)
     _store_rule_changes(actor, tenant_id, filter_id, changes)
- 
+
 
 def stage_rule_delete(*, actor, tenant_id: int, filter_id: int, key: str) -> None:
     require_write_tenant(actor, tenant_id)

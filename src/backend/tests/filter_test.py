@@ -4,7 +4,10 @@ from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.objects.filters.rule_match import RuleMatch
 from backend.objects.filters.versionControl import VersionControl
-from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
+from backend.services.filter_objects.create_filter_objects import (
+    create_filter,
+    create_rule,
+)
 from backend.services.membership import copy_rule_to_filter
 
 

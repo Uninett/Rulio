@@ -1,38 +1,25 @@
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
 
-from backend.objects.attributes.address import Address
-from backend.objects.attributes.address_group import AddressGroup
-from backend.objects.attributes.service import Service
-from backend.objects.attributes.service_group import ServiceGroup
 from backend.objects.attributes.tag import Tag
 from backend.objects.filters.filter import Filter
-from backend.objects.filters.rule import Rule
-from backend.services.delete import delete_rule, remove_tag_from_object
-from backend.services.filter_objects.create_filter_objects import create_rule
-from backend.services.get import (
-    get_all_rules_with_objects_from_filter,
-    get_all_tags_from_object,
-)
 from backend.services.helper_user_tenant import can_write_tenant
-from backend.services.membership import (
-    add_objects_to_rule,
-    add_tag_to_object,
-    update_objects_in_rule,
-)
 from backend.services.rule_draft import (
+    ADDRESS_OBJECT_TYPES,
     RULE_OBJECT_FIELDS,
     RuleDraftError,
     apply_rule_draft,
     build_rule_changeset,
     discard_rule_draft,
+    fetch_objects_by_type,
     get_rule_changes,
     load_baseline_rules,
     parse_rule_form,
+    parse_typed_ids,
     rule_changes_pending,
     stage_rule_create,
     stage_rule_delete,
@@ -40,14 +27,9 @@ from backend.services.rule_draft import (
     stage_rule_order,
     stage_rule_update,
 )
-from backend.services.update import update_rule_sequence
 from backend.views.modal import get_group_options_view, get_item_options_view
 from backend.views.session import get_tenant_context
 from constants import GLOBAL_TENANT_ID
-
-ADDRESS_OBJECT_TYPES = {"address", "addressgroup"}
-SERVICE_OBJECT_TYPES = {"service", "servicegroup"}
-
 
 """
 ====================================================================
@@ -145,7 +127,7 @@ def _rule_object_items(typed_ids: list[str], objects_by_type: dict) -> list[dict
         )
     return items
 
- 
+
 # The saved value of a changed cell, shown as a tooltip while differences are shown. None if the field is unchanged.
 def _rule_previous_value(entry: dict, field: str, objects_by_type: dict, tags_by_id: dict) -> str | None:
     if field not in entry["changed_fields"]:
@@ -222,7 +204,11 @@ def _rule_row(entry: dict, saved_rule: dict | None, user, tenant_id: int, object
             _rule_cell("text", fields["log_type"], previous("log_type")),
             _rule_cell("text", str(saved_rule["hit_count"]) if saved_rule else "0"),
             _rule_cell("enable", fields["enable"]),
-            _rule_cell("tags", [tags_by_id[tag_id] for tag_id in fields["tag_ids"] if tag_id in tags_by_id], previous("tag_ids")),
+            _rule_cell(
+                "tags",
+                [tags_by_id[tag_id] for tag_id in fields["tag_ids"] if tag_id in tags_by_id],
+                previous("tag_ids"),
+            ),
         ],
         # Expandable row content.
         "expand": [
@@ -526,74 +512,3 @@ def get_rule_selector_modal(request, selector_type: str):
     }
 
     return render(request, "partials/_modal.html", context)
-
-
-def parse_typed_ids(raw_value: str) -> tuple[list[tuple[str, int]], dict[str, set[int]]]:
-    ordered = []
-    grouped = {}
-
-    for token in (raw_value or "").split(","):
-        token = token.strip()
-        if not token or "-" not in token:
-            continue
-
-        object_type, object_id = token.split("-", 1)
-
-        try:
-            object_id = int(object_id)
-        except ValueError:
-            continue
-
-        ordered.append((object_type, object_id))
-        grouped.setdefault(object_type, set()).add(object_id)
-
-    return ordered, grouped
-
-
-def fetch_objects_by_type(grouped_ids: dict[str, set[int]], tenant_id: int) -> dict[str, dict[int, object]]:
-    model_map = {
-        "address": Address,
-        "addressgroup": AddressGroup,
-        "service": Service,
-        "servicegroup": ServiceGroup,
-    }
-
-    result = {}
-
-    for object_type, ids in grouped_ids.items():
-        model = model_map.get(object_type)
-        if not model or not ids:
-            result[object_type] = {}
-            continue
-
-        queryset = model.objects.filter(id__in=ids, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID])
-        result[object_type] = {obj.id: obj for obj in queryset}
-
-    return result
-
-
-def build_ordered_object_list(
-    ordered_ids: list[tuple[str, int]],
-    object_cache: dict[str, dict[int, object]],
-) -> list:
-    objects = []
-
-    for object_type, object_id in ordered_ids:
-        obj = object_cache.get(object_type, {}).get(object_id)
-        if obj is not None:
-            objects.append(obj)
-
-    return objects
-
-
-def validate_rule_selector_types(
-    ordered_ids: list[tuple[str, int]],
-    allowed_types: set[str],
-    field_name: str,
-) -> None:
-    invalid_types = {object_type for object_type, _object_id in ordered_ids if object_type not in allowed_types}
-
-    if invalid_types:
-        formatted_types = ", ".join(sorted(invalid_types))
-
-        raise ValueError(f"Invalid object type(s) in {field_name}: {formatted_types}")

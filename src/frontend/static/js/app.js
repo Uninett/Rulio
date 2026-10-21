@@ -1589,18 +1589,6 @@ function getCsrfToken() {
     return decodeURIComponent(cookieValue.split("=")[1]);
 }
 
-function getRuleMainRows(rulesBody) {
-    return Array.from(rulesBody.querySelectorAll("tr[id^='row-rule-']"));
-}
-
-function getRuleIdFromMainRow(mainRow) {
-    const fullId = mainRow?.id || "";
-    if (!fullId.startsWith("row-rule-")) return null;
-
-    const idValue = Number(fullId.replace("row-rule-", ""));
-    return Number.isInteger(idValue) ? idValue : null;
-}
-
 function getDetailsRowForMainRow(mainRow) {
     if (!mainRow?.id) return null;
     return document.getElementById(mainRow.id.replace("row-", "details-"));
@@ -1680,9 +1668,8 @@ function initializeRuleRowDragAndDrop(root = document) {
     }
 
     const reorderUrl = rulesBody.dataset.reorderUrl;
-    const filterId = rulesBody.dataset.filterId;
 
-    if (!reorderUrl || !filterId) {
+    if (!reorderUrl) {
         return;
     }
 
@@ -1698,7 +1685,7 @@ function initializeRuleRowDragAndDrop(root = document) {
     const getMainRows = () => {
         return Array.from(
             rulesBody.querySelectorAll(
-                "tr[data-rules-draggable='true'][id^='row-rule-']"
+                "tr[data-rules-draggable='true']"
             )
         );
     };
@@ -1752,7 +1739,7 @@ function initializeRuleRowDragAndDrop(root = document) {
         event.preventDefault();
 
         const targetMainRow = event.target.closest(
-            "tr[data-rules-draggable='true'][id^='row-rule-']"
+            "tr[data-rules-draggable='true']"
         );
 
         if (!targetMainRow || targetMainRow === draggedMainRow) {

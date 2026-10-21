@@ -2,7 +2,10 @@ import pytest
 
 from backend.objects.draft import Draft
 from backend.objects.filters.rule import Rule
-from backend.services.filter_objects.create_filter_objects import create_filter, create_rule
+from backend.services.filter_objects.create_filter_objects import (
+    create_filter,
+    create_rule,
+)
 from backend.services.rule_draft import (
     RuleDraftError,
     apply_rule_draft,

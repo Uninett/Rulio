@@ -22,7 +22,12 @@ from backend.services.get import (
     get_filter_with_rules_and_tags,
     get_rule_with_tags_from_tenant,
 )
-from backend.services.rule_draft import RULE_OBJECT_FIELDS, fetch_objects_by_type, get_rule_changes, parse_typed_ids
+from backend.services.rule_draft import (
+    RULE_OBJECT_FIELDS,
+    fetch_objects_by_type,
+    get_rule_changes,
+    parse_typed_ids,
+)
 from backend.utils.logger import set_up_logger
 from backend.views.modal import get_group_options_view, get_item_options_view
 from backend.views.objects_addresses import build_ip_input
@@ -583,7 +588,9 @@ def build_update_modal_context(request, row_id):
     else:
         modal_refresh_url = reverse(config["refresh_url_name"])
         modal_post_url = reverse(config["post_url_name"], args=[object_id])
-        modal_delete_url = reverse(config["delete_url_name"], args=[object_id]) if config.get("delete_url_name") else None
+        modal_delete_url = (
+            reverse(config["delete_url_name"], args=[object_id]) if config.get("delete_url_name") else None
+        )
 
     context = {
         "modal_title": config["title"],

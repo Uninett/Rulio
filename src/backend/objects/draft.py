@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.conf import settings
 from django.db import models
 
@@ -15,7 +17,7 @@ class Draft(models.Model):
     date_changed = models.DateTimeField(auto_now=True)
 
     class Meta:
-        constraints = [
+        constraints: ClassVar = [
             models.UniqueConstraint(fields=("user", "scope", "scope_id"), name="unique_draft_per_user_scope"),
         ]
 
