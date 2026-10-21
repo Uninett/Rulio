@@ -260,3 +260,58 @@ def write_rule_fields(*, actor, tenant_id: int, rule: Rule, fields: dict) -> Non
             object_type="rule",
             tag_id=tag_id,
         )
+
+
+"""
+====================================================================
+Baseline (the saved rules)
+====================================================================
+"""
+
+
+# Rules are identified by row key: "rule-<id>" for saved rules and "ruledraft-<n>" for rules created in the draft.
+def saved_rule_key(rule_id: int) -> str:
+    return f"rule-{rule_id}"
+
+
+# The saved rules of a filter, with their fields in the same format as parse_rule_form, so they can be compared.
+def load_baseline_rules(actor, tenant_id: int, filter_id: int) -> list[dict]:
+    rules = get_all_rules_with_objects_from_filter(actor, tenant_id, filter_id)
+
+    tag_ids_by_rule = {
+        rule.id: sorted(tag_object.tag_id for tag_object in rule.tag_objects.all())
+        for rule in Rule.objects.filter(id__in=[rule["rule_id"] for rule in rules]).prefetch_related("tag_objects")
+    }
+
+    baseline = []
+    for rule in rules:
+        fields = {
+            "name": rule["rule_name"],
+            "description": rule["rule_description"] or "",
+            "action": rule["rule_action"] or "",
+            "log_type": rule["rule_log_type"] or "",
+            "enable": rule["rule_enable"],
+            **{field: [] for field in RULE_OBJECT_FIELDS},
+            "tag_ids": tag_ids_by_rule.get(rule["rule_id"], []),
+        }
+
+        for obj in rule["objects"]:
+            object_type = (obj.get("object_type") or "").lower()
+            match_type = obj.get("match_type")
+            for field, (allowed_types, field_match_type) in RULE_OBJECT_FIELDS.items():
+                if object_type in allowed_types and match_type == field_match_type:
+                    fields[field].append(f"{object_type}-{obj['object_id']}")
+
+        baseline.append(
+            {
+                "key": saved_rule_key(rule["rule_id"]),
+                "rule_id": rule["rule_id"],
+                "tenant_id": rule["rule_tenant_id"],
+                "hit_count": rule["rule_hit_count"],
+                "date_created": rule["rule_date_created"],
+                "date_changed": rule["rule_date_changed"],
+                "fields": fields,
+            }
+        )
+
+    return baseline
