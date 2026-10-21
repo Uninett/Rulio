@@ -60,13 +60,21 @@ class TestGenerateConfig:
 
     def _generate_for_all_vendors(self, policy, output_subdir: str, output_prefix: str):
         generated_outputs = {}
+        generation_failures = []
 
         for vendor, target_spec in self.vendor_target_spec_pairs:
             vendor_policy = copy.deepcopy(policy)
+            if vendor == "cisco" and target_spec == "mixed":
+                target_spec = f"{vendor_policy.name} mixed"
             vendor_policy.set_vendor(vendor, target_spec)
 
             result = generate_config(vendor_policy)
-            assert result.success, [error.message for error in result.errors]
+            if not result.success:
+                generation_failures.append(
+                    f"{vendor}: {[error.message for error in result.errors]}"
+                )
+                generated_outputs[vendor] = {"text": "", "result": result}
+                continue
 
             generated_text = self._extract_generated_text(result.config)
 
@@ -86,6 +94,9 @@ class TestGenerateConfig:
                 "text": generated_text,
                 "result": result,
             }
+
+        if generation_failures:
+            pytest.fail("Generation failed for vendors:\n" + "\n".join(generation_failures))
 
         return generated_outputs
 
@@ -111,24 +122,30 @@ class TestGenerateConfig:
             output_subdir="addr",
             output_prefix="address",
         )
+        vendor_assertion_failures = []
 
         for vendor, output in configs.items():
             config = output["text"]
             capabilities = get_platform_capabilities(vendor)
 
-            if capabilities.supports_ipv6:
-                assert "ff00::/120" in config
+            if capabilities.supports_ipv6 and "ff00::/120" not in config:
+                vendor_assertion_failures.append(f"{vendor}: output omitted IPv6 address ff00::/120")
 
             if vendor == "paloalto":
-                assert config
+                if not config:
+                    vendor_assertion_failures.append(f"{vendor}: output is empty")
                 continue
 
-            assert "192.168.1.0" in config
+            if "192.168.1.0" not in config:
+                vendor_assertion_failures.append(f"{vendor}: output omitted IPv4 address 192.168.1.0")
 
         juniper_config = configs["juniper"]["text"]
-        assert "Test_Address_Rule_1" in juniper_config
-        assert "Test_Address_Rule_2" in juniper_config
-        assert "192.168.1.0/24" in juniper_config
+        for expected in ("Test_Address_Rule_1", "Test_Address_Rule_2", "192.168.1.0/24"):
+            if expected not in juniper_config:
+                vendor_assertion_failures.append(f"juniper: output omitted {expected}")
+
+        if vendor_assertion_failures:
+            pytest.fail("Generated output checks failed:\n" + "\n".join(vendor_assertion_failures))
 
     def test_generate_ipv6_addresses_and_address_groups(self, built_address_policy, built_address_group_policy):
         for policy in (built_address_policy, built_address_group_policy):
@@ -149,7 +166,8 @@ class TestGenerateConfig:
             assert "family inet6 " in generated_text
             assert "ff00::/120" in generated_text
 
-    def test_generate_ipv6_only_address_config(self, sample_addresses):
+    @pytest.mark.parametrize("vendor", ["juniper", "aruba"])
+    def test_generate_ipv6_only_address_config(self, sample_addresses, vendor):
         policy = _policy(
             [
                 _rule(
@@ -159,13 +177,63 @@ class TestGenerateConfig:
             ],
             name="IPv6_Only_Policy",
         )
+        policy.set_vendor(vendor)
 
         result = generate_config(policy)
 
         assert result.success, [error.message for error in result.errors]
         generated_text = "\n".join(result.config.values())
-        assert "family inet6 " in generated_text
+        if vendor == "juniper":
+            assert "family inet6 " in generated_text
         assert "ff00::/120" in generated_text
+
+    def test_generate_ipv6_fails_for_unsupported_vendor(self, sample_addresses):
+        policy = _policy(
+            [
+                _rule(
+                    "IPv6_Only_Rule",
+                    [PolicyRuleMember("address", "destination", sample_addresses[2])],
+                )
+            ],
+            vendor="ciscoasa",
+            name="IPv6_Only_Policy",
+        )
+
+        result = generate_config(policy)
+
+        assert not result.success
+        assert result.config is None
+        assert any(error.code == "unsupported_ipv6" for error in result.errors)
+
+    def test_dual_stack_split_keeps_protocol_split_terms(self):
+        dual_stack_address = Address(
+            name="Dual_Stack_Network",
+            tenant_id=1,
+            addr_type="network",
+            ipv4_type="standard",
+            ipv4Network="192.0.2.0/24",
+            ipv6_type="standard",
+            ipv6Network="2001:db8:1::/48",
+        )
+        rule = _rule(
+            "Dual_Stack_Split",
+            [
+                PolicyRuleMember("address", "source", dual_stack_address),
+                PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80)),
+                PolicyRuleMember("service", "destination", _service("DNS", "udp", 53)),
+            ],
+        )
+
+        result = generate_config(_policy([rule]))
+
+        assert result.success, [error.message for error in result.errors]
+        generated_text = "\n".join(result.config.values())
+        assert "family inet " in generated_text
+        assert "family inet6 " in generated_text
+        assert "192.0.2.0/24" in generated_text
+        assert "2001:db8:1::/48" in generated_text
+        assert "Dual_Stack_Split-tcp" in generated_text
+        assert "Dual_Stack_Split-udp" in generated_text
 
     def test_build_address_with_spaces_uses_normalized_network_name(self, request_with_session, create_testing_tenant):
         address = get_or_create_address(
