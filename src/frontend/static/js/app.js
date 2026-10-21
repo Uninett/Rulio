@@ -869,6 +869,8 @@ function renderInterfaceFilterRow(direction) {
         if (entry.sequenceChanged && entry.previousSequence !== entry.displaySequence) {
             rowEl.children[0].textContent = `${entry.previousSequence} → ${entry.displaySequence}`;
             rowEl.children[0].title = `Moved from position ${entry.previousSequence} to ${entry.displaySequence}`;
+            // Enable/disable counts as addition/deletion, so its colour takes precedence over the yellow.
+            if (!entry.enabledChanged) rowEl.classList.add("row-diff-changed");
         }
 
         if (entry.enabledChanged) {

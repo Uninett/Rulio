@@ -27,8 +27,14 @@ Design Tokens
     --sds-color-support-critical-strong: #C10103;
     --sds-color-support-critical-strong-hover: #970002;
     --sds-color-support-critical-subtle: #FFDCDA;
-    --sds-color-support-success-strong: #096638;
-    --sds-color-support-success-subtle: #CFF7E2;
+
+    /* Diff colors */
+    --diff-added-bg: #CFF7E2;
+    --diff-added-text: #096638;
+    --diff-removed-bg: var(--sds-color-support-critical-subtle);
+    --diff-removed-text: var(--sds-color-support-critical-strong);
+    --diff-changed-bg: #FFF1C2;
+    --diff-changed-text: #7A5600;
 
     /* Text */
     --sds-color-text-primary: #0A0132;
