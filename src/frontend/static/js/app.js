@@ -1760,24 +1760,19 @@ function initializeRuleRowDragAndDrop(root = document) {
         saveRuleOrder(draggedMainRow);
     });
 
+    // Stages the new order in the user's draft. The server needs every rule in the list, including rows that
+    // can't be dragged, but not rules deleted in the draft.
     async function saveRuleOrder(movedRow) {
-        const ruleId = getRuleIdFromMainRow(movedRow);
+        const movedKey = movedRow.dataset.ruleKey;
 
-        if (!ruleId) {
+        if (!movedKey) {
             return;
         }
 
         // Get the rows after moveRuleRowPair() has updated the DOM.
-        const mainRows = getMainRows();
-        const rowIndex = mainRows.indexOf(movedRow);
-
-        if (rowIndex === -1) {
-            return;
-        }
-
-        // The backend expects a 1-indexed sequence:
-        // first row = 1, second row = 2, etc.
-        const newSequence = rowIndex + 1;
+        const order = Array.from(
+            rulesBody.querySelectorAll("tr.main-row[data-rule-key]:not(.row-diff-removed)")
+        ).map((row) => row.dataset.ruleKey);
 
         clearRecentlyDropped();
         recentlyDroppedRuleRowId = movedRow.id;
@@ -1793,9 +1788,8 @@ function initializeRuleRowDragAndDrop(root = document) {
                     "X-CSRFToken": csrfToken,
                 },
                 body: new URLSearchParams({
-                    rule_id: String(ruleId),
-                    filter_id: String(filterId),
-                    new_sequence: String(newSequence),
+                    order: order.join(","),
+                    moved_key: movedKey,
                 }),
             });
 

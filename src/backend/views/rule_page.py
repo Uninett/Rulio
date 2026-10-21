@@ -366,8 +366,10 @@ def delete_rule_view(request, filter_id, row_key):
     return HttpResponse(status=204)
 
 
+# order is every row key in the order shown after a drop, and moved_key is the row that was dragged.
+# The order is only staged in the user's draft.
 @login_required(login_url="login")
-def reorder_rule_view(request):
+def reorder_rule_view(request, filter_id):
     if request.method != "POST":
         return HttpResponse("Method not allowed.", status=405)
 
@@ -375,36 +377,21 @@ def reorder_rule_view(request):
     if not tenant_id_raw:
         return HttpResponse("No tenant selected.", status=400)
 
-    rule_id_raw = request.POST.get("rule_id")
-    filter_id_raw = request.POST.get("filter_id")
-    new_sequence_raw = request.POST.get("new_sequence")
+    order = [key.strip() for key in request.POST.get("order", "").split(",") if key.strip()]
+    moved_key = request.POST.get("moved_key", "").strip()
 
-    if not all([rule_id_raw, filter_id_raw, new_sequence_raw]):
+    if not order or not moved_key:
         return HttpResponse("Missing rule reorder data.", status=400)
 
     try:
-        tenant_id = int(tenant_id_raw)
-        rule_id = int(rule_id_raw)
-        filter_id = int(filter_id_raw)
-        new_sequence = int(new_sequence_raw)
-    except (TypeError, ValueError):
-        return HttpResponse("Invalid rule reorder data.", status=400)
-
-    rule = Rule.objects.select_related("filter").filter(id=rule_id, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).first()
-    if not rule:
-        return HttpResponse("Rule not found.", status=404)
-
-    if rule.filter_id != filter_id:
-        return HttpResponse("Rule does not belong to the requested filter.", status=400)
-
-    try:
-        update_rule_sequence(
+        stage_rule_order(
             actor=request.user,
-            tenant_id=tenant_id,
-            rule=rule,
-            new_sequence=new_sequence,
+            tenant_id=int(tenant_id_raw),
+            filter_id=filter_id,
+            order=order,
+            moved_key=moved_key,
         )
-    except Exception as exc:
+    except (RuleDraftError, PermissionDenied) as exc:
         return HttpResponse(f"Could not reorder rule: {exc}", status=400)
 
     return HttpResponse(status=204)

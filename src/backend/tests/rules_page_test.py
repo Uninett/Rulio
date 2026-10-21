@@ -172,3 +172,32 @@ def test_deleting_a_draft_only_rule_drops_it(authenticated_client, rules_page_fi
     assert response.status_code == 204
     assert b"page-rule-new" not in page
     assert b"row-diff-added" not in page
+
+
+def test_reordering_stages_the_order(authenticated_client, rules_page_filter, rules_page_url):
+    _user, _tenant_id, filter_obj, (rule_a, rule_b) = rules_page_filter
+    key_a, key_b = saved_rule_key(rule_a.id), saved_rule_key(rule_b.id)
+
+    response = authenticated_client.post(
+        reverse("reorder-rule-view", kwargs={"filter_id": filter_obj.id}),
+        {"order": f"{key_b},{key_a}", "moved_key": key_b},
+    )
+
+    assert response.status_code == 204
+    rule_a.refresh_from_db()
+    rule_b.refresh_from_db()
+    assert (rule_a.rule_sequence, rule_b.rule_sequence) == (1, 2)
+    assert '<span class="rule-seq-previous">2 → </span>' in authenticated_client.get(rules_page_url).content.decode()
+
+
+def test_reordering_with_an_incomplete_order_is_refused(authenticated_client, rules_page_filter):
+    _user, _tenant_id, filter_obj, (rule_a, _rule_b) = rules_page_filter
+    key_a = saved_rule_key(rule_a.id)
+
+    response = authenticated_client.post(
+        reverse("reorder-rule-view", kwargs={"filter_id": filter_obj.id}),
+        {"order": key_a, "moved_key": key_a},
+    )
+
+    assert response.status_code == 400
+    assert b"The rule list has changed" in response.content
