@@ -237,12 +237,13 @@ def get_rules_view(request, filter_id):
     tenant_id = request.session.get("current_tenant_id")
 
     if not tenant_id:
-        return {"headers": [], "rows": []}
+        return {"headers": [], "rows": [], "has_changes": False}
 
     tenant_id = int(tenant_id)
 
     # Description, Created, and Modified have moved to the expandable section.
     headers = [
+        "Seq",
         "Name",
         "Src-Address",
         "Dst-Address",
@@ -251,115 +252,34 @@ def get_rules_view(request, filter_id):
         "Action",
         "Log",
         "Count",
+        "Enabled",
         "Tags",
     ]
 
     if not filter_id:
-        return {"headers": headers, "rows": []}
+        return {"headers": headers, "rows": [], "has_changes": False}
 
     try:
-        rules = get_all_rules_with_objects_from_filter(
-            request.user,
-            tenant_id,
-            int(filter_id),
-        )
+        baseline = load_baseline_rules(request.user, tenant_id, int(filter_id))
     except Exception as exc:
         print(f"Error fetching rules with objects for filter {filter_id}: {exc}")
-        return {"headers": headers, "rows": []}
+        return {"headers": headers, "rows": [], "has_changes": False}
 
-    rows = []
+    # The rows show the saved rules with this user's unsaved changes applied.
+    changes = get_rule_changes(request.user, int(filter_id))
+    changeset = build_rule_changeset(baseline, changes)
+    baseline_by_key = {rule["key"]: rule for rule in baseline}
+    objects_by_type, tags_by_id = _load_rule_display_objects(changeset, tenant_id)
 
-    for rule in rules:
-        try:
-            rule_obj = Rule.objects.get(id=rule["rule_id"])
-            rule_tags = list(rule_obj.get_tags())
-        except Exception as exc:
-            print(f"Error fetching tags for rule {rule['rule_id']}: {exc}")
-            rule_tags = []
-
-        source_address_objects = []
-        destination_address_objects = []
-        source_service_objects = []
-        destination_service_objects = []
-
-        for obj in rule["objects"]:
-            object_type = (obj.get("object_type") or "").lower()
-            object_id = obj.get("object_id")
-            object_name = obj.get("object_name") or ""
-            match_type = obj.get("match_type")
-
-            row_id = f"{object_type}-{object_id}" if object_type and object_id else ""
-
-            navigate_url = ""
-
-            if object_type in {"address", "addressgroup"}:
-                navigate_url = reverse("objects") + f"?object_type=addresses&expand_id={row_id}"
-
-            elif object_type in {"service", "servicegroup"}:
-                navigate_url = reverse("objects") + f"?object_type=services&expand_id={row_id}"
-
-            item = {
-                "name": object_name,
-                "row_id": row_id,
-                "navigate_url": navigate_url,
-                "hover_text": object_name,
-            }
-
-            if object_type in {"address", "addressgroup"}:
-                if match_type == "source":
-                    source_address_objects.append(item)
-                elif match_type == "destination":
-                    destination_address_objects.append(item)
-
-            elif object_type in {"service", "servicegroup"}:
-                if match_type == "source":
-                    source_service_objects.append(item)
-                elif match_type == "destination":
-                    destination_service_objects.append(item)
-
-        created_at = rule["rule_date_created"].strftime("%Y-%m-%d %H:%M") if rule["rule_date_created"] else ""
-
-        modified_at = rule["rule_date_changed"].strftime("%Y-%m-%d %H:%M") if rule["rule_date_changed"] else ""
-
-        rows.append(
-            {
-                "id": f"rule-{rule['rule_id']}",
-                "is_group": False,
-                "is_global": rule["rule_tenant_id"] == GLOBAL_TENANT_ID,
-                "can_write": can_write_tenant(request.user, rule["rule_tenant_id"]),
-                # Main row: description is no longer here.
-                "cells": [
-                    rule["rule_name"],
-                    source_address_objects,
-                    destination_address_objects,
-                    source_service_objects,
-                    destination_service_objects,
-                    rule["rule_action"],
-                    rule["rule_log_type"],
-                    str(rule["rule_hit_count"]),
-                    rule_tags,
-                ],
-                # Expandable row content.
-                "expand": [
-                    {
-                        "label": "Description",
-                        "value": rule["rule_description"] or "-",
-                    },
-                    {
-                        "label": "Created",
-                        "value": created_at or "-",
-                    },
-                    {
-                        "label": "Modified",
-                        "value": modified_at or "-",
-                    },
-                ],
-            }
-        )
+    rows = [
+        _rule_row(entry, baseline_by_key.get(entry["key"]), request.user, tenant_id, objects_by_type, tags_by_id)
+        for entry in changeset
+    ]
 
     return {
         "headers": headers,
         "rows": rows,
+        "has_changes": rule_changes_pending(changes),
     }
 
 
