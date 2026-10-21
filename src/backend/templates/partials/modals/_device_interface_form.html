@@ -1,0 +1,69 @@
+{% load static %}
+
+<div class="device-interface-manager">
+    <table class="device-interface-table">
+        <thead>
+            <tr>
+                <th>Name<span class="required"> *</span></th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>VRF</th>
+                <th class="device-interface-actions-column"></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for interface in interfaces %}
+            <tr data-interface-id="{{ interface.id }}">
+                <td title="{{ interface.name }}">
+                    {{ interface.name|default:"" }}
+                </td>
+                <td title="{{ interface.description }}">
+                    {{ interface.description|default:"" }}
+                </td>
+                <td title="{{ interface.type }}">
+                    {{ interface.type|default:"" }}
+                </td>
+                <td title="{{ interface.VRF }}">
+                    {{ interface.VRF|default:"" }}
+                </td>
+                <td class="device-interface-actions-column">
+                    <button type="button"
+                        class="actions-btn device-interface-icon-button device-interface-delete-button"
+                        id="delete-interface-draft-{{ interface.id }}" aria-label="Delete interface"
+                        title="Delete interface" onclick="removeDeviceInterfaceRow(this)">
+                        <img class="btn-icon actions-icon" src="{% static 'images/delete.svg' %}" alt=""
+                            aria-hidden="true">
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        <tfoot>
+            <tr class="device-interface-add-row">
+                <td>
+                    <input id="new-interface-name" name="new_interface_name" type="text" placeholder="Name">
+                </td>
+                <td>
+                    <input id="new-interface-description" name="new_interface_description" type="text"
+                        placeholder="Description">
+                </td>
+                <td>
+                    <input id="new-interface-type" name="new_interface_type" type="text" placeholder="Type">
+                </td>
+                <td>
+                    <input id="new-interface-vrf" name="new_interface_vrf" type="text" placeholder="VRF">
+                </td>
+                <td class="device-interface-actions-column">
+                    <button type="button" class="actions-btn device-interface-icon-button device-interface-add-button"
+                        id="add-interface-draft" aria-label="Add interface" title="Add interface"
+                        onclick="addDeviceInterfaceRow(this)">
+                        <img class="btn-icon actions-icon" src="{% static 'images/add.svg' %}" alt=""
+                            aria-hidden="true">
+                    </button>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

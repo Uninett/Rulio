@@ -1,4 +1,5 @@
 from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 
 from backend.objects.attributes.address import Address
@@ -19,6 +20,7 @@ from backend.services.attribute_objects.ip_parsing import (
     parse_ipv6_auto,
 )
 from backend.services.helper_user_tenant import require_write_tenant
+from backend.services.validation import validation_error_message
 from backend.utils.logger import set_log_level, set_up_logger
 from constants import GLOBAL_TENANT_ID
 
@@ -225,6 +227,13 @@ def update_device(*, actor, tenant_id, device_id, name=None, description=None, p
         device.platform = platform
     if type is not None:
         device.type = type
+
+    # Validates like create_device does, so a taken name gives a readable error instead of a database IntegrityError.
+    try:
+        device.full_clean()
+    except DjangoValidationError as e:
+        logger.warning(f"Device validation failed: {e.message_dict}")
+        raise ValueError(validation_error_message(e)) from e
 
     device.save()
     return device

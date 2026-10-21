@@ -1,16 +1,30 @@
 import copy
+import logging
 
 import pytest
 
+from backend.objects.attributes.address import Address
+from backend.objects.attributes.service import Service
 from backend.services.attribute_objects.create_attribute_objects import get_or_create_address
 from backend.services.config_generation.generate_config import (
+    GenerationDiagnostic,
+    Policy,
     PolicyRule,
     PolicyRuleMember,
+    _dedupe_diagnostics,
+    _exception_to_diagnostic,
+    _log_records_to_diagnostics,
     generate_config,
     generate_multi_policy_config,
     merge_policies,
 )
-from backend.services.config_generation.platform_capabilities import get_platform_capabilities
+from backend.services.config_generation.icmp import get_aerleon_icmp_code, get_aerleon_icmp_type
+from backend.services.config_generation.platform_capabilities import (
+    PlatformCapabilities,
+    get_platform_capabilities,
+    resolve_platform_direction,
+    vendor_supports,
+)
 from backend.utils.logger import clear_logs, set_up_logger
 from backend.utils.write_to_file import write_configuration_to_file
 from constants import TEST_LOGPATH
@@ -353,3 +367,522 @@ class TestGenerateConfig:
         assert shading_warnings, f"Expected shading warning, got: {result.warnings}"
         assert any("is shaded by" in warning.message for warning in shading_warnings)
         assert any(warning.term_name is not None and warning.shaded_by_name is not None for warning in shading_warnings)
+
+
+def _address(name: str, network: str) -> Address:
+    return Address(name=name, tenant_id=1, addr_type="network", ipv4_type="standard", ipv4Network=network)
+
+
+def _service(
+    name: str,
+    protocol: str,
+    port: int | None = None,
+    icmp_type: int | None = None,
+    icmp_code: int | None = None,
+) -> Service:
+    return Service(
+        name=name,
+        tenant_id=1,
+        protocol=protocol,
+        port_start=port,
+        port_end=port,
+        icmp_type=icmp_type,
+        icmp_code=icmp_code,
+    )
+
+
+def _rule(name: str, members: list[PolicyRuleMember], rule_sequence: int = 1, action: str = "accept") -> PolicyRule:
+    return PolicyRule(
+        actor=None,
+        tenant_id=1,
+        name=name,
+        action=action,
+        rule_sequence=rule_sequence,
+        members=members,
+    )
+
+
+def _policy(rules: list[PolicyRule], vendor: str = "juniper", name: str = "Unit_Policy", **kwargs) -> Policy:
+    return Policy(actor=None, tenant_id=1, name=name, rules=rules, vendor=vendor, **kwargs)
+
+
+def _source_address_rule(name: str, rule_sequence: int = 1, network: str = "10.0.0.0/8") -> PolicyRule:
+    return _rule(name, [PolicyRuleMember("address", "source", _address("Net", network))], rule_sequence)
+
+
+def _split_rule(name: str, rule_sequence: int = 1) -> PolicyRule:
+    return _rule(
+        name,
+        [
+            PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80)),
+            PolicyRuleMember("service", "destination", _service("DNS", "udp", 53)),
+        ],
+        rule_sequence,
+    )
+
+
+class TestPolicyRuleMember:
+    def test_normalizes_type_and_direction(self):
+        member = PolicyRuleMember(" Address ", " SOURCE ", _address("Net", "10.0.0.0/8"))
+
+        assert member.type == "address"
+        assert member.direction == "source"
+
+    def test_rejects_invalid_type(self):
+        with pytest.raises(ValueError, match="Invalid obj_type"):
+            PolicyRuleMember("network", "source", _address("Net", "10.0.0.0/8"))
+
+    def test_rejects_invalid_direction(self):
+        with pytest.raises(ValueError, match="Invalid direction"):
+            PolicyRuleMember("address", "inbound", _address("Net", "10.0.0.0/8"))
+
+    def test_rejects_object_of_wrong_class(self):
+        with pytest.raises(TypeError, match="must be of type Address, got Service"):
+            PolicyRuleMember("address", "source", _service("WEB", "tcp", 80))
+
+
+class TestPolicyRuleBuild:
+    @pytest.mark.parametrize(
+        ("overrides", "message"),
+        [
+            ({"name": "   "}, "name cannot be empty"),
+            ({"action": ""}, "action cannot be empty"),
+            ({"rule_sequence": 0}, "rule_sequence must be >= 1"),
+            ({"members": None}, "members cannot be None"),
+            ({"members": []}, "at least one member"),
+        ],
+    )
+    def test_rejects_invalid_input(self, overrides, message):
+        kwargs = {
+            "actor": None,
+            "tenant_id": 1,
+            "name": "Valid_Rule",
+            "action": "accept",
+            "rule_sequence": 1,
+            "members": [PolicyRuleMember("address", "source", _address("Net", "10.0.0.0/8"))],
+        }
+        kwargs.update(overrides)
+
+        with pytest.raises(ValueError, match=message):
+            PolicyRule(**kwargs)
+
+    def test_normalizes_name_and_action(self):
+        rule = _rule(
+            " Allow web ",
+            [PolicyRuleMember("address", "source", _address("Net", "10.0.0.0/8"))],
+            action=" ACCEPT ",
+        )
+
+        assert rule.name == "Allow_web"
+        assert rule.action == "accept"
+
+    def test_rendered_term_name_is_truncated_and_keeps_suffix(self):
+        rule = _source_address_rule("X" * 80)
+
+        assert rule.rendered_term_name() == "X" * 62
+        assert rule.rendered_term_name("tcp") == "X" * 58 + "-tcp"
+
+    @pytest.mark.parametrize(
+        ("direction", "expected_keys"),
+        [
+            ("source", ["source-address"]),
+            ("destination", ["destination-address"]),
+            ("reverse_source", ["reverse-source-address"]),
+            ("reverse_destination", ["reverse-destination-address"]),
+            ("any", ["source-address", "destination-address"]),
+        ],
+    )
+    def test_address_direction_maps_to_term_fields(self, direction, expected_keys):
+        result = _rule("Dir", [PolicyRuleMember("address", direction, _address("My Net", "10.0.0.0/8"))]).build(
+            "juniper"
+        )
+
+        term = result.terms[0]
+        address_keys = sorted(key for key in term if key.endswith("-address"))
+        assert address_keys == sorted(expected_keys)
+        for key in expected_keys:
+            assert term[key] == ["My_Net"]
+        assert result.networks == {"My_Net": {"values": ["10.0.0.0/8"]}}
+
+    def test_duplicate_members_are_deduplicated(self):
+        address = _address("Net", "10.0.0.0/8")
+        result = _rule(
+            "Dupes",
+            [PolicyRuleMember("address", "source", address), PolicyRuleMember("address", "source", address)],
+        ).build("juniper")
+
+        assert result.terms[0]["source-address"] == ["Net"]
+
+    @pytest.mark.parametrize(
+        ("vendor", "expected_fields"),
+        [
+            ("juniper", {"port": ["WEB"]}),
+            ("cisco", {"source-port": ["WEB"], "destination-port": ["WEB"]}),
+        ],
+    )
+    def test_any_service_direction_per_vendor(self, vendor, expected_fields):
+        result = _rule("Any_Svc", [PolicyRuleMember("service", "any", _service("WEB", "tcp", 80))]).build(vendor)
+
+        assert result.warnings == []
+        term = result.terms[0]
+        port_fields = {key: term[key] for key in ("port", "source-port", "destination-port") if key in term}
+        assert port_fields == expected_fields
+
+    def test_any_service_direction_skipped_for_unsupported_vendor(self):
+        result = _rule("Any_Svc", [PolicyRuleMember("service", "any", _service("WEB", "tcp", 80))]).build("aruba")
+
+        assert result.terms == []
+        assert any("contains service direction 'any'" in warning for warning in result.warnings)
+
+    def test_protocols_with_different_ports_are_split(self):
+        result = _split_rule("Split").build("juniper")
+
+        assert [term["name"] for term in result.terms] == ["Split-tcp", "Split-udp"]
+        assert result.terms[0]["protocol"] == "tcp"
+        assert result.terms[0]["destination-port"] == ["WEB"]
+        assert result.terms[1]["protocol"] == "udp"
+        assert result.terms[1]["destination-port"] == ["DNS"]
+        assert any("was split into multiple terms" in warning for warning in result.warnings)
+
+    def test_protocols_with_same_ports_share_one_term(self):
+        result = _rule(
+            "Shared",
+            [
+                PolicyRuleMember("service", "destination", _service("DNS_TCP", "tcp", 53)),
+                PolicyRuleMember("service", "destination", _service("DNS_UDP", "udp", 53)),
+            ],
+        ).build("juniper")
+
+        assert result.warnings == []
+        assert len(result.terms) == 1
+        assert result.terms[0]["protocol"] == ["tcp", "udp"]
+        assert result.terms[0]["destination-port"] == ["DNS_TCP", "DNS_UDP"]
+
+    def test_icmpv6_type_is_mapped(self):
+        result = _rule(
+            "Ping6", [PolicyRuleMember("service", "destination", _service("Echo6", "icmpv6", icmp_type=128))]
+        ).build("juniper")
+
+        assert result.warnings == []
+        assert result.terms[0]["protocol"] == "icmpv6"
+        assert result.terms[0]["icmp-type"] == ["echo-request"]
+
+    def test_icmp_without_type_or_code_matches_protocol_only(self):
+        result = _rule("Any_ICMP", [PolicyRuleMember("service", "destination", _service("ICMP", "icmp"))]).build(
+            "juniper"
+        )
+
+        assert result.warnings == []
+        assert result.terms == [{"name": "Any_ICMP", "action": "accept", "protocol": "icmp"}]
+
+    @pytest.mark.parametrize(
+        ("service", "message"),
+        [
+            (_service("Code_Only", "icmp", icmp_code=3), "contains ICMP code without ICMP type"),
+            (_service("Bad_Type", "icmp", icmp_type=99), "has unsupported ICMP type '99'"),
+        ],
+    )
+    def test_invalid_icmp_service_is_skipped(self, service, message):
+        result = _rule("Bad_ICMP", [PolicyRuleMember("service", "destination", service)]).build("juniper")
+
+        assert result.terms == []
+        assert any(message in warning for warning in result.warnings)
+
+    def test_multiple_icmp_types_in_one_term_are_skipped(self):
+        result = _rule(
+            "Multi_ICMP",
+            [
+                PolicyRuleMember("service", "destination", _service("Echo", "icmp", icmp_type=8)),
+                PolicyRuleMember("service", "destination", _service("Reply", "icmp", icmp_type=0)),
+            ],
+        ).build("juniper")
+
+        assert result.terms == []
+        assert any("multiple ICMP type/code matches" in warning for warning in result.warnings)
+
+    def test_icmp_and_icmpv6_are_split(self):
+        result = _rule(
+            "Mixed_ICMP",
+            [
+                PolicyRuleMember("service", "destination", _service("Echo", "icmp", icmp_type=8)),
+                PolicyRuleMember("service", "destination", _service("Echo6", "icmpv6", icmp_type=128)),
+            ],
+        ).build("juniper")
+
+        assert [(term["name"], term["protocol"]) for term in result.terms] == [
+            ("Mixed_ICMP-icmp", "icmp"),
+            ("Mixed_ICMP-icmpv6", "icmpv6"),
+        ]
+        assert all(term["icmp-type"] == ["echo-request"] for term in result.terms)
+
+
+class TestPolicy:
+    def test_rejects_duplicate_rule_sequences(self):
+        with pytest.raises(ValueError, match="rule_sequence values must be unique"):
+            _policy([_source_address_rule("A", 1), _source_address_rule("B", 1)])
+
+    def test_rejects_non_contiguous_rule_sequences(self):
+        with pytest.raises(ValueError, match="contiguous and 1-indexed"):
+            _policy([_source_address_rule("A", 1), _source_address_rule("B", 3)])
+
+    def test_rejects_names_that_collide_after_truncation(self):
+        with pytest.raises(ValueError, match="Rendered rule term names must be unique"):
+            _policy([_source_address_rule("A" * 70, 1), _source_address_rule("A" * 70 + "B", 2)])
+
+    def test_rejects_conflicting_network_definitions(self):
+        with pytest.raises(ValueError, match="Duplicate network definition with different values: Net"):
+            _policy([_source_address_rule("A", 1, "10.0.0.0/8"), _source_address_rule("B", 2, "172.16.0.0/12")])
+
+    def test_rejects_conflicting_service_definitions(self):
+        rules = [
+            _rule("A", [PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80))], 1),
+            _rule("B", [PolicyRuleMember("service", "destination", _service("WEB", "tcp", 8080))], 2),
+        ]
+
+        with pytest.raises(ValueError, match="Duplicate service definition with different values: WEB"):
+            _policy(rules)
+
+    def test_shared_objects_across_rules_are_allowed(self):
+        policy = _policy([_source_address_rule("A", 1), _source_address_rule("B", 2)])
+
+        assert policy.networks == {"networks": {"Net": {"values": ["10.0.0.0/8"]}}}
+        assert [term["name"] for term in policy.YAMLConfig["filters"][0]["terms"]] == ["A", "B"]
+
+    def test_terms_are_ordered_by_rule_sequence(self):
+        policy = _policy([_source_address_rule("Second", 2), _source_address_rule("First", 1)])
+
+        assert [term["name"] for term in policy.YAMLConfig["filters"][0]["terms"]] == ["First", "Second"]
+
+    @pytest.mark.parametrize(
+        ("target_spec", "expected_target"),
+        [(None, "My_Policy"), ("", "My_Policy"), ([], "My_Policy"), ("mixed", "mixed")],
+    )
+    def test_filter_header_target(self, target_spec, expected_target):
+        policy = _policy([_source_address_rule("A")], vendor="Cisco", name="My Policy", target_spec=target_spec)
+
+        assert policy.name == "My_Policy"
+        assert policy.YAMLConfig["filename"] == "My_Policy"
+        assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {"cisco": expected_target}
+
+    def test_set_vendor_rebuilds_terms(self):
+        policy = _policy([_rule("Any_Svc", [PolicyRuleMember("service", "any", _service("WEB", "tcp", 80))])])
+        assert policy.YAMLConfig["filters"][0]["terms"][0]["port"] == ["WEB"]
+
+        policy.set_vendor("cisco", "mixed")
+
+        term = policy.YAMLConfig["filters"][0]["terms"][0]
+        assert "port" not in term
+        assert term["source-port"] == ["WEB"]
+        assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {"cisco": "mixed"}
+
+    def test_split_warnings_are_aggregated(self):
+        policy = _policy([_split_rule("Split_A", 1), _source_address_rule("Plain", 2), _split_rule("Split_B", 3)])
+
+        assert [warning.code for warning in policy.build_warnings] == ["rule_split"]
+        assert "sequences 1 and 3" in policy.build_warnings[0].message
+
+    @pytest.mark.parametrize(
+        ("sequences", "expected"),
+        [
+            ([4], "sequence 4 "),
+            ([3, 1, 3], "sequences 1 and 3 "),
+            ([5, 1, 2], "sequences 1, 2, and 5 "),
+        ],
+    )
+    def test_aggregated_split_warning_formatting(self, sequences, expected):
+        warning = Policy._build_aggregated_rule_split_warning(sequences)
+
+        assert warning.code == "rule_split"
+        assert warning.message.startswith(expected)
+
+    def test_skipped_terms_are_reported_as_build_warnings(self):
+        policy = _policy(
+            [_rule("Bad", [PolicyRuleMember("service", "destination", _service("C", "icmp", icmp_code=3))])]
+        )
+
+        assert [warning.code for warning in policy.build_warnings] == ["build_warning"]
+        assert policy.YAMLConfig["filters"][0]["terms"] == []
+
+
+class TestGenerateConfigOutput:
+    def test_accept_and_deny_actions_render_for_juniper(self):
+        policy = _policy(
+            [
+                _rule("Allow_It", [PolicyRuleMember("address", "source", _address("Allowed", "10.0.0.0/8"))], 1),
+                _rule(
+                    "Deny_It",
+                    [PolicyRuleMember("address", "source", _address("Denied", "172.16.0.0/12"))],
+                    2,
+                    action="deny",
+                ),
+            ]
+        )
+
+        result = generate_config(policy)
+
+        assert result.success, [error.message for error in result.errors]
+        config = next(iter(result.config.values()))
+        allow_term, deny_term = config.split("term Allow_It")[1].split("term Deny_It")
+        assert "then accept;" in allow_term
+        assert "discard;" in deny_term
+        assert "10.0.0.0/8" in allow_term
+        assert "172.16.0.0/12" in deny_term
+
+    def test_split_rule_renders_one_term_per_protocol(self):
+        result = generate_config(_policy([_split_rule("Split")]))
+
+        assert result.success, [error.message for error in result.errors]
+        config = next(iter(result.config.values()))
+        tcp_term, udp_term = config.split("term Split-tcp")[1].split("term Split-udp")
+        assert "protocol tcp;" in tcp_term
+        assert "destination-port 80;" in tcp_term
+        assert "protocol udp;" in udp_term
+        assert "destination-port 53;" in udp_term
+        assert [warning.code for warning in result.warnings] == ["rule_split"]
+
+    def test_policy_without_terms_returns_error_instead_of_raising(self):
+        policy = _policy(
+            [_rule("Bad", [PolicyRuleMember("service", "destination", _service("C", "icmp", icmp_code=3))])]
+        )
+
+        result = generate_config(policy)
+
+        assert result.config is None
+        assert not result.success
+        assert any(error.code == "aerleon_error" and "no terms found" in error.message for error in result.errors)
+        assert [warning.code for warning in result.warnings if warning.source == "rulio"] == ["build_warning"]
+
+
+class TestMergePolicies:
+    def test_rejects_empty_list(self):
+        with pytest.raises(ValueError, match="No policies provided"):
+            merge_policies([])
+
+    def test_orders_filters_by_policy_sequence(self):
+        first = _policy([_source_address_rule("From_First")], name="First", policy_sequence=1)
+        second = _policy([_source_address_rule("From_Second")], name="Second", policy_sequence=2)
+
+        merged = merge_policies([second, first])
+
+        assert [f["terms"][0]["name"] for f in merged.YAMLConfig["filters"]] == ["From_First", "From_Second"]
+
+    def test_renames_merged_policy(self):
+        merged = merge_policies([_policy([_source_address_rule("A")])], name="Merged Policy")
+
+        assert merged.name == "Merged_Policy"
+        assert merged.YAMLConfig["filename"] == "Merged_Policy"
+
+    def test_does_not_mutate_input_policies(self):
+        first = _policy([_source_address_rule("A")], name="First", policy_sequence=1)
+        second = _policy([_split_rule("B")], name="Second", policy_sequence=2)
+
+        merged = merge_policies([first, second])
+
+        assert len(merged.YAMLConfig["filters"]) == 2
+        assert len(first.YAMLConfig["filters"]) == 1
+        assert first.build_warnings == []
+        assert [warning.code for warning in merged.build_warnings] == ["rule_split"]
+
+    def test_rejects_conflicting_networks_across_policies(self):
+        first = _policy([_source_address_rule("A", network="10.0.0.0/8")], name="First", policy_sequence=1)
+        second = _policy([_source_address_rule("B", network="172.16.0.0/12")], name="Second", policy_sequence=2)
+
+        with pytest.raises(ValueError, match="Duplicate network definition with different values: Net"):
+            merge_policies([first, second])
+
+    def test_rejects_conflicting_services_across_policies(self):
+        first = _policy(
+            [_rule("A", [PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80))])],
+            name="First",
+            policy_sequence=1,
+        )
+        second = _policy(
+            [_rule("B", [PolicyRuleMember("service", "destination", _service("WEB", "tcp", 8080))])],
+            name="Second",
+            policy_sequence=2,
+        )
+
+        with pytest.raises(ValueError, match="Duplicate service definition with different values: WEB"):
+            merge_policies([first, second])
+
+
+class TestGenerationDiagnostics:
+    @staticmethod
+    def _record(level: int, message: str) -> logging.LogRecord:
+        return logging.LogRecord("aerleon", level, __file__, 0, message, None, None)
+
+    def test_log_records_are_classified(self):
+        warnings, errors = _log_records_to_diagnostics(
+            [
+                self._record(logging.INFO, "ignored"),
+                self._record(logging.WARNING, "Term_B is shaded by Term_A"),
+                self._record(logging.WARNING, "  something odd  "),
+                self._record(logging.ERROR, "broken"),
+            ]
+        )
+
+        assert [(w.code, w.term_name, w.shaded_by_name, w.message) for w in warnings] == [
+            ("shading", "Term_B", "Term_A", "Term_B is shaded by Term_A"),
+            ("aerleon_warning", None, None, "something odd"),
+        ]
+        assert [(e.code, e.level, e.message) for e in errors] == [("aerleon_error", "error", "broken")]
+
+    def test_dedupe_diagnostics_preserves_order(self):
+        first = GenerationDiagnostic(source="rulio", level="warning", code="a", message="one")
+        second = GenerationDiagnostic(source="rulio", level="warning", code="b", message="two")
+
+        assert _dedupe_diagnostics([first, second, first]) == [first, second]
+
+    def test_exception_without_message_uses_class_name(self):
+        assert _exception_to_diagnostic(ValueError("")).message == "ValueError"
+        assert _exception_to_diagnostic(ValueError(" boom ")).message == "boom"
+
+
+class TestIcmpMapping:
+    @pytest.mark.parametrize(
+        ("protocol", "icmp_type", "expected"),
+        [("icmp", 8, "echo-request"), (" ICMP ", 0, "echo-reply"), ("icmpv6", 128, "echo-request")],
+    )
+    def test_known_types(self, protocol, icmp_type, expected):
+        assert get_aerleon_icmp_type(protocol, icmp_type) == expected
+
+    @pytest.mark.parametrize(("protocol", "icmp_type"), [("tcp", 8), ("icmp", 99), ("icmpv6", 8)])
+    def test_unknown_types_raise(self, protocol, icmp_type):
+        with pytest.raises(ValueError):
+            get_aerleon_icmp_type(protocol, icmp_type)
+
+    @pytest.mark.parametrize("icmp_code", [0, 255])
+    def test_code_bounds_accepted(self, icmp_code):
+        assert get_aerleon_icmp_code(icmp_code) == str(icmp_code)
+
+    @pytest.mark.parametrize("icmp_code", [-1, 256])
+    def test_code_out_of_range_raises(self, icmp_code):
+        with pytest.raises(ValueError, match="between 0 and 255"):
+            get_aerleon_icmp_code(icmp_code)
+
+
+class TestPlatformCapabilities:
+    def test_vendor_lookup_is_normalized(self):
+        assert get_platform_capabilities(" JUNIPER ") == get_platform_capabilities("juniper")
+
+    def test_unknown_vendor_gets_defaults(self):
+        assert get_platform_capabilities("unknown_vendor") == PlatformCapabilities()
+
+    def test_unknown_capability_raises(self):
+        with pytest.raises(ValueError, match="Unknown platform capability"):
+            vendor_supports("juniper", "supports_teleportation")
+
+    @pytest.mark.parametrize(
+        ("vendor", "direction", "expected"),
+        [("juniper", "IN", "in"), ("gce", "out", "EGRESS"), ("msmpc", "in", "ingress")],
+    )
+    def test_resolve_direction(self, vendor, direction, expected):
+        assert resolve_platform_direction(vendor, direction) == expected
+
+    @pytest.mark.parametrize(
+        ("vendor", "direction", "message"),
+        [("juniper", "both", "Unknown direction"), ("cisco", "in", "does not support")],
+    )
+    def test_resolve_direction_errors(self, vendor, direction, message):
+        with pytest.raises(ValueError, match=message):
+            resolve_platform_direction(vendor, direction)

@@ -71,6 +71,14 @@ def get_tags_view(request):
             "rows": [],
         }
 
+    tags = sorted(
+        tags,
+        key=lambda tag: (
+            (tag.name or "").casefold() != "global",
+            (tag.name or "").casefold(),
+        ),
+    )
+
     headers = ["Name", "Description", ""]
 
     rows = []

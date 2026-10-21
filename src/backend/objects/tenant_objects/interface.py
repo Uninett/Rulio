@@ -13,8 +13,14 @@ class Interface(TaggableMixin, models.Model):
     description = models.TextField(blank=True)
 
     class Meta:
+        # Deferred, so the constraint is checked when the transaction commits instead of after each row.
+        # This lets interface names be swapped within one save.
         constraints: ClassVar = [
-            models.UniqueConstraint(fields=["device", "name"], name="unique_interface_name_per_device"),
+            models.UniqueConstraint(
+                fields=["device", "name"],
+                name="unique_interface_name_per_device",
+                deferrable=models.Deferrable.DEFERRED,
+            ),
         ]
 
     def __str__(self):
