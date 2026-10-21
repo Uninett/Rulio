@@ -425,3 +425,61 @@ def _require_unique_name(name: str, key: str | None, filter_id: int, baseline: l
     hidden_rules = Rule.objects.filter(filter_id=filter_id).exclude(id__in=[rule["rule_id"] for rule in baseline])
     if hidden_rules.filter(name=name).exists():
         raise error
+
+
+"""
+====================================================================
+Staging Changes
+====================================================================
+"""
+
+
+def stage_rule_create(*, actor, tenant_id: int, filter_id: int, fields: dict) -> str:
+    require_write_tenant(actor, tenant_id)
+    baseline, _baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
+
+    validate_rule_fields(fields, tenant_id)
+    _require_unique_name(fields["name"], None, filter_id, baseline, changes)
+
+    key = f"ruledraft-{changes['next_new_id']}"
+    changes["next_new_id"] += 1
+    changes["created"][key] = fields
+    if changes["order"] is not None:
+        changes["order"].append(key)
+
+    _store_rule_changes(actor, tenant_id, filter_id, changes)
+    return key
+
+
+# Stores the new fields of a row. A saved rule edited back to its saved values is dropped from the draft.
+def _set_row_fields(key: str, fields: dict, baseline_by_key: dict, changes: dict) -> None:
+    if key in changes["created"]:
+        changes["created"][key] = fields
+    elif fields == baseline_by_key[key]["fields"]:
+        changes["updated"].pop(key, None)
+    else:
+        changes["updated"][key] = fields
+
+
+def stage_rule_update(*, actor, tenant_id: int, filter_id: int, key: str, fields: dict) -> None:
+    require_write_tenant(actor, tenant_id)
+    baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
+    _require_editable_row(actor, key, baseline_by_key, changes)
+
+    validate_rule_fields(fields, tenant_id)
+    _require_unique_name(fields["name"], key, filter_id, baseline, changes)
+
+    _set_row_fields(key, fields, baseline_by_key, changes)
+    _store_rule_changes(actor, tenant_id, filter_id, changes)
+
+
+def stage_rule_enable_toggle(*, actor, tenant_id: int, filter_id: int, key: str) -> None:
+    require_write_tenant(actor, tenant_id)
+    _baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
+    _require_editable_row(actor, key, baseline_by_key, changes)
+
+    fields = {**_effective_fields(key, baseline_by_key, changes)}
+    fields["enable"] = not fields["enable"]
+
+    _set_row_fields(key, fields, baseline_by_key, changes)
+    _store_rule_changes(actor, tenant_id, filter_id, changes)
