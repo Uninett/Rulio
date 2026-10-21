@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from django.core.exceptions import PermissionDenied
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -22,6 +23,22 @@ from backend.services.membership import (
     add_objects_to_rule,
     add_tag_to_object,
     update_objects_in_rule,
+)
+from backend.services.rule_draft import (
+    RULE_OBJECT_FIELDS,
+    RuleDraftError,
+    apply_rule_draft,
+    build_rule_changeset,
+    discard_rule_draft,
+    get_rule_changes,
+    load_baseline_rules,
+    parse_rule_form,
+    rule_changes_pending,
+    stage_rule_create,
+    stage_rule_delete,
+    stage_rule_enable_toggle,
+    stage_rule_order,
+    stage_rule_update,
 )
 from backend.services.update import update_rule_sequence
 from backend.views.modal import get_group_options_view, get_item_options_view
@@ -90,6 +107,130 @@ def get_rules_content(request, filter_id):
             **get_tenant_context(request),
         },
     )
+
+
+# Loads the objects and tags of every rule in the changeset at once, including the previous values of changed rules.
+def _load_rule_display_objects(changeset: list[dict], tenant_id: int):
+    typed_ids = set()
+    tag_ids = set()
+    for entry in changeset:
+        for fields in (entry["fields"], entry["previous_fields"] or {}):
+            for field in RULE_OBJECT_FIELDS:
+                typed_ids.update(fields.get(field, []))
+            tag_ids.update(fields.get("tag_ids", []))
+
+    _ordered, grouped = parse_typed_ids(",".join(typed_ids))
+    objects_by_type = fetch_objects_by_type(grouped, tenant_id)
+    tags_by_id = {tag.id: tag for tag in Tag.objects.filter(id__in=tag_ids)}
+    return objects_by_type, tags_by_id
+
+
+# The object links shown in a rule's Src/Dst columns. Objects that no longer exist are left out.
+def _rule_object_items(typed_ids: list[str], objects_by_type: dict) -> list[dict]:
+    items = []
+    for typed_id in typed_ids:
+        object_type, object_id = typed_id.split("-", 1)
+        obj = objects_by_type.get(object_type, {}).get(int(object_id))
+        if obj is None:
+            continue
+
+        object_kind = "addresses" if object_type in ADDRESS_OBJECT_TYPES else "services"
+        items.append(
+            {
+                "name": obj.name,
+                "row_id": typed_id,
+                "navigate_url": reverse("objects") + f"?object_type={object_kind}&expand_id={typed_id}",
+                "hover_text": obj.name,
+            }
+        )
+    return items
+
+ 
+# The saved value of a changed cell, shown as a tooltip while differences are shown. None if the field is unchanged.
+def _rule_previous_value(entry: dict, field: str, objects_by_type: dict, tags_by_id: dict) -> str | None:
+    if field not in entry["changed_fields"]:
+        return None
+
+    value = entry["previous_fields"][field]
+    if field in RULE_OBJECT_FIELDS:
+        text = ", ".join(item["name"] for item in _rule_object_items(value, objects_by_type))
+    elif field == "tag_ids":
+        text = ", ".join(tags_by_id[tag_id].name for tag_id in value if tag_id in tags_by_id)
+    else:
+        text = value
+    return f"Was: {text or 'none'}"
+
+
+# kind tells _ruleRow.html how to render the cell: sequence, text, objects, enable or tags.
+def _rule_cell(kind: str, value, previous: str | None = None) -> dict:
+    return {"kind": kind, "value": value, "was": previous}
+
+
+# One table row for a changeset entry. saved_rule is the baseline rule, or None for a rule only created in the draft.
+def _rule_row(entry: dict, saved_rule: dict | None, user, tenant_id: int, objects_by_type: dict, tags_by_id: dict):
+    fields = entry["fields"]
+    rule_tenant_id = saved_rule["tenant_id"] if saved_rule else tenant_id
+    is_removed = entry["status"] == "removed"
+
+    def previous(field):
+        return _rule_previous_value(entry, field, objects_by_type, tags_by_id)
+
+    diff_classes = ""
+    if entry["status"] == "added":
+        diff_classes = "row-diff-added"
+    elif is_removed:
+        diff_classes = "row-diff-removed"
+    elif entry["enable_changed"]:
+        # Enabling and disabling count as an addition and a deletion, so they take precedence over yellow.
+        diff_classes = "row-diff-enabled-on" if fields["enable"] else "row-diff-enabled-off"
+    elif entry["status"] == "changed":
+        diff_classes = "row-diff-changed"
+
+    if saved_rule:
+        created_at = saved_rule["date_created"].strftime("%Y-%m-%d %H:%M") if saved_rule["date_created"] else ""
+        modified_at = saved_rule["date_changed"].strftime("%Y-%m-%d %H:%M") if saved_rule["date_changed"] else ""
+    else:
+        created_at = modified_at = "Not saved yet"
+
+    # The description is only shown in the details row, so its previous value is shown there too.
+    description = fields["description"] or "-"
+    if "description" in entry["changed_fields"]:
+        description = f"{description} (was: {entry['previous_fields']['description'] or '-'})"
+
+    return {
+        "id": entry["key"],
+        "is_group": False,
+        "is_global": rule_tenant_id == GLOBAL_TENANT_ID,
+        "can_write": can_write_tenant(user, rule_tenant_id) and not is_removed,
+        "is_removed": is_removed,
+        "diff_classes": diff_classes,
+        "enable_was": f"Was: {'Enabled' if entry['previous_fields']['enable'] else 'Disabled'}"
+        if entry["enable_changed"]
+        else None,
+        # Main row: description is no longer here.
+        "cells": [
+            _rule_cell(
+                "sequence",
+                {"current": entry["sequence"], "previous": entry["previous_sequence"], "moved": entry["moved"]},
+            ),
+            _rule_cell("text", fields["name"], previous("name")),
+            *(
+                _rule_cell("objects", _rule_object_items(fields[field], objects_by_type), previous(field))
+                for field in RULE_OBJECT_FIELDS
+            ),
+            _rule_cell("text", fields["action"], previous("action")),
+            _rule_cell("text", fields["log_type"], previous("log_type")),
+            _rule_cell("text", str(saved_rule["hit_count"]) if saved_rule else "0"),
+            _rule_cell("enable", fields["enable"]),
+            _rule_cell("tags", [tags_by_id[tag_id] for tag_id in fields["tag_ids"] if tag_id in tags_by_id], previous("tag_ids")),
+        ],
+        # Expandable row content.
+        "expand": [
+            {"label": "Description", "value": description},
+            {"label": "Created", "value": created_at or "-"},
+            {"label": "Modified", "value": modified_at or "-"},
+        ],
+    }
 
 
 def get_rules_view(request, filter_id):
