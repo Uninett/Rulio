@@ -627,6 +627,26 @@ Saving
 """
 
 
+# The final order of every rule in the filter. Rules the user can't see (other tenants) keep their place:
+# each stays right after the visible rule it followed in the saved order, or first if no visible rule came before it.
+def _place_hidden_rules(
+    saved_ids: list[int], visible_saved_ids: set[int], deleted_ids: set[int], visible_order: list[int]
+) -> list[int]:
+    hidden_after = {}
+    anchor = None
+    for rule_id in saved_ids:
+        if rule_id not in visible_saved_ids:
+            hidden_after.setdefault(anchor, []).append(rule_id)
+        elif rule_id not in deleted_ids:
+            anchor = rule_id
+
+    ordered_ids = list(hidden_after.get(None, []))
+    for rule_id in visible_order:
+        ordered_ids.append(rule_id)
+        ordered_ids.extend(hidden_after.get(rule_id, []))
+    return ordered_ids
+
+
 # Writes the whole draft in one transaction, so either every change is saved or none are.
 @transaction.atomic
 def apply_rule_draft(*, actor, tenant_id: int, filter_id: int) -> None:
@@ -641,6 +661,10 @@ def apply_rule_draft(*, actor, tenant_id: int, filter_id: int) -> None:
         raise RuleDraftError("The filter no longer exists.")
 
     baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
+    # Read before the deletes below, since rules other tenants own are placed relative to the saved order.
+    saved_ids = list(
+        Rule.objects.filter(filter=filter_obj).order_by("rule_sequence", "id").values_list("id", flat=True)
+    )
 
     # Rules deleted by someone else since the draft was made can't be updated or deleted again.
     for key in [*changes["updated"], *changes["deleted"]]:
@@ -663,16 +687,15 @@ def apply_rule_draft(*, actor, tenant_id: int, filter_id: int) -> None:
         created_ids[key] = rule.id
 
     if changes["order"] is not None or changes["created"] or changes["deleted"]:
-        ordered_ids = [
+        visible_order = [
             created_ids[key] if key in created_ids else baseline_by_key[key]["rule_id"]
             for key in current_rule_order(baseline, changes)
         ]
-        # Rules this user can't see (other tenants) keep their relative order after the visible ones.
-        ordered_ids += list(
-            Rule.objects.filter(filter=filter_obj)
-            .exclude(id__in=ordered_ids)
-            .order_by("rule_sequence", "id")
-            .values_list("id", flat=True)
+        ordered_ids = _place_hidden_rules(
+            saved_ids,
+            visible_saved_ids={rule["rule_id"] for rule in baseline},
+            deleted_ids={baseline_by_key[key]["rule_id"] for key in changes["deleted"]},
+            visible_order=visible_order,
         )
         for sequence, rule_id in enumerate(ordered_ids, start=1):
             Rule.objects.filter(id=rule_id).exclude(rule_sequence=sequence).update(rule_sequence=sequence)

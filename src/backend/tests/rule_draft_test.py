@@ -2,6 +2,7 @@ import pytest
 
 from backend.objects.draft import Draft
 from backend.objects.filters.rule import Rule
+from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.filter_objects.create_filter_objects import (
     create_filter,
     create_rule,
@@ -221,3 +222,28 @@ def test_discard_removes_the_draft(draft_args):
     discard_rule_draft(draft_args["actor"], draft_args["filter_id"])
 
     assert not Draft.objects.filter(user=draft_args["actor"]).exists()
+
+
+def test_saving_keeps_other_tenants_rules_in_place(superuser, draft_args, rules_filter):
+    filter_obj, (rule_a, rule_b, rule_c) = rules_filter
+    other_tenant = Tenant.objects.create(tenant_name="Other draft tenant")
+    hidden_rule = create_rule(
+        actor=superuser,
+        filter=filter_obj,
+        tenant_id=other_tenant.id,
+        name="hidden-rule",
+        description="",
+        action="accept",
+        enable=True,
+        log_type="None",
+        hit_count=0,
+    )
+    # create_rule numbers rules per tenant, so the saved order a, hidden, b, c is set directly.
+    for sequence, rule in enumerate((rule_a, hidden_rule, rule_b, rule_c), start=1):
+        Rule.objects.filter(id=rule.id).update(rule_sequence=sequence)
+
+    stage_rule_create(**draft_args, fields=rule_fields("draft-rule-new"))
+    apply_rule_draft(**draft_args)
+
+    names = list(Rule.objects.filter(filter=filter_obj).order_by("rule_sequence").values_list("name", flat=True))
+    assert names == ["draft-rule-a", "hidden-rule", "draft-rule-b", "draft-rule-c", "draft-rule-new"]
