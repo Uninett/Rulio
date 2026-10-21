@@ -523,3 +523,91 @@ def stage_rule_order(*, actor, tenant_id: int, filter_id: int, order: list[str],
             changes["moved"].append(moved_key)
 
     _store_rule_changes(actor, tenant_id, filter_id, changes)
+
+
+"""
+====================================================================
+Changeset (the differences between the saved rules and the draft)
+====================================================================
+"""
+
+
+# Builds one entry per rule, in display order. Removed rules are placed where they were in the saved order.
+# Entries only hold plain values, so the changeset can be stored as JSON.
+def build_rule_changeset(baseline: list[dict], changes: dict) -> list[dict]:
+    baseline_by_key = {rule["key"]: rule for rule in baseline}
+    baseline_sequence = {rule["key"]: index for index, rule in enumerate(baseline, start=1)}
+    order = current_rule_order(baseline, changes)
+    visible = set(order)
+    moved = set(changes["moved"])
+
+    # Each removed rule is shown just before the next saved rule that is still there.
+    removed_before = {}
+    pending_removed = []
+    for rule in baseline:
+        if rule["key"] in visible:
+            if pending_removed:
+                removed_before[rule["key"]] = pending_removed
+                pending_removed = []
+        else:
+            pending_removed.append(rule["key"])
+    trailing_removed = pending_removed
+
+    def removed_entry(key):
+        return {
+            "key": key,
+            "status": "removed",
+            "fields": baseline_by_key[key]["fields"],
+            "previous_fields": baseline_by_key[key]["fields"],
+            "changed_fields": [],
+            "enable_changed": False,
+            "sequence": None,
+            "previous_sequence": baseline_sequence[key],
+            "moved": False,
+        }
+
+    changeset = []
+    for sequence, key in enumerate(order, start=1):
+        changeset.extend(removed_entry(removed_key) for removed_key in removed_before.get(key, []))
+
+        if key in changes["created"]:
+            changeset.append(
+                {
+                    "key": key,
+                    "status": "added",
+                    "fields": changes["created"][key],
+                    "previous_fields": None,
+                    "changed_fields": [],
+                    "enable_changed": False,
+                    "sequence": sequence,
+                    "previous_sequence": None,
+                    "moved": False,
+                }
+            )
+            continue
+
+        previous_fields = baseline_by_key[key]["fields"]
+        fields = changes["updated"].get(key, previous_fields)
+        changed_fields = [
+            field for field in RULE_FIELDS if field != "enable" and fields[field] != previous_fields[field]
+        ]
+        enable_changed = fields["enable"] != previous_fields["enable"]
+        # A sequence change only counts for the rule that was dragged, not the rules it pushed along.
+        was_moved = key in moved and sequence != baseline_sequence[key]
+
+        changeset.append(
+            {
+                "key": key,
+                "status": "changed" if changed_fields or enable_changed or was_moved else "unchanged",
+                "fields": fields,
+                "previous_fields": previous_fields,
+                "changed_fields": changed_fields,
+                "enable_changed": enable_changed,
+                "sequence": sequence,
+                "previous_sequence": baseline_sequence[key],
+                "moved": was_moved,
+            }
+        )
+
+    changeset.extend(removed_entry(removed_key) for removed_key in trailing_removed)
+    return changeset
