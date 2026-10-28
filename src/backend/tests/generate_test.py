@@ -70,9 +70,7 @@ class TestGenerateConfig:
 
             result = generate_config(vendor_policy)
             if not result.success:
-                generation_failures.append(
-                    f"{vendor}: {[error.message for error in result.errors]}"
-                )
+                generation_failures.append(f"{vendor}: {[error.message for error in result.errors]}")
                 generated_outputs[vendor] = {"text": "", "result": result}
                 continue
 
@@ -151,9 +149,7 @@ class TestGenerateConfig:
         for policy in (built_address_policy, built_address_group_policy):
             policy.set_vendor("juniper")
             network_values = [
-                value
-                for definition in policy.networks["networks"].values()
-                for value in definition["values"]
+                value for definition in policy.networks["networks"].values() for value in definition["values"]
             ]
 
             assert "ff00::/120" in network_values
@@ -768,9 +764,7 @@ class TestPolicy:
         [(None, "My_Policy"), ([], "My_Policy"), (["noverbose"], "My_Policy noverbose")],
     )
     def test_filter_header_target(self, target_options, expected_target):
-        policy = _policy(
-            [_source_address_rule("A")], vendor="Cisco", name="My Policy", target_options=target_options
-        )
+        policy = _policy([_source_address_rule("A")], vendor="Cisco", name="My Policy", target_options=target_options)
 
         assert policy.name == "My_Policy"
         assert policy.YAMLConfig["filename"] == "My_Policy"
@@ -851,6 +845,20 @@ class TestGenerateConfigOutput:
         assert "protocol udp;" in udp_term
         assert "destination-port 53;" in udp_term
         assert [warning.code for warning in result.warnings] == ["rule_split"]
+
+    def test_service_name_with_spaces_keeps_port_match(self):
+        policy = _policy(
+            [_rule("Allow_SSH", [PolicyRuleMember("service", "destination", _service("Secure Shell", "tcp", 22))])]
+        )
+
+        assert policy.YAMLConfig["filters"][0]["terms"][0]["destination-port"] == ["Secure_Shell"]
+        assert "Secure_Shell" in policy.services["services"]
+
+        result = generate_config(policy)
+
+        assert result.success, [error.message for error in result.errors]
+        assert not [warning for warning in result.warnings if "Unrecognized value format" in warning.message]
+        assert "destination-port 22;" in "\n".join(result.config.values())
 
     def test_policy_without_terms_returns_error_instead_of_raising(self):
         policy = _policy(
