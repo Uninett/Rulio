@@ -20,6 +20,7 @@ from backend.services.config_generation.generate_config import (
 )
 from backend.services.config_generation.icmp import get_aerleon_icmp_code, get_aerleon_icmp_type
 from backend.services.config_generation.platform_capabilities import (
+    PLATFORM_CAPABILITIES,
     PlatformCapabilities,
     get_platform_capabilities,
     resolve_platform_direction,
@@ -996,3 +997,126 @@ class TestPlatformCapabilities:
     def test_resolve_direction_errors(self, vendor, direction, message):
         with pytest.raises(ValueError, match=message):
             resolve_platform_direction(vendor, direction)
+
+
+IPV6_VENDORS = sorted(vendor for vendor, capabilities in PLATFORM_CAPABILITIES.items() if capabilities.supports_ipv6)
+
+# Vendors whose target needs more than a filter name to generate at all.
+IPV6_TEST_TARGET_SPECS = {
+    "fortigate": "from-zone internal to-zone external",
+    "paloalto": "from-zone internal to-zone external",
+    "ipset": "INPUT ACCEPT",
+    "iptables": "INPUT ACCEPT",
+    "speedway": "INPUT ACCEPT",
+    "nftables": "INPUT",
+    "windows_advfirewall": "out",
+    "juniperevo": "Unit_Policy ingress",
+}
+
+
+def _dual_stack_address(name: str = "Dual_Stack") -> Address:
+    return Address(
+        name=name,
+        tenant_id=1,
+        addr_type="network",
+        ipv4_type="standard",
+        ipv4Network="192.0.2.0/24",
+        ipv6_type="standard",
+        ipv6Network="2001:db8:1::/48",
+    )
+
+
+def _ipv6_address(name: str = "Only_V6") -> Address:
+    return Address(name=name, tenant_id=1, addr_type="network", ipv6_type="standard", ipv6Network="2001:db8:1::/48")
+
+
+def _address_policy(address: Address, vendor: str, target_spec: str | None = None, **kwargs) -> Policy:
+    rule = _rule(
+        "Web",
+        [
+            PolicyRuleMember("address", "destination", address),
+            PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80)),
+        ],
+    )
+    return _policy([rule], vendor=vendor, target_spec=target_spec, **kwargs)
+
+
+def _header_targets(policy: Policy) -> list[dict]:
+    return [filter_config["header"]["targets"] for filter_config in policy.YAMLConfig["filters"]]
+
+
+class TestIPv6TargetFamilies:
+    @pytest.mark.parametrize("vendor", IPV6_VENDORS)
+    def test_dual_stack_generates_both_families(self, vendor):
+        policy = _address_policy(_dual_stack_address(), vendor, IPV6_TEST_TARGET_SPECS.get(vendor))
+
+        result = generate_config(policy)
+
+        assert result.success, [error.message for error in result.errors]
+        generated_text = "\n".join(result.config.values())
+        assert "192.0.2." in generated_text
+        assert "2001:db8:1:" in generated_text
+
+    @pytest.mark.parametrize(
+        ("vendor", "target_spec", "address", "expected_targets"),
+        [
+            ("juniper", None, _dual_stack_address(), ["Unit_Policy mixed"]),
+            ("cisco", None, _dual_stack_address(), ["Unit_Policy mixed"]),
+            ("cisco", None, _ipv6_address(), ["Unit_Policy inet6"]),
+            ("cisco", None, _address("V4", "10.0.0.0/8"), ["Unit_Policy"]),
+            ("juniperevo", "Unit_Policy ingress", _dual_stack_address(), ["Unit_Policy mixed ingress"]),
+            ("nftables", "INPUT", _dual_stack_address(), ["mixed INPUT"]),
+            ("nftables", "INPUT", _address("V4", "10.0.0.0/8"), ["inet INPUT"]),
+            (
+                "paloalto",
+                "from-zone internal to-zone external",
+                _dual_stack_address(),
+                ["from-zone internal to-zone external mixed"],
+            ),
+            ("iptables", "INPUT ACCEPT", _dual_stack_address(), ["INPUT ACCEPT", "INPUT ACCEPT inet6"]),
+            ("iptables", "INPUT ACCEPT", _ipv6_address(), ["INPUT ACCEPT inet6"]),
+            ("windows_advfirewall", "out", _dual_stack_address(), ["out", "out inet6"]),
+            ("nvueapi", None, _dual_stack_address(), ["Unit_Policy inet", "Unit_Policy_ipv6 inet6"]),
+        ],
+    )
+    def test_header_targets_follow_address_families(self, vendor, target_spec, address, expected_targets):
+        policy = _address_policy(address, vendor, target_spec)
+
+        assert _header_targets(policy) == [{vendor: target} for target in expected_targets]
+
+    def test_split_filters_share_the_same_terms(self):
+        policy = _address_policy(_dual_stack_address(), "iptables", "INPUT ACCEPT")
+
+        ipv4_filter, ipv6_filter = policy.YAMLConfig["filters"]
+        assert ipv4_filter["terms"] == ipv6_filter["terms"]
+
+    @pytest.mark.parametrize(
+        ("address", "expected_target"),
+        [(_address("V4", "10.0.0.0/8"), "Edge"), (_ipv6_address(), "Edge inet6")],
+    )
+    def test_family_word_in_target_spec_is_replaced(self, address, expected_target):
+        policy = _address_policy(address, "cisco", "Edge mixed")
+
+        assert _header_targets(policy) == [{"cisco": expected_target}]
+
+    def test_merge_keeps_both_filters_of_split_policies(self):
+        first = _address_policy(_dual_stack_address(), "iptables", "INPUT ACCEPT", name="First", policy_sequence=1)
+        second = _address_policy(_dual_stack_address(), "iptables", "OUTPUT ACCEPT", name="Second", policy_sequence=2)
+
+        merged = merge_policies([first, second])
+
+        assert _header_targets(merged) == [
+            {"iptables": "INPUT ACCEPT"},
+            {"iptables": "INPUT ACCEPT inet6"},
+            {"iptables": "OUTPUT ACCEPT"},
+            {"iptables": "OUTPUT ACCEPT inet6"},
+        ]
+
+    def test_unsupported_vendor_in_merged_policy_is_an_error(self):
+        first = _address_policy(_address("V4", "10.0.0.0/8"), "ciscoasa", name="First", policy_sequence=1)
+        second = _address_policy(_ipv6_address(), "ciscoasa", name="Second", policy_sequence=2)
+
+        result = generate_config(merge_policies([first, second]))
+
+        assert result.config is None
+        assert [error.code for error in result.errors] == ["unsupported_ipv6"]
