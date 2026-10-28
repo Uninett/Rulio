@@ -1,5 +1,6 @@
 import copy
 import logging
+import string
 
 import pytest
 
@@ -36,13 +37,13 @@ clear_logs(__name__)
 
 @pytest.mark.django_db
 class TestGenerateConfig:
-    vendor_target_spec_pairs = [
+    vendor_target_options_pairs = [
         ("juniper", None),
         ("arista", None),
         ("aruba", None),
-        ("cisco", "mixed"),
+        ("cisco", None),
         ("brocade", None),
-        ("paloalto", ["from-zone", "internal", "to-zone", "external", "mixed"]),
+        ("paloalto", ["from-zone", "internal", "to-zone", "external"]),
     ]
     log_for_vendors = ["juniper"]
 
@@ -63,11 +64,9 @@ class TestGenerateConfig:
         generated_outputs = {}
         generation_failures = []
 
-        for vendor, target_spec in self.vendor_target_spec_pairs:
+        for vendor, target_options in self.vendor_target_options_pairs:
             vendor_policy = copy.deepcopy(policy)
-            if vendor == "cisco" and target_spec == "mixed":
-                target_spec = f"{vendor_policy.name} mixed"
-            vendor_policy.set_vendor(vendor, target_spec)
+            vendor_policy.set_vendor(vendor, target_options)
 
             result = generate_config(vendor_policy)
             if not result.success:
@@ -302,9 +301,9 @@ class TestGenerateConfig:
         assert "protocol tcp;" in juniper_config
 
     def test_generate_icmp_service_config(self, built_icmp_policy):
-        for vendor, target_spec in self.vendor_target_spec_pairs:
+        for vendor, target_options in self.vendor_target_options_pairs:
             vendor_policy = copy.deepcopy(built_icmp_policy)
-            vendor_policy.set_vendor(vendor, target_spec)
+            vendor_policy.set_vendor(vendor, target_options)
 
             result = generate_config(vendor_policy)
             capabilities = get_platform_capabilities(vendor)
@@ -420,11 +419,11 @@ class TestGenerateConfig:
         assert "protocol icmp;" in juniper_config
 
     def test_generate_multi_policy_config(self, built_interface_policies):
-        for vendor, target_spec in self.vendor_target_spec_pairs:
+        for vendor, target_options in self.vendor_target_options_pairs:
             vendor_policies = copy.deepcopy(built_interface_policies)
 
             for policy in vendor_policies:
-                policy.set_vendor(vendor, target_spec)
+                policy.set_vendor(vendor, target_options)
 
             result = generate_multi_policy_config(vendor_policies)
             assert result.success, [error.message for error in result.errors]
@@ -765,11 +764,13 @@ class TestPolicy:
         assert [term["name"] for term in policy.YAMLConfig["filters"][0]["terms"]] == ["First", "Second"]
 
     @pytest.mark.parametrize(
-        ("target_spec", "expected_target"),
-        [(None, "My_Policy"), ("", "My_Policy"), ([], "My_Policy"), ("mixed", "mixed")],
+        ("target_options", "expected_target"),
+        [(None, "My_Policy"), ([], "My_Policy"), (["noverbose"], "My_Policy noverbose")],
     )
-    def test_filter_header_target(self, target_spec, expected_target):
-        policy = _policy([_source_address_rule("A")], vendor="Cisco", name="My Policy", target_spec=target_spec)
+    def test_filter_header_target(self, target_options, expected_target):
+        policy = _policy(
+            [_source_address_rule("A")], vendor="Cisco", name="My Policy", target_options=target_options
+        )
 
         assert policy.name == "My_Policy"
         assert policy.YAMLConfig["filename"] == "My_Policy"
@@ -779,12 +780,12 @@ class TestPolicy:
         policy = _policy([_rule("Any_Svc", [PolicyRuleMember("service", "any", _service("WEB", "tcp", 80))])])
         assert policy.YAMLConfig["filters"][0]["terms"][0]["port"] == ["WEB"]
 
-        policy.set_vendor("cisco", "mixed")
+        policy.set_vendor("cisco")
 
         term = policy.YAMLConfig["filters"][0]["terms"][0]
         assert "port" not in term
         assert term["source-port"] == ["WEB"]
-        assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {"cisco": "mixed"}
+        assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {"cisco": "Unit_Policy"}
 
     def test_split_warnings_are_aggregated(self):
         policy = _policy([_split_rule("Split_A", 1), _source_address_rule("Plain", 2), _split_rule("Split_B", 3)])
@@ -1002,15 +1003,14 @@ class TestPlatformCapabilities:
 IPV6_VENDORS = sorted(vendor for vendor, capabilities in PLATFORM_CAPABILITIES.items() if capabilities.supports_ipv6)
 
 # Vendors whose target needs more than a filter name to generate at all.
-IPV6_TEST_TARGET_SPECS = {
-    "fortigate": "from-zone internal to-zone external",
-    "paloalto": "from-zone internal to-zone external",
-    "ipset": "INPUT ACCEPT",
-    "iptables": "INPUT ACCEPT",
-    "speedway": "INPUT ACCEPT",
-    "nftables": "INPUT",
-    "windows_advfirewall": "out",
-    "juniperevo": "Unit_Policy ingress",
+IPV6_TEST_TARGET_OPTIONS = {
+    "fortigate": ["from-zone", "internal", "to-zone", "external"],
+    "paloalto": ["from-zone", "internal", "to-zone", "external"],
+    "ipset": ["ACCEPT"],
+    "iptables": ["ACCEPT"],
+    "speedway": ["ACCEPT"],
+    "nftables": ["INPUT"],
+    "juniperevo": ["ingress"],
 }
 
 
@@ -1030,7 +1030,7 @@ def _ipv6_address(name: str = "Only_V6") -> Address:
     return Address(name=name, tenant_id=1, addr_type="network", ipv6_type="standard", ipv6Network="2001:db8:1::/48")
 
 
-def _address_policy(address: Address, vendor: str, target_spec: str | None = None, **kwargs) -> Policy:
+def _address_policy(address: Address, vendor: str, target_options: list[str] | None = None, **kwargs) -> Policy:
     rule = _rule(
         "Web",
         [
@@ -1038,7 +1038,7 @@ def _address_policy(address: Address, vendor: str, target_spec: str | None = Non
             PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80)),
         ],
     )
-    return _policy([rule], vendor=vendor, target_spec=target_spec, **kwargs)
+    return _policy([rule], vendor=vendor, target_options=target_options, **kwargs)
 
 
 def _header_targets(policy: Policy) -> list[dict]:
@@ -1048,7 +1048,7 @@ def _header_targets(policy: Policy) -> list[dict]:
 class TestIPv6TargetFamilies:
     @pytest.mark.parametrize("vendor", IPV6_VENDORS)
     def test_dual_stack_generates_both_families(self, vendor):
-        policy = _address_policy(_dual_stack_address(), vendor, IPV6_TEST_TARGET_SPECS.get(vendor))
+        policy = _address_policy(_dual_stack_address(), vendor, IPV6_TEST_TARGET_OPTIONS.get(vendor))
 
         result = generate_config(policy)
 
@@ -1058,58 +1058,57 @@ class TestIPv6TargetFamilies:
         assert "2001:db8:1:" in generated_text
 
     @pytest.mark.parametrize(
-        ("vendor", "target_spec", "address", "expected_targets"),
+        ("vendor", "target_options", "address", "expected_targets"),
         [
             ("juniper", None, _dual_stack_address(), ["Unit_Policy mixed"]),
             ("cisco", None, _dual_stack_address(), ["Unit_Policy mixed"]),
             ("cisco", None, _ipv6_address(), ["Unit_Policy inet6"]),
             ("cisco", None, _address("V4", "10.0.0.0/8"), ["Unit_Policy"]),
-            ("juniperevo", "Unit_Policy ingress", _dual_stack_address(), ["Unit_Policy mixed ingress"]),
-            ("nftables", "INPUT", _dual_stack_address(), ["mixed INPUT"]),
-            ("nftables", "INPUT", _address("V4", "10.0.0.0/8"), ["inet INPUT"]),
+            ("juniperevo", ["ingress"], _dual_stack_address(), ["Unit_Policy mixed ingress"]),
+            ("nftables", ["INPUT"], _dual_stack_address(), ["mixed INPUT"]),
+            ("nftables", ["INPUT"], _address("V4", "10.0.0.0/8"), ["inet INPUT"]),
             (
                 "paloalto",
-                "from-zone internal to-zone external",
+                ["from-zone", "internal", "to-zone", "external"],
                 _dual_stack_address(),
                 ["from-zone internal to-zone external mixed"],
             ),
-            ("iptables", "INPUT ACCEPT", _dual_stack_address(), ["INPUT ACCEPT", "INPUT ACCEPT inet6"]),
-            ("iptables", "INPUT ACCEPT", _ipv6_address(), ["INPUT ACCEPT inet6"]),
-            ("windows_advfirewall", "out", _dual_stack_address(), ["out", "out inet6"]),
+            ("iptables", ["ACCEPT"], _dual_stack_address(), ["Unit_Policy ACCEPT", "Unit_Policy ACCEPT inet6"]),
+            ("iptables", ["ACCEPT"], _ipv6_address(), ["Unit_Policy ACCEPT inet6"]),
+            ("windows_advfirewall", None, _dual_stack_address(), ["Unit_Policy", "Unit_Policy inet6"]),
             ("nvueapi", None, _dual_stack_address(), ["Unit_Policy inet", "Unit_Policy_ipv6 inet6"]),
         ],
     )
-    def test_header_targets_follow_address_families(self, vendor, target_spec, address, expected_targets):
-        policy = _address_policy(address, vendor, target_spec)
+    def test_header_targets_follow_address_families(self, vendor, target_options, address, expected_targets):
+        policy = _address_policy(address, vendor, target_options)
 
         assert _header_targets(policy) == [{vendor: target} for target in expected_targets]
 
     def test_split_filters_share_the_same_terms(self):
-        policy = _address_policy(_dual_stack_address(), "iptables", "INPUT ACCEPT")
+        policy = _address_policy(_dual_stack_address(), "iptables", ["ACCEPT"])
 
         ipv4_filter, ipv6_filter = policy.YAMLConfig["filters"]
         assert ipv4_filter["terms"] == ipv6_filter["terms"]
 
-    @pytest.mark.parametrize(
-        ("address", "expected_target"),
-        [(_address("V4", "10.0.0.0/8"), "Edge"), (_ipv6_address(), "Edge inet6")],
-    )
-    def test_family_word_in_target_spec_is_replaced(self, address, expected_target):
-        policy = _address_policy(address, "cisco", "Edge mixed")
+    @pytest.mark.parametrize("vendor", IPV6_VENDORS)
+    def test_target_templates_use_known_placeholders(self, vendor):
+        template = PLATFORM_CAPABILITIES[vendor].target_template
+        placeholders = {field_name for _, field_name, _, _ in string.Formatter().parse(template) if field_name}
 
-        assert _header_targets(policy) == [{"cisco": expected_target}]
+        assert "af" in placeholders
+        assert placeholders <= {"name", "options", "af"}
 
     def test_merge_keeps_both_filters_of_split_policies(self):
-        first = _address_policy(_dual_stack_address(), "iptables", "INPUT ACCEPT", name="First", policy_sequence=1)
-        second = _address_policy(_dual_stack_address(), "iptables", "OUTPUT ACCEPT", name="Second", policy_sequence=2)
+        first = _address_policy(_dual_stack_address(), "iptables", ["ACCEPT"], name="First", policy_sequence=1)
+        second = _address_policy(_dual_stack_address(), "iptables", ["ACCEPT"], name="Second", policy_sequence=2)
 
         merged = merge_policies([first, second])
 
         assert _header_targets(merged) == [
-            {"iptables": "INPUT ACCEPT"},
-            {"iptables": "INPUT ACCEPT inet6"},
-            {"iptables": "OUTPUT ACCEPT"},
-            {"iptables": "OUTPUT ACCEPT inet6"},
+            {"iptables": "First ACCEPT"},
+            {"iptables": "First ACCEPT inet6"},
+            {"iptables": "Second ACCEPT"},
+            {"iptables": "Second ACCEPT inet6"},
         ]
 
     def test_unsupported_vendor_in_merged_policy_is_an_error(self):

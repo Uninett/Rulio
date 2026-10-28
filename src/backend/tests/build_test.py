@@ -59,13 +59,13 @@ class TestBuildPolicyFromObjects:
             filter_id=filter_obj.id,
             policy_sequence=1,
             vendor="juniper",
-            target_spec=None,
+            target_options=None,
         )
         assert policy is not None
 
         assert policy.name == filter_obj.name.replace(" ", "_")
         assert policy.vendor == "juniper"
-        assert policy.target_spec is None
+        assert policy.target_options == []
         assert policy.policy_sequence == 1
         assert policy.build_warnings == []
 
@@ -179,7 +179,7 @@ class TestBuildPolicyFromObjects:
             filter_id=filter_id,
             policy_sequence=1,
             vendor="juniper",
-            target_spec=None,
+            target_options=None,
         )
         assert policy is not None
 
@@ -378,7 +378,7 @@ class TestBuildPolicyFromObjects:
             filter_id=split_filter.id,
             policy_sequence=1,
             vendor="juniper",
-            target_spec=None,
+            target_options=None,
         )
 
         policy_single_term = build_policy_from_filter(
@@ -387,7 +387,7 @@ class TestBuildPolicyFromObjects:
             filter_id=single_term_filter.id,
             policy_sequence=2,
             vendor="juniper",
-            target_spec=None,
+            target_options=None,
         )
 
         # Check that the split term policy has multiple terms for the same rule
@@ -502,7 +502,7 @@ class TestBuildPolicyFromObjects:
                 actor=request_with_session.user,
                 tenant_id=request_with_session.tenant_id,
                 interface_id=interface.id,
-                target_spec=None,
+                target_options=None,
                 direction="in",
             )
 
@@ -591,7 +591,7 @@ class TestBuildPolicyFromObjects:
             filter_id=sample_filters[0].id,
             policy_sequence=1,
             vendor="juniper",
-            target_spec=None,
+            target_options=None,
         )
         policy_2 = build_policy_from_filter(
             actor=request_with_session.user,
@@ -599,7 +599,7 @@ class TestBuildPolicyFromObjects:
             filter_id=sample_filters[1].id,
             policy_sequence=2,
             vendor="juniper",
-            target_spec=None,
+            target_options=None,
         )
 
         merged_policy = merge_policies([policy_1, policy_2], name=None)
