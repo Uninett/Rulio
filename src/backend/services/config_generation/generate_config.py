@@ -998,6 +998,8 @@ class Policy:
         """Build one filter per address family the vendor needs, each with a target from the vendor's template."""
         capabilities = get_platform_capabilities(self.vendor)
         families = _find_ip_address_families({"terms": terms}, self.networks["networks"])
+        if any(_matches_both_address_families(term) for term in terms):
+            families |= {4, 6}
 
         if 6 not in families or not capabilities.supports_ipv6:
             family_filters = [(capabilities.ipv4_keyword, self.name)]
@@ -1223,6 +1225,17 @@ def _find_ip_address_families(filter_config: dict, network_definitions: dict[str
                         logger.warning("Invalid network definition: %s", network)
 
     return families
+
+
+def _matches_both_address_families(term: dict) -> bool:
+    """Return True for a term without addresses or ICMP protocols, since it matches both IPv4 and IPv6 traffic."""
+    if any(term.get(field_name) for field_name in _ADDRESS_TERM_FIELDS):
+        return False
+
+    protocols = term.get("protocol", [])
+    if isinstance(protocols, str):
+        protocols = [protocols]
+    return not {str(protocol).lower() for protocol in protocols} & {"icmp", "icmpv6"}
 
 
 def _render_target(
