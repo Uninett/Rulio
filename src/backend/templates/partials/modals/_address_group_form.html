@@ -22,9 +22,9 @@
 
     <div class="membership-column">
         <div class="membership-list membership-list-selected" data-list-type="selected">
-            <div class="membership-list-fixed" draggable="false">
+            <button type=button class="add-object-button">
                 Add new address
-            </div>
+            </button>
 
             {% for address in item_options %}
             {% if address.id in selected_address_ids %}

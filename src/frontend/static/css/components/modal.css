@@ -387,12 +387,27 @@ Membership Selection
     float: right;
 }
 
-.membership-list-fixed {
-    background-color: var(--sds-color-brand-primary-subtle-hover);
-    cursor: pointer;
+.add-object-button {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+
+    margin: 0;
     padding: 0.6rem;
+    border: none;
+    border-radius: 0;
+
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+    color: var(--sds-color-text-primary);
+    font: inherit;
     font-size: smaller;
-    min-width: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+.add-object-button:hover {
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+    border: none;
 }
 
 /*
@@ -478,19 +493,4 @@ Modal Secondary Button
     background-color: var(--sds-color-brand-primary-subtle-hover);
     border-color: var(--sds-color-brand-primary-strong-hover);
     color: var(--sds-color-brand-primary-strong-hover);
-}
-
-/*
-====================================================================
-Submodal template
-====================================================================
-*/
-
-#submodal-container {
-    position: relative;
-    z-index: 1100;
-}
-
-#submodal-container .submodal-panel {
-    z-index: 1101;
 }
