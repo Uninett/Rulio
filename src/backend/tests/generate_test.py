@@ -785,7 +785,7 @@ class TestPolicy:
         term = policy.YAMLConfig["filters"][0]["terms"][0]
         assert "port" not in term
         assert term["source-port"] == ["WEB"]
-        assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {"cisco": "Unit_Policy"}
+        assert policy.YAMLConfig["filters"][0]["header"]["targets"] == {"cisco": "Unit_Policy mixed"}
 
     def test_split_warnings_are_aggregated(self):
         policy = _policy([_split_rule("Split_A", 1), _source_address_rule("Plain", 2), _split_rule("Split_B", 3)])
@@ -1083,6 +1083,52 @@ class TestIPv6TargetFamilies:
         policy = _address_policy(address, vendor, target_options)
 
         assert _header_targets(policy) == [{vendor: target} for target in expected_targets]
+
+    @pytest.mark.parametrize(
+        ("allow_address", "deny_service", "expected_target"),
+        [
+            (_ipv6_address(), _service("SSH", "tcp", 22), "Unit_Policy mixed"),
+            (_address("V4", "10.0.0.0/8"), _service("SSH", "tcp", 22), "Unit_Policy mixed"),
+            (None, _service("SSH", "tcp", 22), "Unit_Policy mixed"),
+            (None, _service("Ping", "icmp", icmp_type=8), "Unit_Policy"),
+        ],
+    )
+    def test_rule_without_addresses_matches_both_families(self, allow_address, deny_service, expected_target):
+        rules = []
+        if allow_address is not None:
+            rules.append(
+                _rule(
+                    "Allow_Web",
+                    [
+                        PolicyRuleMember("address", "destination", allow_address),
+                        PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80)),
+                    ],
+                    1,
+                )
+            )
+        rules.append(
+            _rule(
+                "Deny_Anywhere",
+                [PolicyRuleMember("service", "destination", deny_service)],
+                len(rules) + 1,
+                action="deny",
+            )
+        )
+
+        policy = _policy(rules, vendor="cisco")
+
+        assert _header_targets(policy) == [{"cisco": expected_target}]
+
+    def test_rule_without_addresses_is_not_an_ipv6_error_for_vendor_without_ipv6(self):
+        policy = _policy(
+            [_rule("Deny_SSH", [PolicyRuleMember("service", "destination", _service("SSH", "tcp", 22))])],
+            vendor="ciscoasa",
+        )
+
+        result = generate_config(policy)
+
+        assert result.success, [error.message for error in result.errors]
+        assert _header_targets(policy) == [{"ciscoasa": "Unit_Policy"}]
 
     def test_split_filters_share_the_same_terms(self):
         policy = _address_policy(_dual_stack_address(), "iptables", ["ACCEPT"])
