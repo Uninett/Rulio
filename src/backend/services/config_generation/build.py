@@ -79,7 +79,7 @@ def build_policy_from_filter(
     filter_id: int,
     policy_sequence: int,
     vendor: str,
-    target_spec: str = "",
+    target_options: list[str] | None = None,
 ) -> Policy:
     """
     Build a Policy from a Filter and its enabled Rule rows.
@@ -112,7 +112,7 @@ def build_policy_from_filter(
         name=filter_obj.name,
         rules=policy_rules,
         vendor=vendor,
-        target_spec=target_spec,
+        target_options=target_options,
         policy_sequence=policy_sequence,
     )
 
@@ -123,7 +123,7 @@ def build_policies_for_interface(
     tenant_id: int,
     interface_id: int,
     direction: str,
-    target_spec: str = "",
+    target_options: list[str] | None = None,
 ) -> list[Policy]:
     """
     Build Policy objects for all enabled filters attached to an interface direction.
@@ -141,7 +141,7 @@ def build_policies_for_interface(
         device_id=interface.device_id,
     )
 
-    # Add getting target spec from device here later if we want to add target spec support
+    # Add getting target options (zones, hooks, directions) from the device here later
 
     if direction == "in" or direction == "out":
         interface_direction = InterfaceDirection.objects.get(interface=interface, direction=direction)
@@ -170,7 +170,7 @@ def build_policies_for_interface(
                 filter_id=filter_obj.id,
                 policy_sequence=next_sequence,
                 vendor=vendor,
-                target_spec=target_spec,
+                target_options=target_options,
             )
             policies.append(policy)
             next_sequence += 1
@@ -185,13 +185,13 @@ def build_policies_for_interface(
             tenant_id=tenant_id,
             interface_id=interface_id,
             direction="in",
-            target_spec=target_spec,
+            target_options=target_options,
         )
         policies_out = build_policies_for_interface(
             actor=actor,
             tenant_id=tenant_id,
             interface_id=interface_id,
             direction="out",
-            target_spec=target_spec,
+            target_options=target_options,
         )
         return policies_in + policies_out

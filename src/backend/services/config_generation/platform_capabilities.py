@@ -1,21 +1,38 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Literal
+
+IPv6Mode = Literal["none", "mixed", "split"]
 
 
 @dataclass(frozen=True, slots=True)
 class PlatformCapabilities:
     supports_neutral_port: bool = False
     supports_source_port: bool = True
+    ipv6_mode: IPv6Mode = "none"
+    ipv4_keyword: str | None = None
+    ipv6_keyword: str = "inet6"
+    ipv6_filter_suffix: str = ""
+    target_template: str = "{name} {af} {options}"
     supports_icmp_type: bool = True
     supports_icmp_code: bool = False
     supports_direction: bool = False
     direction_tokens: Mapping[str, str] | None = None
+
+    @property
+    def supports_ipv6(self) -> bool:
+        return self.ipv6_mode != "none"
 
 
 PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "arista_tp": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -24,6 +41,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "arista": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -32,6 +54,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "aruba": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=False,
+        ipv6_mode="split",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=False,
         supports_icmp_code=False,
         supports_direction=False,
@@ -40,6 +67,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "brocade": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -48,6 +80,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "cisco": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -56,6 +93,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "ciscoasa": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="none",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -64,6 +106,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "cisconx": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -72,6 +119,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "ciscoxr": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -80,6 +132,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "fortigate": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{options} {af}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -88,6 +145,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "gce": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="none",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=False,
         supports_icmp_code=False,
         supports_direction=True,
@@ -96,6 +158,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "ipset": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="split",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {options} {af}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -104,6 +171,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "iptables": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="split",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {options} {af}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -112,6 +184,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "juniper": PlatformCapabilities(
         supports_neutral_port=True,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=True,
@@ -120,6 +197,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "juniperevo": PlatformCapabilities(
         supports_neutral_port=True,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=True,
@@ -128,6 +210,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "msmpc": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=True,
@@ -136,6 +223,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "srx": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="none",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -144,6 +236,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "k8s": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=False,
+        ipv6_mode="none",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=False,
         supports_icmp_code=False,
         supports_direction=True,
@@ -152,6 +249,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "nftables": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword="inet",
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -160,6 +262,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "nokiasrl": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -168,6 +275,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "nsxv": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword="inet",
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -176,6 +288,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "nvueapi": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="split",
+        ipv4_keyword="inet",
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="_ipv6",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -184,6 +301,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "nsxt": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword="inet",
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -192,6 +314,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "packetfilter": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=True,
@@ -200,6 +327,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "paloalto": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{options} {af}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -208,6 +340,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "pcapfilter": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="none",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -216,6 +353,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "proxmox": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="none",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,
@@ -224,6 +366,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "speedway": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="split",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {options} {af}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=False,
@@ -232,6 +379,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "srxlo": PlatformCapabilities(
         supports_neutral_port=True,
         supports_source_port=True,
+        ipv6_mode="mixed",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=True,
         supports_direction=True,
@@ -240,6 +392,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "windows_advfirewall": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="split",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{options} {af}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=True,
@@ -248,6 +405,11 @@ PLATFORM_CAPABILITIES: dict[str, PlatformCapabilities] = {
     "windows_ipsec": PlatformCapabilities(
         supports_neutral_port=False,
         supports_source_port=True,
+        ipv6_mode="none",
+        ipv4_keyword=None,
+        ipv6_keyword="inet6",
+        ipv6_filter_suffix="",
+        target_template="{name} {af} {options}",
         supports_icmp_type=True,
         supports_icmp_code=False,
         supports_direction=False,

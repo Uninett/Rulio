@@ -790,7 +790,7 @@ def built_address_policy(sample_addresses, request_with_session):
         filter_id=filter_obj.id,
         policy_sequence=1,
         vendor="fixture_vendor",
-        target_spec=None,
+        target_options=None,
     )
 
 
@@ -849,7 +849,7 @@ def built_address_group_policy(sample_address_group, request_with_session):
         filter_id=filter_obj.id,
         policy_sequence=1,
         vendor="fixture_vendor",
-        target_spec=None,
+        target_options=None,
     )
 
 
@@ -889,7 +889,7 @@ def built_service_policy(sample_services, request_with_session):
         filter_id=filter_obj.id,
         policy_sequence=1,
         vendor="fixture_vendor",
-        target_spec=None,
+        target_options=None,
     )
 
 
@@ -942,7 +942,7 @@ def built_service_group_policy(sample_services, request_with_session):
         filter_id=filter_obj.id,
         policy_sequence=1,
         vendor="fixture_vendor",
-        target_spec=None,
+        target_options=None,
     )
 
 
@@ -1022,7 +1022,7 @@ def built_combined_policy(sample_addresses, sample_services, request_with_sessio
         filter_id=filter_obj.id,
         policy_sequence=1,
         vendor="fixture_vendor",
-        target_spec=None,
+        target_options=None,
     )
 
 
@@ -1160,7 +1160,7 @@ def built_realistic_acl_policy(
         filter_id=filter_obj.id,
         policy_sequence=1,
         vendor="fixture_vendor",
-        target_spec=None,
+        target_options=None,
     )
 
 
@@ -1228,7 +1228,7 @@ def built_interface_policies(sample_filters, sample_rules_with_objects, request_
         actor=request_with_session.user,
         tenant_id=request_with_session.tenant_id,
         interface_id=interface.id,
-        target_spec="",
+        target_options=None,
         direction="in",
     )
 
@@ -1247,7 +1247,7 @@ def built_shading_policy(shading_filter, sample_shading_rules, request_with_sess
         filter_id=shading_filter.id,
         policy_sequence=1,
         vendor="juniper",
-        target_spec=None,
+        target_options=None,
     )
 
 
@@ -1304,5 +1304,5 @@ def built_icmp_policy(sample_addresses, request_with_session, create_testing_ten
         filter_id=filter_obj.id,
         policy_sequence=1,
         vendor="fixture_vendor",
-        target_spec=None,
+        target_options=None,
     )
