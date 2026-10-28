@@ -9,16 +9,23 @@
             </tr>
         </thead>
          <tbody id="rules-table"
-             data-reorder-url="{% url 'reorder-rule-view' %}"
-             {% if current_filter_id %}data-content-url="{% url 'rules-content' filter_id=current_filter_id %}"{% endif %}
-             data-filter-id="{{ current_filter_id|default:'' }}">
+             {% if current_filter_id %}data-reorder-url="{% url 'reorder-rule-view' filter_id=current_filter_id %}"{% endif %}
+             {% if current_filter_id %}data-content-url="{% url 'rules-content' filter_id=current_filter_id %}"{% endif %}>
             {% for row in rules.rows %}
-            {% include "partials/objects/_tableRow.html" with row=row headers=rules.headers %}
+            {% include "partials/filters/_ruleRow.html" with row=row headers=rules.headers %}
             {% empty %}
             <tr>
-                <td colspan="{{ rules.headers|length }}">No rules found.</td>
+                <td colspan="{{ rules.headers|length|add:'1' }}">No rules found.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </section>
+
+{% if current_filter_id %}
+<div class="interface-actions">
+    {% url 'save-rule-draft-view' filter_id=current_filter_id as rule_save_url %}
+    {% url 'discard-rule-draft-view' filter_id=current_filter_id as rule_discard_url %}
+    {% include "partials/_draftActions.html" with draft_label="rule changes" draft_discard_handler="discardRuleChanges" draft_save_handler="saveRuleChanges" draft_save_url=rule_save_url draft_discard_url=rule_discard_url draft_has_changes=rules.has_changes %}
+</div>
+{% endif %}

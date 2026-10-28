@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.db import models
 
 from backend.objects.attributes.mixin.taggable_mixin import TaggableMixin
@@ -6,7 +8,7 @@ from backend.objects.tenant_objects.tenant import Tenant
 
 
 class Rule(TaggableMixin, models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     filter = models.ForeignKey(Filter, on_delete=models.CASCADE, related_name="rules")
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="rules")
@@ -19,6 +21,18 @@ class Rule(TaggableMixin, models.Model):
     date_changed = models.DateTimeField(auto_now=True)
     created_by = models.CharField(max_length=255, blank=True, null=True)
     changed_by = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        # Deferred, so the constraint is checked when the transaction commits instead of after each row.
+        # This lets rule names be swapped within one save.
+        constraints: ClassVar = [
+            models.UniqueConstraint(
+                fields=["filter", "name"],
+                name="unique_rule_name_per_filter",
+                deferrable=models.Deferrable.DEFERRED,
+                violation_error_message="A rule with this name already exists in this filter.",
+            ),
+        ]
 
     def __str__(self):
         return f"Rule(id={self.id}, name='{self.name}', description='{self.description}', filter_id={self.filter_id}, tenant_id={self.tenant_id}, action='{self.action}', enable={self.enable}, rule_sequence={self.rule_sequence}, log_type='{self.log_type}', hit_count={self.hit_count}, date_created='{self.date_created}', date_changed='{self.date_changed}', created_by='{self.created_by}', changed_by='{self.changed_by}')"
