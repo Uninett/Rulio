@@ -849,7 +849,7 @@ class PolicyRule:
         services: dict[str, list[dict]],
         service: Service,
     ) -> ServiceMatch:
-        service_name = service.name
+        service_name = _normalize_network_name(service.name)
         protocol = service.get_protocol()
         port_value = service.get_ports()
         icmp_type = service.get_icmp_type()
@@ -880,7 +880,7 @@ class PolicyRule:
             actor=self.actor,
             tenant_id=self.tenant_id,
         ):
-            service_name = service.name
+            service_name = _normalize_network_name(service.name)
             protocol = service.get_protocol()
             port_value = service.get_ports()
             icmp_type = service.get_icmp_type()
