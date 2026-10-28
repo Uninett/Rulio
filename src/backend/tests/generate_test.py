@@ -1018,6 +1018,7 @@ IPV6_TEST_TARGET_OPTIONS = {
     "iptables": ["ACCEPT"],
     "speedway": ["ACCEPT"],
     "nftables": ["INPUT"],
+    "windows_advfirewall": ["out"],
     "juniperevo": ["ingress"],
 }
 
@@ -1083,7 +1084,7 @@ class TestIPv6TargetFamilies:
             ),
             ("iptables", ["ACCEPT"], _dual_stack_address(), ["Unit_Policy ACCEPT", "Unit_Policy ACCEPT inet6"]),
             ("iptables", ["ACCEPT"], _ipv6_address(), ["Unit_Policy ACCEPT inet6"]),
-            ("windows_advfirewall", None, _dual_stack_address(), ["Unit_Policy", "Unit_Policy inet6"]),
+            ("windows_advfirewall", ["out"], _dual_stack_address(), ["out", "out inet6"]),
             ("nvueapi", None, _dual_stack_address(), ["Unit_Policy inet", "Unit_Policy_ipv6 inet6"]),
         ],
     )
