@@ -97,7 +97,14 @@
 
                 <div class="modal-actions-right">
                     {% if modal_is_submodal %}
-                    {% if modal_object_type == "interfaces" %}
+                    {% if modal_submodal_mode == "create_item" %}
+                    <button class="btn btn-cancel" type="button" onclick="closeThisModal(this)">
+                        Cancel
+                    </button>
+                    <button class="btn btn-save" type="submit">
+                        Submit
+                    </button>
+                    {% elif modal_object_type == "interfaces" %}
                     <button class="btn btn-cancel" type="button" onclick="cancelDeviceInterfaceModal(this)">
                         Cancel
                     </button>
@@ -121,7 +128,6 @@
                         {% if modal_mode == "update" %}Save{% else %}Submit{% endif %}
                     </button>
                     {% endif %}
-
 
                 </div>
             </div>
