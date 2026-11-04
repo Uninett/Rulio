@@ -174,7 +174,7 @@ urlpatterns = [
     path("address-groups/create/", post_address_group_view, name="post-address-group-view"),
     path("address-groups/<int:object_id>/update/", update_address_group_view, name="update-address-group-view"),
     path("address-groups/<int:object_id>/delete/", delete_address_group_view, name="delete-address-group-view"),
-        # Objects Page: Service
+    # Objects Page: Service
     path("objects/services/", get_objects_services, name="objects-services"),
     path("services/create/", post_service_view, name="post-service-view"),
     path("services/<int:object_id>/update/", update_service_view, name="update-service-view"),

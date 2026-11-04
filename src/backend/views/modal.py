@@ -137,6 +137,7 @@ def get_item_options_view(request, object_type):
 
     return []
 
+
 def render_created_membership_item(request, *, item, input_name):
     return render(
         request,
