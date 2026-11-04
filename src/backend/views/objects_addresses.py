@@ -21,6 +21,7 @@ from backend.services.update import (
 from backend.utils.logger import set_up_logger
 from backend.views.objects_helpers import get_objects_toolbar_context
 from backend.views.session import get_tenant_context
+from backend.views.modal import render_created_membership_item
 from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
@@ -317,6 +318,13 @@ def post_address_view(request):
                 tenant_id=tenant_id,
                 tag=tag,
                 obj=created_address,
+            )
+
+        if request.GET.get("submodal") == "create_item":
+            return render_created_membership_item(
+                request,
+                item=created_address,
+                input_name="address_ids",
             )
 
     except (ValueError, Tag.DoesNotExist) as e:

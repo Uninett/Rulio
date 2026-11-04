@@ -1,3 +1,5 @@
+from django.shortcuts import render
+
 from backend.services.attribute_objects.get_address_objects import (
     get_all_addresses_and_groups_with_tags_from_tenant_as_json,
 )
@@ -134,3 +136,14 @@ def get_item_options_view(request, object_type):
         return []
 
     return []
+
+
+def render_created_membership_item(request, *, item, input_name):
+    return render(
+        request,
+        "partials/modals/_membership_item.html",
+        {
+            "item": item,
+            "input_name": input_name,
+        },
+    )

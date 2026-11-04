@@ -363,7 +363,6 @@ Membership Selection
 .membership-list-item {
     padding: 0.6rem;
     cursor: grab;
-    margin-bottom: 0.4rem;
     font-size: smaller;
     min-width: 0;
 }
@@ -388,6 +387,28 @@ Membership Selection
     float: right;
 }
 
+.add-object-button {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+
+    margin: 0;
+    padding: 0.6rem;
+    border: none;
+    border-radius: 0;
+
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+    color: var(--sds-color-text-primary);
+    font: inherit;
+    font-size: smaller;
+    text-align: left;
+    cursor: pointer;
+}
+
+.add-object-button:hover {
+    background-color: var(--sds-color-brand-primary-subtle-hover);
+    border: none;
+}
 
 /*
 ====================================================================
