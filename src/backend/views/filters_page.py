@@ -5,6 +5,8 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from backend.objects.attributes.tag import Tag
+from backend.objects.draft import Draft
+from backend.objects.filters.rule import Rule
 from backend.services.filter_draft import (
     FilterDraftError,
     apply_filter_draft,
@@ -20,6 +22,7 @@ from backend.services.filter_draft import (
     stage_filter_update,
 )
 from backend.services.helper_user_tenant import can_write_tenant
+from backend.services.rule_draft import RULE_DRAFT_SCOPE, empty_rule_changes, rule_changes_pending
 from backend.views.search import get_global_search_results
 from backend.views.session import get_tenant_context
 from constants import GLOBAL_TENANT_ID
@@ -70,16 +73,26 @@ def get_filters_content(request):
 
 
 # The saved value of a changed cell, shown as a tooltip while differences are shown. None if the field is unchanged.
+def _object_change_summary(*, added=(), removed=(), changed=()) -> str:
+    return "; ".join(
+        f"{label}: {', '.join(names)}"
+        for label, names in (("Added", added), ("Removed", removed), ("Changed", changed))
+        if names
+    )
+
+
 def _filter_previous_value(entry: dict, field: str, tags_by_id: dict) -> str | None:
     if field not in entry["changed_fields"]:
         return None
 
     value = entry["previous_fields"][field]
     if field == "tag_ids":
-        text = ", ".join(tags_by_id[tag_id].name for tag_id in value if tag_id in tags_by_id)
-    else:
-        text = value
-    return f"Was: {text or 'none'}"
+        current = entry["fields"][field]
+        return _object_change_summary(
+            added=[tags_by_id[tag_id].name for tag_id in current if tag_id not in value and tag_id in tags_by_id],
+            removed=[tags_by_id[tag_id].name for tag_id in value if tag_id not in current and tag_id in tags_by_id],
+        )
+    return f"(Was: {value or 'none'})"
 
 
 def _plural(count: int, word: str) -> str:
@@ -118,6 +131,11 @@ def _filter_row(entry: dict, saved_filter: dict | None, user, tenant_id: int, ta
         {"label": "Rules", "value": rule_names},
         {"label": "Tags", "value": tags},
     ]
+    change_notes = []
+    for field, label in (("name", "Name"), ("description", "Description"), ("tag_ids", "Tags")):
+        previous = _filter_previous_value(entry, field, tags_by_id)
+        if previous is not None:
+            change_notes.append({"label": label, "value": previous})
     if is_removed:
         delete_note = _filter_delete_note(saved_filter["filter_id"])
         if delete_note:
@@ -142,6 +160,7 @@ def _filter_row(entry: dict, saved_filter: dict | None, user, tenant_id: int, ta
             _filter_previous_value(entry, "tag_ids", tags_by_id),
         ],
         "expand": expand,
+        "change_notes": change_notes,
     }
 
 
@@ -179,6 +198,52 @@ def get_filters_view(request):
         _filter_row(entry, baseline_by_key.get(entry["key"]), request.user, tenant_id, tags_by_id)
         for entry in changeset
     ]
+    pending_rule_drafts = {
+        f"filter-{draft.scope_id}": {**empty_rule_changes(), **draft.changes}
+        for draft in Draft.objects.filter(
+            user=request.user,
+            tenant_id=tenant_id,
+            scope=RULE_DRAFT_SCOPE,
+            scope_id__in=[row["filter_id"] for row in baseline],
+        ).only("scope_id", "changes")
+        if rule_changes_pending({**empty_rule_changes(), **draft.changes})
+    }
+    rule_names_by_key = {
+        f"rule-{rule.id}": rule.name
+        for rule in Rule.objects.filter(filter_id__in=[int(key.split("-", 1)[1]) for key in pending_rule_drafts])
+    }
+    for row in rows:
+        rule_changes = pending_rule_drafts.get(row["id"])
+        if rule_changes is None:
+            continue
+        if not row["diff_classes"]:
+            row["diff_classes"] = "row-diff-changed"
+        changed_keys = dict.fromkeys(
+            [
+                *rule_changes["updated"],
+                *rule_changes["created"],
+                *rule_changes["deleted"],
+                *(rule_changes["moved"] or (rule_changes["order"] or [])),
+            ]
+        )
+        names_by_status = {"added": [], "removed": [], "changed": []}
+        for key in changed_keys:
+            if key in rule_changes["deleted"]:
+                status = "removed"
+                fields = {}
+            elif key in rule_changes["created"]:
+                status = "added"
+                fields = rule_changes["created"][key]
+            else:
+                status = "changed"
+                fields = rule_changes["updated"].get(key, {})
+            name = fields.get("name") or rule_names_by_key.get(key)
+            if name:
+                names_by_status[status].append(name)
+        summary = _object_change_summary(**names_by_status)
+        if summary:
+            row["change_notes"].append({"label": "Rules", "value": summary})
+            row["was"][2] = summary
 
     return {
         "headers": ["Name", "Description", "Rules", "Tags"],

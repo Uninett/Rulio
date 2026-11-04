@@ -77,5 +77,13 @@
 
         {% endfor %}
         {% endif %}
+        {% if row.change_notes %}
+        <div class="change-notes">
+            <p><strong>Changes made to</strong></p>
+            {% for note in row.change_notes %}
+            <p><strong>{{ note.label }}:</strong> {{ note.value }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
     </section>
 </td>

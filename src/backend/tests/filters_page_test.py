@@ -19,7 +19,8 @@ from backend.services.filter_objects.create_filter_objects import (
     create_filter,
     create_rule,
 )
-from backend.services.membership import add_filter_to_interface
+from backend.services.membership import add_filter_to_interface, add_tag_to_object
+from backend.services.rule_draft import RULE_DRAFT_SCOPE, empty_rule_changes
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
     create_interface,
@@ -82,7 +83,105 @@ def test_editing_a_filter_stages_the_change(authenticated_client, filters_page):
     assert response.status_code == 204
     assert filter_b.description == ""
     assert "row-diff-changed" in main_row(page, saved_filter_key(filter_b.id))
-    assert 'title="Was: none"' in page
+    assert 'title="(Was: none)"' in page
+
+
+@pytest.mark.parametrize("draft_kind", ["updated", "order", "empty", "other_tenant", "other_user", "removed"])
+def test_filters_highlight_pending_rule_changes(authenticated_client, filters_page, draft_kind):
+    user, tenant_id, (filter_b, filter_d) = filters_page
+    changes = empty_rule_changes()
+    if draft_kind == "order":
+        changes["order"] = ["rule-1"]
+    elif draft_kind != "empty":
+        changes["updated"] = {"rule-1": {"name": "Edited rule"}}
+
+    draft_user = user
+    draft_tenant_id = tenant_id
+    if draft_kind == "other_tenant":
+        draft_tenant_id = Tenant.objects.create(tenant_name="Other rule draft tenant").id
+    if draft_kind == "other_user":
+        draft_user = type(user).objects.create_user(username="other-rule-draft-user")
+    store_changes(draft_user, draft_tenant_id, RULE_DRAFT_SCOPE, filter_b.id, changes)
+    if draft_kind == "removed":
+        stage_filter_delete(actor=user, tenant_id=tenant_id, key=saved_filter_key(filter_b.id))
+
+    page = filters_html(authenticated_client)
+    row = main_row(page, saved_filter_key(filter_b.id))
+    assert ("row-diff-changed" in row) is (draft_kind in {"updated", "order"})
+    assert "row-diff-changed" not in main_row(page, saved_filter_key(filter_d.id))
+    if draft_kind == "removed":
+        assert "row-diff-removed" in row
+
+
+def test_filter_expand_lists_changed_rules(authenticated_client, filters_page):
+    user, tenant_id, (filter_b, _filter_d) = filters_page
+    rules = [
+        create_rule(
+            actor=user,
+            tenant_id=tenant_id,
+            filter=filter_b,
+            name=name,
+            description="",
+            action="accept",
+            enable=True,
+            log_type="None",
+            hit_count=0,
+        )
+        for name in ("Original rule", "Deleted rule", "Moved rule")
+    ]
+    changes = empty_rule_changes()
+    changes["updated"] = {f"rule-{rules[0].id}": {"name": "Renamed rule"}}
+    changes["created"] = {"ruledraft-1": {"name": "New rule"}}
+    changes["deleted"] = [f"rule-{rules[1].id}"]
+    changes["moved"] = [f"rule-{rules[2].id}"]
+    store_changes(user, tenant_id, RULE_DRAFT_SCOPE, filter_b.id, changes)
+
+    response = authenticated_client.get(reverse("filters"))
+
+    row = next(row for row in response.context["filters"]["rows"] if row["id"] == saved_filter_key(filter_b.id))
+    summary = "Added: New rule; Removed: Deleted rule; Changed: Renamed rule, Moved rule"
+    assert {"label": "Rules", "value": summary} in row["change_notes"]
+    assert row["was"][2] == summary
+    assert "Changes made to" in response.content.decode()
+
+
+def test_filter_expand_shows_previous_field_values(authenticated_client, filters_page):
+    user, tenant_id, (filter_b, _filter_d) = filters_page
+    stage_filter_update(
+        actor=user,
+        tenant_id=tenant_id,
+        key=saved_filter_key(filter_b.id),
+        fields=filter_fields("Renamed filter", description="New description"),
+    )
+
+    response = authenticated_client.get(reverse("filters"))
+
+    row = next(row for row in response.context["filters"]["rows"] if row["id"] == saved_filter_key(filter_b.id))
+    assert {"label": "Name", "value": "(Was: Page filter B)"} in row["change_notes"]
+    assert {"label": "Description", "value": "(Was: none)"} in row["change_notes"]
+
+
+def test_filter_tag_notes_distinguish_additions_and_removals(authenticated_client, filters_page):
+    user, tenant_id, (filter_b, _filter_d) = filters_page
+    removed, added, retained = [
+        create_tag(actor=user, tenant_id=tenant_id, name=name, description="")
+        for name in ("Removed tag", "Added tag", "Retained tag")
+    ]
+    for tag in (removed, retained):
+        add_tag_to_object(actor=user, tenant_id=tenant_id, tag=tag, obj=filter_b)
+    stage_filter_update(
+        actor=user,
+        tenant_id=tenant_id,
+        key=saved_filter_key(filter_b.id),
+        fields=filter_fields(filter_b.name, tag_ids=[added.id, retained.id]),
+    )
+
+    response = authenticated_client.get(reverse("filters"))
+
+    row = next(row for row in response.context["filters"]["rows"] if row["id"] == saved_filter_key(filter_b.id))
+    summary = "Added: Added tag; Removed: Removed tag"
+    assert row["was"][3] == summary
+    assert {"label": "Tags", "value": summary} in row["change_notes"]
 
 
 def test_deleting_a_filter_stages_the_deletion(authenticated_client, filters_page):

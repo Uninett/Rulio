@@ -146,6 +146,52 @@ def _rule_cell(kind: str, value, previous: str | None = None) -> dict:
     return {"kind": kind, "value": value, "was": previous}
 
 
+def _rule_change_notes(entry: dict, objects_by_typed_id: dict, tags_by_id: dict) -> list[dict]:
+    fields = entry["fields"]
+    if entry["status"] in {"added", "removed"}:
+        status = "Added" if entry["status"] == "added" else "Removed"
+        return [{"label": "Rule", "value": f"{status}: {fields['name']}"}]
+
+    labels = {
+        "name": "Name",
+        "description": "Description",
+        "action": "Action",
+        "log_type": "Log",
+        "enable": "Enabled",
+        "source_address_ids": "Source addresses",
+        "destination_address_ids": "Destination addresses",
+        "source_service_ids": "Source services",
+        "destination_service_ids": "Destination services",
+        "tag_ids": "Tags",
+    }
+    notes = []
+    for field, label in labels.items():
+        if field not in entry["changed_fields"] and not (field == "enable" and entry["enable_changed"]):
+            continue
+        previous = entry["previous_fields"][field]
+        if field in RULE_OBJECT_FIELDS or field == "tag_ids":
+            objects = tags_by_id if field == "tag_ids" else objects_by_typed_id
+            current = fields[field]
+            parts = []
+            for status, ids in (
+                ("Added", [key for key in current if key not in previous]),
+                ("Removed", [key for key in previous if key not in current]),
+            ):
+                names = [objects[key].name for key in ids if key in objects]
+                if names:
+                    parts.append(f"{status}: {', '.join(names)}")
+            value = "; ".join(parts)
+        else:
+            if field == "enable":
+                previous = "Enabled" if previous else "Disabled"
+            value = f"(Was: {previous or 'none'})"
+        if value:
+            notes.append({"label": label, "value": value})
+    if entry["moved"] and entry["sequence"] != entry["previous_sequence"]:
+        notes.append({"label": "Sequence", "value": f"(Was: {entry['previous_sequence']})"})
+    return notes
+
+
 # One table row for a changeset entry. saved_rule is the baseline rule, or None for a rule only created in the draft.
 def _rule_row(entry: dict, saved_rule: dict | None, user, tenant_id: int, objects_by_typed_id: dict, tags_by_id: dict):
     fields = entry["fields"]
@@ -184,6 +230,7 @@ def _rule_row(entry: dict, saved_rule: dict | None, user, tenant_id: int, object
         "can_write": can_write_tenant(user, rule_tenant_id) and not is_removed,
         "is_removed": is_removed,
         "diff_classes": diff_classes,
+        "change_notes": _rule_change_notes(entry, objects_by_typed_id, tags_by_id),
         "enable_was": f"Was: {'Enabled' if entry['previous_fields']['enable'] else 'Disabled'}"
         if entry["enable_changed"]
         else None,
