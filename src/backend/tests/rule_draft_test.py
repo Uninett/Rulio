@@ -72,7 +72,8 @@ def draft_args(superuser, create_testing_tenant, rules_filter):
 
 def changeset_for(draft_args):
     baseline = load_baseline_rules(draft_args["actor"], draft_args["tenant_id"], draft_args["filter_id"])
-    return build_rule_changeset(baseline, get_rule_changes(draft_args["actor"], draft_args["filter_id"]))
+    changes = get_rule_changes(draft_args["actor"], draft_args["tenant_id"], draft_args["filter_id"])
+    return build_rule_changeset(baseline, changes)
 
 
 def entry_for(changeset, key):
@@ -219,7 +220,18 @@ def test_apply_stops_when_a_rule_was_deleted_by_someone_else(draft_args, rules_f
 def test_discard_removes_the_draft(draft_args):
     stage_rule_create(**draft_args, fields=rule_fields("draft-rule-new"))
 
-    discard_rule_draft(draft_args["actor"], draft_args["filter_id"])
+    discard_rule_draft(draft_args["actor"], draft_args["tenant_id"], draft_args["filter_id"])
+
+    assert not Draft.objects.filter(user=draft_args["actor"]).exists()
+
+
+def test_deleting_a_dragged_draft_rule_leaves_no_pending_order(draft_args, rules_filter):
+    _filter_obj, (rule_a, rule_b, rule_c) = rules_filter
+    new_key = stage_rule_create(**draft_args, fields=rule_fields("draft-rule-new"))
+    saved_keys = [saved_rule_key(rule.id) for rule in (rule_a, rule_b, rule_c)]
+    stage_rule_order(**draft_args, order=[new_key, *saved_keys], moved_key=new_key)
+
+    stage_rule_delete(**draft_args, key=new_key)
 
     assert not Draft.objects.filter(user=draft_args["actor"]).exists()
 

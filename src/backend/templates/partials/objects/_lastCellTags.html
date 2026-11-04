@@ -1,6 +1,6 @@
-{% for cell in row.cells %}
-<td class="{% if forloop.first %}first-column-cell{% endif %} col-{{ forloop.counter }}"
-    {% if row.direction and forloop.counter == 2 %}id="{{ row.id }}-filter-count" data-interface-filter-count="{{ row.direction }}"{% endif %}>
+{% load draft_tags %}{% for cell in row.cells %}{% with was=row.was|index:forloop.counter0 %}
+<td class="{% if forloop.first %}first-column-cell{% endif %} col-{{ forloop.counter }}{% if was %} cell-diff-changed{% endif %}"
+    {% if row.direction and forloop.counter == 2 %}id="{{ row.id }}-filter-count" data-interface-filter-count="{{ row.direction }}"{% endif %}{% if was %} title="{{ was }}"{% endif %}>
 
     {% if forloop.last %}
         {% if object_type == "addresses" or object_type == "services" or object_type == "devices" or object_type == "filters" or object_type == "rules" %}
@@ -17,7 +17,7 @@
             </div>
 
         {% else %}
-            <span class="cell-text truncate" title="{{ cell }}">{{ cell }}</span>
+            <span class="cell-text truncate" title="{{ cell }}{% if was %} ({{ was }}){% endif %}">{{ cell }}</span>
         {% endif %}
 
     {% elif object_type == "rules" %}
@@ -34,11 +34,11 @@
                 {% endfor %}
             </div>
         {% else %}
-            <span class="cell-text truncate" title="{{ cell }}">{{ cell }}</span>
+            <span class="cell-text truncate" title="{{ cell }}{% if was %} ({{ was }}){% endif %}">{{ cell }}</span>
         {% endif %}
 
     {% else %}
-        <span class="cell-text truncate" title="{{ cell }}">{{ cell }}</span>
+        <span class="cell-text truncate" title="{{ cell }}{% if was %} ({{ was }}){% endif %}">{{ cell }}</span>
     {% endif %}
 </td>
-{% endfor %}
+{% endwith %}{% endfor %}

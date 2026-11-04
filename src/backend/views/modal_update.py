@@ -14,6 +14,7 @@ from backend.services.attribute_objects.get_address_objects import (
 from backend.services.attribute_objects.get_service_objects import (
     get_all_services_and_groups_with_tags_from_tenant_as_json,
 )
+from backend.services.filter_draft import get_filter_changes
 from backend.services.get import (
     get_all_device_groups_and_devices_with_tags_from_tenant,
     get_all_interfaces_from_device,
@@ -24,9 +25,8 @@ from backend.services.get import (
 )
 from backend.services.rule_draft import (
     RULE_OBJECT_FIELDS,
-    fetch_objects_by_type,
     get_rule_changes,
-    parse_typed_ids,
+    objects_by_typed_id,
 )
 from backend.utils.logger import set_up_logger
 from backend.views.modal import get_group_options_view, get_item_options_view
@@ -92,6 +92,18 @@ def get_update_modal_config(object_type):
             "submit_handler": None,
         },
         "filter": {
+            "title": "Update Filter",
+            "modal_object_type": "filters",
+            "modal_type": "item",
+            "content_partial": "partials/modals/_filter_form.html",
+            "post_url_name": "update-filter-view",
+            "delete_url_name": "delete-filter-view",
+            "refresh_url_name": "filters-content",
+            "modal_refresh_target": "#filters-content",
+            "submit_handler": None,
+        },
+        # A filter that only exists in the user's draft, edited with the same form and views as a saved filter.
+        "filterdraft": {
             "title": "Update Filter",
             "modal_object_type": "filters",
             "modal_type": "item",
@@ -196,8 +208,7 @@ def get_update_modal(request, row_id):
 # The rule modal's data for rule fields stored in a draft, in the same format as for a saved rule.
 def _rule_modal_data_from_fields(fields: dict, filter_id: int, tenant_id: int):
     all_typed_ids = [typed_id for field in RULE_OBJECT_FIELDS for typed_id in fields[field]]
-    _ordered, grouped = parse_typed_ids(",".join(all_typed_ids))
-    objects_by_type = fetch_objects_by_type(grouped, tenant_id)
+    objects = objects_by_typed_id(all_typed_ids, tenant_id)
 
     tags = list(Tag.objects.filter(id__in=fields["tag_ids"]))
     object_data = {
@@ -211,16 +222,22 @@ def _rule_modal_data_from_fields(fields: dict, filter_id: int, tenant_id: int):
     }
 
     for field in RULE_OBJECT_FIELDS:
-        names = []
-        for typed_id in fields[field]:
-            object_type, object_id = typed_id.split("-", 1)
-            obj = objects_by_type.get(object_type, {}).get(int(object_id))
-            if obj is not None:
-                names.append(obj.name)
-
         object_data[field] = fields[field]
-        object_data[field.replace("_ids", "_names")] = names
+        object_data[field.replace("_ids", "_names")] = [
+            objects[typed_id].name for typed_id in fields[field] if typed_id in objects
+        ]
 
+    return object_data, tags
+
+
+# The filter modal's data for filter fields stored in a draft.
+def _filter_modal_data_from_fields(fields: dict):
+    tags = list(Tag.objects.filter(id__in=fields["tag_ids"]))
+    object_data = {
+        "name": fields["name"],
+        "description": fields["description"],
+        "tags": tags,
+    }
     return object_data, tags
 
 
@@ -518,7 +535,7 @@ def build_update_modal_context(request, row_id):
             }
 
             # A rule already edited in the user's draft opens with the draft values.
-            draft_fields = get_rule_changes(request.user, rule.filter_id)["updated"].get(row_id)
+            draft_fields = get_rule_changes(request.user, tenant_id, rule.filter_id)["updated"].get(row_id)
             if draft_fields:
                 object_data, object_tags = _rule_modal_data_from_fields(draft_fields, rule.filter_id, tenant_id)
                 object_data["id"] = rule.id
@@ -543,7 +560,7 @@ def build_update_modal_context(request, row_id):
         except ValueError:
             return HttpResponse("Missing filter id.", status=400)
 
-        draft_fields = get_rule_changes(request.user, filter_id)["created"].get(row_id)
+        draft_fields = get_rule_changes(request.user, tenant_id, filter_id)["created"].get(row_id)
         if draft_fields:
             object_data, object_tags = _rule_modal_data_from_fields(draft_fields, filter_id, tenant_id)
 
@@ -567,6 +584,18 @@ def build_update_modal_context(request, row_id):
                 "tags": filter_data["tags"],
             }
 
+            # A filter deleted in the user's draft is read-only, and one already edited opens with the draft values.
+            filter_changes = get_filter_changes(request.user, tenant_id)
+            if row_id in filter_changes["deleted"]:
+                return HttpResponse(
+                    "This filter is deleted in your unsaved changes. Discard changes to restore it.", status=409
+                )
+
+            draft_fields = filter_changes["updated"].get(row_id)
+            if draft_fields:
+                object_data, object_tags = _filter_modal_data_from_fields(draft_fields)
+                object_data["id"] = filter_data["filter_id"]
+
         except ObjectDoesNotExist:
             return HttpResponse("Object not found.", status=404)
 
@@ -577,6 +606,14 @@ def build_update_modal_context(request, row_id):
             )
             return HttpResponse("Error fetching filter data.", status=500)
 
+    elif object_type == "filterdraft":
+        if tenant_id is None:
+            return HttpResponse("No tenant selected.", status=400)
+
+        draft_fields = get_filter_changes(request.user, tenant_id)["created"].get(row_id)
+        if draft_fields:
+            object_data, object_tags = _filter_modal_data_from_fields(draft_fields)
+
     if not object_data:
         return HttpResponse("Object not found.", status=404)
     if object_type in ("rule", "ruledraft"):
@@ -585,6 +622,11 @@ def build_update_modal_context(request, row_id):
         # Rule changes are staged in the user's draft for the filter, so the rule's URLs name the filter and row key.
         modal_post_url = reverse(config["post_url_name"], kwargs={"filter_id": filter_id, "row_key": row_id})
         modal_delete_url = reverse(config["delete_url_name"], kwargs={"filter_id": filter_id, "row_key": row_id})
+    elif object_type in ("filter", "filterdraft"):
+        # Filter changes are staged in the user's draft, so the filter's URLs name the row key.
+        modal_refresh_url = reverse(config["refresh_url_name"])
+        modal_post_url = reverse(config["post_url_name"], kwargs={"row_key": row_id})
+        modal_delete_url = reverse(config["delete_url_name"], kwargs={"row_key": row_id})
     else:
         modal_refresh_url = reverse(config["refresh_url_name"])
         modal_post_url = reverse(config["post_url_name"], args=[object_id])

@@ -594,14 +594,14 @@ function updateDraftActionButtons(hasChanges) {
     });
 }
 
-// Updates the buttons and tables to showingDifferences. Also run after the rules table is refreshed.
+// Updates the buttons and tables to showingDifferences. Also run after a draft table is refreshed.
 function applyDifferencesVisibility() {
     document.querySelectorAll(".draft-diff-btn").forEach((btn) => {
         btn.classList.toggle("active", showingDifferences);
         btn.textContent = showingDifferences ? "Hide Differences" : "Show Differences";
     });
 
-    document.querySelectorAll(".rules-table").forEach((table) => {
+    document.querySelectorAll(".draft-table").forEach((table) => {
         table.classList.toggle("diff-hidden", !showingDifferences);
     });
 }
@@ -615,6 +615,74 @@ function toggleDifferences(button) {
         renderInterfaceFilterRow("in");
         renderInterfaceFilterRow("out");
     }
+}
+
+// Reloads the page content around a table body from its data-content-url, keeping the scroll position.
+function refreshDraftTableContent(tableBody) {
+    if (!tableBody) {
+        console.warn("Draft table body not found, check the button's data-draft-table.");
+        return;
+    }
+
+    const contentUrl = tableBody.dataset.contentUrl;
+    if (!contentUrl) return;
+
+    // The page's content root, e.g. #rules-content or #filters-content.
+    const contentRoot = tableBody.closest("[id$='-content']");
+    if (!contentRoot) return;
+
+    let savedScrollTop = 0;
+    const scrollContainer = contentRoot.querySelector(".table-container");
+    if (scrollContainer) {
+        savedScrollTop = scrollContainer.scrollTop;
+    }
+
+    htmx.ajax("GET", contentUrl, {
+        target: contentRoot,
+        swap: "innerHTML",
+    }).then(() => {
+        const updatedScrollContainer = contentRoot.querySelector(".table-container");
+        if (updatedScrollContainer) {
+            updatedScrollContainer.scrollTop = savedScrollTop;
+        }
+    });
+}
+
+// Pages whose draft is kept on the server post each action, then refresh the table to show the new draft.
+async function postDraftAction(url, tableBody) {
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "X-CSRFToken": getCsrfToken() },
+        });
+
+        if (!response.ok) {
+            alert(await response.text());
+        }
+    } catch (error) {
+        console.error("Error while updating the changes.", error);
+        alert("Unable to update the changes. Please try again.");
+    }
+
+    refreshDraftTableContent(tableBody);
+}
+
+// The buttons name their table body in data-draft-table, from draft_table_id in _draftActions.html.
+function saveDraftChanges(button) {
+    if (!button.dataset.saveUrl) return;
+
+    // Disabled until the table is refreshed, so a double-click can't save twice.
+    button.disabled = true;
+    postDraftAction(button.dataset.saveUrl, document.getElementById(button.dataset.draftTable));
+}
+
+function discardDraftChanges(button) {
+    if (!button.dataset.discardUrl) return;
+
+    const shouldDiscard = confirm(`Discard all unsaved ${button.dataset.draftLabel}?`);
+    if (!shouldDiscard) return;
+
+    postDraftAction(button.dataset.discardUrl, document.getElementById(button.dataset.draftTable));
 }
 
 /*
@@ -1614,42 +1682,6 @@ function moveRuleRowPair(draggedMainRow, targetMainRow, placeBefore) {
     }
 }
 
-function refreshRulesTableContent(rulesBody) {
-    if (!rulesBody) return;
-
-    const contentUrl = rulesBody.dataset.contentUrl;
-    if (!contentUrl) return;
-
-    const refreshUrl = contentUrl;
-
-    // Rules are rendered in different content roots depending on page context.
-    const refreshTarget = document.querySelector("#rules-content")
-        ? "#rules-content"
-        : "#filters-content";
-    const contentRoot = document.querySelector(refreshTarget);
-    let savedScrollTop = 0;
-
-    if (contentRoot) {
-        const scrollContainer = contentRoot.querySelector(".table-container");
-        if (scrollContainer) {
-            savedScrollTop = scrollContainer.scrollTop;
-        }
-    }
-
-    htmx.ajax("GET", refreshUrl, {
-        target: refreshTarget,
-        swap: "innerHTML",
-    }).then(() => {
-        const updatedRoot = document.querySelector(refreshTarget);
-        if (!updatedRoot) return;
-
-        const updatedScrollContainer = updatedRoot.querySelector(".table-container");
-        if (updatedScrollContainer) {
-            updatedScrollContainer.scrollTop = savedScrollTop;
-        }
-    });
-}
-
 // The last moved rule stays highlighted until another rule is selected.
 // Stored by row id because the table is re-rendered after each reorder.
 let recentlyDroppedRuleRowId = null;
@@ -1803,14 +1835,14 @@ function initializeRuleRowDragAndDrop(root = document) {
 
             if (!response.ok) {
                 console.error("Failed to reorder rules.", await response.text());
-                refreshRulesTableContent(rulesBody);
+                refreshDraftTableContent(rulesBody);
                 return;
             }
 
-            refreshRulesTableContent(rulesBody);
+            refreshDraftTableContent(rulesBody);
         } catch (error) {
             console.error("Error while reordering rules.", error);
-            refreshRulesTableContent(rulesBody);
+            refreshDraftTableContent(rulesBody);
         }
     }
 }
@@ -1818,48 +1850,17 @@ function initializeRuleRowDragAndDrop(root = document) {
 
 /*
 ====================================================================
-Rule Draft (Enabled, Save and Discard on the rules page)
+Rule Draft (Enabled on the rules page)
 ====================================================================
-The rule changes are kept in a draft on the server, so each action is posted and the table is refreshed.
+Save and Discard use saveDraftChanges and discardDraftChanges in Draft Actions.
 */
-
-async function postRuleDraftAction(url) {
-    try {
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "X-CSRFToken": getCsrfToken() },
-        });
-
-        if (!response.ok) {
-            alert(await response.text());
-        }
-    } catch (error) {
-        console.error("Error while updating rule changes.", error);
-        alert("Unable to update rule changes. Please try again.");
-    }
-
-    refreshRulesTableContent(document.getElementById("rules-table"));
-}
 
 function toggleRuleEnabled(button) {
     if (!button.dataset.toggleUrl) return;
-    postRuleDraftAction(button.dataset.toggleUrl);
-}
 
-function saveRuleChanges(button) {
-    if (!button.dataset.saveUrl) return;
-
+    // Disabled until the table is refreshed, so a double-click can't send two toggles that overwrite each other.
     button.disabled = true;
-    postRuleDraftAction(button.dataset.saveUrl);
-}
-
-function discardRuleChanges(button) {
-    if (!button.dataset.discardUrl) return;
-
-    const shouldDiscard = confirm("Discard all unsaved rule changes?");
-    if (!shouldDiscard) return;
-
-    postRuleDraftAction(button.dataset.discardUrl);
+    postDraftAction(button.dataset.toggleUrl, document.getElementById("rules-table"));
 }
 
 

@@ -1,4 +1,4 @@
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 
 from backend.objects.attributes.address import Address
@@ -10,12 +10,31 @@ from backend.objects.draft import Draft
 from backend.objects.filters.filter import Filter
 from backend.objects.filters.rule import Rule
 from backend.services.delete import delete_rule, remove_tag_from_object
+from backend.services.draft import (
+    DraftError,
+    added_entry,
+    changes_pending,
+    compared_entry,
+    discard_draft,
+    effective_fields,
+    empty_changes,
+    get_changes,
+    get_draft,
+    removed_entry,
+    require_editable_row,
+    require_rows_still_exist,
+    saved_key,
+    set_row_fields,
+    stage_create,
+    stage_delete,
+    store_changes,
+)
 from backend.services.filter_objects.create_filter_objects import create_rule
 from backend.services.get import (
     get_all_rules_with_objects_from_filter,
     get_all_tags_from_object,
 )
-from backend.services.helper_user_tenant import can_write_tenant, require_write_tenant
+from backend.services.helper_user_tenant import require_write_tenant
 from backend.services.membership import (
     add_objects_to_rule,
     add_tag_to_object,
@@ -48,8 +67,8 @@ RULE_FIELDS = (
 )
 
 
-class RuleDraftError(ValueError):
-    """A draft change that can't be made. The message is shown to the user."""
+# The same class as DraftError, so `except RuleDraftError` also catches errors raised in backend.services.draft.
+RuleDraftError = DraftError
 
 
 """
@@ -128,6 +147,16 @@ def validate_rule_selector_types(
         formatted_types = ", ".join(sorted(invalid_types))
 
         raise ValueError(f"Invalid object type(s) in {field_name}: {formatted_types}")
+
+
+# The objects behind typed ids such as "address-1", keyed by typed id. Ids whose object doesn't exist are left out.
+def objects_by_typed_id(typed_ids, tenant_id: int) -> dict[str, object]:
+    _ordered, grouped = parse_typed_ids(",".join(typed_ids))
+    return {
+        f"{object_type}-{object_id}": obj
+        for object_type, objects in fetch_objects_by_type(grouped, tenant_id).items()
+        for object_id, obj in objects.items()
+    }
 
 
 """
@@ -278,7 +307,7 @@ Baseline (the saved rules)
 
 # Rules are identified by row key: "rule-<id>" for saved rules and "ruledraft-<n>" for rules created in the draft.
 def saved_rule_key(rule_id: int) -> str:
-    return f"rule-{rule_id}"
+    return saved_key("rule", rule_id)
 
 
 # The saved rules of a filter, with their fields in the same format as parse_rule_form, so they can be compared.
@@ -332,40 +361,28 @@ Draft Storage
 
 
 def empty_rule_changes() -> dict:
-    # created/updated map row key -> full rule fields, deleted lists saved row keys,
     # order is the full row order (None when unchanged), and moved lists the rows the user dragged.
-    return {"created": {}, "updated": {}, "deleted": [], "order": None, "moved": [], "next_new_id": 1}
+    return {**empty_changes(), "order": None, "moved": []}
 
 
-def get_rule_draft(actor, filter_id: int) -> Draft | None:
-    return Draft.objects.filter(user=actor, scope=RULE_DRAFT_SCOPE, scope_id=filter_id).first()
+def get_rule_draft(actor, tenant_id: int, filter_id: int) -> Draft | None:
+    return get_draft(actor, tenant_id, RULE_DRAFT_SCOPE, filter_id)
 
 
-def get_rule_changes(actor, filter_id: int) -> dict:
-    draft = get_rule_draft(actor, filter_id)
-    return {**empty_rule_changes(), **draft.changes} if draft else empty_rule_changes()
+def get_rule_changes(actor, tenant_id: int, filter_id: int) -> dict:
+    return {**empty_rule_changes(), **get_changes(actor, tenant_id, RULE_DRAFT_SCOPE, filter_id)}
 
 
 def rule_changes_pending(changes: dict) -> bool:
-    return bool(changes["created"] or changes["updated"] or changes["deleted"] or changes["order"] is not None)
+    return changes_pending(changes)
 
 
-# Deletes the draft instead of storing it when nothing is pending, so undoing the last change leaves no draft.
 def _store_rule_changes(actor, tenant_id: int, filter_id: int, changes: dict) -> None:
-    if not rule_changes_pending(changes):
-        discard_rule_draft(actor, filter_id)
-        return
-
-    Draft.objects.update_or_create(
-        user=actor,
-        scope=RULE_DRAFT_SCOPE,
-        scope_id=filter_id,
-        defaults={"tenant_id": tenant_id, "changes": changes},
-    )
+    store_changes(actor, tenant_id, RULE_DRAFT_SCOPE, filter_id, changes)
 
 
-def discard_rule_draft(actor, filter_id: int) -> None:
-    Draft.objects.filter(user=actor, scope=RULE_DRAFT_SCOPE, scope_id=filter_id).delete()
+def discard_rule_draft(actor, tenant_id: int, filter_id: int) -> None:
+    discard_draft(actor, tenant_id, RULE_DRAFT_SCOPE, filter_id)
 
 
 """
@@ -393,30 +410,14 @@ def current_rule_order(baseline: list[dict], changes: dict) -> list[str]:
     return stored + [key for key in default_order if key not in stored_keys]
 
 
-def _effective_fields(key: str, baseline_by_key: dict, changes: dict) -> dict:
-    if key in changes["created"]:
-        return changes["created"][key]
-    if key in changes["updated"]:
-        return changes["updated"][key]
-    return baseline_by_key[key]["fields"]
-
-
 def _load_rule_state(actor, tenant_id: int, filter_id: int):
-    baseline = load_baseline_rules(actor, tenant_id, filter_id)
+    # A filter that was deleted, or belongs to another tenant, is reported to the user instead of failing.
+    try:
+        baseline = load_baseline_rules(actor, tenant_id, filter_id)
+    except ObjectDoesNotExist:
+        raise RuleDraftError("Filter not found.")
     baseline_by_key = {rule["key"]: rule for rule in baseline}
-    return baseline, baseline_by_key, get_rule_changes(actor, filter_id)
-
-
-def _require_editable_row(actor, key: str, baseline_by_key: dict, changes: dict) -> None:
-    if key in changes["created"]:
-        return
-
-    rule = baseline_by_key.get(key)
-    if rule is None or key in changes["deleted"]:
-        raise RuleDraftError("Rule not found. Refresh the page and try again.")
-
-    if not can_write_tenant(actor, rule["tenant_id"]):
-        raise PermissionDenied("You do not have permission to modify this rule.")
+    return baseline, baseline_by_key, get_rule_changes(actor, tenant_id, filter_id)
 
 
 # Rule names are unique within a filter. The names are checked as the user sees them with the draft applied,
@@ -426,7 +427,7 @@ def _require_unique_name(name: str, key: str | None, filter_id: int, baseline: l
     baseline_by_key = {rule["key"]: rule for rule in baseline}
 
     for other_key in current_rule_order(baseline, changes):
-        if other_key != key and _effective_fields(other_key, baseline_by_key, changes)["name"] == name:
+        if other_key != key and effective_fields(other_key, baseline_by_key, changes)["name"] == name:
             raise error
 
     hidden_rules = Rule.objects.filter(filter_id=filter_id).exclude(id__in=[rule["rule_id"] for rule in baseline])
@@ -448,65 +449,47 @@ def stage_rule_create(*, actor, tenant_id: int, filter_id: int, fields: dict) ->
     validate_rule_fields(fields, tenant_id)
     _require_unique_name(fields["name"], None, filter_id, baseline, changes)
 
-    key = f"ruledraft-{changes['next_new_id']}"
-    changes["next_new_id"] += 1
-    changes["created"][key] = fields
-    if changes["order"] is not None:
-        changes["order"].append(key)
+    key = stage_create(changes, "rule", fields)
 
     _store_rule_changes(actor, tenant_id, filter_id, changes)
     return key
 
 
-# Stores the new fields of a row. A saved rule edited back to its saved values is dropped from the draft.
-def _set_row_fields(key: str, fields: dict, baseline_by_key: dict, changes: dict) -> None:
-    if key in changes["created"]:
-        changes["created"][key] = fields
-    elif fields == baseline_by_key[key]["fields"]:
-        changes["updated"].pop(key, None)
-    else:
-        changes["updated"][key] = fields
-
-
 def stage_rule_update(*, actor, tenant_id: int, filter_id: int, key: str, fields: dict) -> None:
     require_write_tenant(actor, tenant_id)
     baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
-    _require_editable_row(actor, key, baseline_by_key, changes)
+    require_editable_row(actor, key, baseline_by_key, changes, "rule")
 
     validate_rule_fields(fields, tenant_id)
     _require_unique_name(fields["name"], key, filter_id, baseline, changes)
 
-    _set_row_fields(key, fields, baseline_by_key, changes)
+    set_row_fields(key, fields, baseline_by_key, changes)
     _store_rule_changes(actor, tenant_id, filter_id, changes)
 
 
 def stage_rule_enable_toggle(*, actor, tenant_id: int, filter_id: int, key: str) -> None:
     require_write_tenant(actor, tenant_id)
     _baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
-    _require_editable_row(actor, key, baseline_by_key, changes)
+    require_editable_row(actor, key, baseline_by_key, changes, "rule")
 
-    fields = {**_effective_fields(key, baseline_by_key, changes)}
+    fields = {**effective_fields(key, baseline_by_key, changes)}
     fields["enable"] = not fields["enable"]
 
-    _set_row_fields(key, fields, baseline_by_key, changes)
+    set_row_fields(key, fields, baseline_by_key, changes)
     _store_rule_changes(actor, tenant_id, filter_id, changes)
 
 
 def stage_rule_delete(*, actor, tenant_id: int, filter_id: int, key: str) -> None:
     require_write_tenant(actor, tenant_id)
-    _baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
-    _require_editable_row(actor, key, baseline_by_key, changes)
+    baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
+    require_editable_row(actor, key, baseline_by_key, changes, "rule")
 
-    if key in changes["created"]:
-        # A rule that only exists in the draft is dropped completely.
-        changes["created"].pop(key)
-    else:
-        changes["updated"].pop(key, None)
-        changes["deleted"].append(key)
+    stage_delete(changes, key)
 
-    if changes["order"] is not None:
-        changes["order"] = [order_key for order_key in changes["order"] if order_key != key]
-    changes["moved"] = [moved_key for moved_key in changes["moved"] if moved_key != key]
+    # Deleting the only moved rule can leave the saved order, so nothing is moved any more.
+    if changes["order"] == _default_order(baseline, changes):
+        changes["order"] = None
+        changes["moved"] = []
 
     _store_rule_changes(actor, tenant_id, filter_id, changes)
 
@@ -515,7 +498,7 @@ def stage_rule_delete(*, actor, tenant_id: int, filter_id: int, key: str) -> Non
 def stage_rule_order(*, actor, tenant_id: int, filter_id: int, order: list[str], moved_key: str) -> None:
     require_write_tenant(actor, tenant_id)
     baseline, baseline_by_key, changes = _load_rule_state(actor, tenant_id, filter_id)
-    _require_editable_row(actor, moved_key, baseline_by_key, changes)
+    require_editable_row(actor, moved_key, baseline_by_key, changes, "rule")
 
     if sorted(order) != sorted(current_rule_order(baseline, changes)):
         raise RuleDraftError("The rule list has changed. Refresh the page and try again.")
@@ -560,63 +543,31 @@ def build_rule_changeset(baseline: list[dict], changes: dict) -> list[dict]:
             pending_removed.append(rule["key"])
     trailing_removed = pending_removed
 
-    def removed_entry(key):
-        return {
-            "key": key,
-            "status": "removed",
-            "fields": baseline_by_key[key]["fields"],
-            "previous_fields": baseline_by_key[key]["fields"],
-            "changed_fields": [],
-            "enable_changed": False,
-            "sequence": None,
-            "previous_sequence": baseline_sequence[key],
-            "moved": False,
-        }
+    def removed_rule_entry(key):
+        entry = removed_entry(key, baseline_by_key[key]["fields"])
+        return {**entry, "sequence": None, "previous_sequence": baseline_sequence[key], "moved": False}
 
     changeset = []
     for sequence, key in enumerate(order, start=1):
-        changeset.extend(removed_entry(removed_key) for removed_key in removed_before.get(key, []))
+        changeset.extend(removed_rule_entry(removed_key) for removed_key in removed_before.get(key, []))
 
         if key in changes["created"]:
-            changeset.append(
-                {
-                    "key": key,
-                    "status": "added",
-                    "fields": changes["created"][key],
-                    "previous_fields": None,
-                    "changed_fields": [],
-                    "enable_changed": False,
-                    "sequence": sequence,
-                    "previous_sequence": None,
-                    "moved": False,
-                }
-            )
+            entry = added_entry(key, changes["created"][key])
+            changeset.append({**entry, "sequence": sequence, "previous_sequence": None, "moved": False})
             continue
 
         previous_fields = baseline_by_key[key]["fields"]
-        fields = changes["updated"].get(key, previous_fields)
-        changed_fields = [
-            field for field in RULE_FIELDS if field != "enable" and fields[field] != previous_fields[field]
-        ]
-        enable_changed = fields["enable"] != previous_fields["enable"]
+        entry = compared_entry(key, changes["updated"].get(key, previous_fields), previous_fields, RULE_FIELDS)
         # A sequence change only counts for the rule that was dragged, not the rules it pushed along.
         was_moved = key in moved and sequence != baseline_sequence[key]
+        if was_moved:
+            entry["status"] = "changed"
 
         changeset.append(
-            {
-                "key": key,
-                "status": "changed" if changed_fields or enable_changed or was_moved else "unchanged",
-                "fields": fields,
-                "previous_fields": previous_fields,
-                "changed_fields": changed_fields,
-                "enable_changed": enable_changed,
-                "sequence": sequence,
-                "previous_sequence": baseline_sequence[key],
-                "moved": was_moved,
-            }
+            {**entry, "sequence": sequence, "previous_sequence": baseline_sequence[key], "moved": was_moved}
         )
 
-    changeset.extend(removed_entry(removed_key) for removed_key in trailing_removed)
+    changeset.extend(removed_rule_entry(removed_key) for removed_key in trailing_removed)
     return changeset
 
 
@@ -652,7 +603,7 @@ def _place_hidden_rules(
 def apply_rule_draft(*, actor, tenant_id: int, filter_id: int) -> None:
     require_write_tenant(actor, tenant_id)
 
-    draft = get_rule_draft(actor, filter_id)
+    draft = get_rule_draft(actor, tenant_id, filter_id)
     if draft is None:
         return
 
@@ -666,13 +617,7 @@ def apply_rule_draft(*, actor, tenant_id: int, filter_id: int) -> None:
         Rule.objects.filter(filter=filter_obj).order_by("rule_sequence", "id").values_list("id", flat=True)
     )
 
-    # Rules deleted by someone else since the draft was made can't be updated or deleted again.
-    for key in [*changes["updated"], *changes["deleted"]]:
-        if key not in baseline_by_key:
-            name = changes["updated"].get(key, {}).get("name", key)
-            raise RuleDraftError(f"Rule '{name}' was deleted by someone else. Discard your changes and try again.")
-        if not can_write_tenant(actor, baseline_by_key[key]["tenant_id"]):
-            raise PermissionDenied("You do not have permission to modify this rule.")
+    require_rows_still_exist(actor, changes, baseline_by_key, "rule")
 
     for key in changes["deleted"]:
         delete_rule(actor, tenant_id, baseline_by_key[key]["rule_id"])
