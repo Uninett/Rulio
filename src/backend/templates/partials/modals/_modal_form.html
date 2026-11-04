@@ -40,6 +40,7 @@
                         </div>
 
                         {% if modal_object_type != "tags" %}
+                        {% if not modal_is_submodal %}
                         <div class="form-group form-description">
                             <label for="description">Tags</label>
                             {% include "partials/search/_modal_search.html" with search_results=search_results %}
@@ -75,6 +76,7 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
                         {% endif %}
                         {% endif %}
                         {% endif %}
