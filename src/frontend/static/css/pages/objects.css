@@ -233,51 +233,51 @@ Interface Table (inside device / interface detail rows)
 }
 
 /* Pending-change highlighting, on interface filter rows (classes set from app.js)
-   and on rules table rows (classes set by the server, hidden by .diff-hidden from app.js) */
+   and on .draft-table rows, e.g. the rules table (classes set by the server, hidden by .diff-hidden from app.js) */
 .objects-interface-table-row.row-diff-added,
 .objects-interface-table-row.row-diff-enabled-on,
-.rules-table:not(.diff-hidden) .main-row.row-diff-added,
-.rules-table:not(.diff-hidden) .main-row.row-diff-enabled-on {
+.draft-table:not(.diff-hidden) .main-row.row-diff-added,
+.draft-table:not(.diff-hidden) .main-row.row-diff-enabled-on {
     background-color: var(--diff-added-bg);
     color: var(--diff-added-text);
 }
 
 .objects-interface-table-row.row-diff-removed,
 .objects-interface-table-row.row-diff-enabled-off,
-.rules-table:not(.diff-hidden) .main-row.row-diff-removed,
-.rules-table:not(.diff-hidden) .main-row.row-diff-enabled-off {
+.draft-table:not(.diff-hidden) .main-row.row-diff-removed,
+.draft-table:not(.diff-hidden) .main-row.row-diff-enabled-off {
     background-color: var(--diff-removed-bg);
     color: var(--diff-removed-text);
 }
 
 .objects-interface-table-row.row-diff-changed,
-.rules-table:not(.diff-hidden) .main-row.row-diff-changed {
+.draft-table:not(.diff-hidden) .main-row.row-diff-changed {
     background-color: var(--diff-changed-bg);
     color: var(--diff-changed-text);
 }
 
 .objects-interface-table-row.row-diff-removed,
-.rules-table:not(.diff-hidden) .main-row.row-diff-removed {
+.draft-table:not(.diff-hidden) .main-row.row-diff-removed {
     text-decoration: line-through;
 }
 
-/* Rules table: the diff colour replaces the grey read-only text, so rules deleted in the draft show in red */
-.rules-table:not(.diff-hidden) .main-row[class*="row-diff-"] .cell-text {
+/* Draft tables: the diff colour replaces the grey read-only text, so rows deleted in the draft show in red */
+.draft-table:not(.diff-hidden) .main-row[class*="row-diff-"] .cell-text {
     color: inherit;
 }
 
 /* Edited cells stand out in green, red and uncoloured rows, and are bold in yellow rows */
-.rules-table:not(.diff-hidden) td.cell-diff-changed {
+.draft-table:not(.diff-hidden) td.cell-diff-changed {
     background-color: var(--diff-changed-bg);
     color: var(--diff-changed-text);
     font-weight: 600;
 }
 
-/* With differences hidden, the rules table looks as it will after saving.
+/* With differences hidden, a draft table looks as it will after saving.
    !important, because expandRow shows details rows with an inline display style. */
-.rules-table.diff-hidden .main-row.row-diff-removed,
-.rules-table.diff-hidden .main-row.row-diff-removed + .details-row,
-.rules-table.diff-hidden .rule-seq-previous {
+.draft-table.diff-hidden .main-row.row-diff-removed,
+.draft-table.diff-hidden .main-row.row-diff-removed + .details-row,
+.draft-table.diff-hidden .rule-seq-previous {
     display: none !important;
 }
 

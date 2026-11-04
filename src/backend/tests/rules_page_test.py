@@ -77,6 +77,7 @@ def test_rules_page_colours_draft_changes(authenticated_client, rules_page_filte
     response = authenticated_client.get(rules_page_url)
 
     assert response.status_code == 200
+    assert b"rules-table draft-table" in response.content
     assert b"row-diff-added" in response.content
     assert b"row-diff-removed" in response.content
     assert b"row-diff-enabled-off" in response.content
@@ -314,7 +315,8 @@ def test_rules_page_save_buttons_follow_the_draft(authenticated_client, rules_pa
     save_url = reverse("save-rule-draft-view", kwargs={"filter_id": filter_obj.id})
 
     button = save_button(authenticated_client.get(rules_page_url).content.decode())
-    assert "saveRuleChanges(this)" in button
+    assert "saveDraftChanges(this)" in button
+    assert 'data-draft-table="rules-table"' in button
     assert f'data-save-url="{save_url}"' in button
     assert "disabled" in button
 

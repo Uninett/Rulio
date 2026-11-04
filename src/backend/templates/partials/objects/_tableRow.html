@@ -1,24 +1,29 @@
-{% load static %}
+{% comment %}
+Optional draft diff info on the row (pages showing a draft, in a .draft-table):
+    row.diff_classes: added to the row's class, e.g. "row-diff-added"
+    row.was: a list parallel to row.cells, each item e.g. "Was: old" or None; set items mark that cell as changed
+    row.is_removed: the row is deleted in the draft, so it is shown read-only
+{% endcomment %}{% load static %}
 
     {% if object_type == "tags" %}
 <tr id="row-{{ row.id }}"
-    class="main-row tag-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
+    class="main-row tag-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write or row.is_removed %}readonly-row{% endif %}{% if row.diff_classes %} {{ row.diff_classes }}{% endif %}"
     style="--tag-color: {{ row.color }};" onclick="expandRow('{{ row.id }}')">
 
-    {% elif object_type == "rules" and row.can_write %}
+    {% elif object_type == "rules" and row.can_write and not row.is_removed %}
 <tr id="row-{{ row.id }}"
-    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %}"
+    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %}{% if row.diff_classes %} {{ row.diff_classes }}{% endif %}"
     draggable="true" data-rules-draggable="true" onclick="expandRow('{{ row.id }}')">
 
     {% elif object_type == "rules" %}
 <tr id="row-{{ row.id }}"
-    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} readonly-row"
+    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} readonly-row{% if row.diff_classes %} {{ row.diff_classes }}{% endif %}"
     onclick="expandRow('{{ row.id }}')">
 
     {% else %}
 <tr id="row-{{ row.id }}"
-    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}"
-    {% if object_type == "filters" and row.inspect_url %}
+    class="main-row {% if row.is_group %}group-row{% endif %} {% if row.is_global %}global-row{% endif %} {% if not row.can_write or row.is_removed %}readonly-row{% endif %}{% if row.diff_classes %} {{ row.diff_classes }}{% endif %}"
+    {% if object_type == "filters" and row.inspect_url and not row.is_removed %}
     onclick="expandRowDelayed(event, '{{ row.id }}')"
     ondblclick="navigateFromRow(event, '{{ row.id }}', '{{ row.inspect_url }}')"
     title="Double-click to open rules"
@@ -29,7 +34,7 @@
 
     {% include "partials/objects/_lastCellTags.html" with row=row object_type=object_type %}
 
-    {% if row.can_write %}
+    {% if row.can_write and not row.is_removed %}
     <td class="actions-column">
         {% if row.edit_url %}
         <button type="button" class="btn-reset actions-btn" data-selector-url="{{ row.edit_url }}" data-direction="{{ row.direction }}"
@@ -43,6 +48,13 @@
         </button>
         {% endif %}
     </td>
+    {% elif row.is_removed %}
+    <td class="actions-column">
+        <button type="button" class="btn-reset actions-btn actions-btn-disabled"
+            title="Deleted in your unsaved changes. Discard changes to restore it.">
+            <img class="btn-icon actions-icon" src="{% static 'images/edit.svg' %}" alt="" aria-hidden="true">
+        </button>
+    </td>
     {% else %}
     <td class="actions-column">
         <button type="button" class="btn-reset actions-btn actions-btn-disabled"
@@ -54,6 +66,6 @@
 </tr>
 
 <tr id="details-{{ row.id }}"
-    class="details-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write %}readonly-row{% endif %}">
+    class="details-row {% if row.is_global %}global-row{% endif %} {% if not row.can_write or row.is_removed %}readonly-row{% endif %}">
     {% include "partials/objects/_expandRow.html" with row=row headers=headers %}
 </tr>

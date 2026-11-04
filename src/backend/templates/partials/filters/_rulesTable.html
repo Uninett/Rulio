@@ -1,5 +1,5 @@
 <section class="data-table-container objects-table-container table-container">
-    <table class="data-table objects-table objects-table--rules rules-table">
+    <table class="data-table objects-table objects-table--rules rules-table draft-table">
         <thead>
             <tr>
                 {% for header in rules.headers %}
@@ -26,6 +26,6 @@
 <div class="interface-actions">
     {% url 'save-rule-draft-view' filter_id=current_filter_id as rule_save_url %}
     {% url 'discard-rule-draft-view' filter_id=current_filter_id as rule_discard_url %}
-    {% include "partials/_draftActions.html" with draft_label="rule changes" draft_discard_handler="discardRuleChanges" draft_save_handler="saveRuleChanges" draft_save_url=rule_save_url draft_discard_url=rule_discard_url draft_has_changes=rules.has_changes %}
+    {% include "partials/_draftActions.html" with draft_label="rule changes" draft_discard_handler="discardDraftChanges" draft_save_handler="saveDraftChanges" draft_table_id="rules-table" draft_save_url=rule_save_url draft_discard_url=rule_discard_url draft_has_changes=rules.has_changes %}
 </div>
 {% endif %}
