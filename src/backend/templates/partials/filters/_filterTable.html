@@ -1,5 +1,5 @@
 <section class="data-table-container objects-table-container table-container">
-    <table class="data-table objects-table objects-table--filters filters-table">
+    <table class="data-table objects-table objects-table--filters filters-table draft-table">
         <thead>
             <tr>
                 {% for header in filters.headers %}
@@ -8,14 +8,20 @@
                 <th class="actions-column"></th>
             </tr>
         </thead>
-        <tbody id="filters-table">
+        <tbody id="filters-table" data-content-url="{% url 'filters-content' %}">
             {% for row in filters.rows %}
             {% include "partials/objects/_tableRow.html" with row=row headers=filters.headers %}
             {% empty %}
             <tr>
-                <td colspan="{{ filters.headers|length }}">No filters found.</td>
+                <td colspan="{{ filters.headers|length|add:'1' }}">No filters found.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </section>
+
+<div class="interface-actions">
+    {% url 'save-filter-draft-view' as filter_save_url %}
+    {% url 'discard-filter-draft-view' as filter_discard_url %}
+    {% include "partials/_draftActions.html" with draft_label="filter changes" draft_discard_handler="discardDraftChanges" draft_save_handler="saveDraftChanges" draft_table_id="filters-table" draft_save_url=filter_save_url draft_discard_url=filter_discard_url draft_has_changes=filters.has_changes %}
+</div>
