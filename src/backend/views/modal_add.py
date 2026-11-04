@@ -106,6 +106,10 @@ def get_add_modal_config(object_type):
             "submit_handler": "prepareAddressForm",
             "refresh_url": reverse("objects-addresses"),
             "modal_refresh_target": "#objects-content",
+            "membership": {
+                "selected_list_id": "address-group-selected-list",
+                "input_name": "address_ids",
+            },
         },
         "services": {
             "title": "Add Service",
@@ -260,6 +264,8 @@ def get_add_modal(request, object_type):
     ):
         item_label = config.get("type_labels", {}).get("item", "Item")
 
+        membership = config["membership"]
+
         context.update(
             {
                 "modal_title": f"Add {item_label}",
@@ -269,7 +275,10 @@ def get_add_modal(request, object_type):
                 "modal_type": "item",
                 "modal_supports_types": False,
                 "modal_content_partial": config["types"]["item"],
-                "modal_post_url": config["post_urls"]["item"],
+                "modal_post_url": f'{config["post_urls"]["item"]}?submodal=create_item',
+                "modal_target": f'#{membership["selected_list_id"]}',
+                "modal_swap": "beforeend",
+                "membership_input_name": membership["input_name"],
             }
         )
 
