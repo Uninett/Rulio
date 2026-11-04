@@ -66,7 +66,6 @@ from .views.management_users import delete_user_view, get_management_users, post
 from .views.modal_add import (
     get_add_modal,
     get_add_modal_form_content,
-    get_create_item_submodal,
 )
 from .views.modal_update import (
     get_update_modal,
@@ -175,8 +174,7 @@ urlpatterns = [
     path("address-groups/create/", post_address_group_view, name="post-address-group-view"),
     path("address-groups/<int:object_id>/update/", update_address_group_view, name="update-address-group-view"),
     path("address-groups/<int:object_id>/delete/", delete_address_group_view, name="delete-address-group-view"),
-    path("addresses/create-item-submodal/", get_create_item_submodal, {"object_type": "addresses"}, name="create-address-item-submodal"),
-    # Objects Page: Service
+        # Objects Page: Service
     path("objects/services/", get_objects_services, name="objects-services"),
     path("services/create/", post_service_view, name="post-service-view"),
     path("services/<int:object_id>/update/", update_service_view, name="update-service-view"),
