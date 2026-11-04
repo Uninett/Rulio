@@ -25,6 +25,7 @@
     <!--Insert table here, with type of table depending on the title (i.e. title == "Addresses" -> address table, title == "Services" -> service table)-->
     {% elif title == "Addresses" %}
     {% include "partials/objects/_addressesTable.html" %}
+
     {% elif title == "Services" %}
     {% include "partials/objects/_servicesTable.html" %}
 
@@ -35,6 +36,13 @@
     {% include "partials/management/_users_table.html" %}
     {% elif title == "Tenant management" %}
     {% include "partials/management/_tenants_table.html" %}
+
+    {% elif title == "Tools" %}
+    {% include "partials/tools/tools.html" %}
+
+    {% elif title == "Unused Objects" %}
+    {% include "partials/tools/_unusedObjectsTable.html" %}
+    
     {% else %}
     <p>No content available.</p>
     {% endif %}

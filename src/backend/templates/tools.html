@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tools | Rulio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/objects.css' %}" />
+{% endblock %}
+
+{% block content %}
+
+<div id="objects-content">
+    {% include "partials/_page_content.html" with title=page_title  %}
+</div>
+{% endblock %}

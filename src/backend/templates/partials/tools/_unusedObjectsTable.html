@@ -1,0 +1,20 @@
+<section class="data-table-container objects-table-container table-container">
+    <table class="data-table objects-table objects-table-unused-objects">
+        <thead>
+            <tr>
+                {% for header in unused_objects.headers %}
+                <th class="col-{{ forloop.counter }}">{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="unused-objects-table">
+            {% for row in unused_objects.rows %}
+            {% include "partials/objects/_tableRow.html" with row=row headers=unused_objects.headers %}
+            {% empty %}
+            <tr>
+                <td colspan="{{ unused_objects.headers|length }}">No unused objects found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
