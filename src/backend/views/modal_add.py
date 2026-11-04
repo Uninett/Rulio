@@ -275,8 +275,8 @@ def get_add_modal(request, object_type):
                 "modal_type": "item",
                 "modal_supports_types": False,
                 "modal_content_partial": config["types"]["item"],
-                "modal_post_url": f'{config["post_urls"]["item"]}?submodal=create_item',
-                "modal_target": f'#{membership["selected_list_id"]}',
+                "modal_post_url": f"{config['post_urls']['item']}?submodal=create_item",
+                "modal_target": f"#{membership['selected_list_id']}",
                 "modal_swap": "beforeend",
                 "membership_input_name": membership["input_name"],
             }
