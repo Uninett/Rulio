@@ -29,10 +29,7 @@ def test_create_interfaces_devices_devicegroups_tags_creates_data_for_ntnu(super
 
 def test_create_interfaces_devices_devicegroups_tags_can_run_twice(superuser, db):
     gløshaugen_1_tenant, _ = Tenant.objects.get_or_create(tenant_name="Gløshaugen 1")
-    gløshaugen_2_tenant, _ = Tenant.objects.get_or_create(tenant_name="Gløshaugen 2")
-    dragvoll_tenant, _ = Tenant.objects.get_or_create(tenant_name="Dragvoll")
-    kalvskinnet_tenant, _ = Tenant.objects.get_or_create(tenant_name="Kalvskinnet")
-    tenants = [gløshaugen_1_tenant, gløshaugen_2_tenant, dragvoll_tenant, kalvskinnet_tenant]
+    tenants = [gløshaugen_1_tenant]
 
     create_interfaces_devices_devicegroups_tags(actor=superuser, tenant_id=gløshaugen_1_tenant.id, tenants=tenants)
     interface_count = Interface.objects.count()
@@ -43,16 +40,14 @@ def test_create_interfaces_devices_devicegroups_tags_can_run_twice(superuser, db
 
 
 def test_create_interfaces_devices_devicegroups_tags_can_run_after_device_is_edited(superuser, db):
-    gløshaugen_1_tenant, _ = Tenant.objects.get_or_create(tenant_name="Gløshaugen 1")
-    gløshaugen_2_tenant, _ = Tenant.objects.get_or_create(tenant_name="Gløshaugen 2")
-    dragvoll_tenant, _ = Tenant.objects.get_or_create(tenant_name="Dragvoll")
-    kalvskinnet_tenant, _ = Tenant.objects.get_or_create(tenant_name="Kalvskinnet")
-    tenants = [gløshaugen_1_tenant, gløshaugen_2_tenant, dragvoll_tenant, kalvskinnet_tenant]
+    tenant, _ = Tenant.objects.get_or_create(tenant_name="Edited Device Tenant")
+    tenants = [tenant]
 
-    create_interfaces_devices_devicegroups_tags(actor=superuser, tenant_id=gløshaugen_1_tenant.id, tenants=tenants)
-    Device.objects.filter(name="gløshaugen-1-edge-fw-02").update(description="Edited in the UI.")
-    device_count = Device.objects.count()
+    create_interfaces_devices_devicegroups_tags(actor=superuser, tenant_id=tenant.id, tenants=tenants)
+    Device.objects.filter(tenant=tenant, name="shared-edge-fw-02").update(description="Edited in the UI.")
+    device_count = Device.objects.filter(tenant=tenant).count()
 
-    create_interfaces_devices_devicegroups_tags(actor=superuser, tenant_id=gløshaugen_1_tenant.id, tenants=tenants)
+    create_interfaces_devices_devicegroups_tags(actor=superuser, tenant_id=tenant.id, tenants=tenants)
 
-    assert Device.objects.count() == device_count
+    assert Device.objects.filter(tenant=tenant).count() == device_count
+    assert Device.objects.get(tenant=tenant, name="shared-edge-fw-02").description == "Edited in the UI."
