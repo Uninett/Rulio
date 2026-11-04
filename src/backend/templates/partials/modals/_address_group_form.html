@@ -22,7 +22,9 @@
 
     <div class="membership-column">
         <div class="membership-list membership-list-selected" data-list-type="selected">
-            <button type=button class="add-object-button">
+            <button type=button class="add-object-button"
+                hx-get="{% url 'modal-add' 'addresses' %}?submodal=create_item" hx-target="#submodal-container"
+                hx-swap="beforeend">
                 Add new address
             </button>
 

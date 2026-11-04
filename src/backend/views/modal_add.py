@@ -253,6 +253,26 @@ def get_add_modal(request, object_type):
         "object_tags": [],
     }
 
+    if (
+        request.GET.get("submodal") == "create_item"
+        and config.get("supports_types")
+        and "item" in config.get("types", {})
+    ):
+        item_label = config.get("type_labels", {}).get("item", "Item")
+
+        context.update(
+            {
+                "modal_title": f"Add {item_label}",
+                "modal_is_submodal": True,
+                "modal_instance_id": f"{object_type}-create-item-submodal",
+                "modal_submodal_mode": "create_item",
+                "modal_type": "item",
+                "modal_supports_types": False,
+                "modal_content_partial": config["types"]["item"],
+                "modal_post_url": config["post_urls"]["item"],
+            }
+        )
+
     # If object_type is address, service or device, then show all groups
     if object_type in ["addresses", "services", "devices"]:
         context["group_options"] = get_group_options_view(request, object_type)
@@ -317,45 +337,3 @@ def get_add_modal_form_content(request, object_type, type):
         context["item_options"] = get_item_options_view(request, object_type)
 
     return render(request, "partials/modals/_modal_form.html", context)
-
-# Render the modal for creating a new item of the selected object type.
-@login_required(login_url="login")
-def get_create_item_submodal(request, object_type):
-    config = get_add_modal_config(object_type)
-
-    if not config.get("supports_types") or "item" not in config.get("types", {}):
-        raise Http404(f"Item creation is not supported for: {object_type}")
-
-    item_label = config.get("type_labels", {}).get("item", "Item")
-
-    context = {
-        "modal_title": f"Add {item_label}",
-        "modal_mode": "add",
-        "modal_object_type": object_type,
-        "modal_type": "item",
-        "modal_supports_types": False,
-        "item_type_editable": False,
-        "modal_type_labels": {},
-        "modal_content_partial": config["types"]["item"],
-        "modal_is_submodal": True,
-        "modal_instance_id": f"{object_type}-create-item-submodal",
-        "modal_post_url": config["post_urls"]["item"],
-        "modal_target": "#submodal-container",
-        "modal_swap": "innerHTML",
-        "modal_submit_handler": config.get("submit_handler"),
-        "modal_refresh_url": "",
-        "modal_refresh_target": "",
-        "modal_submodal_mode": "create_item",
-        "object_data": {},
-        "search_results": get_tags_search_results(request),
-        "object_tags": [],
-        "selected_group_ids": [],
-        "selected_address_ids": [],
-        "selected_service_ids": [],
-    }
-
-    if object_type in ("addresses", "services", "devices"):
-        context["group_options"] = get_group_options_view(request, object_type)
-        context["item_options"] = get_item_options_view(request, object_type)
-
-    return render(request, "partials/_modal.html", context)
