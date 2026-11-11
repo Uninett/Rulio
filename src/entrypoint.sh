@@ -83,6 +83,11 @@ from django.contrib.auth import get_user_model
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.seed.populate import populate_db
 
+seed_db = os.environ.get("SEED_DATABASE", False)
+
+if not seed_db:
+    exit()
+
 User = get_user_model()
 
 username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
