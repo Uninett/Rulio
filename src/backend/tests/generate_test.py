@@ -1,8 +1,10 @@
 import copy
 import logging
 import string
+import warnings
 
 import pytest
+from aerleon.lib.plugin_supervisor import BUILTIN_GENERATORS
 
 from backend.objects.attributes.address import Address
 from backend.objects.attributes.service import Service
@@ -22,8 +24,11 @@ from backend.services.config_generation.generate_config import (
 from backend.services.config_generation.icmp import get_aerleon_icmp_code, get_aerleon_icmp_type
 from backend.services.config_generation.platform_capabilities import (
     PLATFORM_CAPABILITIES,
+    PLATFORM_VENDORS,
     PlatformCapabilities,
     get_platform_capabilities,
+    get_platform_label,
+    get_platform_vendor,
     resolve_platform_direction,
     vendor_supports,
 )
@@ -860,6 +865,57 @@ class TestGenerateConfigOutput:
         assert not [warning for warning in result.warnings if "Unrecognized value format" in warning.message]
         assert "destination-port 22;" in "\n".join(result.config.values())
 
+    # Each generator outputs JSON, so the address and port are checked as JSON values.
+    @pytest.mark.parametrize(
+        ("vendor", "policy_name", "members", "expected_texts"),
+        [
+            (
+                "openconfig",
+                "Unit_Policy",
+                [
+                    PolicyRuleMember("address", "source", _address("Net", "10.0.0.0/8")),
+                    PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80)),
+                ],
+                ['"source-address": "10.0.0.0/8"', '"destination-port": 80', '"forwarding-action": "ACCEPT"'],
+            ),
+            (
+                "sonic",
+                "Unit_Policy",
+                [
+                    PolicyRuleMember("address", "source", _address("Net", "10.0.0.0/8")),
+                    PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80)),
+                ],
+                ['"source-address": "10.0.0.0/8"', '"destination-port": 80', '"forwarding-action": "ACCEPT"'],
+            ),
+            # The hierarchical firewall policy name may only hold lowercase letters, digits and dashes.
+            (
+                "gcp_hf",
+                "unit-policy",
+                [
+                    PolicyRuleMember("address", "source", _address("Net", "10.0.0.0/8")),
+                    PolicyRuleMember("service", "destination", _service("WEB", "tcp", 80)),
+                ],
+                ['"10.0.0.0/8"', '"80"', '"direction": "INGRESS"', '"action": "allow"'],
+            ),
+            # Cloud Armor only matches source addresses.
+            (
+                "cloudarmor",
+                "Unit_Policy",
+                [PolicyRuleMember("address", "source", _address("Net", "10.0.0.0/8"))],
+                ['"10.0.0.0/8"', '"action": "allow"'],
+            ),
+        ],
+    )
+    def test_simple_rule_renders_for_platform(self, vendor, policy_name, members, expected_texts):
+        policy = _policy([_rule("Allow_Web", members)], vendor=vendor, name=policy_name)
+
+        result = generate_config(policy)
+
+        assert result.success, [error.message for error in result.errors]
+        config = "\n".join(result.config.values())
+        for expected_text in expected_texts:
+            assert expected_text in config
+
     def test_policy_without_terms_returns_error_instead_of_raising(self):
         policy = _policy(
             [_rule("Bad", [PolicyRuleMember("service", "destination", _service("C", "icmp", icmp_code=3))])]
@@ -982,6 +1038,45 @@ class TestIcmpMapping:
 
 
 class TestPlatformCapabilities:
+    # The device form offers platforms through PLATFORM_VENDORS, so every platform must be reachable exactly once.
+    def test_every_platform_belongs_to_exactly_one_vendor(self):
+        vendor_platform_keys = [key for platforms in PLATFORM_VENDORS.values() for key, _label in platforms]
+
+        assert sorted(vendor_platform_keys) == sorted(PLATFORM_CAPABILITIES)
+
+    # The platform key is used as the Aerleon target name, so Aerleon must have a generator for every platform.
+    def test_every_platform_is_an_aerleon_generator(self):
+        aerleon_targets = {target for target, _module, _constructor in BUILTIN_GENERATORS}
+
+        assert set(PLATFORM_CAPABILITIES) - aerleon_targets == set()
+
+    # Warns instead of failing, so a newer Aerleon version with more generators doesn't break the suite.
+    def test_warns_about_aerleon_generators_not_in_rulio(self):
+        aerleon_targets = {target for target, _module, _constructor in BUILTIN_GENERATORS}
+        unsupported_targets = sorted(aerleon_targets - set(PLATFORM_CAPABILITIES))
+
+        if unsupported_targets:
+            warnings.warn(
+                f"Aerleon generators not yet supported in Rulio: {', '.join(unsupported_targets)}. "
+                "Add them to PLATFORM_CAPABILITIES and PLATFORM_VENDORS.",
+                UserWarning,
+                stacklevel=1,
+            )
+
+    def test_vendors_are_in_alphabetical_order(self):
+        assert list(PLATFORM_VENDORS) == sorted(PLATFORM_VENDORS, key=str.casefold)
+
+    def test_platform_vendor_lookup(self):
+        assert get_platform_vendor("srx") == "Juniper"
+        assert get_platform_vendor("fortigate") == "Fortinet"
+        assert get_platform_vendor("unknown") is None
+
+    def test_platform_label_lookup(self):
+        assert get_platform_label("srx") == "Juniper SRX"
+        assert get_platform_label("ciscoasa") == "Cisco ASA"
+        # An unknown platform is shown as stored rather than hidden.
+        assert get_platform_label("unknown") == "unknown"
+
     def test_vendor_lookup_is_normalized(self):
         assert get_platform_capabilities(" JUNIPER ") == get_platform_capabilities("juniper")
 
@@ -1058,6 +1153,10 @@ class TestIPv6TargetFamilies:
     @pytest.mark.parametrize("vendor", IPV6_VENDORS)
     def test_dual_stack_generates_both_families(self, vendor):
         policy = _address_policy(_dual_stack_address(), vendor, IPV6_TEST_TARGET_OPTIONS.get(vendor))
+        # Cloud Armor only matches source addresses, so it gets a rule without a service or destination.
+        if vendor == "cloudarmor":
+            rule = _rule("Web", [PolicyRuleMember("address", "source", _dual_stack_address())])
+            policy = _policy([rule], vendor=vendor)
 
         result = generate_config(policy)
 

@@ -282,6 +282,24 @@ function applyRuleSelectorSelection(selectorType, button) {
     closeThisModal(button);
 }
 
+// Shows only the chosen vendor's platforms in the device form's Platform dropdown.
+// The server renders the starting state, so this only runs when the user picks another vendor.
+function selectDevicePlatformVendor(vendorSelect) {
+    const platformSelect = vendorSelect.form.querySelector('select[name="platform"]');
+    const vendorPlatforms = [];
+
+    platformSelect.querySelectorAll("option").forEach((option) => {
+        const belongsToVendor = option.dataset.vendor === vendorSelect.value;
+        option.hidden = !belongsToVendor;
+        option.disabled = !belongsToVendor;
+        if (belongsToVendor) vendorPlatforms.push(option);
+    });
+
+    // The vendor's first platform is chosen, so a vendor with a single platform needs no second choice.
+    platformSelect.value = vendorPlatforms[0]?.value ?? "";
+    platformSelect.closest(".form-group").hidden = vendorPlatforms.length <= 1;
+}
+
 // Turns the interface table into a JavaScript list of interface objects.
 function getDeviceInterfaceDraftFromTable(table) {
     if (!table) return []; // If there is no table, return an empty list.
