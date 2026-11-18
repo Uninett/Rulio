@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -30,7 +30,7 @@ def create_rule(
 ) -> Rule:
     require_write_tenant(actor, tenant_id)
     tenant = get_tenant_by_id(tenant_id)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     try:
         if rule_sequence == 0:
             # If rule_sequence is 0, we will append the new rule to the end of the sequence.
@@ -92,8 +92,8 @@ def get_or_create_rule(
             "log_type": log_type,
             "hit_count": hit_count,
             "rule_sequence": 0,
-            "date_created": datetime.now(timezone.utc),
-            "date_changed": datetime.now(timezone.utc),
+            "date_created": datetime.now(UTC),
+            "date_changed": datetime.now(UTC),
             "created_by": actor.id,
             "changed_by": actor.id,
         },
@@ -174,7 +174,7 @@ def create_version_control(
     version_control = VersionControl(
         filter=filter,
         tenant=tenant,
-        datetime=datetime.now(timezone.utc),
+        datetime=datetime.now(UTC),
     )
     try:
         version_control.full_clean()
