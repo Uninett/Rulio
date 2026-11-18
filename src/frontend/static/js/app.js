@@ -93,22 +93,26 @@ function closeModalAndRefresh(url, target) {
         modalContainer.innerHTML = "";
     }
 
+    refreshContent(url, target);
+}
+
+// Reloads the page content behind the modals, keeping the table's scroll position and expanded rows.
+function refreshContent(url, target) {
     if (!url || !target) return;
 
     const refreshTarget = document.querySelector(target);
+    // The target only exists on its own page, e.g. #objects-content is missing when a submodal is opened elsewhere.
+    if (!refreshTarget) return;
+
     let savedScrollTop = 0;
-    let expandedRowIds = [];
-
-    if (refreshTarget) {
-        const scrollContainer = refreshTarget.querySelector(".table-container");
-        if (scrollContainer) {
-            savedScrollTop = scrollContainer.scrollTop;
-        }
-
-        // Remembers which rows were expanded, so they can be expanded again after the refresh.
-        expandedRowIds = Array.from(refreshTarget.querySelectorAll("tr.expanded-row[id^='row-']"))
-            .map((row) => row.id.slice("row-".length));
+    const scrollContainer = refreshTarget.querySelector(".table-container");
+    if (scrollContainer) {
+        savedScrollTop = scrollContainer.scrollTop;
     }
+
+    // Remembers which rows were expanded, so they can be expanded again after the refresh.
+    const expandedRowIds = Array.from(refreshTarget.querySelectorAll("tr.expanded-row[id^='row-']"))
+        .map((row) => row.id.slice("row-".length));
 
     // Waits for htmx to finish settling. Before that, htmx temporarily gives new elements the attributes of old
     // elements with the same id, and then restores the new ones, which would collapse rows expanded any earlier.
@@ -1196,6 +1200,16 @@ function initializeMembershipSelectors(root = document) {
 
         selector.querySelectorAll(".membership-list-item").forEach(setupDraggableItem);
 
+        // Items inserted by htmx later (e.g. an address created from the submodal) get the same listeners.
+        selector.addEventListener("htmx:load", (event) => {
+            if (event.target.matches(".membership-list-item")) {
+                setupDraggableItem(event.target);
+            }
+        });
+
+        // A created item arrives already highlighted, so the previous highlight is cleared first.
+        selector.addEventListener("htmx:beforeSwap", () => clearRecentlyDropped());
+
         // The last moved filter stays highlighted until another filter is selected.
         function clearRecentlyDropped() {
             selector.querySelectorAll(".membership-list-item.recently-dropped")
@@ -1204,6 +1218,10 @@ function initializeMembershipSelectors(root = document) {
 
         function setupDraggableItem(item) {
             item.addEventListener("mousedown", clearRecentlyDropped);
+            // Keep fixed rows in place; don't give them drag or double-click handlers.
+            if (item.classList.contains("membership-list-fixed")) {
+                return;
+            }
 
             item.addEventListener("dragstart", () => {
                 draggedItem = item;
@@ -1287,7 +1305,11 @@ function initializeMembershipSelectors(root = document) {
         }
 
         function getDropTarget(list, y) {
-            const items = [...list.querySelectorAll(".membership-list-item:not(.dragging)")];
+            const items = [
+                ...list.querySelectorAll(
+                    ".membership-list-item:not(.dragging):not(.membership-list-fixed)"
+                )
+            ];
 
             return items.find((item) => {
                 const rect = item.getBoundingClientRect();

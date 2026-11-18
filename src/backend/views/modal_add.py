@@ -106,6 +106,10 @@ def get_add_modal_config(object_type):
             "submit_handler": "prepareAddressForm",
             "refresh_url": reverse("objects-addresses"),
             "modal_refresh_target": "#objects-content",
+            "membership": {
+                "selected_list_id": "address-group-selected-list",
+                "input_name": "address_ids",
+            },
         },
         "services": {
             "title": "Add Service",
@@ -252,6 +256,31 @@ def get_add_modal(request, object_type):
         "search_results": get_tags_search_results(request),
         "object_tags": [],
     }
+
+    if (
+        request.GET.get("submodal") == "create_item"
+        and config.get("supports_types")
+        and "item" in config.get("types", {})
+    ):
+        item_label = config.get("type_labels", {}).get("item", "Item")
+
+        membership = config["membership"]
+
+        context.update(
+            {
+                "modal_title": f"Add {item_label}",
+                "modal_is_submodal": True,
+                "modal_instance_id": f"{object_type}-create-item-submodal",
+                "modal_submodal_mode": "create_item",
+                "modal_type": "item",
+                "modal_supports_types": False,
+                "modal_content_partial": config["types"]["item"],
+                "modal_post_url": f"{config['post_urls']['item']}?submodal=create_item",
+                "modal_target": f"#{membership['selected_list_id']}",
+                "modal_swap": "beforeend",
+                "membership_input_name": membership["input_name"],
+            }
+        )
 
     # If object_type is address, service or device, then show all groups
     if object_type in ["addresses", "services", "devices"]:
