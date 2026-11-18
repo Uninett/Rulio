@@ -1196,6 +1196,16 @@ function initializeMembershipSelectors(root = document) {
 
         selector.querySelectorAll(".membership-list-item").forEach(setupDraggableItem);
 
+        // Items inserted by htmx later (e.g. an address created from the submodal) get the same listeners.
+        selector.addEventListener("htmx:load", (event) => {
+            if (event.target.matches(".membership-list-item")) {
+                setupDraggableItem(event.target);
+            }
+        });
+
+        // A created item arrives already highlighted, so the previous highlight is cleared first.
+        selector.addEventListener("htmx:beforeSwap", () => clearRecentlyDropped());
+
         // The last moved filter stays highlighted until another filter is selected.
         function clearRecentlyDropped() {
             selector.querySelectorAll(".membership-list-item.recently-dropped")
