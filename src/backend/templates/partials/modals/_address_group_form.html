@@ -1,3 +1,5 @@
+{% load static %}
+
 <hr>
 
 <!-- List all addresses  as a dual list selection with drag and drop -->
@@ -5,7 +7,16 @@
     <h2 class="membership-header">Addresses</h2>
 </div>
 
-<p class="form-help">Choose any addresses you want to add to this address group.</p>
+<div class="create-new-object">
+    <p class="form-help">Choose any addresses you want to add to this address group.</p>
+
+    <button type="button" class="btn-add btn-create-new-object"
+        hx-get="{% url 'modal-add' 'addresses' %}?submodal=create_item" hx-target="#submodal-container"
+        hx-swap="beforeend">
+        Create new address
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+    </button>
+</div>
 
 <div class="membership-selector" data-input-name="address_ids">
     <div class="membership-column">
@@ -23,12 +34,6 @@
     <div class="membership-column">
         <div id="address-group-selected-list" class="membership-list membership-list-selected"
             data-list-type="selected">
-            <button type=button class="add-object-button"
-                hx-get="{% url 'modal-add' 'addresses' %}?submodal=create_item" hx-target="#submodal-container"
-                hx-swap="beforeend">
-                Add new address
-            </button>
-
             {% for address in item_options %}
             {% if address.id in selected_address_ids %}
             <div class="membership-list-item truncate" draggable="true" data-id="{{ address.id }}">
