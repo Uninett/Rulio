@@ -9,6 +9,7 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from backend.objects.attributes.tag import Tag
+from backend.services.config_generation.platform_capabilities import get_platform_label
 from backend.services.delete import delete_device, delete_interface, remove_tag_from_object
 from backend.services.get import (
     get_all_device_groups_and_devices_with_tags_from_tenant,
@@ -366,7 +367,7 @@ def get_devices_view(request):
                     getattr(device, "type", ""),
                     getattr(device, "name", ""),
                     getattr(device, "description", ""),
-                    getattr(device, "platform", ""),
+                    get_platform_label(getattr(device, "platform", "") or ""),
                     devices_tags,
                 ],
                 "expand": [
@@ -463,7 +464,7 @@ def post_device_view(request):
             created_device.type or "",
             created_device.name or "",
             created_device.description or "",
-            created_device.platform or "",
+            get_platform_label(created_device.platform or ""),
             [],  # Tags
         ],
         "expand": [

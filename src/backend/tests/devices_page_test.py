@@ -1,4 +1,5 @@
 import json
+from html.parser import HTMLParser
 
 import pytest
 from django.db import connection, transaction
@@ -617,3 +618,100 @@ def test_interface_page_renders_shared_draft_buttons(authenticated_client, devic
     assert "saveInterfaceFilterChanges(this)" in content
     assert f'data-object-id="{interface.id}"' in content
     assert f'data-save-url="{reverse("post-interface-view")}"' in content
+
+
+# Reads the options of each <select> by id, as {select_id: [option attributes, with the option text as "text"]}.
+class SelectOptionsParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.options = {}
+        self.select_id = None
+        self.option = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "select":
+            self.select_id = dict(attrs).get("id")
+            self.options[self.select_id] = []
+        elif tag == "option" and self.select_id is not None:
+            self.option = {**dict(attrs), "text": ""}
+            self.options[self.select_id].append(self.option)
+
+    def handle_data(self, data):
+        if self.option is not None:
+            self.option["text"] += data.strip()
+
+    def handle_endtag(self, tag):
+        if tag == "option":
+            self.option = None
+        elif tag == "select":
+            self.select_id = None
+
+
+def select_options(content):
+    parser = SelectOptionsParser()
+    parser.feed(content.decode())
+    return parser.options
+
+
+# The device form picks a vendor first, and only the chosen vendor's platforms can be submitted.
+@pytest.mark.django_db
+def test_add_device_form_lists_vendors(authenticated_client_with_tenant):
+    response = authenticated_client_with_tenant.get(reverse("modal-add-form-content", args=["devices", "item"]))
+
+    assert response.status_code == 200
+    vendors = select_options(response.content)["platform-vendor"]
+    assert [vendor["text"] for vendor in vendors][:4] == ["Select vendor", "Arista", "Aruba", "Brocade"]
+    assert "Juniper" in [vendor["value"] for vendor in vendors]
+    assert not any("selected" in vendor for vendor in vendors)
+
+    # No vendor is chosen yet, so no platform can be submitted and the platform dropdown is hidden.
+    platforms = select_options(response.content)["platform"]
+    assert all("disabled" in platform for platform in platforms)
+    assert b'<div class="form-group" hidden>' in response.content
+
+
+@pytest.mark.django_db
+def test_update_device_form_preselects_vendor_and_platform(authenticated_client, device_with_interfaces):
+    device_with_interfaces.platform = "srx"
+    device_with_interfaces.save()
+
+    response = authenticated_client.get(reverse("modal-update", args=[f"device-{device_with_interfaces.id}"]))
+
+    assert response.status_code == 200
+    options = select_options(response.content)
+    assert [vendor["value"] for vendor in options["platform-vendor"] if "selected" in vendor] == ["Juniper"]
+    assert [platform["value"] for platform in options["platform"] if "selected" in platform] == ["srx"]
+    # Only Juniper's platforms can be chosen, and since there are several, the platform dropdown is shown.
+    assert [platform["text"] for platform in options["platform"] if "disabled" not in platform] == [
+        "Juniper",
+        "Juniper EVO",
+        "Juniper MSMPC",
+        "Juniper SRX",
+        "Juniper SRX Loopback",
+    ]
+    assert b'<div class="form-group" hidden>' not in response.content
+
+
+# The devices table shows the platform's label instead of the stored key.
+@pytest.mark.django_db
+def test_devices_page_shows_platform_label(authenticated_client, device_with_interfaces):
+    device_with_interfaces.platform = "srx"
+    device_with_interfaces.save()
+
+    response = authenticated_client.get(reverse("devices"))
+
+    assert response.status_code == 200
+    assert "Juniper SRX" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_update_device_form_hides_platform_for_single_platform_vendor(authenticated_client, device_with_interfaces):
+    device_with_interfaces.platform = "fortigate"
+    device_with_interfaces.save()
+
+    response = authenticated_client.get(reverse("modal-update", args=[f"device-{device_with_interfaces.id}"]))
+
+    options = select_options(response.content)
+    assert [vendor["value"] for vendor in options["platform-vendor"] if "selected" in vendor] == ["Fortinet"]
+    assert [platform["value"] for platform in options["platform"] if "selected" in platform] == ["fortigate"]
+    assert b'<div class="form-group" hidden>' in response.content
