@@ -20,7 +20,7 @@ def device_with_interfaces(authenticated_user_and_tenant_id):
         actor=user,
         tenant_id=tenant_id,
         name="Test_Device_Interfaces",
-        platform="test-platform",
+        platform="juniper",
         description="Device used to test interface syncing",
         type="test-type",
     )
@@ -255,7 +255,7 @@ def test_create_device_with_interfaces(authenticated_client_with_tenant, create_
         {
             "name": "Test_New_Device",
             "description": "Created from the device form",
-            "platform": "test-platform",
+            "platform": "juniper",
             "type": "test-type",
             "interface_fields": json.dumps([{"id": None, "name": "eth0"}, {"id": None, "name": "eth1", "vrf": "mgmt"}]),
         },
@@ -376,7 +376,7 @@ def test_failed_create_leaves_no_device(authenticated_client_with_tenant):
         {
             "name": "Test_Half_Created_Device",
             "description": "",
-            "platform": "test-platform",
+            "platform": "juniper",
             "type": "test-type",
             "interface_fields": json.dumps([{"name": "eth0"}, {"name": "eth0"}]),
         },
@@ -489,7 +489,7 @@ def test_update_device_with_duplicate_interface_names_gives_clear_error(authenti
 def post_device_create(client, name):
     return client.post(
         reverse("post-device-view"),
-        {"name": name, "description": "", "platform": "test-platform", "type": "test-type"},
+        {"name": name, "description": "", "platform": "juniper", "type": "test-type"},
     )
 
 
@@ -514,7 +514,7 @@ def test_device_name_can_be_reused_in_another_tenant(authenticated_user_and_tena
         actor=user,
         tenant_id=other_tenant.id,
         name=device_with_interfaces.name,
-        platform="test-platform",
+        platform="juniper",
         description="",
         type="test-type",
     )
@@ -528,7 +528,7 @@ def test_rename_device_to_name_taken_in_same_tenant_is_refused(
 ):
     user, tenant_id = authenticated_user_and_tenant_id
     other_device = create_device(
-        actor=user, tenant_id=tenant_id, name="Test_Other_Device", platform="p", description="", type="t"
+        actor=user, tenant_id=tenant_id, name="Test_Other_Device", platform="juniper", description="", type="t"
     )
 
     response = post_device_update(authenticated_client, other_device, name=device_with_interfaces.name)
@@ -578,11 +578,11 @@ def test_migration_renames_existing_duplicate_device_names():
     tenant = OldTenant.objects.create(tenant_name="Migration Test Tenant")
     other_tenant = OldTenant.objects.create(tenant_name="Migration Test Tenant 2")
     devices = [
-        OldDevice.objects.create(tenant=tenant, name="testing", platform="p", type="t"),
-        OldDevice.objects.create(tenant=tenant, name="testing", platform="p", type="t"),
-        OldDevice.objects.create(tenant=tenant, name="testing (2)", platform="p", type="t"),
-        OldDevice.objects.create(tenant=tenant, name="testing", platform="p", type="t"),
-        OldDevice.objects.create(tenant=other_tenant, name="testing", platform="p", type="t"),
+        OldDevice.objects.create(tenant=tenant, name="testing", platform="juniper", type="t"),
+        OldDevice.objects.create(tenant=tenant, name="testing", platform="juniper", type="t"),
+        OldDevice.objects.create(tenant=tenant, name="testing (2)", platform="juniper", type="t"),
+        OldDevice.objects.create(tenant=tenant, name="testing", platform="juniper", type="t"),
+        OldDevice.objects.create(tenant=other_tenant, name="testing", platform="juniper", type="t"),
     ]
 
     # The inserts above leave deferred foreign key checks pending in the test transaction, and PostgreSQL refuses

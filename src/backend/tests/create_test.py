@@ -17,6 +17,7 @@ from backend.services.membership import (
     add_objects_to_rule,
     add_services_to_group,
 )
+from backend.services.tenant_objects.create_tenant_objects import create_device, get_or_create_device
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
@@ -294,6 +295,70 @@ class TestCreateAddress:
                 ipv4_auto="192.168.110.0/24",
                 ipv6_auto="2001:db8::110",
             )
+
+
+# Platforms are trimmed and lowercased before saving, and unknown platforms give a readable ValueError.
+@pytest.mark.django_db
+class TestCreateDevice:
+    def test_create_device_normalizes_platform(self, request_with_session, create_testing_tenant):
+        device = create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            platform=" Juniper ",
+            description="",
+            type="firewall",
+        )
+
+        device.refresh_from_db()
+        assert device.platform == "juniper"
+
+    def test_create_device_with_invalid_platform_is_refused(self, request_with_session, create_testing_tenant):
+        with pytest.raises(ValueError, match="Platform: Value 'fortinet' is not a valid choice."):
+            create_device(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Test Device",
+                platform="fortinet",
+                description="",
+                type="firewall",
+            )
+
+    def test_get_or_create_device_normalizes_platform(self, request_with_session, create_testing_tenant):
+        device = get_or_create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            platform=" Juniper ",
+            description="",
+            type="firewall",
+        )
+
+        device.refresh_from_db()
+        assert device.platform == "juniper"
+
+    def test_get_or_create_device_with_invalid_platform_is_refused(self, request_with_session, create_testing_tenant):
+        with pytest.raises(ValueError, match="Platform: Value 'fortinet' is not a valid choice."):
+            get_or_create_device(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Test Device",
+                platform="fortinet",
+                description="",
+                type="firewall",
+            )
+
+    def test_get_or_create_device_returns_existing_device(self, request_with_session, create_testing_tenant):
+        kwargs = {
+            "actor": request_with_session.user,
+            "tenant_id": request_with_session.tenant_id,
+            "name": "Test Device",
+            "description": "",
+            "type": "firewall",
+        }
+        device = get_or_create_device(**kwargs, platform="juniper")
+
+        assert get_or_create_device(**kwargs, platform="cisco") == device
 
 
 @pytest.mark.django_db

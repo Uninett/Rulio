@@ -224,7 +224,8 @@ def update_device(*, actor, tenant_id, device_id, name=None, description=None, p
     if description is not None:
         device.description = description
     if platform is not None:
-        device.platform = platform
+        # Stored like create_device does, lowercase without surrounding spaces
+        device.platform = platform.strip().lower()
     if type is not None:
         device.type = type
 
