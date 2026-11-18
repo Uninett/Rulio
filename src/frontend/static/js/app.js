@@ -93,22 +93,26 @@ function closeModalAndRefresh(url, target) {
         modalContainer.innerHTML = "";
     }
 
+    refreshContent(url, target);
+}
+
+// Reloads the page content behind the modals, keeping the table's scroll position and expanded rows.
+function refreshContent(url, target) {
     if (!url || !target) return;
 
     const refreshTarget = document.querySelector(target);
+    // The target only exists on its own page, e.g. #objects-content is missing when a submodal is opened elsewhere.
+    if (!refreshTarget) return;
+
     let savedScrollTop = 0;
-    let expandedRowIds = [];
-
-    if (refreshTarget) {
-        const scrollContainer = refreshTarget.querySelector(".table-container");
-        if (scrollContainer) {
-            savedScrollTop = scrollContainer.scrollTop;
-        }
-
-        // Remembers which rows were expanded, so they can be expanded again after the refresh.
-        expandedRowIds = Array.from(refreshTarget.querySelectorAll("tr.expanded-row[id^='row-']"))
-            .map((row) => row.id.slice("row-".length));
+    const scrollContainer = refreshTarget.querySelector(".table-container");
+    if (scrollContainer) {
+        savedScrollTop = scrollContainer.scrollTop;
     }
+
+    // Remembers which rows were expanded, so they can be expanded again after the refresh.
+    const expandedRowIds = Array.from(refreshTarget.querySelectorAll("tr.expanded-row[id^='row-']"))
+        .map((row) => row.id.slice("row-".length));
 
     // Waits for htmx to finish settling. Before that, htmx temporarily gives new elements the attributes of old
     // elements with the same id, and then restores the new ones, which would collapse rows expanded any earlier.
