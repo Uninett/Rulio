@@ -23,7 +23,7 @@ def create_tenant(actor: User, name: str):
 
 
 @transaction.atomic
-def create_device(*, actor: User, tenant_id: int, name: str, platform: str, description: str, type: str) -> Device:
+def create_device(*, actor: User, tenant_id: int, name: str, platform: str, description: str) -> Device:
 
     require_write_tenant(actor, tenant_id)
 
@@ -31,7 +31,6 @@ def create_device(*, actor: User, tenant_id: int, name: str, platform: str, desc
         name=name,
         # Platforms are stored lowercase without surrounding spaces, so " Juniper " is saved as "juniper"
         platform=platform.strip().lower(),
-        type=type,
         description=description,
         tenant_id=tenant_id,
     )
@@ -47,9 +46,7 @@ def create_device(*, actor: User, tenant_id: int, name: str, platform: str, desc
 
 
 @transaction.atomic
-def get_or_create_device(
-    *, actor: User, tenant_id: int, name: str, platform: str, description: str, type: str
-) -> Device:
+def get_or_create_device(*, actor: User, tenant_id: int, name: str, platform: str, description: str) -> Device:
     require_write_tenant(actor, tenant_id)
 
     # Device names are unique per tenant, so an existing device is looked up by name only
@@ -59,9 +56,7 @@ def get_or_create_device(
         return device
 
     # A new device goes through create_device, so it is validated and an invalid platform gives a readable error
-    return create_device(
-        actor=actor, tenant_id=tenant_id, name=name, platform=platform, description=description, type=type
-    )
+    return create_device(actor=actor, tenant_id=tenant_id, name=name, platform=platform, description=description)
 
 
 @transaction.atomic

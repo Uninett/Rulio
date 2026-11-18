@@ -34,6 +34,9 @@ from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)
 
+# The first column shows the kind of row, "Device" or "Group", and has no header text.
+DEVICES_TABLE_HEADERS = ["", "Name", "Description", "Platform", "Tags", ""]
+
 
 # A container for one interface’s data
 @dataclass
@@ -244,7 +247,7 @@ def get_devices_view(request):
     devices = sorted(devices, key=lambda d: (getattr(d, "name", "") or "").lower())
     device_groups = sorted(device_groups, key=lambda g: (getattr(g, "name", "") or "").lower())
 
-    headers = ["Type", "Name", "Description", "Platform", "Tags", ""]
+    headers = DEVICES_TABLE_HEADERS
     rows = []
 
     for group in device_groups:
@@ -364,7 +367,7 @@ def get_devices_view(request):
                 "is_global": device.tenant_id == GLOBAL_TENANT_ID,
                 "can_write": can_write_tenant(request.user, device.tenant_id),
                 "cells": [
-                    getattr(device, "type", ""),
+                    "Device",
                     getattr(device, "name", ""),
                     getattr(device, "description", ""),
                     get_platform_label(getattr(device, "platform", "") or ""),
@@ -399,7 +402,6 @@ def post_device_view(request):
     description = request.POST.get("description", "")
     tenant_id = int(request.session.get("current_tenant_id")) if request.session.get("current_tenant_id") else None
     platform = request.POST.get("platform", "")
-    type = request.POST.get("type", "")
     draft_interface_fields = parse_interface_fields(
         request.POST.get("interface_fields")
     )  # Reads the submitted interface_fields and parses it
@@ -413,7 +415,6 @@ def post_device_view(request):
                 name=name,
                 description=description,
                 platform=platform,
-                type=type,
             )
 
             submitted_tag_ids = [int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id]
@@ -461,7 +462,7 @@ def post_device_view(request):
         "is_global": created_device.tenant_id == GLOBAL_TENANT_ID,
         "can_write": can_write_tenant(request.user, created_device.tenant_id),
         "cells": [
-            created_device.type or "",
+            "Device",
             created_device.name or "",
             created_device.description or "",
             get_platform_label(created_device.platform or ""),
@@ -485,7 +486,7 @@ def post_device_view(request):
         "partials/objects/_tableRow.html",
         {
             "row": row,
-            "headers": ["Type", "Name", "Description", "Platform", "Tags", ""],
+            "headers": DEVICES_TABLE_HEADERS,
             "object_type": "devices",
         },
     )
@@ -498,7 +499,6 @@ def update_device_view(request, object_id):
     name = request.POST.get("name", "")
     description = request.POST.get("description", "")
     platform = request.POST.get("platform", "")
-    device_type = request.POST.get("type", "")
     raw_interface_fields = request.POST.get("interface_fields")
     draft_interface_fields = parse_interface_fields(raw_interface_fields)
 
@@ -506,7 +506,6 @@ def update_device_view(request, object_id):
         "name": name,
         "description": description,
         "platform": platform,
-        "type": device_type,
     }
 
     if not tenant_id:
@@ -551,7 +550,6 @@ def update_device_view(request, object_id):
                 name=name,
                 description=description,
                 platform=platform,
-                type=device_type,
             )
 
             submitted_tag_ids = {int(tag_id) for tag_id in request.POST.getlist("tag_ids") if tag_id}
@@ -629,7 +627,6 @@ def render_update_device_error(request, object_id, error_message):
         "name": request.POST.get("name", ""),
         "description": request.POST.get("description", ""),
         "platform": request.POST.get("platform", ""),
-        "type": request.POST.get("type", ""),
     }
 
     # Shows the submitted interface draft instead of the saved interfaces, and keeps it in the hidden input.

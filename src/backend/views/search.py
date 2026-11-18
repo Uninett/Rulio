@@ -220,7 +220,6 @@ def get_device_search_results(request):
             device.name,
             device.platform,
             get_platform_label(device.platform),
-            device.type,
             device.description,
             *_tag_names(device),
         )

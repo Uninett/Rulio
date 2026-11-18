@@ -1059,7 +1059,6 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
             name=payload.name,
             platform=payload.platform,
             description=payload.description,
-            type=payload.type,
         )
         logger.info(f"create_device endpoint succeeded for device id={device.id}")
         return Status(
@@ -1069,7 +1068,6 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
                 "device_name": device.name,
                 "device_platform": device.platform,
                 "device_description": device.description,
-                "device_type": device.type,
             },
         )
     except Exception as e:
@@ -1096,7 +1094,6 @@ def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, grou
         name=payload.name,
         platform=payload.platform,
         description=payload.description,
-        type=payload.type,
     )
     add_devices_to_group(
         actor=request.user,
@@ -1114,7 +1111,6 @@ def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, grou
             "device_name": device.name,
             "device_platform": device.platform,
             "device_description": device.description,
-            "device_type": device.type,
             "group_id": group_id,
         },
     )

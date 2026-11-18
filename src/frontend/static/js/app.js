@@ -282,7 +282,7 @@ function applyRuleSelectorSelection(selectorType, button) {
     closeThisModal(button);
 }
 
-// Shows only the chosen vendor's platforms in the device form's Platform dropdown.
+// Shows only the chosen vendor's platforms in the device form's Type dropdown (the vendor is picked in the form's Platform dropdown).
 // The server renders the starting state, so this only runs when the user picks another vendor.
 function selectDevicePlatformVendor(vendorSelect) {
     const platformSelect = vendorSelect.form.querySelector('select[name="platform"]');
