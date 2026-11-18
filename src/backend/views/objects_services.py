@@ -22,6 +22,7 @@ from backend.services.update import (
     update_service,
 )
 from backend.utils.logger import set_up_logger
+from backend.views.modal import render_created_membership_item
 from backend.views.objects_helpers import get_objects_toolbar_context
 from backend.views.session import get_tenant_context
 from constants import GLOBAL_TENANT_ID
@@ -230,6 +231,13 @@ def post_service_view(request):
                 tenant_id=tenant_id,
                 tag=tag,
                 obj=created_service,
+            )
+
+        if request.GET.get("submodal") == "create_item":
+            return render_created_membership_item(
+                request,
+                item=created_service,
+                input_name="service_ids",
             )
 
     except Exception as e:
