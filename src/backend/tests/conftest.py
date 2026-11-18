@@ -687,7 +687,7 @@ def sample_devices(request_with_session, create_testing_tenant):
             tenant_id=request_with_session.tenant_id,
             name="Sample_Device_4",
             description="This is a fourth sample device for testing.",
-            platform="fortinet",
+            platform="fortigate",
             type="firewall",
         ),
     ]

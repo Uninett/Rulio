@@ -358,15 +358,42 @@ class TestUpdate:
                 device_id=device.id,
                 name=new_name,
                 description="updated device description",
-                platform="updated-platform",
+                platform="cisco",
                 type="updated-type",
             )
 
             device.refresh_from_db()
             assert device.name == new_name
             assert device.description == "updated device description"
-            assert device.platform == "updated-platform"
+            assert device.platform == "cisco"
             assert device.type == "updated-type"
+
+    def test_update_device_normalizes_platform(self, request_with_session, sample_devices):
+        device = sample_devices[0]
+
+        update_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            device_id=device.id,
+            platform="CISCO",
+        )
+
+        device.refresh_from_db()
+        assert device.platform == "cisco"
+
+    def test_update_device_with_invalid_platform_is_refused(self, request_with_session, sample_devices):
+        device = sample_devices[0]
+
+        with pytest.raises(ValueError, match="Platform: Value 'fortinet' is not a valid choice."):
+            update_device(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                device_id=device.id,
+                platform="fortinet",
+            )
+
+        device.refresh_from_db()
+        assert device.platform == "juniper"
 
     def test_update_device_group(self, request_with_session, sample_device_groups):
         for device_group in sample_device_groups:

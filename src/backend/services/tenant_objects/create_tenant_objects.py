@@ -29,7 +29,8 @@ def create_device(*, actor: User, tenant_id: int, name: str, platform: str, desc
 
     device = Device(
         name=name,
-        platform=platform,
+        # Platforms are stored lowercase without surrounding spaces, so " Juniper " is saved as "juniper"
+        platform=platform.strip().lower(),
         type=type,
         description=description,
         tenant_id=tenant_id,
@@ -52,16 +53,15 @@ def get_or_create_device(
     require_write_tenant(actor, tenant_id)
 
     # Device names are unique per tenant, so an existing device is looked up by name only
-    device, created = Device.objects.get_or_create(
-        name=name,
-        tenant_id=tenant_id,
-        defaults={"platform": platform, "type": type, "description": description},
-    )
-    if created:
-        logger.info(f"Created {device} for tenant={device.tenant_id}")
-    else:
+    device = Device.objects.filter(name=name, tenant_id=tenant_id).first()
+    if device is not None:
         logger.info(f"Retrieved existing {device} for tenant={device.tenant_id}")
-    return device
+        return device
+
+    # A new device goes through create_device, so it is validated and an invalid platform gives a readable error
+    return create_device(
+        actor=actor, tenant_id=tenant_id, name=name, platform=platform, description=description, type=type
+    )
 
 
 @transaction.atomic
