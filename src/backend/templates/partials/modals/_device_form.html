@@ -1,19 +1,20 @@
 {% load platform_tags %}
 {% device_platform_options object_data.platform as platform_options %}
-{# The vendor select has no name, so only the platform key is submitted. Choosing a vendor filters the platforms. #}
+{# The form shows the vendor as "Platform" (e.g. Juniper) and the Aerleon platform key as "Type" (e.g. Juniper SRX). #}
+{# The Platform select has no name, so only the type's platform key is submitted. Choosing a platform filters the types. #}
 <div class="form-group">
-    <label for="platform-vendor">Vendor<span class="required"> *</span></label>
+    <label for="platform-vendor">Platform<span class="required"> *</span></label>
     <select id="platform-vendor" required onchange="selectDevicePlatformVendor(this)">
-        <option value="">Select vendor</option>
+        <option value="">Select platform</option>
         {% for vendor in platform_options.vendors %}
         <option value="{{ vendor.label }}"{% if vendor.selected %} selected{% endif %}>{{ vendor.label }}</option>
         {% endfor %}
     </select>
 </div>
 
-{# Hidden when the vendor has a single platform, which is then submitted without a second choice. #}
+{# Hidden when the platform has a single type, which is then submitted without a second choice. #}
 <div class="form-group"{% if not platform_options.show_platform %} hidden{% endif %}>
-    <label for="platform">Platform<span class="required"> *</span></label>
+    <label for="platform">Type<span class="required"> *</span></label>
     <select id="platform" name="platform" required>
         {% for vendor in platform_options.vendors %}
         {% for platform in vendor.platforms %}
@@ -21,12 +22,6 @@
         {% endfor %}
         {% endfor %}
     </select>
-</div>
-
-<div class="form-group">
-    <label for="type">Type<span class="required"> *</span></label>
-    <input id="type" name="type" value="{{ object_data.type|default:''  }}" type="text"
-        placeholder="e.g. firewall, router, switch" required>
 </div>
 
 <input type="hidden" name="interface_fields" id="device-interface-field-input" value="{{ interface_fields_draft|default:'' }}">

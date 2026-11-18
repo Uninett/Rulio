@@ -10,7 +10,7 @@ from backend.objects.tenant_objects.device import Device
 from backend.objects.tenant_objects.interface import Interface
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.attribute_objects.create_attribute_objects import create_tag
-from backend.services.tenant_objects.create_tenant_objects import create_device, create_interface
+from backend.services.tenant_objects.create_tenant_objects import create_device, create_device_group, create_interface
 from backend.views.devices_page import InterfaceFields, parse_interface_fields, sync_device_interfaces
 
 
@@ -23,7 +23,6 @@ def device_with_interfaces(authenticated_user_and_tenant_id):
         name="Test_Device_Interfaces",
         platform="juniper",
         description="Device used to test interface syncing",
-        type="test-type",
     )
     for name in ("eth0", "eth1"):
         create_interface(
@@ -48,7 +47,6 @@ def post_device_update(client, device, **extra_fields):
             "name": device.name,
             "description": "Updated description",
             "platform": device.platform,
-            "type": device.type,
             **extra_fields,
         },
     )
@@ -257,7 +255,6 @@ def test_create_device_with_interfaces(authenticated_client_with_tenant, create_
             "name": "Test_New_Device",
             "description": "Created from the device form",
             "platform": "juniper",
-            "type": "test-type",
             "interface_fields": json.dumps([{"id": None, "name": "eth0"}, {"id": None, "name": "eth1", "vrf": "mgmt"}]),
         },
     )
@@ -378,7 +375,6 @@ def test_failed_create_leaves_no_device(authenticated_client_with_tenant):
             "name": "Test_Half_Created_Device",
             "description": "",
             "platform": "juniper",
-            "type": "test-type",
             "interface_fields": json.dumps([{"name": "eth0"}, {"name": "eth0"}]),
         },
     )
@@ -490,7 +486,7 @@ def test_update_device_with_duplicate_interface_names_gives_clear_error(authenti
 def post_device_create(client, name):
     return client.post(
         reverse("post-device-view"),
-        {"name": name, "description": "", "platform": "juniper", "type": "test-type"},
+        {"name": name, "description": "", "platform": "juniper"},
     )
 
 
@@ -517,7 +513,6 @@ def test_device_name_can_be_reused_in_another_tenant(authenticated_user_and_tena
         name=device_with_interfaces.name,
         platform="juniper",
         description="",
-        type="test-type",
     )
 
     assert device.name == device_with_interfaces.name
@@ -529,7 +524,7 @@ def test_rename_device_to_name_taken_in_same_tenant_is_refused(
 ):
     user, tenant_id = authenticated_user_and_tenant_id
     other_device = create_device(
-        actor=user, tenant_id=tenant_id, name="Test_Other_Device", platform="juniper", description="", type="t"
+        actor=user, tenant_id=tenant_id, name="Test_Other_Device", platform="juniper", description=""
     )
 
     response = post_device_update(authenticated_client, other_device, name=device_with_interfaces.name)
@@ -660,7 +655,7 @@ def test_add_device_form_lists_vendors(authenticated_client_with_tenant):
 
     assert response.status_code == 200
     vendors = select_options(response.content)["platform-vendor"]
-    assert [vendor["text"] for vendor in vendors][:4] == ["Select vendor", "Arista", "Aruba", "Brocade"]
+    assert [vendor["text"] for vendor in vendors][:4] == ["Select platform", "Arista", "Aruba", "Brocade"]
     assert "Juniper" in [vendor["value"] for vendor in vendors]
     assert not any("selected" in vendor for vendor in vendors)
 
@@ -715,3 +710,79 @@ def test_update_device_form_hides_platform_for_single_platform_vendor(authentica
     assert [vendor["value"] for vendor in options["platform-vendor"] if "selected" in vendor] == ["Fortinet"]
     assert [platform["value"] for platform in options["platform"] if "selected" in platform] == ["fortigate"]
     assert b'<div class="form-group" hidden>' in response.content
+
+
+# Devices have no free-text type. The first column says what kind of row it is, and its header is empty.
+@pytest.mark.django_db
+def test_devices_page_first_column_shows_device_and_group(
+    authenticated_client, authenticated_user_and_tenant_id, device_with_interfaces
+):
+    user, tenant_id = authenticated_user_and_tenant_id
+    group = create_device_group(actor=user, tenant_id=tenant_id, name="Test_Device_Group", description="")
+
+    response = authenticated_client.get(reverse("devices"))
+
+    assert response.status_code == 200
+    devices = response.context["devices"]
+    assert devices["headers"] == ["", "Name", "Description", "Platform", "Tags", ""]
+    first_cells = {row["id"]: row["cells"][0] for row in devices["rows"]}
+    assert first_cells[f"device-{device_with_interfaces.id}"] == "Device"
+    assert first_cells[f"devicegroup-{group.id}"] == "Group"
+    # The first column is still shown, just without a header text.
+    assert b'<th class="col-1"></th>' in response.content
+
+
+@pytest.mark.django_db
+def test_created_device_row_shows_device_in_first_column(authenticated_client_with_tenant):
+    response = post_device_create(authenticated_client_with_tenant, "Test_New_Row_Device")
+
+    assert response.status_code == 200
+    assert response.context["row"]["cells"][0] == "Device"
+    assert response.context["headers"] == ["", "Name", "Description", "Platform", "Tags", ""]
+
+
+@pytest.mark.django_db
+def test_device_form_has_no_type_input(authenticated_client_with_tenant):
+    response = authenticated_client_with_tenant.get(reverse("modal-add-form-content", args=["devices", "item"]))
+
+    assert response.status_code == 200
+    assert b'name="type"' not in response.content
+    assert b"e.g. firewall, router, switch" not in response.content
+
+
+# The first select picks the platform (e.g. Juniper), and the second its type (e.g. Juniper SRX).
+@pytest.mark.django_db
+def test_device_form_labels_read_platform_and_type(authenticated_client, device_with_interfaces):
+    response = authenticated_client.get(reverse("modal-update", args=[f"device-{device_with_interfaces.id}"]))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert '<label for="platform-vendor">Platform<span class="required"> *</span></label>' in content
+    assert '<label for="platform">Type<span class="required"> *</span></label>' in content
+    assert ">Vendor<" not in content
+    assert select_options(response.content)["platform-vendor"][0]["text"] == "Select platform"
+
+
+@pytest.mark.django_db
+def test_create_device_without_type(authenticated_client_with_tenant, create_testing_tenant):
+    response = authenticated_client_with_tenant.post(
+        reverse("post-device-view"),
+        {"name": "Test_Typeless_Device", "description": "", "platform": "srx"},
+    )
+
+    assert response.status_code == 200
+    device = Device.objects.get(name="Test_Typeless_Device", tenant_id=create_testing_tenant.id)
+    assert device.platform == "srx"
+
+
+@pytest.mark.django_db
+def test_update_device_without_type(authenticated_client, device_with_interfaces):
+    response = authenticated_client.post(
+        f"/devices/{device_with_interfaces.id}/update/",
+        {"name": "Renamed_Typeless_Device", "description": "", "platform": "srx"},
+    )
+
+    assert response.status_code == 204
+    device_with_interfaces.refresh_from_db()
+    assert device_with_interfaces.name == "Renamed_Typeless_Device"
+    assert device_with_interfaces.platform == "srx"

@@ -65,59 +65,29 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         tenant_label = f"{tenant_prefix.capitalize()}" if tenant_prefix != "shared" else "Shared"
 
         device_specs = [
-            (
-                f"{tenant_prefix}-edge-fw-01",
-                "juniper",
-                f"Primary edge firewall for {tenant_label} office.",
-                "firewall",
-            ),
-            (
-                f"{tenant_prefix}-edge-fw-02",
-                "juniper",
-                f"Secondary edge firewall for {tenant_label} office.",
-                "firewall",
-            ),
-            (f"{tenant_prefix}-core-sw-01", "cisco", f"Core switch for {tenant_label} office.", "switch"),
-            (f"{tenant_prefix}-core-sw-02", "cisco", f"Secondary core switch for {tenant_label} office.", "switch"),
-            (f"{tenant_prefix}-router-01", "cisco", f"Primary router for {tenant_label} office.", "router"),
-            (f"{tenant_prefix}-router-02", "juniper", f"Secondary router for {tenant_label} office.", "router"),
-            (f"{tenant_prefix}-router-03", "brocade", f"Edge router for {tenant_label} office.", "router"),
-            (f"{tenant_prefix}-router-04", "cisco", f"Backup router for {tenant_label} office.", "router"),
-            (f"{tenant_prefix}-router-05", "juniper", f"Distribution router for {tenant_label} office.", "router"),
-            (f"{tenant_prefix}-router-06", "brocade", f"Aggregation router for {tenant_label} office.", "router"),
-            (f"{tenant_prefix}-router-07", "cisco", f"WAN router for {tenant_label} office.", "router"),
-            (f"{tenant_prefix}-router-08", "juniper", f"LAN router for {tenant_label} office.", "router"),
+            (f"{tenant_prefix}-edge-fw-01", "juniper", f"Primary edge firewall for {tenant_label} office."),
+            (f"{tenant_prefix}-edge-fw-02", "juniper", f"Secondary edge firewall for {tenant_label} office."),
+            (f"{tenant_prefix}-core-sw-01", "cisco", f"Core switch for {tenant_label} office."),
+            (f"{tenant_prefix}-core-sw-02", "cisco", f"Secondary core switch for {tenant_label} office."),
+            (f"{tenant_prefix}-router-01", "cisco", f"Primary router for {tenant_label} office."),
+            (f"{tenant_prefix}-router-02", "juniper", f"Secondary router for {tenant_label} office."),
+            (f"{tenant_prefix}-router-03", "brocade", f"Edge router for {tenant_label} office."),
+            (f"{tenant_prefix}-router-04", "cisco", f"Backup router for {tenant_label} office."),
+            (f"{tenant_prefix}-router-05", "juniper", f"Distribution router for {tenant_label} office."),
+            (f"{tenant_prefix}-router-06", "brocade", f"Aggregation router for {tenant_label} office."),
+            (f"{tenant_prefix}-router-07", "cisco", f"WAN router for {tenant_label} office."),
+            (f"{tenant_prefix}-router-08", "juniper", f"LAN router for {tenant_label} office."),
         ]
 
         if is_ntnu_tenant:
             device_specs.extend(
                 [
-                    (
-                        f"{tenant_prefix}-edge-fw-03",
-                        "juniper",
-                        f"Additional edge firewall for {tenant_label} testing.",
-                        "firewall",
-                    ),
-                    (
-                        f"{tenant_prefix}-edge-fw-04",
-                        "juniper",
-                        f"Additional edge firewall for {tenant_label} testing.",
-                        "firewall",
-                    ),
-                    (
-                        f"{tenant_prefix}-core-sw-03",
-                        "cisco",
-                        f"Additional core switch for {tenant_label} testing.",
-                        "switch",
-                    ),
-                    (
-                        f"{tenant_prefix}-core-sw-04",
-                        "cisco",
-                        f"Additional core switch for {tenant_label} testing.",
-                        "switch",
-                    ),
-                    (f"{tenant_prefix}-router-09", "brocade", f"Campus router for {tenant_label} testing.", "router"),
-                    (f"{tenant_prefix}-router-10", "juniper", f"Campus router for {tenant_label} testing.", "router"),
+                    (f"{tenant_prefix}-edge-fw-03", "juniper", f"Additional edge firewall for {tenant_label} testing."),
+                    (f"{tenant_prefix}-edge-fw-04", "juniper", f"Additional edge firewall for {tenant_label} testing."),
+                    (f"{tenant_prefix}-core-sw-03", "cisco", f"Additional core switch for {tenant_label} testing."),
+                    (f"{tenant_prefix}-core-sw-04", "cisco", f"Additional core switch for {tenant_label} testing."),
+                    (f"{tenant_prefix}-router-09", "brocade", f"Campus router for {tenant_label} testing."),
+                    (f"{tenant_prefix}-router-10", "juniper", f"Campus router for {tenant_label} testing."),
                 ]
             )
 
@@ -328,14 +298,13 @@ def create_interfaces_devices_devicegroups_tags(*, actor: User, tenant_id: int, 
         tenant_filters = [f1, f2, f3, f4, f5, f6, f7]
 
         created_devices = []
-        for name, platform, description, device_type in device_specs:
+        for name, platform, description in device_specs:
             device_obj = get_or_create_device(
                 actor=actor,
                 tenant_id=target_tenant.id,
                 name=name,
                 platform=platform,
                 description=description,
-                type=device_type,
             )
             created_devices.append(device_obj)
             logger.info(f"Created {device_obj} for tenant={device_obj.tenant_id}")

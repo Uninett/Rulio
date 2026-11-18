@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.rule_match import RuleMatch
+from backend.objects.tenant_objects.device import Device
 from backend.services.attribute_objects.create_attribute_objects import (
     create_address_group,
     create_service,
@@ -307,7 +308,6 @@ class TestCreateDevice:
             name="Test Device",
             platform=" Juniper ",
             description="",
-            type="firewall",
         )
 
         device.refresh_from_db()
@@ -321,7 +321,6 @@ class TestCreateDevice:
                 name="Test Device",
                 platform="fortinet",
                 description="",
-                type="firewall",
             )
 
     def test_get_or_create_device_normalizes_platform(self, request_with_session, create_testing_tenant):
@@ -331,7 +330,6 @@ class TestCreateDevice:
             name="Test Device",
             platform=" Juniper ",
             description="",
-            type="firewall",
         )
 
         device.refresh_from_db()
@@ -345,7 +343,6 @@ class TestCreateDevice:
                 name="Test Device",
                 platform="fortinet",
                 description="",
-                type="firewall",
             )
 
     def test_get_or_create_device_returns_existing_device(self, request_with_session, create_testing_tenant):
@@ -354,11 +351,35 @@ class TestCreateDevice:
             "tenant_id": request_with_session.tenant_id,
             "name": "Test Device",
             "description": "",
-            "type": "firewall",
         }
         device = get_or_create_device(**kwargs, platform="juniper")
 
         assert get_or_create_device(**kwargs, platform="cisco") == device
+
+    # Devices have no type field, so a device is created from its name, platform and description alone.
+    def test_create_device_without_type(self, request_with_session, create_testing_tenant):
+        device = create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            platform="srx",
+            description="",
+        )
+
+        device.refresh_from_db()
+        assert device.platform == "srx"
+        assert "type" not in {field.name for field in Device._meta.get_fields()}
+
+    def test_get_or_create_device_without_type(self, request_with_session, create_testing_tenant):
+        device = get_or_create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            platform="srx",
+            description="",
+        )
+
+        assert device.platform == "srx"
 
 
 @pytest.mark.django_db

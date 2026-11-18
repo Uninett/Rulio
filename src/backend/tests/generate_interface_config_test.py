@@ -55,7 +55,6 @@ class TestGenerateInterfaceConfigResults:
             name=f"{name}-device",
             platform="juniper",
             description="test device",
-            type="firewall",
         )
         interface = create_interface(
             actor=request_with_session.user,
@@ -303,7 +302,6 @@ class TestGenerateInterfaceConfigResults:
             name="superuser-device",
             platform="juniper",
             description="superuser device",
-            type="firewall",
         )
         interface = create_interface(
             actor=superuser,

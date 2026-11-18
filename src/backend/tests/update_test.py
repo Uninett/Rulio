@@ -1,3 +1,4 @@
+import inspect
 import ipaddress
 
 import pytest
@@ -359,14 +360,29 @@ class TestUpdate:
                 name=new_name,
                 description="updated device description",
                 platform="cisco",
-                type="updated-type",
             )
 
             device.refresh_from_db()
             assert device.name == new_name
             assert device.description == "updated device description"
             assert device.platform == "cisco"
-            assert device.type == "updated-type"
+
+    # Devices have no type field, so update_device takes no type and updates the other fields on their own.
+    def test_update_device_without_type(self, request_with_session, sample_devices):
+        device = sample_devices[0]
+
+        update_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            device_id=device.id,
+            name="Typeless_Device",
+            description="no type",
+            platform="srx",
+        )
+
+        device.refresh_from_db()
+        assert (device.name, device.description, device.platform) == ("Typeless_Device", "no type", "srx")
+        assert "type" not in inspect.signature(update_device).parameters
 
     def test_update_device_normalizes_platform(self, request_with_session, sample_devices):
         device = sample_devices[0]
