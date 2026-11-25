@@ -63,6 +63,10 @@ def get_add_modal_config(object_type):
             "swap": "beforeend",
             "refresh_url": reverse("devices"),
             "modal_refresh_target": "#devices-content",
+            "membership": {
+                "selected_list_id": "device-group-selected-list",
+                "input_name": "device_ids",
+            },
         },
         "filters": {
             "title": "Add Filter",

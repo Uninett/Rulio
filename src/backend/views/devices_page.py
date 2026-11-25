@@ -26,7 +26,7 @@ from backend.services.tenant_objects.create_tenant_objects import (
 )
 from backend.services.update import update_device, update_interface
 from backend.utils.logger import set_up_logger
-from backend.views.modal import get_group_options_view
+from backend.views.modal import get_group_options_view, render_created_membership_item
 from backend.views.modal_update import build_update_modal_context
 from backend.views.search import get_global_search_results
 from backend.views.session import get_tenant_context
@@ -435,6 +435,13 @@ def post_device_view(request):
                 device=created_device,
                 interface_fields=draft_interface_fields,
             )
+
+            if request.GET.get("submodal") == "create_item":
+                return render_created_membership_item(
+                    request,
+                    item=created_device,
+                    input_name="device_ids",
+                )
 
     except (PermissionDenied, ObjectDoesNotExist, ValueError, IntegrityError) as e:
         return render(
