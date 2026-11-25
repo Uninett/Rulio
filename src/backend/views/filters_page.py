@@ -9,8 +9,10 @@ from backend.objects.draft import Draft
 from backend.objects.filters.rule import Rule
 from backend.services.filter_draft import (
     FilterDraftError,
+    apply_all_drafts,
     apply_filter_draft,
     build_filter_changeset,
+    discard_all_drafts,
     discard_filter_draft,
     filter_changes_pending,
     filter_delete_counts,
@@ -167,7 +169,7 @@ def _filter_row(entry: dict, saved_filter: dict | None, user, tenant_id: int, ta
 def get_filters_view(request):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
-        return {"headers": [], "rows": [], "has_changes": False}
+        return {"headers": [], "rows": [], "has_changes": False, "has_any_changes": False}
 
     tenant_id = int(tenant_id)
 
@@ -176,7 +178,7 @@ def get_filters_view(request):
         baseline = load_baseline_filters(request.user, tenant_id)
     except PermissionDenied as e:
         print(f"Error fetching filters: {e}")
-        return {"headers": [], "rows": [], "has_changes": False}
+        return {"headers": [], "rows": [], "has_changes": False, "has_any_changes": False}
 
     # The rows show the saved filters with this user's unsaved changes applied.
     changes = get_filter_changes(request.user, tenant_id)
@@ -249,6 +251,8 @@ def get_filters_view(request):
         "headers": ["Name", "Description", "Rules", "Tags"],
         "rows": rows,
         "has_changes": filter_changes_pending(changes),
+        # Save All and Discard All also act on the rule drafts of the filters.
+        "has_any_changes": filter_changes_pending(changes) or bool(pending_rule_drafts),
     }
 
 
@@ -361,4 +365,37 @@ def discard_filter_draft_view(request):
         return HttpResponse("No tenant selected.", status=400)
 
     discard_filter_draft(request.user, int(tenant_id_raw))
+    return HttpResponse(status=204)
+
+
+# Writes the user's filter draft and all their rule drafts in the tenant. On any error nothing is saved and the
+# drafts are kept.
+@login_required(login_url="login")
+def save_all_drafts_view(request):
+    if request.method != "POST":
+        return HttpResponse("Method not allowed.", status=405)
+
+    tenant_id_raw = request.session.get("current_tenant_id")
+    if not tenant_id_raw:
+        return HttpResponse("No tenant selected.", status=400)
+
+    try:
+        apply_all_drafts(actor=request.user, tenant_id=int(tenant_id_raw))
+    except (ValueError, PermissionDenied) as exc:
+        return HttpResponse(f"Could not save changes: {exc}", status=400)
+
+    return HttpResponse(status=204)
+
+
+# Throws away the user's filter draft and all their rule drafts in the tenant.
+@login_required(login_url="login")
+def discard_all_drafts_view(request):
+    if request.method != "POST":
+        return HttpResponse("Method not allowed.", status=405)
+
+    tenant_id_raw = request.session.get("current_tenant_id")
+    if not tenant_id_raw:
+        return HttpResponse("No tenant selected.", status=400)
+
+    discard_all_drafts(request.user, int(tenant_id_raw))
     return HttpResponse(status=204)

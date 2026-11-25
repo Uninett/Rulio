@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from backend.objects.attributes.tag import Tag
 from backend.objects.draft import Draft
 from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.objects.tenant_objects.tenant_user_member import TenantUserMember
 from backend.services.attribute_objects.create_attribute_objects import create_tag
@@ -13,8 +14,10 @@ from backend.services.filter_draft import (
     FILTER_DRAFT_SCOPE,
     FILTER_DRAFT_SCOPE_ID,
     FilterDraftError,
+    apply_all_drafts,
     apply_filter_draft,
     build_filter_changeset,
+    discard_all_drafts,
     discard_filter_draft,
     filter_changes_pending,
     get_filter_changes,
@@ -28,7 +31,13 @@ from backend.services.filter_objects.create_filter_objects import (
     create_filter,
     create_rule,
 )
-from backend.services.rule_draft import RULE_DRAFT_SCOPE, stage_rule_create
+from backend.services.rule_draft import (
+    RULE_DRAFT_SCOPE,
+    empty_rule_changes,
+    saved_rule_key,
+    stage_rule_create,
+    stage_rule_update,
+)
 from constants import GLOBAL_TENANT_ID
 
 
@@ -328,3 +337,195 @@ def test_apply_reports_a_model_check_instead_of_crashing(superuser, draft_args, 
     assert Filter.objects.get(id=filter_a.id).name == "draft-filter-a"
     assert not global_filter.get_tags().exists()
     assert has_filter_draft(draft_args["actor"])
+
+
+def rule_fields(name, **overrides):
+    return {
+        "name": name,
+        "description": "",
+        "action": "accept",
+        "log_type": "None",
+        "enable": True,
+        "source_address_ids": [],
+        "destination_address_ids": [],
+        "source_service_ids": [],
+        "destination_service_ids": [],
+        "tag_ids": [],
+        **overrides,
+    }
+
+
+def test_save_all_saves_filter_and_rule_changes(draft_args, saved_filters):
+    filter_a, filter_b = saved_filters
+    stage_filter_update(**draft_args, key=saved_filter_key(filter_a.id), fields=filter_fields("draft-filter-renamed"))
+    stage_rule_create(**draft_args, filter_id=filter_a.id, fields=rule_fields("save-all-rule-a"))
+    stage_rule_create(**draft_args, filter_id=filter_b.id, fields=rule_fields("save-all-rule-b"))
+
+    apply_all_drafts(**draft_args)
+
+    assert Filter.objects.get(id=filter_a.id).name == "draft-filter-renamed"
+    assert Rule.objects.filter(filter_id=filter_a.id, name="save-all-rule-a").exists()
+    assert Rule.objects.filter(filter_id=filter_b.id, name="save-all-rule-b").exists()
+    assert not Draft.objects.filter(user=draft_args["actor"]).exists()
+
+
+def test_save_all_drops_rule_drafts_of_a_deleted_filter(draft_args, saved_filters):
+    filter_a, filter_b = saved_filters
+    stage_rule_create(**draft_args, filter_id=filter_a.id, fields=rule_fields("save-all-rule-a"))
+    stage_rule_create(**draft_args, filter_id=filter_b.id, fields=rule_fields("save-all-rule-b"))
+    stage_filter_delete(**draft_args, key=saved_filter_key(filter_a.id))
+
+    apply_all_drafts(**draft_args)
+
+    assert not Filter.objects.filter(id=filter_a.id).exists()
+    assert not Rule.objects.filter(name="save-all-rule-a").exists()
+    assert Rule.objects.filter(filter_id=filter_b.id, name="save-all-rule-b").exists()
+    assert not Draft.objects.filter(user=draft_args["actor"]).exists()
+
+
+def test_save_all_saves_nothing_when_a_rule_draft_fails(draft_args, saved_filters):
+    filter_a, filter_b = saved_filters
+    rule = create_rule(
+        actor=draft_args["actor"],
+        filter=filter_b,
+        tenant_id=draft_args["tenant_id"],
+        name="doomed-rule",
+        description="",
+        action="accept",
+        enable=True,
+        log_type="None",
+        hit_count=0,
+    )
+    stage_filter_update(**draft_args, key=saved_filter_key(filter_a.id), fields=filter_fields("draft-filter-renamed"))
+    stage_rule_create(**draft_args, filter_id=filter_a.id, fields=rule_fields("save-all-rule-a"))
+    stage_rule_update(
+        **draft_args, filter_id=filter_b.id, key=saved_rule_key(rule.id), fields=rule_fields("doomed-rule-renamed")
+    )
+    Rule.objects.filter(id=rule.id).delete()
+
+    with pytest.raises(FilterDraftError, match="Filter 'draft-filter-b': Rule 'doomed-rule-renamed' was deleted"):
+        apply_all_drafts(**draft_args)
+
+    assert Filter.objects.get(id=filter_a.id).name == "draft-filter-a"
+    assert not Rule.objects.filter(name="save-all-rule-a").exists()
+    assert has_filter_draft(draft_args["actor"])
+    assert Draft.objects.filter(user=draft_args["actor"], scope=RULE_DRAFT_SCOPE).count() == 2
+
+
+def test_save_all_reports_a_model_check_on_a_rule(superuser, draft_args):
+    global_filter = create_filter(actor=superuser, tenant_id=GLOBAL_TENANT_ID, name="global-filter", description="")
+    global_rule = create_rule(
+        actor=superuser,
+        filter=global_filter,
+        tenant_id=GLOBAL_TENANT_ID,
+        name="global-rule",
+        description="",
+        action="accept",
+        enable=True,
+        log_type="None",
+        hit_count=0,
+    )
+    tag = create_tag(actor=superuser, tenant_id=draft_args["tenant_id"], name="tenant-tag", description="")
+    # Written directly, as it can't be saved: a tenant tag on a global rule, which the model check rejects.
+    changes = empty_rule_changes()
+    changes["updated"][saved_rule_key(global_rule.id)] = rule_fields("global-rule", tag_ids=[tag.id])
+    store_changes(draft_args["actor"], draft_args["tenant_id"], RULE_DRAFT_SCOPE, global_filter.id, changes)
+
+    with pytest.raises(FilterDraftError, match="Filter 'global-filter': .*same tenant"):
+        apply_all_drafts(**draft_args)
+
+    assert not global_rule.get_tags().exists()
+    assert Draft.objects.filter(scope=RULE_DRAFT_SCOPE, scope_id=global_filter.id).exists()
+
+
+def test_save_all_reports_a_rule_name_taken_since_staging(draft_args, saved_filters):
+    filter_a, _filter_b = saved_filters
+    rule = create_rule(
+        actor=draft_args["actor"],
+        filter=filter_a,
+        tenant_id=draft_args["tenant_id"],
+        name="save-all-rule",
+        description="",
+        action="accept",
+        enable=True,
+        log_type="None",
+        hit_count=0,
+    )
+    stage_rule_update(**draft_args, filter_id=filter_a.id, key=saved_rule_key(rule.id), fields=rule_fields("taken"))
+    # Made after staging, so renaming the rule hits the unique name constraint in the database.
+    create_rule(
+        actor=draft_args["actor"],
+        filter=filter_a,
+        tenant_id=draft_args["tenant_id"],
+        name="taken",
+        description="",
+        action="accept",
+        enable=True,
+        log_type="None",
+        hit_count=0,
+    )
+
+    with pytest.raises(
+        FilterDraftError, match="^Filter 'draft-filter-a': A rule with this name already exists in this filter.$"
+    ):
+        apply_all_drafts(**draft_args)
+
+    assert Rule.objects.get(id=rule.id).name == "save-all-rule"
+    assert Draft.objects.filter(user=draft_args["actor"], scope=RULE_DRAFT_SCOPE).exists()
+
+
+def test_save_all_can_swap_two_rule_names(draft_args, saved_filters):
+    filter_a, _filter_b = saved_filters
+    rule_one, rule_two = (
+        create_rule(
+            actor=draft_args["actor"],
+            filter=filter_a,
+            tenant_id=draft_args["tenant_id"],
+            name=name,
+            description="",
+            action="accept",
+            enable=True,
+            log_type="None",
+            hit_count=0,
+        )
+        for name in ("swap-one", "swap-two")
+    )
+    key_one, key_two = saved_rule_key(rule_one.id), saved_rule_key(rule_two.id)
+    # Staged through a temporary name, since staging refuses a name another rule has in the draft.
+    stage_rule_update(**draft_args, filter_id=filter_a.id, key=key_one, fields=rule_fields("swap-temp"))
+    stage_rule_update(**draft_args, filter_id=filter_a.id, key=key_two, fields=rule_fields("swap-one"))
+    stage_rule_update(**draft_args, filter_id=filter_a.id, key=key_one, fields=rule_fields("swap-two"))
+
+    apply_all_drafts(**draft_args)
+
+    assert Rule.objects.get(id=rule_one.id).name == "swap-two"
+    assert Rule.objects.get(id=rule_two.id).name == "swap-one"
+    assert not Draft.objects.filter(user=draft_args["actor"]).exists()
+
+
+def test_save_all_drops_an_orphaned_rule_draft(draft_args, saved_filters):
+    filter_a, filter_b = saved_filters
+    stage_filter_update(**draft_args, key=saved_filter_key(filter_a.id), fields=filter_fields("draft-filter-renamed"))
+    stage_rule_create(**draft_args, filter_id=filter_b.id, fields=rule_fields("orphaned-rule"))
+    # Deleted by someone else, without going through a draft, so the rule draft is left behind.
+    Filter.objects.filter(id=filter_b.id).delete()
+
+    apply_all_drafts(**draft_args)
+
+    assert Filter.objects.get(id=filter_a.id).name == "draft-filter-renamed"
+    assert not Draft.objects.filter(user=draft_args["actor"]).exists()
+
+
+def test_discard_all_removes_the_filter_and_rule_drafts(superuser, draft_args, saved_filters):
+    filter_a, _filter_b = saved_filters
+    other_user = get_user_model().objects.create_superuser(username="other-admin", password="x")
+    stage_filter_delete(**draft_args, key=saved_filter_key(filter_a.id))
+    stage_rule_create(**draft_args, filter_id=filter_a.id, fields=rule_fields("save-all-rule-a"))
+    stage_rule_create(
+        actor=other_user, tenant_id=draft_args["tenant_id"], filter_id=filter_a.id, fields=rule_fields("other-rule")
+    )
+
+    discard_all_drafts(draft_args["actor"], draft_args["tenant_id"])
+
+    assert not Draft.objects.filter(user=superuser).exists()
+    assert Draft.objects.filter(user=other_user, scope=RULE_DRAFT_SCOPE).exists()
