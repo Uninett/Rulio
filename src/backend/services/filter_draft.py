@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, connection, transaction
 
 from backend.objects.attributes.tag import Tag
 from backend.objects.draft import Draft
@@ -29,7 +29,12 @@ from backend.services.helper_user_tenant import (
     require_write_tenant,
 )
 from backend.services.membership import add_tag_to_object
-from backend.services.rule_draft import RULE_DRAFT_SCOPE
+from backend.services.rule_draft import (
+    RULE_DRAFT_SCOPE,
+    apply_rule_draft,
+    empty_rule_changes,
+    rule_changes_pending,
+)
 from backend.services.update import update_filter
 from constants import GLOBAL_TENANT_ID
 
@@ -309,3 +314,53 @@ def apply_filter_draft(*, actor, tenant_id: int) -> None:
         raise FilterDraftError(" ".join(exc.messages)) from exc
 
     draft.delete()
+
+
+# Rule names are unique per filter, but the database only checks that when the transaction commits. This checks
+# the rules written so far now, so a clash is reported for the filter that caused it, then defers the check again.
+def _check_rule_names_now() -> None:
+    with connection.cursor() as cursor:
+        cursor.execute("SET CONSTRAINTS unique_rule_name_per_filter IMMEDIATE")
+        cursor.execute("SET CONSTRAINTS unique_rule_name_per_filter DEFERRED")
+
+
+# Saves the filter draft and then every rule draft of this user in the tenant, in one transaction, so either
+# everything is saved or nothing is. Rule drafts of filters deleted in the filter draft are dropped by the filter save.
+@transaction.atomic
+def apply_all_drafts(*, actor, tenant_id: int) -> None:
+    apply_filter_draft(actor=actor, tenant_id=tenant_id)
+
+    # Read after the filter save, so the rule drafts it dropped are left out.
+    rule_drafts = Draft.objects.filter(user=actor, tenant_id=tenant_id, scope=RULE_DRAFT_SCOPE).order_by("scope_id")
+    for draft in rule_drafts:
+        if not rule_changes_pending({**empty_rule_changes(), **draft.changes}):
+            continue
+
+        filter_obj = Filter.objects.filter(id=draft.scope_id, tenant_id__in=[tenant_id, GLOBAL_TENANT_ID]).first()
+        if filter_obj is None:
+            # The filter was deleted outside this draft, so its rule changes can't be saved anywhere.
+            draft.delete()
+            continue
+
+        # The messages name the filter, since the user saved several filters' rules at once. The rule save runs
+        # in its own savepoint, so a database error is caught here after that savepoint is rolled back.
+        try:
+            with transaction.atomic():
+                apply_rule_draft(actor=actor, tenant_id=tenant_id, filter_id=filter_obj.id)
+                _check_rule_names_now()
+        except ValidationError as exc:
+            raise FilterDraftError(f"Filter '{filter_obj.name}': {' '.join(exc.messages)}") from exc
+        except IntegrityError as exc:
+            # Someone else saved a rule with the same name after the change was staged.
+            raise FilterDraftError(
+                f"Filter '{filter_obj.name}': A rule with this name already exists in this filter."
+            ) from exc
+        except ValueError as exc:
+            raise FilterDraftError(f"Filter '{filter_obj.name}': {exc}") from exc
+
+
+# Throws away the filter draft and every rule draft of this user in the tenant.
+@transaction.atomic
+def discard_all_drafts(actor, tenant_id: int) -> None:
+    discard_filter_draft(actor, tenant_id)
+    Draft.objects.filter(user=actor, tenant_id=tenant_id, scope=RULE_DRAFT_SCOPE).delete()
