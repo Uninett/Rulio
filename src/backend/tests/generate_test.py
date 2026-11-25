@@ -2,7 +2,6 @@ import copy
 import logging
 import string
 import warnings
-from typing import ClassVar
 
 import pytest
 from aerleon.lib.plugin_supervisor import BUILTIN_GENERATORS
@@ -43,7 +42,7 @@ clear_logs(__name__)
 
 @pytest.mark.django_db
 class TestGenerateConfig:
-    vendor_target_spec_pairs: ClassVar[list[tuple]] = [
+    vendor_target_options_pairs = [
         ("juniper", None),
         ("arista", None),
         ("aruba", None),
@@ -51,7 +50,7 @@ class TestGenerateConfig:
         ("brocade", None),
         ("paloalto", ["from-zone", "internal", "to-zone", "external"]),
     ]
-    log_for_vendors: ClassVar[list[str]] = ["juniper"]
+    log_for_vendors = ["juniper"]
 
     def _extract_generated_text(self, config) -> str:
         assert config
