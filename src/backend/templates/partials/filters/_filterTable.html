@@ -24,4 +24,31 @@
     {% url 'save-filter-draft-view' as filter_save_url %}
     {% url 'discard-filter-draft-view' as filter_discard_url %}
     {% include "partials/_draftActions.html" with draft_label="filter changes" draft_discard_handler="discardDraftChanges" draft_save_handler="saveDraftChanges" draft_table_id="filters-table" draft_save_url=filter_save_url draft_discard_url=filter_discard_url draft_has_changes=filters.has_changes %}
+
+    {% comment %}Save All and Discard All also act on this user's unsaved rule changes in every filter.{% endcomment %}
+    {% if can_write_current_tenant or request.user.is_superuser %}
+    <button
+        type="button"
+        class="btn btn-outline btn--danger draft-discard-all-btn"
+        {% if not filters.has_any_changes %}disabled{% endif %}
+        data-discard-url="{% url 'discard-all-drafts-view' %}"
+        data-draft-table="filters-table"
+        data-draft-label="filter and rule changes"
+        onclick="discardDraftChanges(this)"
+        aria-label="Discard all filter and rule changes"
+    >
+        Discard All
+    </button>
+    <button
+        type="button"
+        class="btn btn-save draft-save-all-btn"
+        {% if not filters.has_any_changes %}disabled{% endif %}
+        data-save-url="{% url 'save-all-drafts-view' %}"
+        data-draft-table="filters-table"
+        onclick="saveDraftChanges(this)"
+        aria-label="Save all filter and rule changes"
+    >
+        Save All
+    </button>
+    {% endif %}
 </div>
