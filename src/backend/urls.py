@@ -51,10 +51,12 @@ from .views.devices_page import (
 )
 from .views.filters_page import (
     delete_filter_view,
+    discard_all_drafts_view,
     discard_filter_draft_view,
     get_filters_content,
     get_filters_page,
     post_filter_view,
+    save_all_drafts_view,
     save_filter_draft_view,
     update_filter_view,
 )
@@ -165,6 +167,8 @@ urlpatterns = [
     path("filters/<str:row_key>/delete/", delete_filter_view, name="delete-filter-view"),
     path("filters/save/", save_filter_draft_view, name="save-filter-draft-view"),
     path("filters/discard/", discard_filter_draft_view, name="discard-filter-draft-view"),
+    path("filters/save-all/", save_all_drafts_view, name="save-all-drafts-view"),
+    path("filters/discard-all/", discard_all_drafts_view, name="discard-all-drafts-view"),
     # Objects Page: Address
     path("objects/", get_objects_page, name="objects"),
     path("objects/addresses/", get_objects_addresses, name="objects-addresses"),
