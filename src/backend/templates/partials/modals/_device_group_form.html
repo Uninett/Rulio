@@ -1,3 +1,5 @@
+{% load static %}
+
 <hr>
 
 <!-- List all devices  as a dual list selection with drag and drop -->
@@ -5,7 +7,16 @@
     <h2 class="membership-header">Devices</h2>
 </div>
 
-<p class="form-help">Choose any devices you want to add to this devices group.</p>
+<div class="create-new-object">
+    <p class="form-help">Choose any devices you want to add to this device group.</p>
+
+    <button type="button" class="btn-add btn-create-new-object"
+        hx-get="{% url 'modal-add' 'devices' %}?submodal=create_item" hx-target="#submodal-container"
+        hx-swap="beforeend">
+        Create new device
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+    </button>
+</div>
 
 <div class="membership-selector" data-input-name="device_ids">
     <div class="membership-column">
@@ -21,7 +32,7 @@
     </div>
 
     <div class="membership-column">
-        <div class="membership-list membership-list-selected" data-list-type="selected">
+        <div id="device-group-selected-list" class="membership-list membership-list-selected" data-list-type="selected">
             {% for device in item_options %}
             {% if device.id in selected_device_ids %}
             <div class="membership-list-item truncate" draggable="true" data-id="{{ device.id }}">
