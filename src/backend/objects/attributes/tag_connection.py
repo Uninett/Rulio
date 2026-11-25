@@ -18,7 +18,12 @@ class TagConnection(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):
-        if self.content_object and hasattr(self.content_object, "tenant_id") and self.tag.tenant_id != self.content_object.tenant_id and self.tag.tenant_id != GLOBAL_TENANT_ID:
+        if (
+            self.content_object
+            and hasattr(self.content_object, "tenant_id")
+            and self.tag.tenant_id != self.content_object.tenant_id
+            and self.tag.tenant_id != GLOBAL_TENANT_ID
+        ):
             raise ValidationError(
                 f"Tag and tagged object must belong to the same tenant. Tag belongs to tenant_id {self.tag.tenant_id}, but tagged object belongs to tenant_id {self.content_object.tenant_id}."
             )

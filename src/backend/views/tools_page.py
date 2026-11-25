@@ -1,5 +1,4 @@
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 from backend.services.helper_user_tenant import can_write_tenant

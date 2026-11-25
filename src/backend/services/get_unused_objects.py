@@ -164,8 +164,17 @@ def get_unused_filters(actor: User, tenant_id: int) -> QuerySet[Filter]:
     return unused_filters
 
 
-
-def get_unused_objects(actor: User, tenant_id: int) -> tuple[QuerySet[Address], QuerySet[AddressGroup],QuerySet[Service], QuerySet[ServiceGroup], QuerySet[Tag], QuerySet[Filter], QuerySet[RuleMatch]]:
+def get_unused_objects(
+    actor: User, tenant_id: int
+) -> tuple[
+    QuerySet[Address],
+    QuerySet[AddressGroup],
+    QuerySet[Service],
+    QuerySet[ServiceGroup],
+    QuerySet[Tag],
+    QuerySet[Filter],
+    QuerySet[RuleMatch],
+]:
     """
     Return unused address, address group, service, service group, tag, filter, and rule objects for the given tenant.
     """

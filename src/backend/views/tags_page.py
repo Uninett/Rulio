@@ -85,9 +85,7 @@ def get_tags_view(request):
 
     for item in tags:
         istrue = True
-        _, objects = get_all_objects_with_certain_tag(
-            actor=request.user, tenant_id=int(tenant_id), tag_id=item.id
-        )
+        _, objects = get_all_objects_with_certain_tag(actor=request.user, tenant_id=int(tenant_id), tag_id=item.id)
         logger.debug("Tag %s (%s)", item.id, item.name)
         for obj_type, obj_list in objects.items():
             logger.debug("View objects[%s] count = %s", obj_type, len(obj_list))
