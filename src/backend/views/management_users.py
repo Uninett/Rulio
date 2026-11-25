@@ -193,7 +193,7 @@ def post_user_view(request):
 
         logger.info(f"User created: {user.username}")
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/_modal.html",
@@ -269,7 +269,7 @@ def update_user_view(request, object_id):
                 membership.role = tenant_role
                 membership.save()
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not update user: {e}", status=400)
 
     return HttpResponse(status=204)
@@ -294,7 +294,7 @@ def delete_user_view(request, object_id):
     try:
         TenantUserMember.objects.filter(user=user).delete()
         user.delete()
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete user: {e}", status=400)
 
     return HttpResponse(status=204)

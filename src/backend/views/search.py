@@ -67,7 +67,7 @@ def get_address_search_results(request):
         address_groups = get_all_address_groups_from_tenant(actor=request.user, tenant_id=tenant_id).prefetch_related(
             TAG_PREFETCH
         )
-    except Exception:
+    except (TimeoutError, OSError):
         logger.exception("Failed to fetch addresses for search")
         return {"results": []}
 
@@ -113,7 +113,7 @@ def get_service_search_results(request):
         service_groups = get_all_service_groups_from_tenant(actor=request.user, tenant_id=tenant_id).prefetch_related(
             TAG_PREFETCH
         )
-    except Exception:
+    except (TimeoutError, OSError):
         logger.exception("Failed to fetch services for search")
         return {"results": []}
 
@@ -152,7 +152,7 @@ def get_filter_search_results(request):
 
     try:
         filters = get_all_filters_from_tenant(actor=request.user, tenant_id=tenant_id).prefetch_related(TAG_PREFETCH)
-    except Exception:
+    except (TimeoutError, OSError):
         logger.exception("Failed to fetch filters for search")
         return {"results": []}
 

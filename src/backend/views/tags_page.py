@@ -65,7 +65,7 @@ def get_tags_view(request):
             actor=request.user,
             tenant_id=int(tenant_id),
         )
-    except Exception:
+    except (TimeoutError, OSError):
         return {
             "headers": [],
             "rows": [],
@@ -85,9 +85,7 @@ def get_tags_view(request):
 
     for item in tags:
         istrue = True
-        results, objects = get_all_objects_with_certain_tag(
-            actor=request.user, tenant_id=int(tenant_id), tag_id=item.id
-        )
+        _, objects = get_all_objects_with_certain_tag(actor=request.user, tenant_id=int(tenant_id), tag_id=item.id)
         logger.debug("Tag %s (%s)", item.id, item.name)
         for obj_type, obj_list in objects.items():
             logger.debug("View objects[%s] count = %s", obj_type, len(obj_list))
@@ -141,7 +139,7 @@ def post_tag_view(request):
             description=description,
             color=color,
         )
-    except Exception as e:
+    except (TimeoutError, OSError) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -228,7 +226,7 @@ def update_tag_view(request, object_id):
             description=description,
             color=color,
         )
-    except Exception as e:
+    except (TimeoutError, OSError) as e:
         logger.debug(f"Error updating tag {object_id}: {e}")
         return render(
             request,
@@ -269,7 +267,7 @@ def delete_tag_view(request, object_id):
             tenant_id=tenant_id,
             tag_id=object_id,
         )
-    except Exception as e:
+    except (TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete tag: {e}", status=400)
 
     return HttpResponse(status=204)

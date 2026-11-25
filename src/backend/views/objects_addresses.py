@@ -125,7 +125,7 @@ def get_addresses_view(request):
             tenant_id=int(tenant_id),
             include_global_tenant=True,
         )
-    except Exception:
+    except (TimeoutError, OSError):
         return {
             "headers": [],
             "rows": [],
@@ -159,7 +159,7 @@ def get_addresses_view(request):
                 object_type="addressgroup",
                 object_id=address_group.id,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             address_group_tags = []
 
         try:
@@ -168,7 +168,7 @@ def get_addresses_view(request):
                 tenant_id=tenant_id,
                 address_group_id=address_group.id,
             )
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             address_group_members = []
 
         rows.append(
@@ -216,7 +216,7 @@ def get_addresses_view(request):
                 object_id=address.id,
             )
             tag_names = [tag.name for tag in address_tags]
-        except Exception:
+        except (ValueError, TimeoutError, OSError):
             tag_names = []
 
         expand = []
@@ -472,7 +472,7 @@ def update_address_view(request, object_id):
                 tag_id=tag_id,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/_modal.html",
@@ -514,7 +514,7 @@ def delete_address_view(request, object_id):
             tenant_id=tenant_id,
             address_id=object_id,
         )
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete address: {e}", status=400)
 
     return HttpResponse(status=204)

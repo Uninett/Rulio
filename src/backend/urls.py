@@ -19,6 +19,8 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path
 
+from backend.views.tools_page import get_tools_page, get_unused_objects_page
+
 from backend.views.generate_config import check_interface_config_generation, download_interface_configs
 from backend.views.interfaces_page import get_interface_filter_selector_modal, interface_view, post_interface_view
 from backend.views.rule_page import (
@@ -191,6 +193,9 @@ urlpatterns = [
     path("tags/create/", post_tag_view, name="post-tag-view"),
     path("tags/<int:object_id>/update/", update_tag_view, name="update-tag-view"),
     path("tags/<int:object_id>/delete/", delete_tag_view, name="delete-tag-view"),
+    # Tools Page
+    path("tools/", get_tools_page, name="tools"),
+    path("tools/unused-objects/", get_unused_objects_page, name="unused_objects"),
     # Modal Partial
     path("modal/add/<str:object_type>/", get_add_modal, name="modal-add"),
     path("modal/add/<str:object_type>/<str:type>/form/", get_add_modal_form_content, name="modal-add-form-content"),

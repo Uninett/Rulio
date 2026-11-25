@@ -100,6 +100,17 @@ Column Widths
     cursor: pointer;
 }
 
+.objects-table-unused-objects .col-1 {
+    width: 15%;
+}
+
+.objects-table-unused-objects .col-2 {
+    width: 85%;
+}
+.objects-table-unused-objects .main-row {
+    cursor: pointer;
+}
+
 /* Rules */
 /* Drop-position preview while dragging, kept on the last moved rule (classes set from app.js) */
 .objects-table--rules .main-row.dragging,
@@ -275,9 +286,9 @@ Interface Table (inside device / interface detail rows)
 
 /* With differences hidden, a draft table looks as it will after saving.
    !important, because expandRow shows details rows with an inline display style. */
-.draft-table.diff-hidden .main-row.row-diff-removed,
-.draft-table.diff-hidden .main-row.row-diff-removed + .details-row,
-.draft-table.diff-hidden .rule-seq-previous {
+.rules-table.diff-hidden .main-row.row-diff-removed,
+.rules-table.diff-hidden .main-row.row-diff-removed+.details-row,
+.rules-table.diff-hidden .rule-seq-previous {
     display: none !important;
 }
 

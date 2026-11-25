@@ -57,7 +57,7 @@ def post_service_group_view(request):
                 obj=created_service_group,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/modals/_modal_form.html",
@@ -214,7 +214,7 @@ def update_service_group_view(request, object_id):
                 tag_id=tag_id,
             )
 
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return render(
             request,
             "partials/_modal.html",
@@ -258,7 +258,7 @@ def delete_service_group_view(request, object_id):
             tenant_id=tenant_id,
             service_group_id=object_id,
         )
-    except Exception as e:
+    except (ValueError, TimeoutError, OSError) as e:
         return HttpResponse(f"Could not delete service group: {e}", status=400)
 
     return HttpResponse(status=204)

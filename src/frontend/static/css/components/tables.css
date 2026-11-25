@@ -148,6 +148,13 @@ Objects Cells
     background-color: var(--tag-color);
 }
 
+/* Links in table cells look like plain text. */
+.objects-table a.cell-text {
+    color: inherit;
+    text-decoration: none;
+}
+
+
 /* Markup: <span class="cell-text truncate"> */
 .objects-table .cell-text {
     display: block;

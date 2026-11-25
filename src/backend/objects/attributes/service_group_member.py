@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.db import models
 
 
@@ -6,4 +8,6 @@ class ServiceGroupMember(models.Model):
     service = models.ForeignKey("Service", on_delete=models.CASCADE)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["group", "service"], name="unique_group_service")]
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
+            models.UniqueConstraint(fields=["group", "service"], name="unique_group_service")
+        ]
