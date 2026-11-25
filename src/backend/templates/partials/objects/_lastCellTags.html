@@ -2,7 +2,11 @@
 <td class="{% if forloop.first %}first-column-cell{% endif %} col-{{ forloop.counter }}{% if was %} cell-diff-changed{% endif %}"
     {% if row.direction and forloop.counter == 2 %}id="{{ row.id }}-filter-count" data-interface-filter-count="{{ row.direction }}"{% endif %}{% if was %} title="{{ was }}"{% endif %}>
 
-    {% if forloop.last %}
+    {% if object_type == "unused_objects" and forloop.first %}
+        <a class="cell-text truncate" href="{{ row.redirect_url }}" title="{{ cell }}"
+           onclick="event.stopPropagation()">{{ cell }}</a>
+
+    {% elif forloop.last %}
         {% if object_type == "addresses" or object_type == "services" or object_type == "devices" or object_type == "filters" or object_type == "rules" %}
             <div class="tag-list-container">
                 {% for item in cell %}
@@ -20,6 +24,8 @@
             <span class="cell-text truncate" title="{{ cell }}{% if was %} ({{ was }}){% endif %}">{{ cell }}</span>
         {% endif %}
 
+
+            
     {% elif object_type == "rules" %}
         {% if forloop.counter == 2 or forloop.counter == 3 or forloop.counter == 4 or forloop.counter == 5 %}
             <div class="rule-object-list">
