@@ -132,6 +132,10 @@ def get_add_modal_config(object_type):
             "swap": "beforeend",
             "refresh_url": reverse("objects-services"),
             "modal_refresh_target": "#objects-content",
+            "membership": {
+                "selected_list_id": "service-group-selected-list",
+                "input_name": "service_ids",
+            },
         },
         "tags": {
             "title": "Add Tag",

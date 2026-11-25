@@ -1,3 +1,5 @@
+{% load static %}
+
 <hr>
 
 <!-- List all services  as a dual list selection with drag and drop -->
@@ -5,7 +7,16 @@
     <h2 class="membership-header">Services</h2>
 </div>
 
-<p class="form-help">Choose any services you want to add to this service group.</p>
+<div class="create-new-object">
+    <p class="form-help">Choose any services you want to add to this service group.</p>
+
+    <button type="button" class="btn-add btn-create-new-object"
+        hx-get="{% url 'modal-add' 'services' %}?submodal=create_item" hx-target="#submodal-container"
+        hx-swap="beforeend">
+        Create new service
+        <img class="btn-icon" src="{% static 'images/plus.svg' %}" alt="" aria-hidden="true">
+    </button>
+</div>
 
 <div class="membership-selector" data-input-name="service_ids">
     <div class="membership-column">
@@ -21,7 +32,8 @@
     </div>
 
     <div class="membership-column">
-        <div class="membership-list membership-list-selected" data-list-type="selected">
+        <div id="service-group-selected-list" class="membership-list membership-list-selected"
+            data-list-type="selected">
             {% for service in item_options %}
             {% if service.id in selected_service_ids %}
             <div class="membership-list-item truncate" draggable="true" data-id="{{ service.id }}">
