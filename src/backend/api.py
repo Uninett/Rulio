@@ -89,6 +89,7 @@ from backend.services.membership import (
     add_services_to_group,
     add_tag_to_object,
 )
+from backend.services.seed import populate
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
     create_device_group,
@@ -1492,7 +1493,21 @@ def add_filter_to_interface_endpoint(
                 "message": str(e),
             },
         )
-
+@api.post(
+    "/populate_db",
+    tags=["Debugging"],
+    response={200: dict, 403: MessageSchema}
+)
+@require_write_tenantd
+def populate_db(request):
+    populate()
+    return Status(
+        200,
+        {
+            "status": "success",
+            "message": "Database populated successfully",
+        },
+    )
 
 @api.post("/add_test_data", tags=["Debugging"], response={200: dict, 403: MessageSchema})
 @require_write_tenantd
