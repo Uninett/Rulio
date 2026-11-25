@@ -1,7 +1,11 @@
 import pytest
+from django.contrib.auth import get_user_model
+from django.test import Client
 from django.urls import reverse
 
+from backend.objects.draft import Draft
 from backend.objects.filters.filter import Filter
+from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.tenant import Tenant
 from backend.services.attribute_objects.create_attribute_objects import create_tag
 from backend.services.draft import store_changes
@@ -20,7 +24,13 @@ from backend.services.filter_objects.create_filter_objects import (
     create_rule,
 )
 from backend.services.membership import add_filter_to_interface, add_tag_to_object
-from backend.services.rule_draft import RULE_DRAFT_SCOPE, empty_rule_changes
+from backend.services.rule_draft import (
+    RULE_DRAFT_SCOPE,
+    empty_rule_changes,
+    saved_rule_key,
+    stage_rule_create,
+    stage_rule_delete,
+)
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
     create_interface,
@@ -392,3 +402,133 @@ def test_edit_modal_refuses_a_filter_deleted_in_the_draft(authenticated_client, 
     response = authenticated_client.get(reverse("modal-update", args=[key_b]))
 
     assert response.status_code == 409
+
+
+def rule_fields(name):
+    return {
+        "name": name,
+        "description": "",
+        "action": "accept",
+        "log_type": "None",
+        "enable": True,
+        "source_address_ids": [],
+        "destination_address_ids": [],
+        "source_service_ids": [],
+        "destination_service_ids": [],
+        "tag_ids": [],
+    }
+
+
+def button_by_class(page_html, css_class):
+    start = page_html.index(f'{css_class}"')
+    return page_html[page_html.rindex("<button", 0, start) : page_html.index("</button>", start)]
+
+
+def test_save_all_writes_filter_and_rule_changes(authenticated_client, filters_page):
+    user, tenant_id, (filter_b, filter_d) = filters_page
+    stage_filter_delete(actor=user, tenant_id=tenant_id, key=saved_filter_key(filter_b.id))
+    stage_rule_create(actor=user, tenant_id=tenant_id, filter_id=filter_d.id, fields=rule_fields("page-save-all-rule"))
+
+    response = authenticated_client.post(reverse("save-all-drafts-view"))
+
+    assert response.status_code == 204
+    assert not Filter.objects.filter(id=filter_b.id).exists()
+    assert Rule.objects.filter(filter_id=filter_d.id, name="page-save-all-rule").exists()
+    assert not Draft.objects.filter(user=user).exists()
+
+
+def test_save_all_reports_a_failing_rule_draft(authenticated_client, filters_page):
+    user, tenant_id, (_filter_b, filter_d) = filters_page
+    rule = create_rule(
+        actor=user,
+        filter=filter_d,
+        tenant_id=tenant_id,
+        name="page-doomed-rule",
+        description="",
+        action="accept",
+        enable=True,
+        log_type="None",
+        hit_count=0,
+    )
+    stage_rule_delete(actor=user, tenant_id=tenant_id, filter_id=filter_d.id, key=saved_rule_key(rule.id))
+    Rule.objects.filter(id=rule.id).delete()
+
+    response = authenticated_client.post(reverse("save-all-drafts-view"))
+
+    assert response.status_code == 400
+    assert b"Could not save changes: Filter 'page filter D'" in response.content
+    assert Draft.objects.filter(user=user, scope=RULE_DRAFT_SCOPE).exists()
+
+
+def test_discard_all_removes_filter_and_rule_drafts(authenticated_client, filters_page):
+    user, tenant_id, (filter_b, filter_d) = filters_page
+    stage_filter_delete(actor=user, tenant_id=tenant_id, key=saved_filter_key(filter_b.id))
+    stage_rule_create(actor=user, tenant_id=tenant_id, filter_id=filter_d.id, fields=rule_fields("page-discard-rule"))
+
+    response = authenticated_client.post(reverse("discard-all-drafts-view"))
+
+    assert response.status_code == 204
+    assert not Draft.objects.filter(user=user).exists()
+    assert Filter.objects.filter(id=filter_b.id).exists()
+
+
+def test_save_all_and_discard_all_only_accept_post(authenticated_client, filters_page):
+    user, tenant_id, (filter_b, _filter_d) = filters_page
+    stage_filter_delete(actor=user, tenant_id=tenant_id, key=saved_filter_key(filter_b.id))
+
+    for url in (reverse("save-all-drafts-view"), reverse("discard-all-drafts-view")):
+        assert authenticated_client.get(url).status_code == 405, url
+
+    assert filter_changes_pending(get_filter_changes(user, tenant_id))
+
+
+def test_save_all_refuses_a_user_without_write_access(filters_page):
+    _user, tenant_id, (filter_b, filter_d) = filters_page
+    reader = get_user_model().objects.create_user(username="filters-page-reader", password="x")
+    client = Client()
+    client.force_login(reader)
+    assert client.get(f"/api/set_tenant?tenant_id={tenant_id}").status_code == 200
+    # Written directly, as staging refuses a user without write access.
+    filter_changes = {**get_filter_changes(reader, tenant_id), "deleted": [saved_filter_key(filter_b.id)]}
+    store_changes(reader, tenant_id, FILTER_DRAFT_SCOPE, FILTER_DRAFT_SCOPE_ID, filter_changes)
+    rule_changes = empty_rule_changes()
+    rule_changes["created"]["ruledraft-1"] = rule_fields("page-reader-rule")
+    store_changes(reader, tenant_id, RULE_DRAFT_SCOPE, filter_d.id, rule_changes)
+
+    response = client.post(reverse("save-all-drafts-view"))
+
+    assert response.status_code == 400
+    assert b"Could not save changes" in response.content
+    assert Filter.objects.filter(id=filter_b.id).exists()
+    assert not Rule.objects.filter(name="page-reader-rule").exists()
+
+
+# authenticated_client is logged in without picking a tenant.
+def test_save_all_and_discard_all_need_a_tenant(authenticated_client):
+    for url in (reverse("save-all-drafts-view"), reverse("discard-all-drafts-view")):
+        response = authenticated_client.post(url)
+        assert response.status_code == 400, url
+        assert b"No tenant selected." in response.content
+
+
+@pytest.mark.parametrize("draft_kind", ["none", "filter", "rule"])
+def test_save_all_buttons_follow_filter_and_rule_drafts(authenticated_client, filters_page, draft_kind):
+    user, tenant_id, (filter_b, _filter_d) = filters_page
+    if draft_kind == "filter":
+        stage_filter_delete(actor=user, tenant_id=tenant_id, key=saved_filter_key(filter_b.id))
+    if draft_kind == "rule":
+        stage_rule_create(actor=user, tenant_id=tenant_id, filter_id=filter_b.id, fields=rule_fields("page-rule"))
+
+    page = filters_html(authenticated_client)
+    save_all = button_by_class(page, "draft-save-all-btn")
+    discard_all = button_by_class(page, "draft-discard-all-btn")
+
+    assert "Save All" in save_all
+    assert "Discard All" in discard_all
+    assert f'data-save-url="{reverse("save-all-drafts-view")}"' in save_all
+    assert f'data-discard-url="{reverse("discard-all-drafts-view")}"' in discard_all
+    assert 'data-draft-table="filters-table"' in save_all
+    assert ("disabled" in save_all) is (draft_kind == "none")
+    assert ("disabled" in discard_all) is (draft_kind == "none")
+    # Save Changes only follows the filter draft.
+    assert ("disabled" in save_button(page)) is (draft_kind != "filter")
