@@ -19,9 +19,9 @@ from backend.services.update import (
     update_address,
 )
 from backend.utils.logger import set_up_logger
+from backend.views.modal import render_created_membership_item
 from backend.views.objects_helpers import get_objects_toolbar_context
 from backend.views.session import get_tenant_context
-from backend.views.modal import render_created_membership_item
 from constants import GLOBAL_TENANT_ID
 
 logger = set_up_logger(__name__)

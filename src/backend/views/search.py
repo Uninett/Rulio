@@ -8,6 +8,7 @@ from backend.services.attribute_objects.get_service_objects import (
     get_all_service_groups_from_tenant,
     get_all_services_from_tenant,
 )
+from backend.services.config_generation.platform_capabilities import get_platform_label
 from backend.services.get import (
     get_all_device_groups_from_tenant,
     get_all_devices_from_tenant,
@@ -213,8 +214,14 @@ def get_device_search_results(request):
     matches = []
 
     for device in devices:
+        # Both the stored key ("srx") and the shown label ("Juniper SRX") find the device.
         search_text = _searchable(
-            device.id, device.name, device.platform, device.type, device.description, *_tag_names(device)
+            device.id,
+            device.name,
+            device.platform,
+            get_platform_label(device.platform),
+            device.description,
+            *_tag_names(device),
         )
         matches.append(_result(device.id, device.name, "Device", search_text, f"{url}?expand_id=device-{device.id}"))
 

@@ -89,6 +89,7 @@ from backend.services.membership import (
     add_services_to_group,
     add_tag_to_object,
 )
+from backend.services.seed import populate
 from backend.services.tenant_objects.create_tenant_objects import (
     create_device,
     create_device_group,
@@ -1059,7 +1060,6 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
             name=payload.name,
             platform=payload.platform,
             description=payload.description,
-            type=payload.type,
         )
         logger.info(f"create_device endpoint succeeded for device id={device.id}")
         return Status(
@@ -1069,7 +1069,6 @@ def create_device_endpoint(request, payload: CreateDeviceSchema):
                 "device_name": device.name,
                 "device_platform": device.platform,
                 "device_description": device.description,
-                "device_type": device.type,
             },
         )
     except Exception as e:
@@ -1096,7 +1095,6 @@ def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, grou
         name=payload.name,
         platform=payload.platform,
         description=payload.description,
-        type=payload.type,
     )
     add_devices_to_group(
         actor=request.user,
@@ -1114,7 +1112,6 @@ def create_device_and_add_it_to_group(request, payload: CreateDeviceSchema, grou
             "device_name": device.name,
             "device_platform": device.platform,
             "device_description": device.description,
-            "device_type": device.type,
             "group_id": group_id,
         },
     )
@@ -1496,6 +1493,19 @@ def add_filter_to_interface_endpoint(
                 "message": str(e),
             },
         )
+
+
+@api.post("/populate_db", tags=["Debugging"], response={200: dict, 403: MessageSchema})
+@require_write_tenantd
+def populate_db(request):
+    populate()
+    return Status(
+        200,
+        {
+            "status": "success",
+            "message": "Database populated successfully",
+        },
+    )
 
 
 @api.post("/add_test_data", tags=["Debugging"], response={200: dict, 403: MessageSchema})

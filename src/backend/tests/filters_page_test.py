@@ -223,9 +223,7 @@ def test_a_removed_filter_shows_what_saving_also_deletes(authenticated_client, f
             log_type="None",
             hit_count=0,
         )
-    device = create_device(
-        actor=user, tenant_id=tenant_id, name="page-device", description="", platform="juniper", type="firewall"
-    )
+    device = create_device(actor=user, tenant_id=tenant_id, name="page-device", description="", platform="juniper")
     for direction in ("in", "out"):
         interface = create_interface(
             actor=user, tenant_id=tenant_id, name=f"page-if-{direction}", description="", type="", device_id=device.id

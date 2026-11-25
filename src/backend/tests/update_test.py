@@ -1,3 +1,4 @@
+import inspect
 import ipaddress
 
 import pytest
@@ -358,15 +359,57 @@ class TestUpdate:
                 device_id=device.id,
                 name=new_name,
                 description="updated device description",
-                platform="updated-platform",
-                type="updated-type",
+                platform="cisco",
             )
 
             device.refresh_from_db()
             assert device.name == new_name
             assert device.description == "updated device description"
-            assert device.platform == "updated-platform"
-            assert device.type == "updated-type"
+            assert device.platform == "cisco"
+
+    # Devices have no type field, so update_device takes no type and updates the other fields on their own.
+    def test_update_device_without_type(self, request_with_session, sample_devices):
+        device = sample_devices[0]
+
+        update_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            device_id=device.id,
+            name="Typeless_Device",
+            description="no type",
+            platform="srx",
+        )
+
+        device.refresh_from_db()
+        assert (device.name, device.description, device.platform) == ("Typeless_Device", "no type", "srx")
+        assert "type" not in inspect.signature(update_device).parameters
+
+    def test_update_device_normalizes_platform(self, request_with_session, sample_devices):
+        device = sample_devices[0]
+
+        update_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            device_id=device.id,
+            platform="CISCO",
+        )
+
+        device.refresh_from_db()
+        assert device.platform == "cisco"
+
+    def test_update_device_with_invalid_platform_is_refused(self, request_with_session, sample_devices):
+        device = sample_devices[0]
+
+        with pytest.raises(ValueError, match="Platform: Value 'fortinet' is not a valid choice."):
+            update_device(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                device_id=device.id,
+                platform="fortinet",
+            )
+
+        device.refresh_from_db()
+        assert device.platform == "juniper"
 
     def test_update_device_group(self, request_with_session, sample_device_groups):
         for device_group in sample_device_groups:

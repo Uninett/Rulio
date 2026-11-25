@@ -346,7 +346,6 @@ def build_update_modal_context(request, row_id):
                     "name": device.name or "",
                     "description": device.description or "",
                     "platform": device.platform or "",
-                    "type": device.type or "",
                     "interfaces": [
                         {
                             "id": interface.id,

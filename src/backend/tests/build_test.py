@@ -458,7 +458,6 @@ class TestBuildPolicyFromObjects:
                 name=f"{vendor.upper()}_Test_Device",
                 description="This is a test device",
                 platform=vendor,
-                type="firewall",
             )
             interface = create_interface(
                 actor=request_with_session.user,

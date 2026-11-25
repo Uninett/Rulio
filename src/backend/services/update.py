@@ -212,7 +212,7 @@ def update_service_group(*, actor, tenant_id, service_group_id, name=None, descr
 
 
 @transaction.atomic
-def update_device(*, actor, tenant_id, device_id, name=None, description=None, platform=None, type=None):
+def update_device(*, actor, tenant_id, device_id, name=None, description=None, platform=None):
     require_write_tenant(actor, tenant_id)
 
     device = Device.objects.filter(id=device_id, tenant_id=tenant_id).first()
@@ -224,9 +224,8 @@ def update_device(*, actor, tenant_id, device_id, name=None, description=None, p
     if description is not None:
         device.description = description
     if platform is not None:
-        device.platform = platform
-    if type is not None:
-        device.type = type
+        # Stored like create_device does, lowercase without surrounding spaces
+        device.platform = platform.strip().lower()
 
     # Validates like create_device does, so a taken name gives a readable error instead of a database IntegrityError.
     try:

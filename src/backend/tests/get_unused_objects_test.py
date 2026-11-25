@@ -437,7 +437,6 @@ class TestGetUnusedFilters:
             name="unused-filter-device",
             description="device for filter-interface test",
             platform="juniper",
-            type="firewall",
         )
 
         interface = create_interface(

@@ -664,7 +664,6 @@ def sample_devices(request_with_session, create_testing_tenant):
             name="Sample_Device_1",
             description="This is a sample device for testing.",
             platform="juniper",
-            type="firewall",
         ),
         create_device(
             actor=request_with_session.user,
@@ -672,7 +671,6 @@ def sample_devices(request_with_session, create_testing_tenant):
             name="Sample_Device_2",
             description="This is another sample device for testing.",
             platform="cisco",
-            type="router",
         ),
         create_device(
             actor=request_with_session.user,
@@ -680,15 +678,13 @@ def sample_devices(request_with_session, create_testing_tenant):
             name="Sample_Device_3",
             description="This is yet another sample device for testing.",
             platform="arista",
-            type="firewall",
         ),
         create_device(
             actor=request_with_session.user,
             tenant_id=request_with_session.tenant_id,
             name="Sample_Device_4",
             description="This is a fourth sample device for testing.",
-            platform="fortinet",
-            type="firewall",
+            platform="fortigate",
         ),
     ]
     for device in devices:
@@ -1184,7 +1180,6 @@ def built_interface_policies(sample_filters, sample_rules_with_objects, request_
         name="FIXTURE_VENDOR_Test_Device",
         description="This is a test device",
         platform="juniper",
-        type="firewall",
     )
     interface = create_interface(
         actor=request_with_session.user,

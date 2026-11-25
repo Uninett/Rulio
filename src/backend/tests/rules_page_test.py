@@ -3,11 +3,11 @@ from django.urls import reverse
 
 from backend.objects.filters.rule import Rule
 from backend.objects.tenant_objects.tenant import Tenant
+from backend.services.attribute_objects.create_attribute_objects import create_tag
 from backend.services.filter_objects.create_filter_objects import (
     create_filter,
     create_rule,
 )
-from backend.services.attribute_objects.create_attribute_objects import create_tag
 from backend.services.membership import add_objects_to_rule, add_tag_to_object
 from backend.services.rule_draft import (
     saved_rule_key,

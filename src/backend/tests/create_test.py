@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied
 from backend.objects.attributes.address_group_member import AddressGroupMember
 from backend.objects.attributes.service_group_member import ServiceGroupMember
 from backend.objects.filters.rule_match import RuleMatch
+from backend.objects.tenant_objects.device import Device
 from backend.services.attribute_objects.create_attribute_objects import (
     create_address_group,
     create_service,
@@ -17,6 +18,7 @@ from backend.services.membership import (
     add_objects_to_rule,
     add_services_to_group,
 )
+from backend.services.tenant_objects.create_tenant_objects import create_device, get_or_create_device
 from backend.utils.logger import set_up_logger
 
 logger = set_up_logger(__name__)
@@ -294,6 +296,90 @@ class TestCreateAddress:
                 ipv4_auto="192.168.110.0/24",
                 ipv6_auto="2001:db8::110",
             )
+
+
+# Platforms are trimmed and lowercased before saving, and unknown platforms give a readable ValueError.
+@pytest.mark.django_db
+class TestCreateDevice:
+    def test_create_device_normalizes_platform(self, request_with_session, create_testing_tenant):
+        device = create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            platform=" Juniper ",
+            description="",
+        )
+
+        device.refresh_from_db()
+        assert device.platform == "juniper"
+
+    def test_create_device_with_invalid_platform_is_refused(self, request_with_session, create_testing_tenant):
+        with pytest.raises(ValueError, match="Platform: Value 'fortinet' is not a valid choice."):
+            create_device(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Test Device",
+                platform="fortinet",
+                description="",
+            )
+
+    def test_get_or_create_device_normalizes_platform(self, request_with_session, create_testing_tenant):
+        device = get_or_create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            platform=" Juniper ",
+            description="",
+        )
+
+        device.refresh_from_db()
+        assert device.platform == "juniper"
+
+    def test_get_or_create_device_with_invalid_platform_is_refused(self, request_with_session, create_testing_tenant):
+        with pytest.raises(ValueError, match="Platform: Value 'fortinet' is not a valid choice."):
+            get_or_create_device(
+                actor=request_with_session.user,
+                tenant_id=request_with_session.tenant_id,
+                name="Test Device",
+                platform="fortinet",
+                description="",
+            )
+
+    def test_get_or_create_device_returns_existing_device(self, request_with_session, create_testing_tenant):
+        kwargs = {
+            "actor": request_with_session.user,
+            "tenant_id": request_with_session.tenant_id,
+            "name": "Test Device",
+            "description": "",
+        }
+        device = get_or_create_device(**kwargs, platform="juniper")
+
+        assert get_or_create_device(**kwargs, platform="cisco") == device
+
+    # Devices have no type field, so a device is created from its name, platform and description alone.
+    def test_create_device_without_type(self, request_with_session, create_testing_tenant):
+        device = create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            platform="srx",
+            description="",
+        )
+
+        device.refresh_from_db()
+        assert device.platform == "srx"
+        assert "type" not in {field.name for field in Device._meta.get_fields()}
+
+    def test_get_or_create_device_without_type(self, request_with_session, create_testing_tenant):
+        device = get_or_create_device(
+            actor=request_with_session.user,
+            tenant_id=request_with_session.tenant_id,
+            name="Test Device",
+            platform="srx",
+            description="",
+        )
+
+        assert device.platform == "srx"
 
 
 @pytest.mark.django_db
