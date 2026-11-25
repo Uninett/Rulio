@@ -169,7 +169,7 @@ def _filter_row(entry: dict, saved_filter: dict | None, user, tenant_id: int, ta
 def get_filters_view(request):
     tenant_id = request.session.get("current_tenant_id")
     if not tenant_id:
-        return {"headers": [], "rows": [], "has_changes": False}
+        return {"headers": [], "rows": [], "has_changes": False, "has_any_changes": False}
 
     tenant_id = int(tenant_id)
 
@@ -178,7 +178,7 @@ def get_filters_view(request):
         baseline = load_baseline_filters(request.user, tenant_id)
     except PermissionDenied as e:
         print(f"Error fetching filters: {e}")
-        return {"headers": [], "rows": [], "has_changes": False}
+        return {"headers": [], "rows": [], "has_changes": False, "has_any_changes": False}
 
     # The rows show the saved filters with this user's unsaved changes applied.
     changes = get_filter_changes(request.user, tenant_id)
@@ -251,6 +251,8 @@ def get_filters_view(request):
         "headers": ["Name", "Description", "Rules", "Tags"],
         "rows": rows,
         "has_changes": filter_changes_pending(changes),
+        # Save All and Discard All also act on the rule drafts of the filters.
+        "has_any_changes": filter_changes_pending(changes) or bool(pending_rule_drafts),
     }
 
 
